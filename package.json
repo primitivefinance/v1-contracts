@@ -1,0 +1,25 @@
+{
+  "name": "carbon.finance",
+  "version": "0.1.0",
+  "description": "Carbon - Interchangeable finance.",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "truffle test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Alexangelj/carbon.git"
+  },
+  "author": "Alexander Angel",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Alexangelj/carbon/issues"
+  },
+  "homepage": "https://github.com/Alexangelj/carbon#readme",
+  "dependencies": {
+    "@openzeppelin/contracts": "^2.5.0"
+  }
+}

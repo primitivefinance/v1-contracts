@@ -49,4 +49,4 @@ Overview:
                 - Paired with asset ?
                 - Expiration
                 - ...characteristics
-                    - ERC-20 Token
+                    - ERC-20 Token or new standardized contract?
