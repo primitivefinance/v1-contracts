@@ -64,21 +64,48 @@ contract('Call Test', accounts => {
         let _init = await _c.initialize(_o.address);
         let _setController = await _o.setController(_c.address);
 
-        let _amount = (10**19).toString();
-        let _approve = await _u.approve(_c.address, _amount);
+        let x = (10**19).toString(); // underlying amt
+        let y = _u.address; // underlying address
+        let z = (10**18).toString(); // strike amount
+        let w = _s.address; // strike address 
+        let p = (1588291200).toString(); // unix timestamp for expiration
+        let g = Bob; // payment receiver address
 
-        await getBal(_u, Alice, 'Alice', 'U');
-        await getBal(_u, _c.address, 'Call', 'U');
-        let _deposit = await _c.deposit(_amount, _u.address);
-        await getBal(_u, Alice, 'Alice', 'U');
-        await getBal(_u, _c.address, 'Call', 'U');
+        let xApprove = await _u.approve(_c.address, x);
+        let zApprove = await _s.approve(_c.address, z);
 
-        let _owner = await _o.ownerOf(_tokenId);
-        assert.strictEqual(_owner, Alice, 'Owner should be Alice');
+        async function balances() {
+            console.log("\n === Break === \n")
+            await getBal(_o, Alice, 'Alice', 'o');
+            await getBal(_o, _c.address, 'Call', 'o');
+            await getBal(_u, Alice, 'Alice', 'x');
+            await getBal(_s, Alice, 'Alice', 'z');
+            await getBal(_u, _c.address, 'Call', 'x');
+            await getBal(_s, _c.address, 'Call', 'z');
+            await getBal(_s, Bob, 'Bob', 'z');
+        }
 
-        let _getURI = await _o.tokenURI(_tokenId);
+        await balances();
 
-        
+        let _deposit = await _c.deposit(x, y, z, w, p, g);
+        await balances();
+
+        let _exercise = await _c.exercise(_tokenId);
+        await balances();
+
+        let _withdrawX = await _c.withdraw(x, y);
+        let _withdrawZ = await _c.withdraw(z, w, {from: g});
+        await balances();
+
+        let xApprove2 = await _u.approve(_c.address, x);
+        let zApprove2 = await _s.approve(_c.address, z);
+
+        let _deposit2 = await _c.deposit(x, y, z, w, p, g);
+        await balances();
+        let _tokenId2 = (_deposit2.receipt.logs[0].args.tokenId).toString();
+
+        let _close = await _c.close(_tokenId2);
+        await balances();
     });
 
 

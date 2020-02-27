@@ -699,6 +699,10 @@ contract OCall is Context, ERC165, ERC721, IERC721Metadata {
         return true;
     }
 
+    function burn(address owner, uint256 tokenId) public returns (bool) {
+        _burn(owner, tokenId);
+    }
+
     /**
      * @dev Gets the token name.
      * @return string representing the token name
