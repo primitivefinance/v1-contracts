@@ -1,12 +1,14 @@
 pragma solidity ^0.6.2;
 
 /*
-Title: Carbon.finance - Interchangeable finance. Call option derivative.
-Description: Deposit underlying asset (collateral) to mint corresponding ERC-20 token. Sell token.
-             Token holders can burn the token to either 1. trade, or 2. withdraw, the underlying asset,
+Title: Carbon Protocol - Carbonprotocol.finance - PRIME - A financial smart contract agreement.
+Description: Deposit underlying asset (collateral) to mint corresponding ERC-20 token. 
+             Sell token.
+             Token holders can burn the token to either
+             1. trade, or 2. withdraw, the underlying asset,
              depending on which party deposited the collateral.
              Underlying asset is priced in strike asset.
-Architecture: User mints a Contract Object called OCall, basically a certificate that a deposit was made.
+Architecture: User mints a Contract Object called OPrime, basically a certificate that a deposit was made.
 Authors: Alexander
 .*/
 
@@ -20,7 +22,7 @@ abstract contract ERC20 {
 }
 
 
-abstract contract OCall {
+abstract contract OPrime {
     function mint(address to, uint256 tokenId, string memory tokenURI) public virtual returns (bool);
     function burn(address owner, uint256 tokenId) public virtual returns (bool);
     function ownerOf(uint256 tokenId) public view virtual returns (address);
@@ -53,10 +55,12 @@ abstract contract IERC721Receiver {
 }
 
 
-abstract contract ICall {
+abstract contract IPrime {
     event Deposit(address indexed from, address indexed asset, uint256 amount, uint256 indexed tokenId);
     event Exercise(address indexed from, address indexed asset, uint256 amount, uint256 indexed tokenId);
     event Close(address indexed from, address indexed asset, uint256 amount, uint256 indexed tokenId);
+    event CollateralUpdate(uint256 _amount, uint256 indexed _tokenId);
+    event NewTicket(uint256 indexed _tokenId);
 
     function initialize(address _ocall) public virtual returns (bool);
     function deposit(uint256 _x, address _y, uint256 _z, address _w, uint256 _p, address _g) public virtual returns (bool success);
@@ -66,7 +70,7 @@ abstract contract ICall {
 }
 
 
-contract Call is ICall {
+contract Prime is IPrime {
     using SafeMath for uint256;
 
     struct Ticket {
@@ -80,19 +84,18 @@ contract Call is ICall {
     }
 
     string constant URI = '../URI/OCNFT.json';
+    uint256 public constant INCREMENT = 1;
     ERC20 public underlying;
-    OCall public ocall;
+    OPrime public oPrime;
     address public controller;
     uint256 public oNonce;
-    uint256 public constant INCREMENT = 1;
-
     
-    mapping(uint256 => Ticket) public _tickets; // NFT Id <--> tickets
-    mapping(uint256 => uint256) public _collateral; // tokenId -> collateral amount
-    mapping(address => mapping(address => uint256)) private _bank; // Users -> asset address -> withdrawable balance
+    mapping(uint256 => Ticket) public _tickets; // NFT ID -> Ticket.
+    mapping(uint256 => uint256) public _collateral; // NFT ID -> collateral amount.
+    mapping(address => mapping(address => uint256)) private _bank; // Users -> asset address -> withdrawable balance.
 
-    function initialize(address _ocall) public override returns (bool) {
-        ocall = OCall(_ocall);
+    function initialize(address _oPrime) public override returns (bool) {
+        oPrime = OPrime(_oPrime);
         controller = address(this);
         return true;
     }
@@ -102,14 +105,14 @@ contract Call is ICall {
     }
 
     /** 
-     * @dev `msg.sender` Underwrites an asset (underlying) which can be bought with (strike) asset.
+     * @dev `msg.sender` Deposits asset x, mints new Ticket.
      * @param _x Amount of collateral to deposit.
      * @param _y Address of collateral asset.
      * @param _z Amount of payment asset.
      * @param _w Payment asset address.
      * @param _p Expiry timestamp.
-     * @param _g Payment asset receiver address.
-     * @return success Whether or not deposit was successful.
+     * @param _g Receiver address.
+     * @return success
      */
     function deposit(
         uint256 _x,
@@ -120,100 +123,124 @@ contract Call is ICall {
         address _g
         ) public override returns (bool success) {
         // CHECKS
-        underlying = ERC20(_y);
-        uint256 bal = underlying.balanceOf(msg.sender);
-        require(bal >= _x, 'Cannot send amount > bal');
+        ERC20 y = ERC20(_y);
+        uint256 b = y.balanceOf(msg.sender);
+        require(b >= _x, 'Cannot send amount > bal');
 
         // EFFECTS
-        oNonce = oNonce.add(INCREMENT);
+        _incrementNonce();
         _tickets[oNonce] = Ticket(msg.sender, _x, _y, _z, _w, _p, _g);
-        _collateral[oNonce] = _x; // x amount deposited to tokenId by address of user
+        _updateCollateral(_x, oNonce);
         _bank[msg.sender][_y] = _x; // Depositor can withdraw collateral
 
         // INTERACTIONS
         emit Deposit(msg.sender, _y, _x, oNonce);
-        ocall.mint(msg.sender, oNonce, URI);
-        return underlying.transferFrom(msg.sender, address(this), _x);
+        oPrime.mint(msg.sender, oNonce, URI);
+        return y.transferFrom(msg.sender, address(this), _x);
     }
 
     /** 
      * @dev `msg.sender` Exercises right to purchase collateral.
      * @param _tokenId ID of Ticket.
-     * @return success Whether or not exercise was successful.
+     * @return success
      */
     function exercise(uint256 _tokenId) public override returns (bool success) {
         // CHECKS
-        uint256 bal = ocall.balanceOf(msg.sender);
-        require(bal >= 1, 'Cannot send amount > bal'); // Has a ticket.
+        uint256 b = oPrime.balanceOf(msg.sender);
+        require(b >= 1, 'Cannot send amount > bal');
 
-        address owner = ocall.ownerOf(_tokenId);
-        require(owner == msg.sender, 'Owner is not sender'); // Owns *this* ticket.
+        address o = oPrime.ownerOf(_tokenId);
+        require(o == msg.sender, 'Owner is not sender');
 
         address a = _tickets[_tokenId].a;
         uint256 x = _tickets[_tokenId].x;
-        ERC20 y = ERC20(_tickets[_tokenId].y);
+        address y = _tickets[_tokenId].y;
         uint256 z = _tickets[_tokenId].z;
-        ERC20 w = ERC20(_tickets[_tokenId].w);
+        address w = _tickets[_tokenId].w;
         uint256 p = _tickets[_tokenId].p;
         address g = _tickets[_tokenId].g;
+        ERC20 _y = ERC20(_tickets[_tokenId].y);
+        ERC20 _w = ERC20(_tickets[_tokenId].w);
 
-        require(w.balanceOf(msg.sender) >= z, 'Bal < payment amount'); // Enough to pay
-        require(p >= block.timestamp, 'Expired Ticket'); // Ticket not expired
-
-        // EFFECTS
-        require(
-            w.transferFrom(msg.sender, address(this), z), 
-            'Payment not transferred'); // Transfer payment z to call contract
-        _bank[a][address(y)] = 0; // Depositor cannot withdraw collateral x
-        _bank[g][address(w)] = z; // Payment receiver can withdraw payment z
-        _bank[msg.sender][address(y)] = x; // Payer can withdraw collateral x
-
-        // INTERACTIONS
-        emit Exercise(msg.sender, address(w), z, _tokenId);
-        return ocall.burn(msg.sender, _tokenId);
-    }
-
-    /** 
-     * @dev `msg.sender` Close ticket and withdraw collateral as ticket creator.
-     * @param _tokenId Ticket NFT ID to close.
-     * @return success Whether or not withdraw was successful.
-     */
-    function close(uint256 _tokenId) public override returns (bool success) {
-        // CHECKS
-        uint256 bal = ocall.balanceOf(msg.sender);
-        require(bal >= 1, 'Cannot send amount > bal'); // Has a ticket.
-
-        address owner = ocall.ownerOf(_tokenId);
-        require(owner == msg.sender, 'Owner is not sender'); // Owns *this* ticket.
-
-        address a = _tickets[_tokenId].a;
-        uint256 x = _tickets[_tokenId].x;
-        ERC20 y = ERC20(_tickets[_tokenId].y);
-        uint256 p = _tickets[_tokenId].p;
-
-        require(msg.sender == a, 'User is not ticket creator');
-        require(_bank[msg.sender][address(y)] > 0, 'User has no collateral to claim');
+        require(_w.balanceOf(msg.sender) >= z, 'Bal < payment amount');
         require(p >= block.timestamp, 'Expired Ticket');
 
         // EFFECTS
-        _bank[msg.sender][address(y)] = 0;
+        require(_w.transferFrom(msg.sender, address(this), z), 'Payment not transferred');
+        _bank[a][y] = 0; // Depositor cannot withdraw collateral x.
+        _bank[g][w] = z; // Payment receiver can withdraw payment z.
+        _bank[msg.sender][y] = x; // Payer can withdraw collateral x.
 
         // INTERACTIONS
-        emit Close(msg.sender, address(y), x, _tokenId);
-        ocall.burn(msg.sender, _tokenId);
-        return y.transfer(msg.sender, x);
+        emit Exercise(msg.sender, w, z, _tokenId);
+        return oPrime.burn(msg.sender, _tokenId);
     }
 
-     /** 
+    /** 
+     * @dev `msg.sender` Close ticket and withdraw collateral as ticket minter.
+     * @param _tokenId Ticket NFT ID to close.
+     * @return success
+     */
+    function close(uint256 _tokenId) public override returns (bool success) {
+        // CHECKS
+        uint256 b = oPrime.balanceOf(msg.sender);
+        require(b >= 1, 'Cannot send amount > bal');
+
+        address o = oPrime.ownerOf(_tokenId);
+        require(o == msg.sender, 'Owner is not sender');
+
+        address a = _tickets[_tokenId].a;
+        uint256 x = _tickets[_tokenId].x;
+        address y = _tickets[_tokenId].y;
+        uint256 p = _tickets[_tokenId].p;
+        ERC20 _y = ERC20(_tickets[_tokenId].y);
+
+        require(msg.sender == a, 'User is not ticket creator');
+        require(_bank[msg.sender][y] > 0, 'User has no collateral to claim');
+        require(p >= block.timestamp, 'Expired Ticket');
+
+        // EFFECTS
+        _bank[msg.sender][y] = 0;
+
+        // INTERACTIONS
+        emit Close(msg.sender, y, x, _tokenId);
+        oPrime.burn(msg.sender, _tokenId);
+        return _y.transfer(msg.sender, x);
+    }
+
+    /** 
      * @dev `msg.sender` Withdraw assets from contract.
      * @param _amount Quantity to withdraw.
-     * @param _addr Address of asset to withdraw.
-     * @return success Whether or not withdraw was successful.
+     * @param _addr Address of asset.
+     * @return success
      */
     function withdraw(uint256 _amount, address _addr) public override returns (bool success) {
-        uint256 bal = _bank[msg.sender][_addr];
-        require(bal >= _amount, 'Cannot withdraw amount > bal');
-        ERC20 asset = ERC20(_addr);
-        return asset.transfer(msg.sender, _amount);
+        // CHECKS
+        uint256 b = _bank[msg.sender][_addr];
+        require(b >= _amount, 'Cannot withdraw amount > bal');
+
+        // INTERACTIONS
+        ERC20 _a = ERC20(_addr);
+        return _a.transfer(msg.sender, _amount);
+    }
+
+    /** 
+     * @dev Utility to update [tokenId] = collateral mapping.
+     * @param _amount Quantity of Ticket Collateral.
+     * @param _tokenId Nonce of Ticket.
+     */
+    function _updateCollateral(uint256 _amount, uint256 _tokenId) internal {
+        _collateral[_tokenId] = _amount;
+        emit CollateralUpdate(_amount, _tokenId);
+    }
+
+    /** 
+     * @dev Utility to update tokenId Nonce.
+     * @return Nonce.
+     */
+    function _incrementNonce() internal returns (uint256) {
+        oNonce = oNonce.add(INCREMENT);
+        emit NewTicket(oNonce);
+        return oNonce;
     }
 }

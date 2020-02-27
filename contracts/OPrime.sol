@@ -649,7 +649,7 @@ contract ERC721 is Context, ERC165, IERC721 {
 }
 
 
-contract OCall is Context, ERC165, ERC721, IERC721Metadata {
+contract OPrime is Context, ERC165, ERC721, IERC721Metadata {
     // Token name
     string private _name;
 
