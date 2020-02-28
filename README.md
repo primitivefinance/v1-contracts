@@ -1,20 +1,20 @@
 # Carbon Protocol
 ## Financial Smart Contract - Create ERC20 Token Purchase Agreements.
-Party A agrees to sell token X for token Z within time period P.
+Party **A** agrees to sell token **X** for token **Z** within time period **P**.
 
 ## What is it?
-- Party A agrees to sell 1 wEth for 250 DAI until May.
-- Party A agrees to sell 1 MKR for 2 wEth until April.
+- Party A agrees to sell **1 wEth for 250 DAI until May**.
+- Party A agrees to sell **1 MKR for 2 wEth until April**.
 
 ## How does it work?
-- Party A deposits token as collateral.
-- Party A gets a newly minted NFT to represent the agreement parameters.
-- Party A can trade, give, or sell the NFT.
-- Counterparty B can burn the NFT and buy the collateral of Party A, for the price specified.
+- Party A **deposits** token as collateral.
+- Party A gets a newly **minted** NFT to represent the agreement parameters.
+- Party A can **trade**, give, or sell the NFT.
+- Counterparty B can purchase the NFT from Party A. Then they can **burn** the NFT and **buy the collateral** of Party A, for the price specified by the NFT.
 
 ## Why use this?    
-- Ex. Party A agrees to sell 1 wEth for 250 DAI until May. If wEth is worth more than 250 DAI at any point until May, it would be profitable to burn the NFT and purchase the collateral for 250 DAI. This is the same thing as: Counterparty has the right to buy 250 DAI for 1 wEth until April.
-- Ex. Party A agrees to sell 1 MKR for 2 wEth until April. If the collateral asset, MKR, drops to a value that is less than 2 wEth, it would be profitableto burn the NFT and purchase the collateral. This is the same thing as: Counterparty has the right to buy 2 wEth for 1 MKR until April.
+- **Ex.** Party A agrees to sell **1 wEth for 250 DAI until May**. If wEth is worth more than 250 DAI at any point until May, it would be profitable to burn the NFT and purchase the collateral for 250 DAI. This is the same thing as: Counterparty has the right to buy 250 DAI for 1 wEth until April.
+- **Ex.** Party A agrees to sell **1 MKR for 2 wEth until April**. If the collateral asset, MKR, drops to a value that is less than 2 wEth, it would be profitableto burn the NFT and purchase the collateral. This is the same thing as: Counterparty has the right to buy 2 wEth for 1 MKR until April.
 - With the NFT, you can sell or buy assets for a price that can be more or less than market value.
 - Because of this 'optionality' the NFT has its own value. An NFT could have addtional value if the underlying agreement is profitable when exercised.
 
