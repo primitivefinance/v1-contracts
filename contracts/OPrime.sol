@@ -694,13 +694,14 @@ contract OPrime is Context, ERC165, ERC721, IERC721Metadata {
 
     function mint(address to, uint256 tokenId, string memory tokenURI) public returns (bool) {
         require(_controller == msg.sender, 'Sender not controller');
-        _safeMint(to, tokenId);
         _setTokenURI(tokenId, tokenURI);
+        _safeMint(to, tokenId);
         return true;
     }
 
     function burn(address owner, uint256 tokenId) public returns (bool) {
         _burn(owner, tokenId);
+        return true;
     }
 
     /**

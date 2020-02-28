@@ -2,32 +2,14 @@ pragma solidity ^0.6.2;
 
 /*
 Title: Carbon Protocol - Carbonprotocol.finance - PRIME - A financial smart contract agreement.
-Description: Deposit underlying asset (collateral) to mint corresponding ERC-20 token. 
-             Sell token.
-             Token holders can burn the token to either
-             1. trade, or 2. withdraw, the underlying asset,
-             depending on which party deposited the collateral.
-             Underlying asset is priced in strike asset.
-Architecture: User mints a Contract Object called OPrime, basically a certificate that a deposit was made.
+Description: Deposit collateral and mint an NFT called OPrime.
+             The owner of OPrime has the right to purchase the collateral,
+             for an amount designated by the OPrime.
+             The OPrime is burned if this right is executed.
 Authors: Alexander
 .*/
 
 import "./tokens/SafeMath.sol";
-
-
-abstract contract ERC20 {
-    function balanceOf(address _owner) virtual external returns(uint256);
-    function transferFrom(address sender, address recipient, uint256 amount) public virtual returns (bool);
-    function transfer(address recipient, uint256 amount) public virtual returns (bool);
-}
-
-
-abstract contract OPrime {
-    function mint(address to, uint256 tokenId, string memory tokenURI) public virtual returns (bool);
-    function burn(address owner, uint256 tokenId) public virtual returns (bool);
-    function ownerOf(uint256 tokenId) public view virtual returns (address);
-    function balanceOf(address owner) public view virtual returns (uint256);
-}
 
 
 /**
@@ -54,19 +36,69 @@ abstract contract IERC721Receiver {
     public virtual returns (bytes4);
 }
 
+abstract contract ERC20 {
+    function balanceOf(address _owner) virtual external returns(uint256);
+    function transferFrom(address sender, address recipient, uint256 amount) public virtual returns (bool);
+    function transfer(address recipient, uint256 amount) public virtual returns (bool);
+}
+
+abstract contract OPrime {
+    function mint(address to, uint256 tokenId, string memory tokenURI) public virtual returns (bool);
+    function burn(address owner, uint256 tokenId) public virtual returns (bool);
+    function ownerOf(uint256 tokenId) public view virtual returns (address);
+    function balanceOf(address owner) public view virtual returns (uint256);
+}
 
 abstract contract IPrime {
-    event Deposit(address indexed from, address indexed asset, uint256 amount, uint256 indexed tokenId);
-    event Exercise(address indexed from, address indexed asset, uint256 amount, uint256 indexed tokenId);
-    event Close(address indexed from, address indexed asset, uint256 amount, uint256 indexed tokenId);
-    event CollateralUpdate(uint256 _amount, uint256 indexed _tokenId);
-    event NewTicket(uint256 indexed _tokenId);
+    /**
+    * @dev emitted on deposit
+    * @param _user Address of user.
+    * @param _asset Address if deposited asset.
+    * @param _amount Quantity of deposited asset.
+    * @param _tokenId Nonce of minted Ticket -> ID.
+    * @param _timestamp Block.timestamp of deposit.
+    **/
+    event Deposit(
+        address indexed _user,
+        address indexed _asset, 
+        uint256 _amount, 
+        uint256 indexed _tokenId, 
+        uint256 _timestamp
+    );
+
+    event Exercise(
+        address indexed _user, 
+        address indexed _asset, 
+        uint256 _amount, 
+        uint256 indexed _tokenId, 
+        uint256 _timestamp
+    );
+
+    event Close(
+        address indexed _user, 
+        address indexed _asset, 
+        uint256 _amount, 
+        uint256 indexed _tokenId, 
+        uint256 _timestamp
+    );
+
+    event CollateralUpdate(
+        uint256 _amount, 
+        uint256 indexed _tokenId, 
+        uint256 _timestamp
+    );
+    
+    event NewTicket(
+        uint256 indexed _tokenId, 
+        uint256 _timestamp
+    );
 
     function initialize(address _ocall) public virtual returns (bool);
-    function deposit(uint256 _x, address _y, uint256 _z, address _w, uint256 _p, address _g) public virtual returns (bool success);
-    function exercise(uint256 _tokenId) public virtual returns (bool success);
-    function withdraw(uint256 _amount, address _addr) public virtual returns (bool success);
-    function close(uint256 _tokenId) public virtual returns (bool success);
+    function deposit(uint256 _x, address _y, uint256 _z, address _w, uint256 _p, address _g) public virtual returns (bool);
+    function exercise(uint256 _tokenId) public virtual returns (bool);
+    function withdraw(uint256 _amount, address _addr) public virtual returns (bool);
+    function close(uint256 _tokenId) public virtual returns (bool);
+    function getCollateralAmount(uint256 _tokenId) public view virtual returns (uint256);
 }
 
 
@@ -83,25 +115,23 @@ contract Prime is IPrime {
         address g;
     }
 
-    string constant URI = '../URI/OCNFT.json';
-    uint256 public constant INCREMENT = 1;
-    ERC20 public underlying;
+    string constant URI = '';
+    uint256 constant INCREMENT = 1;
     OPrime public oPrime;
-    address public controller;
     uint256 public oNonce;
     
     mapping(uint256 => Ticket) public _tickets; // NFT ID -> Ticket.
     mapping(uint256 => uint256) public _collateral; // NFT ID -> collateral amount.
-    mapping(address => mapping(address => uint256)) private _bank; // Users -> asset address -> withdrawable balance.
+    mapping(address => mapping(address => uint256)) private _bank; // Users -> asset -> withdrawable balance.
 
+    /** 
+     * @dev `msg.sender` Sets the NFT and controller address.
+     * @param _oPrime Address of NFT contract.
+     * @return success
+     */
     function initialize(address _oPrime) public override returns (bool) {
         oPrime = OPrime(_oPrime);
-        controller = address(this);
         return true;
-    }
-
-    function getCollateralAmount(uint256 _tokenId) public view returns (uint256) {
-        return _collateral[_tokenId];
     }
 
     /** 
@@ -115,12 +145,12 @@ contract Prime is IPrime {
      * @return success
      */
     function deposit(
-        uint256 _x,
-        address _y,
-        uint256 _z,
-        address _w,
-        uint256 _p,
-        address _g
+            uint256 _x,
+            address _y,
+            uint256 _z,
+            address _w,
+            uint256 _p,
+            address _g
         ) public override returns (bool success) {
         // CHECKS
         ERC20 y = ERC20(_y);
@@ -134,7 +164,7 @@ contract Prime is IPrime {
         _bank[msg.sender][_y] = _x; // Depositor can withdraw collateral
 
         // INTERACTIONS
-        emit Deposit(msg.sender, _y, _x, oNonce);
+        emit Deposit(msg.sender, _y, _x, oNonce, block.timestamp);
         oPrime.mint(msg.sender, oNonce, URI);
         return y.transferFrom(msg.sender, address(this), _x);
     }
@@ -144,7 +174,7 @@ contract Prime is IPrime {
      * @param _tokenId ID of Ticket.
      * @return success
      */
-    function exercise(uint256 _tokenId) public override returns (bool success) {
+    function exercise(uint256 _tokenId) public override returns (bool) {
         // CHECKS
         uint256 b = oPrime.balanceOf(msg.sender);
         require(b >= 1, 'Cannot send amount > bal');
@@ -172,7 +202,7 @@ contract Prime is IPrime {
         _bank[msg.sender][y] = x; // Payer can withdraw collateral x.
 
         // INTERACTIONS
-        emit Exercise(msg.sender, w, z, _tokenId);
+        emit Exercise(msg.sender, w, z, _tokenId, block.timestamp, block.timestamp);
         return oPrime.burn(msg.sender, _tokenId);
     }
 
@@ -181,7 +211,7 @@ contract Prime is IPrime {
      * @param _tokenId Ticket NFT ID to close.
      * @return success
      */
-    function close(uint256 _tokenId) public override returns (bool success) {
+    function close(uint256 _tokenId) public override returns (bool) {
         // CHECKS
         uint256 b = oPrime.balanceOf(msg.sender);
         require(b >= 1, 'Cannot send amount > bal');
@@ -203,7 +233,7 @@ contract Prime is IPrime {
         _bank[msg.sender][y] = 0;
 
         // INTERACTIONS
-        emit Close(msg.sender, y, x, _tokenId);
+        emit Close(msg.sender, y, x, _tokenId, block.timestamp);
         oPrime.burn(msg.sender, _tokenId);
         return _y.transfer(msg.sender, x);
     }
@@ -214,7 +244,7 @@ contract Prime is IPrime {
      * @param _addr Address of asset.
      * @return success
      */
-    function withdraw(uint256 _amount, address _addr) public override returns (bool success) {
+    function withdraw(uint256 _amount, address _addr) public override returns (bool) {
         // CHECKS
         uint256 b = _bank[msg.sender][_addr];
         require(b >= _amount, 'Cannot withdraw amount > bal');
@@ -231,7 +261,7 @@ contract Prime is IPrime {
      */
     function _updateCollateral(uint256 _amount, uint256 _tokenId) internal {
         _collateral[_tokenId] = _amount;
-        emit CollateralUpdate(_amount, _tokenId);
+        emit CollateralUpdate(_amount, _tokenId, block.timestamp);
     }
 
     /** 
@@ -240,7 +270,16 @@ contract Prime is IPrime {
      */
     function _incrementNonce() internal returns (uint256) {
         oNonce = oNonce.add(INCREMENT);
-        emit NewTicket(oNonce);
+        emit NewTicket(oNonce, block.timestamp);
         return oNonce;
+    }
+
+    /** 
+     * @dev `msg.sender` Get Collateral tied to token ID.
+     * @param _tokenId Nonce of token.
+     * @return uint256 Collateral quantitiy.
+     */
+    function getCollateralAmount(uint256 _tokenId) public view override returns (uint256) {
+        return _collateral[_tokenId];
     }
 }

@@ -106,6 +106,14 @@ contract('Call Test', accounts => {
 
         let _close = await _p.close(_tokenId2);
         await balances();
+
+        async function getMetadata(contract) {
+            let _name = await _o.name();
+            let _symbol = await _o.symbol();
+            console.log(`${_name} is ${_symbol}`);
+        }
+        
+        await getMetadata(_o);
     });
 
 
