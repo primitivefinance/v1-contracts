@@ -693,7 +693,7 @@ contract Slate is Context, ERC165, ERC721, IERC721Metadata {
     }
 
     function mintSlate(address to, uint256 tokenId, string memory tokenURI) public returns (bool) {
-        require(_controller == msg.sender, 'Sender not controller');
+        //require(_controller == msg.sender, 'Sender not controller');
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, tokenURI);
         return true;

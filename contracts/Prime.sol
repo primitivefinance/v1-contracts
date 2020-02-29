@@ -90,11 +90,16 @@ abstract contract IPrime {
         uint256 _timestamp
     );
 
+    event Debug(
+        uint256 _return,
+        bool _success
+    );
+
 
     function createSlate(uint256 _xis, address _yak, uint256 _zed, address _wax, uint256 _pow, address _gem) public virtual returns (bool);
     function exercise(uint256 _tokenId) public virtual returns (bool);
     function withdraw(uint256 _amount, address _addr) public virtual returns (bool);
-    function close(uint256 _tokenId) public virtual returns (bool);
+    function close(uint256 _collateralId, uint256 _burnId) public virtual returns (bool);
 }
 
 
@@ -158,7 +163,7 @@ contract Prime is IPrime, Slate {
      * @param _wax Payment asset address.
      * @param _pow Expiry timestamp.
      * @param _gem Receiver address.
-     * @return success
+     * @return bool Success.
      */
     function createSlate(
         uint256 _xis,
@@ -175,9 +180,8 @@ contract Prime is IPrime, Slate {
 
         // CHECKS
         ERC20 yak = ERC20(_yak);
-        uint256 bal = yak.balanceOf(msg.sender);
         require(
-            bal >= _xis, 
+            yak.balanceOf(msg.sender) >= _xis, 
             'Cannot send amount > bal'
         );
 
@@ -218,7 +222,7 @@ contract Prime is IPrime, Slate {
     /** 
      * @dev `msg.sender` Exercises right to purchase collateral.
      * @param _tokenId ID of Slate.
-     * @return success
+     * @return bool Success.
      */
     function exercise(
         uint256 _tokenId
@@ -240,43 +244,41 @@ contract Prime is IPrime, Slate {
             'Owner is not sender'
         );
 
-        address ace = _slates[_tokenId].ace;
-        uint256 xis = _slates[_tokenId].xis;
-        address yak = _slates[_tokenId].yak;
-        uint256 zed = _slates[_tokenId].zed;
-        address wax = _slates[_tokenId].wax;
-        uint256 pow = _slates[_tokenId].pow;
-        address gem = _slates[_tokenId].gem;
-        ERC20 _yak = ERC20(_slates[_tokenId].yak);
-        ERC20 _wax = ERC20(_slates[_tokenId].wax);
+        // Get Slate
+        Slates memory _slate = _slates[_tokenId];
+        ERC20 _yak = ERC20(_slate.yak);
+        ERC20 _wax = ERC20(_slate.wax);
 
         require(
-            _wax.balanceOf(msg.sender) >= zed, 
-            'Bal < payment amount'
+            _wax.balanceOf(msg.sender) >= _slate.zed, 
+            'Bal cannot be < payment amount'
         );
         
         require(
-            pow >= block.timestamp, 
+            _slate.pow >= block.timestamp, 
             'Expired Slate'
         );
 
         // EFFECTS
         require(
-            _wax.transferFrom(msg.sender, address(this), zed), 
+            _wax.transferFrom(msg.sender, address(this), _slate.zed), 
             'Payment not transferred'
         );
 
-        _bank[ace][yak] = 0; // Depositor cannot withdraw collateral x.
-        _bank[gem][wax] = zed; // Payment receiver can withdraw payment z.
-        _bank[msg.sender][yak] = xis; // Payer can withdraw collateral x.
+        // Depositor cannot withdraw collateral x.
+        _bank[_slate.ace][_slate.yak] = 0;
+        // Payment receiver can withdraw payment z.
+        _bank[_slate.gem][_slate.wax] = _slate.zed;
+        // Payer can withdraw collateral x.
+        _bank[msg.sender][_slate.yak] = _slate.xis;
 
         // INTERACTIONS
         emit SlateExercised(
             msg.sender,
-            xis,
-            yak,
-            zed,
-            wax,
+            _slate.xis,
+            _slate.yak,
+            _slate.zed,
+            _slate.wax,
             _tokenId, 
             block.timestamp
         );
@@ -284,66 +286,82 @@ contract Prime is IPrime, Slate {
     }
 
     /** 
-     * @dev `msg.sender` Close Slate and withdraw collateral as Slate minter.
-     * @param _tokenId Slate NFT ID to close.
-     * @return success
+     * @dev `msg.sender` Closes Slate and 
+     * can withdraw collateral as Slate minter.
+     * Msg.sender can burn any Slate NFT 
+     * that has matching properties when compared
+     * to their minted Slate NFT. This way, 
+     * they can sell their Minted Slate, and if
+     * they need to close the position, 
+     * they can buy another Slate rather than track down 
+     * the exact one they sold/traded away. 
+     * @param _collateralId Slate NFT ID with Minter's collateral.
+     * @param _burnId Slate NFT ID that Minter owns,
+     *  and intends to burn to withdraw collateral.
+     * @return bool Success.
      */
     function close(
-        uint256 _tokenId
+        uint256 _collateralId,
+        uint256 _burnId
     ) 
         public 
         override 
         returns (bool) 
     {
         // CHECKS
-        uint256 bal = balanceOf(msg.sender);
         require(
-            bal >= 1, 
-            'Cannot send amount > bal'
-        );
-
-        address own = ownerOf(_tokenId);
-        require(
-            own == msg.sender, 
-            'Owner is not sender'
-        );
-
-        address ace = _slates[_tokenId].ace;
-        uint256 xis = _slates[_tokenId].xis;
-        address yak = _slates[_tokenId].yak;
-        uint256 pow = _slates[_tokenId].pow;
-        ERC20 _yak = ERC20(_slates[_tokenId].yak);
-
-        require(
-            msg.sender == ace, 
-            'User is not Slate creator'
+            balanceOf(msg.sender) >= 1, 
+            'Cannot send Slate amount > bal'
         );
 
         require(
-            _bank[msg.sender][yak] > 0, 
+            ownerOf(_burnId) == msg.sender, 
+            'Owner of Slate is not sender'
+        );
+
+        // Get Minter of Collateral Slate
+        Slates memory _collateralSlate = _slates[_collateralId];
+
+        // Get Burn Slate
+        Slates memory _burnSlate = _slates[_burnId];
+        ERC20 _yakBurn = ERC20(_burnSlate.yak);
+
+        // Msg.sender burns a Slate that they did not mint.
+        // Slate properties need to match, else the tx reverts.
+        if(_collateralSlate.ace != _burnSlate.ace) {
+            bool burn = _slateCompare(_collateralId, _burnId);
+
+            require(
+                burn,
+                'Slate props do not match'
+            );
+        }
+
+        require(
+            _bank[msg.sender][_burnSlate.yak] > 0, 
             'User has no collateral to claim'
         );
 
         require(
-            pow >= block.timestamp, 
+            _burnSlate.pow >= block.timestamp, 
             'Expired Slate'
         );
 
         // EFFECTS
-        _bank[msg.sender][yak] = 0;
+        _bank[msg.sender][_burnSlate.yak] = 0;
 
         // INTERACTIONS
         emit SlateClosed(
             msg.sender, 
-            xis,
-            yak,
-            _tokenId, 
+            _burnSlate.xis,
+            _burnSlate.yak,
+            _burnId, 
             block.timestamp
         );
 
-        burn(msg.sender, _tokenId);
+        burn(msg.sender, _burnId);
 
-        return _yak.transfer(msg.sender, xis);
+        return _yakBurn.transfer(msg.sender, _burnSlate.xis);
     }
 
     /** 
@@ -386,5 +404,72 @@ contract Prime is IPrime, Slate {
     function _incrementNonce() internal returns (uint256) {
         nonce = nonce.add(INCREMENT);
         return nonce;
+    }
+
+    /** 
+     * @dev Utility to compare hashes of Slate properties.
+     * @return burn Whether Slates match.
+     */
+    function _slateCompare(
+        uint256 _collateralId,
+        uint256 _burnId
+    ) 
+        internal 
+        view 
+        returns
+        (bool burn)
+    {
+        Slates memory _collateralSlate = _slates[_collateralId];
+        Slates memory _burnSlate = _slates[_burnId];
+
+        bytes32 hashCollateral = keccak256(
+            abi.encodePacked(
+                _collateralSlate.xis,
+                _collateralSlate.yak,
+                _collateralSlate.zed,
+                _collateralSlate.wax,
+                _collateralSlate.pow
+            )
+        );
+
+        bytes32 hashBurn = keccak256(
+            abi.encodePacked(
+                _burnSlate.xis,
+                _burnSlate.yak,
+                _burnSlate.zed,
+                _burnSlate.wax,
+                _burnSlate.pow
+            )
+        );
+
+        if(hashCollateral == hashBurn) {
+            return true;
+        } else {
+            revert();
+        }
+    }
+
+    /** 
+     * @dev Public view function to get Slate properties.
+     */
+    function getSlate(uint256 _tokenId) public view returns (
+            address ace,
+            uint256 xis,
+            address yak,
+            uint256 zed,
+            address wax,
+            uint256 pow,
+            address gem
+        ) {
+            Slates memory _slate = _slates[_tokenId];
+            return (
+                _slate.ace,
+                _slate.xis,
+                _slate.yak,
+                _slate.zed,
+                _slate.wax,
+                _slate.pow,
+                _slate.gem
+            );
     }
 }

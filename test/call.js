@@ -6,9 +6,6 @@ const Slate = artifacts.require("Slate");
 
 contract('Call Test', accounts => {
 
-
-
-
     // User Accounts
     var Alice = accounts[0]
     var Bob = accounts[1]
@@ -22,7 +19,6 @@ contract('Call Test', accounts => {
     var Treasury = accounts[9]
     var typeC = 'C'
     var typeP = 'P'
-
 
     // Accounts Array
     var acc_ray = [
@@ -38,7 +34,6 @@ contract('Call Test', accounts => {
         ['Treasury', Treasury]
     ]
 
-
     async function getGas(func, name) {
         /*
         @param func function to get gas from
@@ -52,6 +47,8 @@ contract('Call Test', accounts => {
         let bal = (await web3.utils.fromWei((await contract.balanceOf(address)).toString()));
         console.log(`${name} has a balance of ${bal} ${units}.`);
     }
+
+    
 
     it('createSlate function', async () => {
         let _y = await Underlying.deployed();
@@ -70,6 +67,8 @@ contract('Call Test', accounts => {
         let w = _w.address; // strike address 
         let p = (1588291200).toString(); // unix timestamp for expiration
         let g = Bob; // payment receiver address
+
+        let _txToBob = await _y.transfer(Bob, (10**19).toString());
 
         let xApprove = await _y.approve(_p.address, x);
         let zApprove = await _w.approve(_p.address, z);
@@ -97,16 +96,27 @@ contract('Call Test', accounts => {
         let _withdrawZ = await _p.withdraw(z, w, {from: g});
         await balances();
 
-        let xApprove2 = await _y.approve(_p.address, x);
-        let zApprove2 = await _w.approve(_p.address, z);
+        let xApprove2 = await _y.approve(_p.address, x, {from: Bob});
+        let zApprove2 = await _w.approve(_p.address, z, {from: Bob});
 
-        let _createSlate2 = await _p.createSlate(x, y, z, w, p, g);
+        let _createSlate2 = await _p.createSlate(x, y, z, w, p, g, {from: Bob});
         await balances();
-        console.log(_createSlate2.receipt.logs)
         let _tokenId2 = (_createSlate2.receipt.logs[0].args._tokenId).toString();
+ 
+        //let _transferToken2 = await _p.transferFrom(Bob, Alice, _tokenId2)
 
-        let _close = await _p.close(_tokenId2);
+        let xApprove3 = await _y.approve(_p.address, x);
+        let zApprove3 = await _w.approve(_p.address, z);
+
+        let _createSlate3 = await _p.createSlate(x, y, z, w, p, g);
         await balances();
+        let _tokenId3 = (_createSlate3.receipt.logs[0].args._tokenId).toString();
+
+        let _transferToken3 = await _p.transferFrom(Alice, Bob, _tokenId3)
+
+        let _close = await _p.close(_tokenId2, _tokenId3, {from: Bob});
+        await balances();
+        console.log(_close.receipt.logs)
 
         async function getMetadata(contract) {
             let _name = await _o.name();    
@@ -115,6 +125,9 @@ contract('Call Test', accounts => {
         }
         
         await getMetadata(_o);
+
+        let _getSlate = await _p.getSlate(_tokenId2);
+        //console.log(_getSlate);
     });
 
 
