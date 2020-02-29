@@ -7,14 +7,14 @@ The Slate is the NFT representation of this contractual agreement. It uses the E
 
 ## Functions
 
-`Prime.sol`
+`Prime.sol` - Controls Slate properties and core logic.
 ### Prime has these core functions
 - `createSlate` - Creates a new Slate NFT by depositing collateral.
 - `exercise` - Exercises the right defined by the contract; Right to purchase collateral.
 - `close` - If a party wishes to withdraw their collateral, they can burn the Slate NFT minted by them, or purchase another Slate NFT with identical properties.
 - `withdraw` - Asset transfers out of Prime.sol use this withdraw method rather than sending directly to the payment receiver.
 
-`Slate.sol`
+`Slate.sol` - Basically ERC-721 Metadata contract, which Prime.sol inherents.
 ### Slates have the following properties:
 - ace - Minter of Slate NFT
 - xis - Collateral asset quantity
