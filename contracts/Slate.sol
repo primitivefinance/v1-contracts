@@ -649,15 +649,15 @@ contract ERC721 is Context, ERC165, IERC721 {
 }
 
 
-contract OPrime is Context, ERC165, ERC721, IERC721Metadata {
+contract Slate is Context, ERC165, ERC721, IERC721Metadata {
     // Token name
-    string private _name;
+    string public _name;
 
     // Token symbol
-    string private _symbol;
+    string public _symbol;
 
     // Base URI
-    string private _baseURI;
+    string public _baseURI;
 
     // Controller
     address public _controller;
@@ -672,7 +672,7 @@ contract OPrime is Context, ERC165, ERC721, IERC721Metadata {
      *
      *     => 0x06fdde03 ^ 0x95d89b41 ^ 0xc87b56dd == 0x5b5e139f
      */
-    bytes4 private constant _INTERFACE_ID_ERC721_METADATA = 0x5b5e139f;
+    bytes4 public constant _INTERFACE_ID_ERC721_METADATA = 0x5b5e139f;
 
     /**
      * @dev Constructor function
@@ -692,10 +692,10 @@ contract OPrime is Context, ERC165, ERC721, IERC721Metadata {
         return true;
     }
 
-    function mint(address to, uint256 tokenId, string memory tokenURI) public returns (bool) {
+    function mintSlate(address to, uint256 tokenId, string memory tokenURI) public returns (bool) {
         require(_controller == msg.sender, 'Sender not controller');
-        _setTokenURI(tokenId, tokenURI);
         _safeMint(to, tokenId);
+        _setTokenURI(tokenId, tokenURI);
         return true;
     }
 

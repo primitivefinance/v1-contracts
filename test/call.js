@@ -2,7 +2,7 @@ const assert = require('assert').strict;
 const Underlying = artifacts.require("Underlying");
 const Strike = artifacts.require("Strike");
 const Prime = artifacts.require("Prime");
-const OPrime = artifacts.require("TPrime");
+const Slate = artifacts.require("Slate");
 
 contract('Call Test', accounts => {
 
@@ -53,16 +53,16 @@ contract('Call Test', accounts => {
         console.log(`${name} has a balance of ${bal} ${units}.`);
     }
 
-    it('Deposit function', async () => {
+    it('createSlate function', async () => {
         let _y = await Underlying.deployed();
         let _w = await Strike.deployed();
         let _p = await Prime.deployed();
-        let _o = await OPrime.deployed();
+        let _o = await Slate.deployed();
 
         let _tokenId = 1;
 
-        let _init = await _p.initialize(_o.address);
-        let _wetController = await _o.setController(_p.address);
+        //let _init = await _p.initialize(_o.address);
+        let _getController = await _o.setController(_p.address);
 
         let x = (10**19).toString(); // underlying amt
         let y = _y.address; // underlying address
@@ -87,7 +87,7 @@ contract('Call Test', accounts => {
 
         await balances();
 
-        let _deposit = await _p.deposit(x, y, z, w, p, g);
+        let _createSlate = await _p.createSlate(x, y, z, w, p, g);
         await balances();
 
         let _exercise = await _p.exercise(_tokenId);
@@ -100,15 +100,16 @@ contract('Call Test', accounts => {
         let xApprove2 = await _y.approve(_p.address, x);
         let zApprove2 = await _w.approve(_p.address, z);
 
-        let _deposit2 = await _p.deposit(x, y, z, w, p, g);
+        let _createSlate2 = await _p.createSlate(x, y, z, w, p, g);
         await balances();
-        let _tokenId2 = (_deposit2.receipt.logs[2].args.tokenId).toString();
+        console.log(_createSlate2.receipt.logs)
+        let _tokenId2 = (_createSlate2.receipt.logs[0].args._tokenId).toString();
 
         let _close = await _p.close(_tokenId2);
         await balances();
 
         async function getMetadata(contract) {
-            let _name = await _o.name();
+            let _name = await _o.name();    
             let _symbol = await _o.symbol();
             console.log(`${_name} is ${_symbol}`);
         }
