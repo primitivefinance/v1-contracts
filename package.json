@@ -20,6 +20,9 @@
   },
   "homepage": "https://github.com/Alexangelj/carbon#readme",
   "dependencies": {
-    "@openzeppelin/contracts": "^2.5.0"
+    "@openzeppelin/contracts": "^2.5.0",
+    "@truffle/hdwallet-provider": "^1.0.32",
+    "dotenv": "^8.2.0",
+    "truffle-hdwallet-provider": "^1.0.17"
   }
 }

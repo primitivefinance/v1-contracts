@@ -1,44 +1,225 @@
 {
-  "contractName": "ERC20",
+  "contractName": "IPrime",
   "abi": [
     {
+      "anonymous": false,
       "inputs": [
         {
-          "internalType": "address",
-          "name": "_owner",
-          "type": "address"
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "_return",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "bool",
+          "name": "_success",
+          "type": "bool"
         }
       ],
-      "name": "balanceOf",
-      "outputs": [
+      "name": "Debug",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
         {
+          "indexed": true,
+          "internalType": "address",
+          "name": "_user",
+          "type": "address"
+        },
+        {
+          "indexed": false,
           "internalType": "uint256",
-          "name": "",
+          "name": "_collateralQty",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "_collateral",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "_tokenId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "_timestamp",
           "type": "uint256"
         }
       ],
-      "stateMutability": "nonpayable",
-      "type": "function"
+      "name": "SlateClosed",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "_user",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "_collateralQty",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "_collateral",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "_paymentQty",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "_payment",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "_tokenId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "_timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "SlateExercised",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "_user",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "_collateralQty",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "_collateral",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "_paymentQty",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "_payment",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "_tokenId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "_timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "SlateMinted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "_user",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "_collateralQty",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "_collateral",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "_timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "Withdrawal",
+      "type": "event"
     },
     {
       "inputs": [
         {
-          "internalType": "address",
-          "name": "sender",
-          "type": "address"
+          "internalType": "uint256",
+          "name": "_xis",
+          "type": "uint256"
         },
         {
           "internalType": "address",
-          "name": "recipient",
+          "name": "_yak",
           "type": "address"
         },
         {
           "internalType": "uint256",
-          "name": "amount",
+          "name": "_zed",
           "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_wax",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_pow",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_gem",
+          "type": "address"
         }
       ],
-      "name": "transferFrom",
+      "name": "createSlate",
       "outputs": [
         {
           "internalType": "bool",
@@ -52,17 +233,60 @@
     {
       "inputs": [
         {
-          "internalType": "address",
-          "name": "recipient",
-          "type": "address"
-        },
-        {
           "internalType": "uint256",
-          "name": "amount",
+          "name": "_tokenId",
           "type": "uint256"
         }
       ],
-      "name": "transfer",
+      "name": "exercise",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_addr",
+          "type": "address"
+        }
+      ],
+      "name": "withdraw",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_collateralId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_burnId",
+          "type": "uint256"
+        }
+      ],
+      "name": "close",
       "outputs": [
         {
           "internalType": "bool",
@@ -74,7 +298,7 @@
       "type": "function"
     }
   ],
-  "metadata": "{\"compiler\":{\"version\":\"0.6.2+commit.bacdbe57\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_owner\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"recipient\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"transfer\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"recipient\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"methods\":{}},\"userdoc\":{\"methods\":{}}},\"settings\":{\"compilationTarget\":{\"/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/Prime.sol\":\"ERC20\"},\"evmVersion\":\"constantinople\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/Prime.sol\":{\"keccak256\":\"0x962a4f86ed8e846fd85e33427dc31b44e2ac28779c2637bc0ff93d07afd34e18\",\"urls\":[\"bzz-raw://bf3024e66c0998c9c71fcf99e303c6f388939392097ac8373e06b0bca7eef482\",\"dweb:/ipfs/QmPBJQoKH6Z3gQ7DavEoXH3JoPEPe3RNo1VA23xKrCsEPw\"]},\"/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/Slate.sol\":{\"keccak256\":\"0x45511b46625ef72f55ad4f34ff06961a8799cf4218faceea20233ce80b369354\",\"urls\":[\"bzz-raw://b4bbc244b7a12ce5707b0cbdc829bca1395f6d0a19d2980efd42605f19275d8a\",\"dweb:/ipfs/QmdnN7xF9qjAP4Eyc6wSmMZ7XGH7zepPaiHBig8Xx4tMaX\"]},\"/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/tokens/SafeMath.sol\":{\"keccak256\":\"0xd2483163645530baa8569a2249aee0f6877f617126c377db05991691e1c478dd\",\"urls\":[\"bzz-raw://26c5ec0b4490d9303fec67dfc332e9eb5d8c2f31cd1c0319ad8e1304bb247044\",\"dweb:/ipfs/QmbAARLa4CSbXLRyfUdE1XYCrW3zHga5iNhPbbF8zXSmno\"]}},\"version\":1}",
+  "metadata": "{\"compiler\":{\"version\":\"0.6.2+commit.bacdbe57\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_return\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bool\",\"name\":\"_success\",\"type\":\"bool\"}],\"name\":\"Debug\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_user\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_collateralQty\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_collateral\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"_tokenId\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_timestamp\",\"type\":\"uint256\"}],\"name\":\"SlateClosed\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_user\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_collateralQty\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"_collateral\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_paymentQty\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"_payment\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"_tokenId\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_timestamp\",\"type\":\"uint256\"}],\"name\":\"SlateExercised\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_user\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_collateralQty\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"_collateral\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_paymentQty\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"_payment\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"_tokenId\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_timestamp\",\"type\":\"uint256\"}],\"name\":\"SlateMinted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_user\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_collateralQty\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"_collateral\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_timestamp\",\"type\":\"uint256\"}],\"name\":\"Withdrawal\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_collateralId\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_burnId\",\"type\":\"uint256\"}],\"name\":\"close\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_xis\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"_yak\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_zed\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"_wax\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_pow\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"_gem\",\"type\":\"address\"}],\"name\":\"createSlate\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_tokenId\",\"type\":\"uint256\"}],\"name\":\"exercise\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"_addr\",\"type\":\"address\"}],\"name\":\"withdraw\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"methods\":{}},\"userdoc\":{\"methods\":{}}},\"settings\":{\"compilationTarget\":{\"/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/Prime.sol\":\"IPrime\"},\"evmVersion\":\"constantinople\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/Prime.sol\":{\"keccak256\":\"0x962a4f86ed8e846fd85e33427dc31b44e2ac28779c2637bc0ff93d07afd34e18\",\"urls\":[\"bzz-raw://bf3024e66c0998c9c71fcf99e303c6f388939392097ac8373e06b0bca7eef482\",\"dweb:/ipfs/QmPBJQoKH6Z3gQ7DavEoXH3JoPEPe3RNo1VA23xKrCsEPw\"]},\"/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/Slate.sol\":{\"keccak256\":\"0x45511b46625ef72f55ad4f34ff06961a8799cf4218faceea20233ce80b369354\",\"urls\":[\"bzz-raw://b4bbc244b7a12ce5707b0cbdc829bca1395f6d0a19d2980efd42605f19275d8a\",\"dweb:/ipfs/QmdnN7xF9qjAP4Eyc6wSmMZ7XGH7zepPaiHBig8Xx4tMaX\"]},\"/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/tokens/SafeMath.sol\":{\"keccak256\":\"0xd2483163645530baa8569a2249aee0f6877f617126c377db05991691e1c478dd\",\"urls\":[\"bzz-raw://26c5ec0b4490d9303fec67dfc332e9eb5d8c2f31cd1c0319ad8e1304bb247044\",\"dweb:/ipfs/QmbAARLa4CSbXLRyfUdE1XYCrW3zHga5iNhPbbF8zXSmno\"]}},\"version\":1}",
   "bytecode": "0x",
   "deployedBytecode": "0x",
   "sourceMap": "",
@@ -21137,7 +21361,7 @@
   },
   "networks": {},
   "schemaVersion": "3.0.23",
-  "updatedAt": "2020-03-01T00:25:43.661Z",
+  "updatedAt": "2020-03-01T00:25:43.674Z",
   "devdoc": {
     "methods": {}
   },
