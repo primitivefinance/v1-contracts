@@ -4,6 +4,7 @@ import createBreakpoints from '@material-ui/core/styles/createBreakpoints'
 export const colors = {
     white: "#fff",
     blue: "#2c3b57",
+    lightblue: "#F0F8FF",
 }
 
 const breakpoints = createBreakpoints({
@@ -23,7 +24,7 @@ const mainTheme = {
         fontWeight: '400',
         userNextVariants: true,
         h1: {
-            fontSize: '2.0rem',
+            fontSize: '1.5rem',
             fontWeight: '350',
             [breakpoints.up('md')]: {
                 fontSize: '2.0rem',
@@ -35,7 +36,21 @@ const mainTheme = {
             [breakpoints.up('md')]: {
                 fontSize: '1.0rem',
             }
-        }
+        },
+        h3: {
+            fontSize: '0.50rem',
+            fontWeight: '250',
+            [breakpoints.up('md')]: {
+                fontSize: '0.70rem',
+            }
+        },
+        h4: {
+            fontSize: '0.40rem',
+            fontWeight: '250',
+            [breakpoints.up('md')]: {
+                fontSize: '0.45rem',
+            }
+        },
     },
     type: 'light',
     overrides: {
@@ -52,6 +67,7 @@ const mainTheme = {
     palette: {
         primary: {
             main: colors.blue,
+            lightblue: colors.lightblue,
         },
         background: {
             paper: colors.white,

@@ -11,6 +11,7 @@ import {
 
 import mainTheme from './theme'
 import Home from './components/home';
+import Prime from './components/prime/prime';
 
 class App extends Component {
   render () {
@@ -20,6 +21,7 @@ class App extends Component {
           <Switch>
             <Route exact path='/' component={Home}/>
             <Route path='/home' component={Home}/>
+            <Route path='/prime' component={Prime}/>
           </Switch>
         </Router>
       </MuiThemeProvider>
