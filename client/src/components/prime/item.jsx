@@ -4,11 +4,12 @@ import { withStyles } from '@material-ui/core/styles';
 import { 
     Card,
     Typography,
-    Grid
+    Grid,
+    Box
 } from '@material-ui/core';
 import { colors } from '../../theme/theme';
-import { ItemTypes } from './constants';
-import { useDrag } from 'react-dnd';
+import { Draggable } from 'react-beautiful-dnd';
+
 
 const styles = theme => ({
     root: {
@@ -26,22 +27,22 @@ const styles = theme => ({
     item: {
         flex: '1',
         height: '2.5vh',
-        width: '100%',
         display: 'flex',
         alignItems: 'center',
         flexDirection: 'row',
-        borderRadius: '16px',
+        borderRadius: '4px',
         padding: '24px',
+        margin: '8px',
         cursor: 'pointer',
         transition: 'background-color 0.2s linear',
         [theme.breakpoints.up('sm')]: {
             height: '2.5vh',
             minWidth: '20%',
             minHeight: '2vh',
-        }
+        },
     },
     prime: {
-        backgroundColor: colors.white,
+        backgroundColor: props => (props.isDragging ? colors.palered : colors.white),
         '&:hover': {
             backgroundColor: colors.lightblue,
             '& .title': {
@@ -65,29 +66,45 @@ const styles = theme => ({
             paddingBottom: '24px'
         }
     },
+    dragging: {
+        opacity: 1,
+        cursor: 'pointer',
+        flex: 1,
+        display: 'flex',
+        width: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        flexDirection: 'column',
+        margin: '16px',
+        backgroundColor: colors.palered,
+        [theme.breakpoints.up('sm')]: {
+            flexDirection: 'row',
+        }
+    },
 });
 
 
 class Item extends Component {
-    constructor (props) {
-        super()
-    }
     render() {
         const { classes, t } = this.props;
-        const [{isDragging}, drag] = useDrag({
-            item: { type: ItemTypes.VARIABLE },
-            collect: monitor => ({
-                isDragging: !!monitor.isDragging(),
-            }),
-        })
+
         return (
-            <div className={ classes.root } ref={drag}>
-                <Card className={`${classes.item} ${classes.prime}`} onClick={ () => {}} >
-                    <Typography variant={'h2'} className={`${classes.title}`}>
-                        {this.props.item.name}
-                    </Typography>
-                </Card>
-            </div>
+            <Draggable draggableId={this.props.task.id} index={this.props.index}>
+                {(provided, snapshot) => (
+                    <Box
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                        ref={provided.innerRef}
+                        isDragging={snapshot.isDragging}
+                    >
+                        <Card className={`${classes.item} ${classes.prime}`} onClick={ () => {}}>
+                        <Typography variant={'h2'} className={`${classes.title}`}>
+                            {this.props.task.content}
+                        </Typography>
+                        </Card>
+                    </Box>
+                )}
+            </Draggable>
         );
     }
 }

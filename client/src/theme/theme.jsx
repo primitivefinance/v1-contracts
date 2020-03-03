@@ -5,6 +5,8 @@ export const colors = {
     white: "#fff",
     blue: "#2c3b57",
     lightblue: "#F0F8FF",
+    palered: "#F08080",
+    lightred: "#FFA07A",
 }
 
 const breakpoints = createBreakpoints({

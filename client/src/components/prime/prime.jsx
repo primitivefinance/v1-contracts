@@ -1,17 +1,18 @@
-import React, { Component } from 'react';
+import React, { Component, PureComponent } from 'react';
 import Item from './item';
-import Board from './board';
 import { withRouter } from "react-router-dom";
 import { withStyles } from '@material-ui/core/styles';
 import { 
     Card,
     Typography,
-    Grid
+    Grid,
+    Box
 } from '@material-ui/core';
 import { colors } from '../../theme/theme';
 
-import HTML5Backend from 'react-dnd-html5-backend';
-import { DndProvider } from 'react-dnd';
+import { DragDropContext } from 'react-beautiful-dnd';
+import initialData from './constants';
+import Column from './column';
 
 const styles = theme => ({
     root: {
@@ -26,26 +27,15 @@ const styles = theme => ({
             flexDirection: 'row',
         }
     },
-    item: {
-        flex: '1',
-        height: '2.5vh',
-        width: '100%',
+    boards: {
+        flex: 1,
         display: 'flex',
-        alignItems: 'center',
+        width: '80%',
+        height: '100vh',
         flexDirection: 'column',
-        borderRadius: '16px',
-        padding: '24px',
-        margin: '4px',
-        cursor: 'pointer',
-        transition: 'background-color 0.2s linear',
         [theme.breakpoints.up('sm')]: {
-            height: '2.5vh',
-            minWidth: '20%',
-            minHeight: '2vh',
+            flexDirection: 'row',
         }
-    },
-    board: {
-
     },
     prime: {
         backgroundColor: colors.white,
@@ -75,38 +65,125 @@ const styles = theme => ({
 });
 
 
+class InnerList extends PureComponent {
+    shouldComponentUpdate(nextProps) {
+        if(
+            nextProps.colun === this.props.column &&
+            nextProps.taskMap === this.props.taskMap &&
+            nextProps.index === this.props.index
+        ) {
+            return false;
+        }
+        return true;
+    }
+
+    render() {
+        const { column, taskMap, index } = this.props;
+        const tasks = column.taskIds.map(taskId => taskMap[taskId]);
+        return <Column key={column.id} column={column} tasks={tasks} />;
+    }
+}
+
 class Prime extends Component {
     constructor(props){
         super()
-        this.state = {
-            items: [
-                { id: 1, name: 'Item 1'},
-                { id: 2, name: 'Item 2'},
-                { id: 3, name: 'Item 3'},
-                { id: 4, name: 'Item 4'},
-            ],
-        }
+        this.state = initialData;
+        
     
     }
+
+    onDragStart = () => {
+
+    };
+
+    onDragUpdate = () => {
+
+    };
+
+    onDragEnd = result => {
+        const { destination, source, draggableId } = result;
+        if(!destination) {
+            return;
+        }
+
+        if(
+            destination.droppableId === source.droppableId &&
+            destination.index === source.index
+        ) {
+            return;
+        }
+
+        const start = this.state.columns[source.droppableId];
+        const finish = this.state.columns[destination.droppableId];
+
+        if(start === finish) {
+            const newTaskIds = Array.from(start.taskIds);
+            newTaskIds.splice(source.index, 1);
+            newTaskIds.splice(destination.index, 0, draggableId);
+
+            const newColumn = {
+                ...start,
+                taskIds: newTaskIds,
+            };
+
+            const newState = {
+                ...this.state,
+                columns: {
+                    ...this.state.columns,
+                    [newColumn.id]: newColumn,
+                },
+            };
+
+            this.setState(newState);
+            return;
+        }
+
+        const startTaskIds = Array.from(start.taskIds);
+        startTaskIds.splice(source.index, 1);
+        const newStart = {
+            ...start,
+            taskIds: startTaskIds,
+        };
+
+        const finishtaskIds = Array.from(finish.taskIds);
+        finishtaskIds.splice(destination.index, 0, draggableId);
+        const newFinish = {
+            ...finish,
+            taskIds: finishtaskIds,
+        };
+
+        const newState = {
+            ...this.state,
+            columns: {
+                ...this.state.columns,
+                [newStart.id]: newStart,
+                [newFinish.id]: newFinish,
+            },
+        };
+        this.setState(newState);
+
+    };
     
     render() {
         const { classes, t } = this.props; 
         return (
-            <DndProvider backend={HTML5Backend}>
-                <div className={classes.root}>
-                    <Grid container className={classes.root}>
-                        <Grid item xs={4} spacing={4}>
-                                {this.state.items.map((item, index) => (
-                                    <Item key={item.id} item={item} />
-                                ))}
-                        </Grid>
-                        <Grid item xs={8}>
-                            <Board />
-                        </Grid>
-                    </Grid>
-                </div>
-            </DndProvider>
-        );
+            <DragDropContext onDragEnd={this.onDragEnd}>
+                <Box className={classes.boards}>
+                    {this.state.columnOrder.map((columnId, index) => {
+                        const column = this.state.columns[columnId];
+                        return (
+                            <InnerList
+                                key={column.id}
+                                column={column}
+                                taskMap={this.state.tasks}
+                                index={index}
+                            />
+                        );
+                    })}
+                </Box>
+            </DragDropContext>
+        )
+        
     }
 }
 
