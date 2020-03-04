@@ -1,22 +1,37 @@
 const initialData = {
-    tasks: {
-        'task-1': {id: 'task-1', content: 'Task 1'},
-        'task-2': {id: 'task-2', content: 'Task 2'},
-        'task-3': {id: 'task-3', content: 'Task 3'},
+    items: {
+        'asset-1': {id: 'asset-1', content: 'DAI', type: 'asset', index: 'asset'},
+        'expiration-2': {id: 'expiration-2', content: 'expiration 2', type: 'expiration', index: 'expiration',},
+        'address-3': {id: 'address-3', content: 'address 3', type: 'address', index: 'address',},
+        'asset-2': {id: 'asset-2', content: 'MKR', type: 'asset', index: 'asset'},
     },
     columns: {
-        'column-1': {
-            id: 'column-1',
-            title: 'Parameters',
-            taskIds: ['task-1', 'task-2', 'task-3']
+        'asset': {
+            id: 'asset',
+            title: 'Assets',
+            itemIds: ['asset-1', 'asset-2',],
+            board: false,
         },
-        'column-2': {
-            id: 'column-2',
+        'board': {
+            id: 'board',
             title: 'Board',
-            taskIds: [],
-        }
+            itemIds: [],
+            board: true,
+        },
+        'expiration': {
+            id: 'expiration',
+            title: 'Expiration Dates',
+            itemIds: ['expiration-2',],
+            board: false,
+        },
+        'address': {
+            id: 'address',
+            title: 'Addresses',
+            itemIds: ['address-3'],
+            board: false,
+        },
     },
-    columnOrder: ['column-1', 'column-2'],
+    columnOrder: ['asset', 'expiration', 'address', 'board',],
 };
 
 export default initialData;

@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component, PureComponent } from 'react';
 import { withStyles } from '@material-ui/core/styles';
 import { colors } from '../../theme/theme';
 import { 
@@ -9,6 +9,9 @@ import {
 } from '@material-ui/core';
 import { Droppable } from 'react-beautiful-dnd';
 import Item from './item';
+import Asset from './asset';
+import Expiration from './expiration';
+import Address from './address';
 
 const styles = theme => ({
     board: {
@@ -54,39 +57,90 @@ const styles = theme => ({
 });
 
 
-class InnerList extends Component {
+class InnerList extends PureComponent {
     shouldComponentUpdate(nextProps) {
-        if(nextProps.tasks === this.props.tasks) {
+        if(nextProps.items === this.props.items) {
             return false;
         }
         return true;
     }
 
     render () {
-        return this.props.tasks.map((task, index) => (
-            <Item key={task.id} task={task} index={index} />
-        ));
+        const { boardItems, handleDelete, column } = this.props;
+        return (
+            this.props.items.map((item, index) => {
+                let _item = (item.id).split('-')[0];
+                switch(_item) {
+                    case 'asset':
+                        return (
+                            <Asset 
+                                key={item.id} 
+                                item={item} 
+                                index={index} 
+                                boardItems={boardItems}
+                                handleDelete={handleDelete}
+                                column={column}
+                            />
+                        );
+                        break;
+                    case 'expiration':
+                        return (
+                            <Expiration 
+                                key={item.id} 
+                                item={item} 
+                                index={index} 
+                                boardItems={boardItems}
+                                handleDelete={handleDelete}
+                                column={column}
+                            />
+                        );
+                        break;
+                    case 'address':
+                        return (
+                            <Address 
+                                key={item.id} 
+                                item={item} 
+                                index={index} 
+                                boardItems={boardItems}
+                                handleDelete={handleDelete}
+                                column={column}
+                            />
+                        );
+                        break;
+                }
+            })
+        );
     }
 }
 
 class Column extends Component {
     render() {
-        const { classes, t } = this.props;
+        const { classes, handleDelete, column } = this.props;
         return(
             <Card className={`${classes.board} ${classes.prime}`}>
                 <Typography variant={'h1'} className={`${classes.title} title`}>
                     {this.props.column.title}
                 </Typography>
-                <Droppable droppableId={this.props.column.id}>
+                <Droppable 
+                    droppableId={this.props.column.id}
+                    isDropDisabled={this.props.isDropDisabled}
+                >
                     {(provided) => (
-                        <Typography
+                        <>
+                        <Box
                             className={classes.list}
                             ref={provided.innerRef}
                             {...provided.droppableProps}
                         >
-                            <InnerList tasks={this.props.tasks} />
+                            <InnerList 
+                                items={this.props.items}
+                                boardItems={this.props.boardItems} 
+                                handleDelete={handleDelete}
+                                column={column}
+                            />
                             {provided.placeholder}
-                        </Typography>
+                        </Box>
+                        </>
                     )}
                 </Droppable>
             </Card>

@@ -5,10 +5,16 @@ import {
     Card,
     Typography,
     Grid,
-    Box
+    Box,
+    Button,
+    IconButton
 } from '@material-ui/core';
 import { colors } from '../../theme/theme';
 import { Draggable } from 'react-beautiful-dnd';
+import DeleteIcon from '@material-ui/icons/Delete';
+import RestoreIcon from '@material-ui/icons/Restore';
+
+
 
 
 const styles = theme => ({
@@ -28,7 +34,7 @@ const styles = theme => ({
         flex: '1',
         height: '2.5vh',
         display: 'flex',
-        alignItems: 'center',
+        justifyContent: 'space-between',
         flexDirection: 'row',
         borderRadius: '4px',
         padding: '24px',
@@ -42,7 +48,7 @@ const styles = theme => ({
         },
     },
     prime: {
-        backgroundColor: props => (props.isDragging ? colors.palered : colors.white),
+        backgroundColor: props => (props.isDragDisabled ? colors.palered : colors.white),
         '&:hover': {
             backgroundColor: colors.lightblue,
             '& .title': {
@@ -78,30 +84,41 @@ const styles = theme => ({
     },
     icon: {
         display: 'flex',
-        paddingLeft: '70%',
+        //paddingLeft: '10%',
     },
 });
 
 
-class Item extends Component {
+class Address extends Component {
+
+    
     render() {
-        const { classes, t, boardItems, item, index } = this.props;
+        const { classes, t, boardItems, item, index, handleDelete, column } = this.props;
         let isDragDisabled;
-        //if(boardItems) {
-        //    for(var i = 0; i < boardItems.length; i++) {
-        //        let _item = (item.id).split('-')[0];
-        //        let _boardItem = (boardItems[i]).split('-')[0];
-        //        if(_item === _boardItem) {
-        //            isDragDisabled = true;
-        //            console.log(isDragDisabled, 'item == board item')
-        //            //return;
-        //        } else {
-        //            console.log(isDragDisabled, ' else')
-        //            isDragDisabled = false;
-        //            //return;
-        //        }
-        //    } 
-        //}
+        let counter = 0;
+        // CONDITIONAL LOGIC FOR ASSET COMPONENTS
+        if(boardItems) {
+            let boardLimit = 1;
+            for(var i = 0; i < boardItems.length; i++) {
+                let _boardItem = (boardItems[i]).split('-')[0];
+                // if the board item is an asset and the item id is not the board item,
+                // then dont let the asset components be draggable.
+                if(_boardItem === 'address') {
+                    counter++;
+                }
+
+                if(counter >= boardLimit) {
+                    isDragDisabled = true;
+                    console.log('BOARD LIMIT REACHED FOR ADDRESS')
+                    console.log('ITEM ID IS: ', item.id)
+                } else {
+                    isDragDisabled = false;
+                }
+            }
+            
+        } else {
+            isDragDisabled = false;
+        }
 
         return (
             <Draggable 
@@ -123,6 +140,12 @@ class Item extends Component {
                             <Typography variant={'h3'} className={`${classes.icon}`}>
                                 {this.props.item.type == 'asset' ? 'true' : 'false'}
                             </Typography>
+                            <IconButton
+                                color='primary'
+                                onClick={() => handleDelete(item.id, column.id)} 
+                            >
+                                <RestoreIcon />
+                            </IconButton>
                         </Card>
                     </Box>
                 )}
@@ -131,4 +154,4 @@ class Item extends Component {
     }
 }
 
-export default (withRouter(withStyles(styles)(Item)));
+export default (withRouter(withStyles(styles)(Address)));
