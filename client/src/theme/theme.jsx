@@ -9,6 +9,8 @@ export const colors = {
     lightred: "#FFA07A",
     lightgreen: "#00FA9A",
     green: "#98FB98",
+    disabledGreen: '#8FBC8F',
+    grey: '#C0C0C0',
 }
 
 const breakpoints = createBreakpoints({

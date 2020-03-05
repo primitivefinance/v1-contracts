@@ -17,6 +17,7 @@ import Switch from '@material-ui/core/Switch';
 import Paper from '@material-ui/core/Paper';
 import Fade from '@material-ui/core/Fade';
 import Zoom from '@material-ui/core/Zoom';
+import Link from '@material-ui/core/Link';
 
 
 
@@ -171,11 +172,13 @@ class Home extends Component {
                                     <Typography variant={'h1'} className={ `${classes.brand} ${classes.title} title`}>
                                         Select a product
                                         </Typography>
-                                <Card className={`${classes.card} ${classes.prime}`} onClick={ () => { this.navigate('/prime') }}>
+                                <Link href='/prime' underline='none'>
+                                <Card className={`${classes.card} ${classes.prime}`} href='/prime' /* onClick={ () => { this.navigate('/prime') }} */>
                                     <GraphicEqIcon className={ `${classes.icon} icon` }/>
                                     <Typography variant={'h1'} className={ `${classes.title} title`}>Prime</Typography>
                                     <Typography variant={'h2'} className={ `${classes.title} title`}>ERC-20 Derivative</Typography>
                                 </Card>
+                                </Link>
                             </Grid>
                         </Grid>
                     </Fade>

@@ -1,36 +1,25 @@
 import React, { Component, PureComponent } from 'react';
+import { Droppable } from 'react-beautiful-dnd';
 import { withStyles } from '@material-ui/core/styles';
 import { colors } from '../../theme/theme';
-import { 
-    Card,
-    Typography,
-    Grid,
-    Box,
-    IconButton,
-    Button,
-    InputBase,
-} from '@material-ui/core';
-import { Droppable } from 'react-beautiful-dnd';
-import Item from './item';
-import Asset from './asset';
-import Expiration from './expiration';
-import Address from './address';
+import Card from '@material-ui/core/Card';
+import Typography from '@material-ui/core/Typography';
+import Button from '@material-ui/core/Button';
+import IconButton from '@material-ui/core/IconButton';
+import Box from '@material-ui/core/Box';
 import AddCircleIcon from '@material-ui/icons/AddCircle';
-import TextField from '@material-ui/core/TextField';
 import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogContentText from '@material-ui/core/DialogContentText';
 import DialogTitle from '@material-ui/core/DialogTitle';
-import InputLabel from '@material-ui/core/InputLabel';
 import Input from '@material-ui/core/Input';
 import MenuItem from '@material-ui/core/MenuItem';
 import FormControl from '@material-ui/core/FormControl';
 import Select from '@material-ui/core/Select';
-import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
-
-
-
+import Asset from './asset';
+import Expiration from './expiration';
+import Address from './address';
 
 
 const styles = theme => ({
@@ -104,7 +93,19 @@ const styles = theme => ({
     },
     menuItem: {
         backgroundColor: props => props.isDuplicate ? colors.palered : colors.lightblue
-    }
+    },
+    txBoard: {
+        backgroundColor: props => props.isValid ? colors.white : colors.white,
+        '&:hover': {
+            backgroundColor: props => props.isValid ? colors.white : colors.white,
+        },
+    },
+    submit: {
+        backgroundColor: props => props.isValid ? colors.lightgreen : colors.white,
+        '&:hover': {
+            backgroundColor: props => props.isValid ? colors.lightgreen : colors.palered,
+        },
+    },
 });
 
 
@@ -117,7 +118,6 @@ function FormDiaglogue(props) {
     const items = props.items; // items in column
     const assetIds = assets['assetIds'];
     const expirationIds = expirations['expirationIds'];
-    const inactiveAssets = [];
     
     
     function hasDuplicates(array) {
@@ -137,7 +137,6 @@ function FormDiaglogue(props) {
 
     const handleClickOpen = () => {
       setOpen(true);
-      console.log(inactiveAssets)
     };
 
     const handleClose = () => {
@@ -153,22 +152,8 @@ function FormDiaglogue(props) {
     };
 
     let selectOption;
-    
-    let isDuplicate = false;
     switch(props.columnId) {
         case 'asset':
-            // LOGIC FOR CONDITIONAL CSS - FIX LATER
-            /* const combinedArray = [];
-            for(var i = 0; i < items.length; i++) {
-                combinedArray.push((items[i]).id);
-            }
-            for(var i = 0; i < assetIds.length; i++) {
-                combinedArray.push(assetIds[i]);
-            }
-            if(hasDuplicates(combinedArray)) {
-                console.log(combinedArray, 'has duplicates')
-            } */
-
             selectOption = assetIds.map((asset) => {
                 return(
                     <MenuItem value={asset}>{(assets[asset]).content}</MenuItem>
@@ -188,7 +173,6 @@ function FormDiaglogue(props) {
             });
             break;
         case 'address':
-            //selectOption = <InputBase />
             break;
     }
 
@@ -327,34 +311,45 @@ class Column extends Component {
 
     render() {
         const { 
-            classes, 
+            classes,
+            isDropDisabled,
             column, 
             handleUndo, 
             handleAdd,
             handleDelete,
+            items,
+            assetMap,
+            expirationMap,
+            boardItems,
         } = this.props;
 
         let form = <FormDiaglogue 
-                    items={this.props.items}
+                    items={items}
                     columnId={column.id}
                     handleAddForm={this.handleAddForm}
                     classes={classes}
-                    assetMap={this.props.assetMap}
-                    expirationMap={this.props.expirationMap}
+                    assetMap={assetMap}
+                    expirationMap={expirationMap}
                 />
         let boardForm = <Button
+                            className={classes.submit}
+                            disabled={(this.props.isValid) ? false : true}
                             onClick={ () => {this.handleBoard(column.id);}}    
                             >Submit Board
                         </Button>
 
         return(
-            <Card className={`${classes.board} ${classes.prime}`}>
+            <Card className={
+                    (column.id === 'board') 
+                        ? `${classes.txBoard} ${classes.board} ${classes.prime}` 
+                            : `${classes.board} ${classes.prime}`
+                    }>
                 <Typography variant={'h1'} className={`${classes.title} title`}>
-                    {this.props.column.title}
+                    {column.title}
                 </Typography>
                 <Droppable 
-                    droppableId={this.props.column.id}
-                    isDropDisabled={this.props.isDropDisabled}
+                    droppableId={column.id}
+                    isDropDisabled={isDropDisabled}
                 >
                     {(provided) => (
                         <>
@@ -364,8 +359,8 @@ class Column extends Component {
                             {...provided.droppableProps}
                         >
                             <InnerList 
-                                items={this.props.items}
-                                boardItems={this.props.boardItems}
+                                items={items}
+                                boardItems={boardItems}
                                 column={column}
                                 handleUndo={handleUndo}
                                 handleAdd={handleAdd}
@@ -376,15 +371,11 @@ class Column extends Component {
                         </>
                     )}
                 </Droppable>
-                {(column.id === 'board') ? boardForm : form}
-                {/* <FormDiaglogue 
-                    items={this.props.items}
-                    columnId={column.id}
-                    handleAddForm={this.handleAddForm}
-                    classes={classes}
-                    assetMap={this.props.assetMap}
-                    expirationMap={this.props.expirationMap}
-                /> */}
+                {
+                    (column.id === 'board') 
+                        ? boardForm 
+                            : form
+                }
             </Card>
         );
     }
