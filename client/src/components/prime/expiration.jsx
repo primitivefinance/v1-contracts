@@ -93,7 +93,7 @@ class Expiration extends Component {
 
     
     render() {
-        const { classes, t, boardItems, item, index, handleDelete, column } = this.props;
+        const { classes, t, boardItems, item, index, handleUndo, column } = this.props;
         let isDragDisabled;
         let counter = 0;
         // CONDITIONAL LOGIC FOR ASSET COMPONENTS
@@ -142,7 +142,7 @@ class Expiration extends Component {
                             </Typography>
                             <IconButton
                                 color='primary'
-                                onClick={() => handleDelete(item.id, column.id)} 
+                                onClick={() => handleUndo(item.id, column.id)} 
                             >
                                 <RestoreIcon />
                             </IconButton>

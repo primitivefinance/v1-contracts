@@ -79,7 +79,16 @@ class InnerList extends PureComponent {
     }
 
     render() {
-        const { column, itemMap, index, isDropDisabled, boardItems, handleDelete } = this.props;
+        const { 
+            column, 
+            itemMap, 
+            index, 
+            isDropDisabled, 
+            boardItems, 
+            handleUndo, 
+            handleAdd,
+            handleDelete,
+        } = this.props;
         const items = column.itemIds.map(itemId => itemMap[itemId]);
         return <Column 
                     key={column.id} 
@@ -87,7 +96,11 @@ class InnerList extends PureComponent {
                     items={items} 
                     isDropDisabled={isDropDisabled} 
                     boardItems={boardItems}
+                    handleUndo={handleUndo}
+                    handleAdd={handleAdd}
                     handleDelete={handleDelete}
+                    assetMap={this.props.assetMap}
+                    expirationMap={this.props.expirationMap}
                 />;
     }
 }
@@ -96,6 +109,8 @@ class Prime extends Component {
     constructor(props){
         super()
         this.state = initialData;
+        this.handleUndo = this.handleUndo.bind(this);
+        this.handleAdd = this.handleAdd.bind(this);
         this.handleDelete = this.handleDelete.bind(this);
     }
 
@@ -207,7 +222,7 @@ class Prime extends Component {
         });
     };
 
-    handleDelete = (itemId, columnId) => {
+    handleUndo = (itemId, columnId) => {
         // RETURN ITEM TO ORIGINAL POSITION
         let currentIndex = columnId;
         let initialIndex = this.state.items[itemId].index;
@@ -248,12 +263,73 @@ class Prime extends Component {
         this.setState(newState);
     }
 
-    handleAdd = () => {
-        
+    handleDelete = (itemId, columnId) => {
+        // DELETE ITEM
+        let currentIndex = columnId;
+
+        const start = this.state.columns[columnId];
+
+        const startItemIds = Array.from(start.itemIds);
+        startItemIds.splice(startItemIds.indexOf(itemId), 1);
+        const newStart = {
+            ...start,
+            itemIds: startItemIds,
+        };
+
+
+        let boardItems = this.state.boardItems ? this.state.boardItems : [];
+        boardItems.splice(boardItems.indexOf(itemId), 1);
+        console.log(boardItems)
+
+        const newState = {
+            ...this.state,
+            columns: {
+                ...this.state.columns,
+                [newStart.id]: newStart,
+            },
+        };
+        this.setState(newState);
+    }
+
+    handleAdd = (symbol, columnId) => {
+        let currentIndex = columnId;
+
+        const start = this.state.columns[columnId];
+
+        const startItemIds = Array.from(start.itemIds);
+        const item =  {
+            'asset-3' : {
+                id: 'asset-3',
+                content: 'SNX',
+                type: 'asset',
+                index: 'asset',
+            }
+        }
+
+        const snx = this.state.items['asset-snx'];
+        const items = this.state.items;
+        items['asset-3'] = item['asset-3'];
+
+
+        startItemIds.push(items[symbol].id);
+        const newStart = {
+            ...start,
+            itemIds: startItemIds,
+        };
+
+        const newState = {
+            ...this.state,
+            items: items,
+            columns: {
+                ...this.state.columns,
+                [newStart.id]: newStart,
+            },
+        };
+        this.setState(newState);
     }
     
     render() {
-        const { classes, t } = this.props;
+        const { classes } = this.props;
         return (
             <DragDropContext 
                 onBeforeDragStart={this.onBeforeDragStart}
@@ -263,17 +339,18 @@ class Prime extends Component {
                 <Box className={classes.boards}>
                     {this.state.columnOrder.map((columnId, index) => {
                         const column = this.state.columns[columnId];
-                        const type = this.state.homeType;
-                        const isDropDisabled = false;
                         return (
                             <InnerList
                                 key={column.id}
                                 column={column}
                                 itemMap={this.state.items}
                                 index={index}
-                                isDropDisabled={isDropDisabled}
                                 boardItems={this.state.boardItems}
+                                handleUndo={this.handleUndo}
+                                handleAdd={this.handleAdd}
                                 handleDelete={this.handleDelete}
+                                assetMap={this.state.assets}
+                                expirationMap={this.state.expirations}
                             />
                         );
                     })}

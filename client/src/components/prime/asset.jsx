@@ -13,7 +13,8 @@ import { colors } from '../../theme/theme';
 import { Draggable } from 'react-beautiful-dnd';
 import DeleteIcon from '@material-ui/icons/Delete';
 import RestoreIcon from '@material-ui/icons/Restore';
-
+import AddCircleIcon from '@material-ui/icons/AddCircle';
+import HighlightOffIcon from '@material-ui/icons/HighlightOff';
 
 
 
@@ -93,7 +94,16 @@ class Asset extends Component {
 
     
     render() {
-        const { classes, t, boardItems, item, index, handleDelete, column } = this.props;
+        const { 
+            classes, 
+            boardItems, 
+            item, 
+            index, 
+            column, 
+            handleUndo,
+            handleDelete,
+        } = this.props;
+
         let isDragDisabled;
         let counter = 0;
         // CONDITIONAL LOGIC FOR ASSET COMPONENTS
@@ -141,9 +151,15 @@ class Asset extends Component {
                             </Typography>
                             <IconButton
                                 color='primary'
-                                onClick={() => handleDelete(item.id, column.id)} 
+                                onClick={() => handleUndo(item.id, column.id)} 
                             >
                                 <RestoreIcon />
+                            </IconButton>
+                            <IconButton
+                                color='primary'
+                                onClick={() => handleDelete(item.id, column.id)} 
+                            >
+                                <HighlightOffIcon />
                             </IconButton>
                         </Card>
                     </Box>

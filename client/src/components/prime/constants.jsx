@@ -1,15 +1,28 @@
 const initialData = {
     items: {
-        'asset-1': {id: 'asset-1', content: 'DAI', type: 'asset', index: 'asset'},
+        'asset-dai': {id: 'asset-dai', content: 'DAI', type: 'asset', index: 'asset'},
         'expiration-2': {id: 'expiration-2', content: 'expiration 2', type: 'expiration', index: 'expiration',},
         'address-3': {id: 'address-3', content: 'address 3', type: 'address', index: 'address',},
-        'asset-2': {id: 'asset-2', content: 'MKR', type: 'asset', index: 'asset'},
+        'asset-mkr': {id: 'asset-mkr', content: 'MKR', type: 'asset', index: 'asset'},
+        'asset-snx': {id: 'asset-snx', content: 'SNX', type: 'asset', index: 'asset'},
+    },
+    assets: {
+        'assetIds' : ['asset-snx', 'asset-dai', 'asset-mkr',],
+        'asset-snx': {id: 'asset-snx', content: 'SNX', type: 'asset', index: 'asset'},
+        'asset-dai': {id: 'asset-dai', content: 'DAI', type: 'asset', index: 'asset'},
+        'asset-mkr': {id: 'asset-mkr', content: 'MKR', type: 'asset', index: 'asset'},
+    },
+    expirations: {
+        'expiration-2': {id: 'expiration-2', content: 'expiration 2', type: 'expiration', index: 'expiration',},
+    },
+    addresses: {
+        'address-3': {id: 'address-3', content: 'address 3', type: 'address', index: 'address',},
     },
     columns: {
         'asset': {
             id: 'asset',
             title: 'Assets',
-            itemIds: ['asset-1', 'asset-2',],
+            itemIds: ['asset-dai', 'asset-mkr',],
             board: false,
         },
         'board': {
