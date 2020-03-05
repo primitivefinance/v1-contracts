@@ -314,15 +314,15 @@ class Column extends Component {
     constructor(props) {
         super(props)
         this.handleAddForm = this.handleAddForm.bind(this);
-        this.handleBoardSubmit = this.handleBoardSubmit.bind(this);
+        this.handleBoard = this.handleBoard.bind(this);
     }
 
     handleAddForm = (symbol, columnId, address) => {
         this.props.handleAdd(symbol, columnId, address);
     }
 
-    handleBoardSubmit = () => {
-        console.log('HANDLE BOARD SUBMIT')
+    handleBoard = (columnId) => {
+        this.props.handleBoardSubmit(columnId);
     }
 
     render() {
@@ -343,7 +343,7 @@ class Column extends Component {
                     expirationMap={this.props.expirationMap}
                 />
         let boardForm = <Button
-                            onClick={this.handleBoardSubmit}    
+                            onClick={ () => {this.handleBoard(column.id);}}    
                             >Submit Board
                         </Button>
 

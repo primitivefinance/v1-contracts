@@ -14,7 +14,7 @@ import {
 import { colors } from '../../theme/theme';
 
 import { DragDropContext } from 'react-beautiful-dnd';
-import initialData from './constants';
+import INITIAL_CONTEXT from './constants';
 import Column from './column';
 import Alert from '@material-ui/lab/Alert';
 
@@ -132,6 +132,7 @@ class InnerList extends PureComponent {
             handleUndo, 
             handleAdd,
             handleDelete,
+            handleBoardSubmit,
         } = this.props;
         const items = column.itemIds.map(itemId => itemMap[itemId]);
         return <Column 
@@ -145,6 +146,7 @@ class InnerList extends PureComponent {
                     handleDelete={handleDelete}
                     assetMap={this.props.assetMap}
                     expirationMap={this.props.expirationMap}
+                    handleBoardSubmit={handleBoardSubmit}
                 />;
     }
 }
@@ -152,15 +154,16 @@ class InnerList extends PureComponent {
 class Prime extends Component {
     constructor(props){
         super()
-        this.state = initialData;
+        this.state = INITIAL_CONTEXT;
         this.handleUndo = this.handleUndo.bind(this);
         this.handleAdd = this.handleAdd.bind(this);
         this.handleDelete = this.handleDelete.bind(this);
-    }
+        this.handleBoardSubmit = this.handleBoardSubmit.bind(this);
+    };
 
     onBeforeDragStart = start => {
 
-    }
+    };
 
     onDragStart = start => {
         const homeIndex = this.state.columnOrder.indexOf(start.source.droppableId);
@@ -305,7 +308,7 @@ class Prime extends Component {
             },
         };
         this.setState(newState);
-    }
+    };
 
     handleDelete = (itemId, columnId) => {
         // DELETE ITEM
@@ -333,7 +336,7 @@ class Prime extends Component {
             },
         };
         this.setState(newState);
-    }
+    };
 
     handleAdd = (itemId, columnId, address) => {
         if(columnId === 'address') {
@@ -382,8 +385,40 @@ class Prime extends Component {
             },
         };
         this.setState(newState);
-    }
+    };
     
+    handleBoardSubmit = (columnId) => {
+        console.log('HANDLE BOARD SUBMIT');
+        // GET BOARD STATE AND LOAD INTO PAYLOAD FOR ETHEREUM TX
+        const boardIds = this.state.columns[columnId].itemIds;
+        const payloadArray = [];
+        let collateralAsset;
+        let addressReceiver;
+        let expirationDate;
+        for(var i = 0; i < boardIds.length; i++) {
+            const payload = this.state.items[(boardIds[i])].payload;
+            const type = this.state.items[(boardIds[i])].type;
+            if(payload) {
+                payloadArray.push([type, payload]);
+            }
+        }
+        for(var x = 0; x < payloadArray.length; x++) {
+            switch(payloadArray[x][0]) {
+                case 'expiration':
+                    expirationDate = payloadArray[x][1];
+                    break;
+                case 'asset':
+                    collateralAsset = payloadArray[x][1];
+                    break;
+                case 'address':
+                    addressReceiver = payloadArray[x][1];
+                    break;
+            }
+        }
+
+        console.log(expirationDate, collateralAsset, addressReceiver)
+    };
+
     render() {
         const { classes } = this.props;
         return (
@@ -407,6 +442,7 @@ class Prime extends Component {
                                 handleDelete={this.handleDelete}
                                 assetMap={this.state.assets}
                                 expirationMap={this.state.expirations}
+                                handleBoardSubmit={this.handleBoardSubmit}
                             />
                                 
                             

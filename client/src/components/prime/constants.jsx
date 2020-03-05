@@ -1,10 +1,10 @@
-const initialData = {
+const INITIAL_CONTEXT = {
     items: {
         'asset-dai': {id: 'asset-dai', content: 'DAI', type: 'asset', index: 'asset'},
-        'expiration-2': {id: 'expiration-2', content: 'expiration 2', type: 'expiration', index: 'expiration',},
-        'address-3': {id: 'address-3', content: 'address 3', type: 'address', index: 'address',},
-        'asset-mkr': {id: 'asset-mkr', content: 'MKR', type: 'asset', index: 'asset'},
-        'asset-snx': {id: 'asset-snx', content: 'SNX', type: 'asset', index: 'asset'},
+        'expiration-2': {id: 'expiration-2', content: 'expiration 2', type: 'expiration', index: 'expiration', payload: '1583430138',},
+        'address-3': {id: 'address-3', content: 'address 3', type: 'address', index: 'address', payload: 'carbonprotocol.eth',},
+        'asset-mkr': {id: 'asset-mkr', content: 'MKR', type: 'asset', index: 'asset', payload: '0xMAKER',},
+        'asset-snx': {id: 'asset-snx', content: 'SNX', type: 'asset', index: ''},
     },
     assets: {
         'assetIds' : ['asset-snx', 'asset-dai', 'asset-mkr',],
@@ -49,4 +49,4 @@ const initialData = {
     columnOrder: ['asset', 'expiration', 'address', 'board',],
 };
 
-export default initialData;
+export default INITIAL_CONTEXT;
