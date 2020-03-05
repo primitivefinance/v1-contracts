@@ -7,13 +7,16 @@ import {
     Typography,
     Grid,
     Box,
-    Button
+    Button,
+    Popover,
+    Modal,
 } from '@material-ui/core';
 import { colors } from '../../theme/theme';
 
 import { DragDropContext } from 'react-beautiful-dnd';
 import initialData from './constants';
 import Column from './column';
+import Alert from '@material-ui/lab/Alert';
 
 const styles = theme => ({
     root: {
@@ -64,6 +67,47 @@ const styles = theme => ({
         }
     },
 });
+
+function SimplePopover(props) {
+    const classes = props.classes;
+    const [anchorEl, setAnchorEl] = React.useState(null);
+  
+    const handleClick = event => {
+      setAnchorEl(event.currentTarget);
+    };
+  
+    const handleClose = () => {
+      setAnchorEl(null);
+    };
+  
+    const open = Boolean(anchorEl);
+    const id = open ? 'simple-popover' : undefined;
+  
+    return (
+      <div>
+        <Button aria-describedby={id} variant="contained" color="primary" onClick={handleClick}>
+          Open Popover
+        </Button>
+        <Popover
+          id={id}
+          open={open}
+          anchorEl={anchorEl}
+          onClose={handleClose}
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'center',
+          }}
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'center',
+          }}
+        >
+          <Typography>The content of the Popover.</Typography>
+        </Popover>
+      </div>
+    );
+  }
+
 
 
 class InnerList extends PureComponent {
@@ -291,27 +335,39 @@ class Prime extends Component {
         this.setState(newState);
     }
 
-    handleAdd = (symbol, columnId) => {
+    handleAdd = (itemId, columnId, address) => {
+        if(columnId === 'address') {
+            console.log(address)
+            return;
+        }
+
+
         let currentIndex = columnId;
 
         const start = this.state.columns[columnId];
 
         const startItemIds = Array.from(start.itemIds);
-        const item =  {
-            'asset-3' : {
-                id: 'asset-3',
-                content: 'SNX',
-                type: 'asset',
-                index: 'asset',
+        const items = this.state.items;
+
+        // IF ITEM IS IN COLUMN, DONT ADD ANOTHER
+        function hasDuplicates(array) {
+            var valuesSoFar = Object.create(null);
+            for (var i = 0; i < array.length; ++i) {
+                var value = array[i];
+                if (value in valuesSoFar) {
+                    console.log('DUPLICATES FOUND')
+                    return true;
+                }
+                valuesSoFar[value] = true;
             }
+            console.log('NO DUPLICATES FOUND')
+            return false;
         }
 
-        const snx = this.state.items['asset-snx'];
-        const items = this.state.items;
-        items['asset-3'] = item['asset-3'];
-
-
-        startItemIds.push(items[symbol].id);
+        startItemIds.push(items[itemId].id);
+        if(hasDuplicates(startItemIds)) {
+            return;
+        }
         const newStart = {
             ...start,
             itemIds: startItemIds,
@@ -352,10 +408,13 @@ class Prime extends Component {
                                 assetMap={this.state.assets}
                                 expirationMap={this.state.expirations}
                             />
+                                
+                            
                         );
                     })}
                 </Box>
             </DragDropContext>
+            
         )
         
     }

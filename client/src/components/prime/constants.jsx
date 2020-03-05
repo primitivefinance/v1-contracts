@@ -13,9 +13,11 @@ const initialData = {
         'asset-mkr': {id: 'asset-mkr', content: 'MKR', type: 'asset', index: 'asset'},
     },
     expirations: {
+        'expirationIds': ['expiration-2'],
         'expiration-2': {id: 'expiration-2', content: 'expiration 2', type: 'expiration', index: 'expiration',},
     },
     addresses: {
+        'addressIds': ['address-3'],
         'address-3': {id: 'address-3', content: 'address 3', type: 'address', index: 'address',},
     },
     columns: {

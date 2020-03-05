@@ -7,7 +7,8 @@ import {
     Grid,
     Box,
     IconButton,
-    Button
+    Button,
+    InputBase,
 } from '@material-ui/core';
 import { Droppable } from 'react-beautiful-dnd';
 import Item from './item';
@@ -27,6 +28,7 @@ import MenuItem from '@material-ui/core/MenuItem';
 import FormControl from '@material-ui/core/FormControl';
 import Select from '@material-ui/core/Select';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
+
 
 
 
@@ -100,21 +102,38 @@ const styles = theme => ({
         bottomBorder: '0px',
         variant: 'outlined',
     },
+    menuItem: {
+        backgroundColor: props => props.isDuplicate ? colors.palered : colors.lightblue
+    }
 });
 
 
 function FormDiaglogue(props) {
     const [open, setOpen] = React.useState(false);
-    const [symbol, setSymbol] = React.useState('');
+    const [itemId, setItemId] = React.useState('');
+    const [address, setAddress] = React.useState('');
     const assets = props.assetMap; // all assets
-    const expiration = props.expirationMap; // all expirations
+    const expirations = props.expirationMap; // all expirations
     const items = props.items; // items in column
     const assetIds = assets['assetIds'];
+    const expirationIds = expirations['expirationIds'];
     const inactiveAssets = [];
-    console.log(assets)
-    console.log(props.columnId, items, assetIds)
     
-    //console.log(inactiveAssets)
+    
+    function hasDuplicates(array) {
+        var valuesSoFar = Object.create(null);
+        for (var i = 0; i < array.length; ++i) {
+            var value = array[i];
+            if (value in valuesSoFar) {
+                console.log('DUPLICATES FOUND')
+                return true;
+            }
+            valuesSoFar[value] = true;
+        }
+        console.log('NO DUPLICATES FOUND')
+        return false;
+    }
+
 
     const handleClickOpen = () => {
       setOpen(true);
@@ -126,8 +145,71 @@ function FormDiaglogue(props) {
     };
 
     const handleChange = event => {
-        setSymbol(String(event.target.value) || '');
+        setItemId(String(event.target.value) || '');
       };
+
+    const handleAddress = event => {
+      setAddress(String(event.target.value) || '');
+    };
+
+    let selectOption;
+    
+    let isDuplicate = false;
+    switch(props.columnId) {
+        case 'asset':
+            // LOGIC FOR CONDITIONAL CSS - FIX LATER
+            /* const combinedArray = [];
+            for(var i = 0; i < items.length; i++) {
+                combinedArray.push((items[i]).id);
+            }
+            for(var i = 0; i < assetIds.length; i++) {
+                combinedArray.push(assetIds[i]);
+            }
+            if(hasDuplicates(combinedArray)) {
+                console.log(combinedArray, 'has duplicates')
+            } */
+
+            selectOption = assetIds.map((asset) => {
+                return(
+                    <MenuItem value={asset}>{(assets[asset]).content}</MenuItem>
+                )
+            });
+            break;
+        case 'expiration':
+            selectOption = expirationIds.map((expiration) => {
+                return(
+                    <MenuItem 
+                        value={expiration} 
+                        className={props.classes.menuItem}
+                    >
+                        {(expirations[expiration]).content}
+                    </MenuItem>
+                )
+            });
+            break;
+        case 'address':
+            //selectOption = <InputBase />
+            break;
+    }
+
+    let addressForm = <Input 
+                        id='address-input' 
+                        value={address}
+                        onChange={handleAddress}
+                        input={<Input/>}
+                      />;
+                      
+    let selectForm = <Select
+                      value={itemId}
+                      onChange={handleChange}
+                      input={<Input />}
+                      className={props.classes.select}
+                      placeholder="ERC-20"
+                      variant='outlined'
+                    >  
+                      {selectOption}
+                    </Select>;
+
 
     return (
         <div>
@@ -139,35 +221,23 @@ function FormDiaglogue(props) {
                 <AddCircleIcon />
             </IconButton>
             <Dialog open={open} onClose={handleClose} aria-labelledby="form-dialog-title">
-                <DialogTitle id="form-dialog-title">Add an Asset</DialogTitle>
+                <DialogTitle id="form-dialog-title">Add an {(props.columnId).charAt(0).toUpperCase() + (props.columnId).slice(1)}</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                      Choose from the available assets.
+                    {(props.columnId === 'address') ? 'Enter a valid Ethereum Address' : 'Choose from the available options.'}
+                      
                     </DialogContentText>
                     <FormControl className={`${props.classes.formControl} ${props.classes.inputLabel}`}>
-                      <Select
-                        value={symbol}
-                        onChange={handleChange}
-                        input={<Input />}
-                        className={props.classes.select}
-                        placeholder="ERC-20"
-                        variant='outlined'
-                      >
-                        {assetIds.map((asset) => {
-                            return(
-                                <MenuItem value={asset}>{(assets[asset]).content}</MenuItem>
-                            )
-                        })}
-                      </Select>
+                      {(props.columnId === 'address') ? addressForm : selectForm}
                     </FormControl>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleClose} color="primary">
                       Cancel
                     </Button>
-                    <Button 
+                    <Button
                         onClick={ () => {
-                            props.handleAddForm(symbol, props.columnId); 
+                            props.handleAddForm(itemId, props.columnId, address); 
                             handleClose();
                         }} 
                         color="primary"
@@ -246,8 +316,8 @@ class Column extends Component {
         this.handleAddForm = this.handleAddForm.bind(this);
     }
 
-    handleAddForm = (symbol, columnId) => {
-        this.props.handleAdd(symbol, columnId);
+    handleAddForm = (symbol, columnId, address) => {
+        this.props.handleAdd(symbol, columnId, address);
     }
 
     render() {
