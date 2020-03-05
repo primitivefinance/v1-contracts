@@ -314,10 +314,15 @@ class Column extends Component {
     constructor(props) {
         super(props)
         this.handleAddForm = this.handleAddForm.bind(this);
+        this.handleBoardSubmit = this.handleBoardSubmit.bind(this);
     }
 
     handleAddForm = (symbol, columnId, address) => {
         this.props.handleAdd(symbol, columnId, address);
+    }
+
+    handleBoardSubmit = () => {
+        console.log('HANDLE BOARD SUBMIT')
     }
 
     render() {
@@ -328,6 +333,20 @@ class Column extends Component {
             handleAdd,
             handleDelete,
         } = this.props;
+
+        let form = <FormDiaglogue 
+                    items={this.props.items}
+                    columnId={column.id}
+                    handleAddForm={this.handleAddForm}
+                    classes={classes}
+                    assetMap={this.props.assetMap}
+                    expirationMap={this.props.expirationMap}
+                />
+        let boardForm = <Button
+                            onClick={this.handleBoardSubmit}    
+                            >Submit Board
+                        </Button>
+
         return(
             <Card className={`${classes.board} ${classes.prime}`}>
                 <Typography variant={'h1'} className={`${classes.title} title`}>
@@ -357,14 +376,15 @@ class Column extends Component {
                         </>
                     )}
                 </Droppable>
-                <FormDiaglogue 
+                {(column.id === 'board') ? boardForm : form}
+                {/* <FormDiaglogue 
                     items={this.props.items}
                     columnId={column.id}
                     handleAddForm={this.handleAddForm}
                     classes={classes}
                     assetMap={this.props.assetMap}
                     expirationMap={this.props.expirationMap}
-                />
+                /> */}
             </Card>
         );
     }
