@@ -12,7 +12,7 @@ import Box from '@material-ui/core/Box';
 import ArrowRightIcon from '@material-ui/icons/ArrowRight';
 import Slide from '@material-ui/core/Slide';
 import Collapse from '@material-ui/core/Collapse';
-
+import LinkM from '@material-ui/core/Link';
 import INITIAL_CONTEXT from './constants';
 import Column from './column';
 import Web3 from 'web3';
@@ -129,7 +129,7 @@ function SimplePopover(props) {
         </Popover>
       </div>
     );
-  }
+}
 
 
 class InnerList extends PureComponent {
@@ -779,8 +779,8 @@ class Prime extends Component {
             );
         }
         return (
-            <Page>
-            <div className={classes.root}>
+            <Page key='prime'>
+            <div className={classes.root} key='prime'>
                 <DragDropContext 
                     onBeforeDragStart={this.onBeforeDragStart}
                     onDragStart={this.onDragStart}
@@ -809,12 +809,18 @@ class Prime extends Component {
                         })}
                     </Box>
                 </DragDropContext>
+                <LinkM 
+                    href={`/inventory/${this.state.account}`}
+                    /* style={{ textDecoration: 'none' }} */
+                    underline='none'
+                >
                 <Button 
                     className={classes.transitionButton} 
-                    onClick={() => this.goToPrime()}
+                    /* onClick={() => this.goToPrime()} */
                 >
                     Next Page{<ArrowRightIcon />}
                 </Button>
+                </LinkM>
             </div>
             </Page>
         );

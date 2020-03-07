@@ -44,9 +44,9 @@ class App extends Component {
                       render={() => (
                         <>
                           <Route exact path='/' component={Home}/>
-                          <Route exact path='/home' component={Home}/>
-                          <Route exact path='/prime' component={Prime}/>
-                          <Route exact path='/inventory/:address' component={Inventory}/>
+                          <Route path='/home' component={Home}/>
+                          <Route path='/prime' component={Prime}/>
+                          <Route path='/inventory/:address' component={Inventory}/>
                         </>
                       )}
                     >

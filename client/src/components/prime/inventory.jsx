@@ -8,6 +8,7 @@ import Typography from '@material-ui/core/Typography';
 import Card from '@material-ui/core/Card';
 import Button from '@material-ui/core/Button';
 import Paper from '@material-ui/core/Paper';
+import Popover from '@material-ui/core/Popover';
 import Grid from '@material-ui/core/Grid';
 import Box from '@material-ui/core/Box';
 import ArrowRightIcon from '@material-ui/icons/ArrowRight';
@@ -21,6 +22,7 @@ import TOKENS_CONTEXT from './tokenAddresses';
 import Underlying from '../../artifacts/Underlying.json';
 import Strike from '../../artifacts/Strike.json';
 import Page from './page';
+import Fade from '@material-ui/core/Fade';
 
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
@@ -30,7 +32,9 @@ import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import { Tab } from '@material-ui/core';
 import Erc20 from '../../artifacts/Strike.json';
-
+import loading from '../home/830.svg';
+import Prime from './prime';
+import Interface from './interface';
 
 const styles = theme => ({
     root: {
@@ -128,8 +132,55 @@ const styles = theme => ({
     primeTable: {
 
     },
+    address: {
+        textOverflow: 'ellipsis',
+        size: 'small',
+        maxWidth: '0%',
+        width: '0%',
+        minWidth: '0%',
+
+    },
 });
 
+function SimplePopover(props) {
+    const classes = props.classes;
+    const [anchorEl, setAnchorEl] = React.useState(null);
+  
+    const handleClick = event => {
+      setAnchorEl(event.currentTarget);
+    };
+  
+    const handleClose = () => {
+      setAnchorEl(null);
+    };
+  
+    const open = Boolean(anchorEl);
+    const id = open ? 'simple-popover' : undefined;
+  
+    return (
+      <div>
+        <Button aria-describedby={id} variant="contained" onClick={handleClick}>
+          Address
+        </Button>
+        <Popover
+          id={id}
+          open={open}
+          anchorEl={anchorEl}
+          onClose={handleClose}
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'center',
+          }}
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'center',
+          }}
+        >
+          <Typography>{props.address}</Typography>
+        </Popover>
+      </div>
+    );
+}
 
 class Inventory extends Component {
     constructor(props){
@@ -148,12 +199,17 @@ class Inventory extends Component {
         this.getPrimeProperties = this.getPrimeProperties.bind(this);
         this.getPastEvents = this.getPastEvents.bind(this);
         this.getPrimeInventory = this.getPrimeInventory.bind(this);
+        this.openPrime = this.openPrime.bind(this);
+        this.primeExercise = this.primeExercise.bind(this);
+        this.primeClose = this.primeClose.bind(this);
 
 
         this.state = {
             web3: props.web3,
             goToPrime: props.goToPrime,
+            primeOpen: false,
         }
+        
     };
 
     componentDidMount = async () => {
@@ -168,6 +224,7 @@ class Inventory extends Component {
         await this.getPrimeProperties('2');
         await this.getPastEvents('SlateMinted');
         await this.getPrimeInventory();
+        
     };
 
     getWeb3 = () =>
@@ -486,6 +543,58 @@ class Inventory extends Component {
         console.log(this.state.userMintedPrimes[account])
     };
 
+    getWalletInventory = async () => {
+        /* const web3 = this.state.web3;
+        const account = await this.getAccount();
+        const networkId = await this.getNetwork();
+
+        function createData(symbol, balance) {
+            return { symbol, balance };
+        };
+        let walletRows = [];
+
+        let userBalances = [];
+        for(var i = 0; i < userMintedPrimes.length; i++) {
+            if(this.getOwnerOfPrime(userMintedPrimes[i])) {
+                userBalances.push(userMintedPrimes[i]);
+            } else {
+                console.log('Does not own: ', userMintedPrimes[i])
+            }
+        };
+        
+        for(var i = 0; i < userBalances.length; i++) {
+            let properties = await this.getPrimeProperties(userBalances[i]);
+            let yakInstance = new web3.eth.Contract(
+                Erc20.abi,
+                networkId && properties['yak'],
+            );
+            let yakSymbol = await yakInstance.methods.symbol().call();
+
+            let waxInstance = new web3.eth.Contract(
+                Erc20.abi,
+                networkId && properties['wax'],
+            );
+            let waxSymbol = await waxInstance.methods.symbol().call();
+
+            let tokenId = userBalances[i];
+            let xis = await web3.utils.fromWei(properties['xis']);
+            let zed = await web3.utils.fromWei(properties['zed']);
+            const date = new Date(properties['pow'] * 1000);
+            let pow = (date.toDateString());
+            let data = createData(
+                tokenId,
+                xis,
+                yakSymbol,
+                zed,
+                waxSymbol,
+                pow,
+                properties['gem'],
+        );
+
+            walletRows.push(data)
+            console.log({walletRows}) */
+    };
+
     testWeb3 = async () => {
         this.forceUpdate();
         await this.getAccount();
@@ -493,13 +602,43 @@ class Inventory extends Component {
         this.handleApprove((await this.getContractInstance(Strike)), this.state.account, 10, this.state.account);
     };
 
+    openPrime = () => {
+        this.setState({
+            primeOpen: !this.state.primeOpen,
+        });
+        console.log(this.state.primeOpen)
+    };
+
+    primeExercise = async (tokenId) => {
+        console.log('PRIME EXERCISE');
+        /* const web3 = this.state.web3;
+        const account = await this.getAccount();
+        let primeInstance = await this.getContractInstance(PrimeContract);
+
+        let result = await primeInstance.methods.exercise(
+            tokenId
+        ).send({
+            from: account
+        });
+
+        console.log('PRIME EXERCISE', {result})
+        return result; */
+    };
+
+    primeClose = async () => {
+        console.log('PRIME CLOSE');
+    };
 
     render() {
         const { classes } = this.props;
         const primeRows = (this.state.primeRows) ? (this.state.primeRows) : [];
+        const openInventory = (this.state.primeRows) 
+                                ? (this.state.primeRows.length > 0) 
+                                    : false
+                                        ? true : false;
         return (
-            <Page display='flex'>
-                <div className={classes.root}>
+            <Page display='flex' key='inventory'>
+                <div className={classes.root} key='inventory'>
                 <Box className={classes.boards}>
                     <Button 
                         className={classes.transitionButton} 
@@ -507,15 +646,29 @@ class Inventory extends Component {
                     >
                         {<ArrowLeftIcon />}Prev Page
                     </Button>
+
                     <Card className={classes.profileCard}>
-                    <Typography>
-                        <Button
-                            className={classes.createPrime}
-                            onClick={() => this.testWeb3()}
-                        >
-                            Create Prime
-                        </Button>
-                    </Typography>
+                        {!openInventory ? (
+                            <Typography>
+                                <Button
+                                    className={classes.createPrime}
+                                    onClick={() => this.openPrime()}
+                                >
+                                    Create Prime
+                                </Button>
+                            </Typography>
+                        ) : (
+                            <Fade in={openInventory} timeout={500}>
+                            <div className={classes.root} key='interface'>
+                            <Interface 
+                                classes={classes}
+                                primeRows={primeRows}
+                                primeExercise={this.primeExercise}
+                                primeClose={this.primeClose}
+                            />
+                            </div>
+                            </Fade>
+                        )}
                     </Card>
 
                     <Grid container className={classes.profileInfo}>
@@ -529,13 +682,11 @@ class Inventory extends Component {
                                     <Table className={classes.primeTable}>
                                         <TableHead>
                                             <TableRow>
-                                                <TableCell align='right'>ID#</TableCell>
+                                                <TableCell align='right'>ID</TableCell>
                                                 <TableCell align='right'>Collateral</TableCell>
-                                                {/* <TableCell align='right'>Symbol</TableCell> */}
                                                 <TableCell align='right'>Payment</TableCell>
-                                                {/* <TableCell align='right'>Symbol</TableCell> */}
                                                 <TableCell align='right'>Expires</TableCell>
-                                                <TableCell align='right'>Paid To</TableCell>
+                                                <TableCell align='right' className={classes.address}>Paid To</TableCell>
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
@@ -545,7 +696,9 @@ class Inventory extends Component {
                                                     <TableCell align='right'>{row.xis} {row.yakSymbol}</TableCell>
                                                     <TableCell align='right'>{row.zed} {row.waxSymbol}</TableCell>
                                                     <TableCell align='right'>{row.pow}</TableCell>
-                                                    <TableCell align='right'>{row.gem}</TableCell>
+                                                    <TableCell align='right' className={classes.address}>
+                                                        <SimplePopover address={row.gem}/>
+                                                    </TableCell>
                                                 </TableRow>
                                             ))}
                                         </TableBody>
