@@ -66,6 +66,18 @@ const styles = theme => ({
             color: colors.blue
         }
     },
+    disabled: {
+        backgroundColor: colors.lightGrey,
+        '&:hover': {
+            backgroundColor: colors.lightGrey,
+        },
+    },
+    activeButton: {
+        color: colors.grey,
+    },
+    disabledButton: {
+        color: colors.blue,
+    },
     title: {
     },
     dragging: {
@@ -87,6 +99,9 @@ const styles = theme => ({
         display: 'flex',
         //paddingLeft: '10%',
     },
+    onBoard: {
+        backgroundColor: colors.green,
+    },
 });
 
 
@@ -102,6 +117,7 @@ class Asset extends Component {
             column, 
             handleUndo,
             handleDelete,
+            isOnBoard,
         } = this.props;
 
         let isDragDisabled;
@@ -118,8 +134,6 @@ class Asset extends Component {
                 }
                 if(counter >= boardLimit) {
                     isDragDisabled = true;
-                    console.log('BOARD LIMIT REACHED FOR ASSET')
-                    console.log('ITEM ID IS: ', item.id)
                 } else {
                     isDragDisabled = false;
                 }
@@ -129,6 +143,7 @@ class Asset extends Component {
             isDragDisabled = false;
         }
 
+        isOnBoard(item.id);
         return (
             <Draggable 
                 draggableId={item.id} 
@@ -142,7 +157,16 @@ class Asset extends Component {
                         ref={provided.innerRef}
                         isDragging={snapshot.isDragging}
                     >
-                        <Card className={`${classes.item} ${classes.prime}`}>
+                        <Card 
+                            className={
+                                (isOnBoard(item.id))
+                                ? `${classes.item} ${classes.onBoard}`
+                                    :
+                                        (isDragDisabled) 
+                                        ? `${classes.item} ${classes.disabled}` 
+                                            :  `${classes.item} ${classes.prime}`
+                            }
+                        >
                             <Typography variant={'h2'} className={`${classes.title}`}>
                                 {this.props.item.content}
                             </Typography>
@@ -150,8 +174,9 @@ class Asset extends Component {
                                 {this.props.item.type == 'asset' ? 'true' : 'false'}
                             </Typography>
                             <IconButton
-                                color='primary'
-                                onClick={() => handleUndo(item.id, column.id)} 
+                                className={(isDragDisabled) ? `${classes.disabledButton}` : `${classes.activeButton}`}
+                                onClick={() => handleUndo(item.id, column.id)}
+                                disabled={(isDragDisabled) ? false : true}
                             >
                                 <RestoreIcon />
                             </IconButton>

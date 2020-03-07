@@ -244,7 +244,7 @@ class InnerList extends PureComponent {
     }
 
     render () {
-        const { boardItems, column, handleUndo, handleDelete } = this.props;
+        const { boardItems, column, handleUndo, handleDelete, isDragDisabled } = this.props;
         return (
             this.props.items.map((item, index) => {
                 let _item = (item.id).split('-')[0];
@@ -259,6 +259,7 @@ class InnerList extends PureComponent {
                                 column={column}
                                 handleUndo={handleUndo}
                                 handleDelete={handleDelete}
+                                isOnBoard={this.props.isOnBoard}
                             />
                         );
                         break;
@@ -272,6 +273,7 @@ class InnerList extends PureComponent {
                                 column={column}
                                 handleUndo={handleUndo}
                                 handleDelete={handleDelete}
+                                isOnBoard={this.props.isOnBoard}
                             />
                         );
                         break;
@@ -285,6 +287,7 @@ class InnerList extends PureComponent {
                                 column={column}
                                 handleUndo={handleUndo}
                                 handleDelete={handleDelete}
+                                isOnBoard={this.props.isOnBoard}
                             />
                         );
                         break;
@@ -365,6 +368,7 @@ class Column extends Component {
                                 handleUndo={handleUndo}
                                 handleAdd={handleAdd}
                                 handleDelete={handleDelete}
+                                isOnBoard={this.props.isOnBoard}
                             />
                             {provided.placeholder}
                         </Box>

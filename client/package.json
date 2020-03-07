@@ -9,6 +9,7 @@
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.3.2",
     "@testing-library/user-event": "^7.1.2",
+    "classnames": "^2.2.6",
     "react": "^16.13.0",
     "react-beautiful-dnd": "^13.0.0",
     "react-dnd": "^10.0.2",
@@ -16,7 +17,9 @@
     "react-dnd-touch-backend": "^10.0.2",
     "react-dom": "^16.13.0",
     "react-router-dom": "^5.1.2",
-    "react-scripts": "3.4.0"
+    "react-scripts": "3.4.0",
+    "react-transition-group": "^4.3.0",
+    "web3": "^1.2.6"
   },
   "scripts": {
     "start": "react-scripts start",

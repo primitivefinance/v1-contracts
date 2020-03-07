@@ -5,12 +5,18 @@ export const colors = {
     white: "#fff",
     blue: "#2c3b57",
     lightblue: "#F0F8FF",
+    activeBlue: "#00BFFF",
+    activeGold: "#FFD700",
     palered: "#F08080",
     lightred: "#FFA07A",
     lightgreen: "#00FA9A",
     green: "#98FB98",
     disabledGreen: '#8FBC8F',
     grey: '#C0C0C0',
+    lightGrey: '#DCDCDC',
+    pink: '#FF69B4',
+    cyan: '#5F9EA0',
+    fiblue: '#b2fcff',
 }
 
 const breakpoints = createBreakpoints({

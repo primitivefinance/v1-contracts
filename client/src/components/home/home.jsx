@@ -11,6 +11,7 @@ import { colors } from "../../theme/theme";
 import GraphicEqIcon from '@material-ui/icons/GraphicEq';
 import BarChartIcon from '@material-ui/icons/BarChart';
 import loading from './830.svg';
+import Web3 from 'web3';
 
 import Button from '@material-ui/core/Button';
 import Switch from '@material-ui/core/Switch';
@@ -18,9 +19,9 @@ import Paper from '@material-ui/core/Paper';
 import Fade from '@material-ui/core/Fade';
 import Zoom from '@material-ui/core/Zoom';
 import Link from '@material-ui/core/Link';
-
-
-
+/* import Link from 'react-router-dom/Link'; */
+import Page from '../prime/page';
+import getWeb3 from '../getWeb3';
 
 
 const styles = theme => ({
@@ -136,57 +137,62 @@ class Home extends Component {
         }
     }
     
-    componentDidMount = () => {
-      setTimeout(() => {
-        this.setState({
-          loading: false
-        })
-      }, 1000)
-      setTimeout(() => {
-        this.setState({
-          done: true
-        })
-      }, 2000)
+    componentDidMount = async () => {
+        
+        setTimeout(() => {
+            this.setState({
+              loading: false
+            })
+        }, 500)
+        setTimeout(() => {
+            this.setState({
+              done: true
+            })
+        }, 1000)
     }
 
     render () {
         const { classes, t } = this.props;
         return (
-        <>
-            <div className={ classes.root }>
-                {!this.state.done ? (
-                    <Grid item className={classes.loading}>
-                        <Zoom in={this.state.loading} timeout={1000}>
-                            <img alt="" src={loading} />
-                        </Zoom>
-                    </Grid> 
-                ) : (
-                    <Fade in={this.state.done} timeout={1000}>
-                        <Grid container className={classes.root}>
-                            <Grid item xs={12}>
-                                <Typography variant={'h1'} className={ `${classes.brand}`}>
+            <Page>
+                <div className={ classes.root }>
+                    {!this.state.done ? (
+                        <Grid item className={classes.loading}>
+                            <Fade in={this.state.loading} timeout={500}>
+                                <img alt="" src={loading} />
+                            </Fade>
+                        </Grid> 
+                    ) : (
+                        <Fade in={this.state.done} timeout={500}>
+                            <Grid container className={classes.root}>
+                                <Grid item xs={12}>
+                                    <Typography variant={'h1'} className={ `${classes.brand}`}>
 
-                                </Typography>
+                                    </Typography>
+                                </Grid>
+                                <Grid item xs={4}>
+                                        <Typography variant={'h1'} className={ `${classes.brand} ${classes.title} title`}>
+                                            Select a product
+                                            </Typography>
+                                    <Link 
+                                        href='/prime'
+                                        /* style={{ textDecoration: 'none' }} */
+                                        underline='none'
+                                    >
+                                    <Card className={`${classes.card} ${classes.prime}`} href='/prime' /* onClick={ () => { this.navigate('/prime') }} */>
+                                        <GraphicEqIcon className={ `${classes.icon} icon` }/>
+                                        <Typography variant={'h1'} className={ `${classes.title} title`}>Prime</Typography>
+                                        <Typography variant={'h2'} className={ `${classes.title} title`}>ERC-20 Derivative</Typography>
+                                    </Card>
+                                    </Link>
+                                </Grid>
                             </Grid>
-                            <Grid item xs={4}>
-                                    <Typography variant={'h1'} className={ `${classes.brand} ${classes.title} title`}>
-                                        Select a product
-                                        </Typography>
-                                <Link href='/prime' underline='none'>
-                                <Card className={`${classes.card} ${classes.prime}`} href='/prime' /* onClick={ () => { this.navigate('/prime') }} */>
-                                    <GraphicEqIcon className={ `${classes.icon} icon` }/>
-                                    <Typography variant={'h1'} className={ `${classes.title} title`}>Prime</Typography>
-                                    <Typography variant={'h2'} className={ `${classes.title} title`}>ERC-20 Derivative</Typography>
-                                </Card>
-                                </Link>
-                            </Grid>
-                        </Grid>
-                    </Fade>
-                )
-            }
-            </div>
-        </>
-        )
+                        </Fade>
+                    )
+                }
+                </div>
+            </Page>
+        );
     };
     
     navigate = (screen) => {

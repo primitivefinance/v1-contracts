@@ -13,9 +13,7 @@ import { colors } from '../../theme/theme';
 import { Draggable } from 'react-beautiful-dnd';
 import DeleteIcon from '@material-ui/icons/Delete';
 import RestoreIcon from '@material-ui/icons/Restore';
-
-
-
+import HighlightOffIcon from '@material-ui/icons/HighlightOff';
 
 const styles = theme => ({
     root: {
@@ -65,6 +63,18 @@ const styles = theme => ({
             color: colors.blue
         }
     },
+    disabled: {
+        backgroundColor: colors.lightGrey,
+        '&:hover': {
+            backgroundColor: colors.lightGrey,
+        },
+    },
+    activeButton: {
+        color: colors.grey,
+    },
+    disabledButton: {
+        color: colors.blue,
+    },
     title: {
     },
     dragging: {
@@ -86,14 +96,26 @@ const styles = theme => ({
         display: 'flex',
         //paddingLeft: '10%',
     },
+    onBoard: {
+        backgroundColor: colors.green,
+    },
 });
 
 
 class Expiration extends Component {
+    constructor(props) {
+        super(props);
+        this.convertUnixTimestamp = this.convertUnixTimestamp.bind(this);
+    }
 
+    convertUnixTimestamp = (timestamp) => {
+        const date = new Date(timestamp * 1000);
+        const datetime = ((date.toDateString() + ' ' + date.toTimeString()).split('G'))[0];
+        return datetime;
+    };
     
     render() {
-        const { classes, t, boardItems, item, index, handleUndo, column } = this.props;
+        const { classes, t, boardItems, item, index, handleUndo, column, handleDelete, isOnBoard } = this.props;
         let isDragDisabled;
         let counter = 0;
         // CONDITIONAL LOGIC FOR ASSET COMPONENTS
@@ -109,8 +131,6 @@ class Expiration extends Component {
 
                 if(counter >= boardLimit) {
                     isDragDisabled = true;
-                    console.log('BOARD LIMIT REACHED FOR EXPIRATION')
-                    console.log('ITEM ID IS: ', item.id)
                 } else {
                     isDragDisabled = false;
                 }
@@ -133,18 +153,34 @@ class Expiration extends Component {
                         ref={provided.innerRef}
                         isDragging={snapshot.isDragging}
                     >
-                        <Card className={`${classes.item} ${classes.prime}`}>
+                       <Card 
+                            className={
+                                (isOnBoard(item.id))
+                                ? `${classes.item} ${classes.onBoard}`
+                                    :
+                                        (isDragDisabled) 
+                                        ? `${classes.item} ${classes.disabled}` 
+                                            :  `${classes.item} ${classes.prime}`
+                            }
+                        >
                             <Typography variant={'h2'} className={`${classes.title}`}>
-                                {this.props.item.content}
+                                {this.convertUnixTimestamp(this.props.item.content)}
                             </Typography>
                             <Typography variant={'h3'} className={`${classes.icon}`}>
                                 {this.props.item.type == 'asset' ? 'true' : 'false'}
                             </Typography>
                             <IconButton
-                                color='primary'
-                                onClick={() => handleUndo(item.id, column.id)} 
+                                className={(isDragDisabled) ? `${classes.disabledButton}` : `${classes.activeButton}`}
+                                onClick={() => handleUndo(item.id, column.id)}
+                                disabled={(isDragDisabled) ? false : true}
                             >
                                 <RestoreIcon />
+                            </IconButton>
+                            <IconButton
+                                color='primary'
+                                onClick={() => handleDelete(item.id, column.id)} 
+                            >
+                                <HighlightOffIcon />
                             </IconButton>
                         </Card>
                     </Box>

@@ -1,12 +1,18 @@
 import React, { Component, PureComponent } from 'react';
 import { withRouter } from "react-router-dom";
+import Link from 'react-router-dom/Link';
 import { withStyles } from '@material-ui/core/styles';
 import { colors } from '../../theme/theme';
 import { DragDropContext } from 'react-beautiful-dnd';
 import Typography from '@material-ui/core/Typography';
+import Card from '@material-ui/core/Card';
 import Button from '@material-ui/core/Button';
 import Popover from '@material-ui/core/Popover';
 import Box from '@material-ui/core/Box';
+import ArrowRightIcon from '@material-ui/icons/ArrowRight';
+import Slide from '@material-ui/core/Slide';
+import Collapse from '@material-ui/core/Collapse';
+
 import INITIAL_CONTEXT from './constants';
 import Column from './column';
 import Web3 from 'web3';
@@ -15,6 +21,9 @@ import Slate from '../../artifacts/Slate.json';
 import TOKENS_CONTEXT from './tokenAddresses';
 import Underlying from '../../artifacts/Underlying.json';
 import Strike from '../../artifacts/Strike.json';
+import Page from './page';
+import Inventory from './inventory';
+
 
 
 const styles = theme => ({
@@ -34,7 +43,7 @@ const styles = theme => ({
         flex: 1,
         display: 'flex',
         width: '80%',
-        height: '100vh',
+        height: '100%',
         flexDirection: 'column',
         [theme.breakpoints.up('sm')]: {
             flexDirection: 'row',
@@ -65,6 +74,21 @@ const styles = theme => ({
             paddingBottom: '24px'
         }
     },
+    transitionButton: {
+        //display: 'flex',
+        height: '100%',
+        width: '5%',
+        backgroundColor: colors.lightGrey,
+        '&:hover': {
+            backgroundColor: colors.lightblue,
+        },
+    },
+    profileCard: {
+        display: 'flex',
+       /*  minHeight: '96%', */
+        height: '96%',
+        margin: '16px',
+    }
 });
 
 function SimplePopover(props) {
@@ -108,7 +132,6 @@ function SimplePopover(props) {
   }
 
 
-
 class InnerList extends PureComponent {
     shouldComponentUpdate(nextProps) {
         if(
@@ -148,23 +171,30 @@ class InnerList extends PureComponent {
                     expirationMap={this.props.expirationMap}
                     handleBoardSubmit={handleBoardSubmit}
                     isValid={isValid}
+                    isOnBoard={this.props.isOnBoard}
                 />;
     }
 }
 
 class Prime extends Component {
     constructor(props){
-        super()
+        super(props)
         this.state = INITIAL_CONTEXT;
         this.handleUndo = this.handleUndo.bind(this);
         this.handleAdd = this.handleAdd.bind(this);
         this.handleDelete = this.handleDelete.bind(this);
         this.handleBoardSubmit = this.handleBoardSubmit.bind(this);
+        this.hasDuplicates = this.hasDuplicates.bind(this);
         this.getWeb3 = this.getWeb3.bind(this);
         this.createSlate = this.createSlate.bind(this);
         this.getAccount = this.getAccount.bind(this);
         this.getNetwork = this.getNetwork.bind(this);
+        this.getTokenAddress = this.getTokenAddress.bind(this);
+        this.handleApprove = this.handleApprove.bind(this);
+        this.getContractInstance = this.getContractInstance.bind(this);
         this.isValid = this.isValid.bind(this);
+        this.goToPrime = this.goToPrime.bind(this);
+        this.isOnBoard = this.isOnBoard.bind(this);
     };
 
     componentDidMount = async () => {
@@ -173,7 +203,8 @@ class Prime extends Component {
             web3: web3,
         })
         console.log('WEB3: ', this.state.web3)
-    }
+        this.getAccount();
+    };
 
     getWeb3 = () =>
         new Promise((resolve, reject) => {
@@ -219,6 +250,7 @@ class Prime extends Component {
     };
 
     onDragEnd = result => {
+        console.time('onDragEnd');
         const { destination, source, draggableId } = result;
 
         if(!destination) {
@@ -301,17 +333,18 @@ class Prime extends Component {
         });
 
         this.isValid();
+        console.timeEnd('onDragEnd');
     };
 
     isValid = () => {
         // GETS BOARD STATE AND RETURNS VALID IF FILLED
-        console.log(this.state.boardItems);
         let assets = 0;
         let addresses = 0;
         let expirations = 0;
         if(typeof this.state.boardItems !== 'undefined') {
-            for(var i = 0; i < this.state.boardItems.length; i++) {
-                let boardItem = (this.state.boardItems[i]).split('-')[0];
+            let board = this.state.boardItems;
+            for(var i = 0; i < board.length; i++) {
+                let boardItem = (board[i]).split('-')[0];
                 switch(boardItem) {
                     case 'asset':
                         assets++;
@@ -331,7 +364,7 @@ class Prime extends Component {
             this.setState({
                 isValid: true,
             });
-            console.log('VALID BOARD DETECTED');
+            console.log('VALID BOARD DETECTED:', this.state.boardItems);
         } else {
             this.setState({
                 isValid: false,
@@ -339,7 +372,22 @@ class Prime extends Component {
         }
     }
 
+    hasDuplicates = (array) => {
+        var valuesSoFar = Object.create(null);
+            for (var i = 0; i < array.length; ++i) {
+                var value = array[i];
+                if (value in valuesSoFar) {
+                    console.log('DUPLICATES FOUND:', array)
+                    return true;
+                }
+                valuesSoFar[value] = true;
+            }
+            console.log('NO DUPLICATES FOUND:', array)
+            return false;
+    };
+
     handleUndo = (itemId, columnId) => {
+        console.time('handleUndo');
         // RETURN ITEM TO ORIGINAL POSITION
         let currentIndex = columnId;
         let initialIndex = this.state.items[itemId].index;
@@ -379,9 +427,11 @@ class Prime extends Component {
         this.setState(newState);
 
         this.isValid();
+        console.timeEnd('handleUndo');
     };
 
     handleDelete = (itemId, columnId) => {
+        console.time('handleDelete');
         // DELETE ITEM
         let currentIndex = columnId;
 
@@ -408,9 +458,11 @@ class Prime extends Component {
         this.setState(newState);
 
         this.isValid();
+        console.timeEnd('handleDelete');
     };
 
     handleAdd = (itemId, columnId, address) => {
+        console.time('handleAdd');
         let currentIndex = columnId;
 
         const start = this.state.columns[columnId];
@@ -419,20 +471,6 @@ class Prime extends Component {
         const items = this.state.items;
 
         // IF ITEM IS IN COLUMN, DONT ADD ANOTHER
-        function hasDuplicates(array) {
-            var valuesSoFar = Object.create(null);
-            for (var i = 0; i < array.length; ++i) {
-                var value = array[i];
-                if (value in valuesSoFar) {
-                    console.log('DUPLICATES FOUND')
-                    return true;
-                }
-                valuesSoFar[value] = true;
-            }
-            console.log('NO DUPLICATES FOUND')
-            return false;
-        }
-
         if(columnId === 'address') {
             const newAddress = {
                 'newAddress': {
@@ -449,9 +487,10 @@ class Prime extends Component {
         }
 
         startItemIds.push(items[itemId].id);
-        if(hasDuplicates(startItemIds)) {
+        if(this.hasDuplicates(startItemIds)) {
             return;
         }
+
         const newStart = {
             ...start,
             itemIds: startItemIds,
@@ -468,10 +507,11 @@ class Prime extends Component {
         this.setState(newState);
 
         this.isValid();
+        console.timeEnd('handleAdd');
     };
     
     handleBoardSubmit = async (columnId) => {
-        console.log('HANDLE BOARD SUBMIT');
+        console.time('handleBoardSubmit');
         
         // GET BOARD STATE AND LOAD INTO PAYLOAD FOR ETHEREUM TX
         const boardIds = this.state.columns[columnId].itemIds;
@@ -526,30 +566,121 @@ class Prime extends Component {
                 expirationDate,
             );
         } catch(error) {
-            console.log(error)
+            console.log({error})
         }
         
-        console.log(expirationDate, collateralAsset, addressReceiver)
+        console.trace({collateralAsset, paymentAsset, addressReceiver, expirationDate, })
         this.isValid();
+        console.timeEnd('handleBoardSubmit');
+    };
+
+    isOnBoard = (itemId) => {
+        const boardIds = this.state.columns['board'].itemIds;
+        if(boardIds.indexOf(itemId) !== -1) {
+            console.log('ON BOARD', itemId)
+            return true;
+        } else {
+            return false;
+        }
     };
 
     getAccount = async () => {
+        console.time('getAccount');
         const web3 = this.state.web3;
         if(web3) {
             let accounts = await web3.eth.getAccounts();
             let account = accounts[0];
-            console.log('GET ACCOUNT: ', account)
+            /* console.trace({account}) */
+            this.setState({
+                account: account,
+            })
             return(account);
         }
+        console.timeEnd('getAccount');
     };
 
     getNetwork = async () => {
+        console.time('getNetwork');
         const web3 = this.state.web3;
         if(web3) {
             let networkId = await web3.eth.net.getId();
-            console.log('GET NETWORK: ', networkId)
+            /* console.trace({networkId}) */
+            console.timeEnd('getTokenAddress');
             return(networkId);
         }
+        console.timeEnd('getNetwork');
+    };
+
+    getContractInstance = async (Contract) => {
+        console.time('getContractInstance');
+        let contractName = Contract.contractName;
+        if(
+            this.state.instances
+            && this.state.instances[contractName]
+        ) {
+            let _instance = this.state.instances[contractName][0]['instance']
+            console.timeEnd('getContractInstance');
+            return _instance;
+        };
+
+
+        const web3 = this.state.web3;
+        const account = await this.getAccount();
+        const networkId = await this.getNetwork();
+
+        // GET CONTRACT
+        const deployedNetwork = await Contract.networks[networkId];
+        const instance = new web3.eth.Contract(
+            Contract.abi,
+            deployedNetwork && deployedNetwork.address,
+        );
+
+        const name = await instance.methods.name().call();
+
+        /* console.trace({instance}) */
+        let instanceArray = (this.state.instances) ? Array.from(this.state.instances) : [];
+        let newArray = [
+            {
+                name: name,
+                instance: instance,
+                address: deployedNetwork.address
+            }
+        ]
+        instanceArray.push(newArray);
+        this.setState({
+            instances: {
+                ...this.state.instances,
+                [contractName]: newArray,
+            }
+        });
+        console.timeEnd('getContractInstance');
+        return instance;
+    };
+
+    getTokenAddress = (networkId, symbol) => {
+        console.time('getTokenAddress');
+        let token = TOKENS_CONTEXT[networkId][symbol];
+        if(typeof token !== 'undefined' && typeof token.address !== 'undefined') {
+            /* console.trace(token.address) */
+            console.timeEnd('getTokenAddress');
+            return token.address;
+        } else {
+            /* console.trace(token.address) */
+            console.timeEnd('getTokenAddress');
+            return '';
+        }
+    };
+
+    handleApprove = async (contractInstance, approveAddr, approveAmt, _from) => {
+        console.time('handleApprove');
+        let approve = await contractInstance.methods.approve(
+                approveAddr,
+                approveAmt
+            ).send({
+                from: _from,
+        });
+        console.timeEnd('handleApprove');
+        return approve;
     };
 
     createSlate = async (
@@ -557,93 +688,53 @@ class Prime extends Component {
             paymentAsset, 
             addressReceiver, 
             expirationDate
-        ) => {
+        ) => 
+    {
         // GET WEB3 AND ACCOUNT
         const web3 = this.state.web3;
-        console.log(web3)
+
+        /* console.trace({web3}) */
         const account = await this.getAccount();
 
         // GET NETWORK ID
         const networkId = await this.getNetwork();
 
         // GET PRIME CONTRACT
-        const primeDeployedNetwork = await PrimeContract.networks[networkId];
-        const primeInstance = new web3.eth.Contract(
-            PrimeContract.abi,
-            primeDeployedNetwork && primeDeployedNetwork.address,
-        );
-        console.log(primeInstance)
+        let primeInstance = await this.getContractInstance(PrimeContract);
+        let uInstance = await this.getContractInstance(Underlying);
+        let sInstance = await this.getContractInstance(Strike);
 
-        const uDeployedNetwork = await Underlying.networks[networkId];
-        const uInstance = new web3.eth.Contract(
-            Underlying.abi,
-            uDeployedNetwork && uDeployedNetwork.address,
-        );
-        console.log(uInstance)
-
-        const sDeployedNetwork = await Strike.networks[networkId];
-        const sInstance = new web3.eth.Contract(
-            Strike.abi,
-            sDeployedNetwork && sDeployedNetwork.address,
-        );
-        console.log(sInstance)
 
         // CALL PRIME METHOD
         if(typeof primeInstance !== 'undefined') {
             let nonce = await primeInstance.methods.nonce().call();
-            console.log('NONCE', nonce)
             let DEFAULT_AMOUNT_WEI = await web3.utils.toWei((1).toString());
-            console.log(TOKENS_CONTEXT[networkId]['U'].address)
             /* 
             * TOKENS_CONTEXT is a constant that can search for addresses of assets
             * TOKENS_CONTEXT[NETWORKID][TOKEN_SYMBOL].address
-            * It has the format:
-            * const TOKENS_CONTEXT = {
-                1: {
-                
-                },
-                4: {
-                    'DAI': {
-                        [NAME]: 'Dai Multi-Collateral',
-                        [SYMBOL]: 'DAI',
-                        [DECIMALS]: 18,
-                        [ADDRESS]: '0x...',
-                    },
             */
 
-            function getTokenAddress(networkId, symbol) {
-                let token = TOKENS_CONTEXT[networkId][symbol];
-                if(typeof token !== 'undefined' && typeof token.address !== 'undefined') {
-                    console.log('GET TOKEN ADDRESS', token.address)
-                    return token.address;
-                } else {
-                    console.log('GET TOKEN ADDRESS', token.address)
-                    return '';
-                }
-            }
+            let primeAddress = primeInstance._address;
+            await this.handleApprove(
+                uInstance, 
+                primeAddress, 
+                DEFAULT_AMOUNT_WEI, 
+                account
+            );
 
-            let primeAddress = primeDeployedNetwork.address;
-            let collateralApprove = await uInstance.methods.approve(
-                primeAddress,
-                DEFAULT_AMOUNT_WEI
-            ).send({
-                from: account,
-            });
-
-            let paymentApprove = await sInstance.methods.approve(
-                primeAddress,
-                DEFAULT_AMOUNT_WEI
-            ).send({
-                from: account,
-            });
+            await this.handleApprove(
+                sInstance, 
+                primeAddress, 
+                DEFAULT_AMOUNT_WEI, 
+                account
+            );
 
             const _xis = DEFAULT_AMOUNT_WEI;
-            const _yak = getTokenAddress(networkId, collateralAsset);
+            const _yak = this.getTokenAddress(networkId, collateralAsset);
             const _zed = DEFAULT_AMOUNT_WEI;
-            const _wax = getTokenAddress(networkId, paymentAsset);
+            const _wax = this.getTokenAddress(networkId, paymentAsset);
             const _pow = expirationDate;
             const _gem = addressReceiver;
-
 
             /*
             * @dev From the Prime.sol contract
@@ -668,46 +759,66 @@ class Prime extends Component {
             this.setState({
                 createSlateTx: result,
             });
-            console.log(this.state.createSlateTx);
+            console.trace({result});
         }
-        
-        console.log('CREATE SLATE')
+        console.timeEnd('createSlate');
     };
+
+    goToPrime = () => {
+        this.setState({
+            inventoryPage: !this.state.inventoryPage,
+        });
+    };
+
 
     render() {
         const { classes } = this.props;
-        console.log('VALID?', this.state.isValid)
+        if(this.state.inventoryPage) {
+            return (
+                <Inventory web3={this.state.web3} goToPrime={this.goToPrime} />
+            );
+        }
         return (
-            <DragDropContext 
-                onBeforeDragStart={this.onBeforeDragStart}
-                onDragStart={this.onDragStart}
-                onDragEnd={this.onDragEnd}
-            >
-                <Box className={classes.boards}>
-                    {this.state.columnOrder.map((columnId, index) => {
-                        const column = this.state.columns[columnId];
-                        return (
-                            <InnerList
-                                key={column.id}
-                                column={column}
-                                itemMap={this.state.items}
-                                index={index}
-                                boardItems={this.state.boardItems}
-                                handleUndo={this.handleUndo}
-                                handleAdd={this.handleAdd}
-                                handleDelete={this.handleDelete}
-                                handleBoardSubmit={this.handleBoardSubmit}
-                                assetMap={this.state.assets}
-                                expirationMap={this.state.expirations}
-                                isValid={this.state.isValid}
-                                
-                            />
-                        );
-                    })}
-                </Box>
-            </DragDropContext>
-        )
-    }
-}
+            <Page>
+            <div className={classes.root}>
+                <DragDropContext 
+                    onBeforeDragStart={this.onBeforeDragStart}
+                    onDragStart={this.onDragStart}
+                    onDragEnd={this.onDragEnd}
+                >
+                    <Box className={classes.boards}>
+                        {this.state.columnOrder.map((columnId, index) => {
+                            const column = this.state.columns[columnId];
+                            return (
+                                <InnerList
+                                    key={column.id}
+                                    column={column}
+                                    itemMap={this.state.items}
+                                    index={index}
+                                    boardItems={this.state.boardItems}
+                                    handleUndo={this.handleUndo}
+                                    handleAdd={this.handleAdd}
+                                    handleDelete={this.handleDelete}
+                                    handleBoardSubmit={this.handleBoardSubmit}
+                                    assetMap={this.state.assets}
+                                    expirationMap={this.state.expirations}
+                                    isValid={this.state.isValid}
+                                    isOnBoard={this.isOnBoard}
+                                />
+                            );
+                        })}
+                    </Box>
+                </DragDropContext>
+                <Button 
+                    className={classes.transitionButton} 
+                    onClick={() => this.goToPrime()}
+                >
+                    Next Page{<ArrowRightIcon />}
+                </Button>
+            </div>
+            </Page>
+        );
+    };
+};
 
 export default (withRouter(withStyles(styles)(Prime)));
