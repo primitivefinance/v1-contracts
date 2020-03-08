@@ -27,21 +27,25 @@ const styles = theme => ({
     board: {
         margin: '16px',
         display: 'flex',
-        width: '40%',
+        width: '30%',
         height: '30%',
         flexWrap: 'wrap',
         minHeight: '10%',
         flexDirection: 'column',
     },
     list: {
-        flexGrow: 1,
         padding: '16px',
         minHeight: '10vh',
+        maxHeight: '10vh',
+        backgroundColor: colors.lightpink,
+        '&:hover': {
+            backgroundColor: colors.lightblue,
+        },
     },
     prime: {
         backgroundColor: colors.white,
         '&:hover': {
-            backgroundColor: colors.lightblue,
+            /* backgroundColor: colors.lightblue, */
             '& .title': {
                 color: colors.blue
             },
@@ -57,18 +61,18 @@ const styles = theme => ({
         }
     },
     title: {
-        display: 'flex',
         padding: '16px',
         paddingBottom: '0px',
         justifyContent: 'center',
+        alignItems: 'center',
         [theme.breakpoints.up('sm')]: {
             paddingBottom: '8px'
         }
     },
     iconButton: {
         color: colors.green,
-        backgroundColor: 'transparent',
-        opacity: '100%',
+        backgroundColor: colors.grey,
+        opacity: '80%',
         '&:hover': {
             color: colors.lightgreen,
             backgroundColor: 'transparent',
@@ -371,7 +375,7 @@ class Column extends Component {
                             ref={provided.innerRef}
                             {...provided.droppableProps}
                         >
-                            <InnerList 
+                            <InnerList
                                 items={items}
                                 boardItems={boardItems}
                                 column={column}
@@ -385,11 +389,11 @@ class Column extends Component {
                         </>
                     )}
                 </Droppable>
-                {
+                {/* {
                     (column.id === 'board') 
                         ? boardForm 
                             : form
-                }
+                } */}
             </Card>
         );
     }

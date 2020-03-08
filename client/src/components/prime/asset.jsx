@@ -32,7 +32,7 @@ const styles = theme => ({
         }
     },
     item: {
-        flex: '1',
+        flex: 1,
         height: '2.5vh',
         display: 'flex',
         justifyContent: 'space-between',

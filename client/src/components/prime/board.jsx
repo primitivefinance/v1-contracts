@@ -27,9 +27,8 @@ const styles = theme => ({
     board: {
         margin: '16px',
         display: 'flex',
-        width: '40%',
+        minWidth: '25%',
         height: '30%',
-        flexWrap: 'wrap',
         minHeight: '10%',
         flexDirection: 'row',
         [theme.breakpoints.up('sm')]: {
@@ -37,9 +36,14 @@ const styles = theme => ({
         }
     },
     list: {
-        flexGrow: 1,
+        /* flexGrow: 1, */
+        flex: 1,
         padding: '16px',
         minHeight: '10vh',
+        backgroundColor: colors.lightpink,
+        '&:hover': {
+            backgroundColor: colors.lightblue,
+        },
     },
     prime: {
         backgroundColor: colors.white,

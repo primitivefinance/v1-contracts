@@ -17,6 +17,7 @@ export const colors = {
     pink: '#FF69B4',
     cyan: '#5F9EA0',
     fiblue: '#b2fcff',
+    lightpink: 'rgb(255,192,203, 0.1)',
 }
 
 const breakpoints = createBreakpoints({

@@ -1,15 +1,15 @@
 const INITIAL_CONTEXT = {
     items: {
-        'asset-dai': {id: 'asset-dai', content: 'DAI', type: 'asset', index: 'asset', payload: 'DAI'},
-        'expiration-2': {id: 'expiration-2', content: '1609459200', type: 'expiration', index: 'expiration', payload: '1609459200',},
-        'address-3': {id: 'address-3', content: 'address 3', type: 'address', index: 'address', payload: 'carbonprotocol.eth',},
-        'asset-mkr': {id: 'asset-mkr', content: 'MKR', type: 'asset', index: 'asset', payload: 'MKR',},
+        'asset-dai': {id: 'asset-dai', content: 'DAI', type: 'asset', index: 'start', payload: 'DAI'},
+        'expiration-2': {id: 'expiration-2', content: '1609459200', type: 'expiration', index: 'start', payload: '1609459200',},
+        'address-3': {id: 'address-3', content: 'address 3', type: 'address', index: 'start', payload: 'carbonprotocol.eth',},
+        'asset-mkr': {id: 'asset-mkr', content: 'MKR', type: 'asset', index: 'start', payload: 'MKR',},
         'asset-snx': {id: 'asset-snx', content: 'SNX', type: 'asset', index: '', payload: 'SNX'},
         'asset-u': {
             id: 'asset-u', 
             content: 'U', 
             type: 'asset', 
-            index: 'asset',
+            index: 'start',
             iconName: 'u.png',
             mainnet: '',
             rinkeby: '',
@@ -19,7 +19,7 @@ const INITIAL_CONTEXT = {
             id: 'asset-s', 
             content: 'S', 
             type: 'asset', 
-            index: 'asset',
+            index: 'start',
             iconName: 's.png',
             mainnet: '',
             rinkeby: '',
@@ -32,7 +32,7 @@ const INITIAL_CONTEXT = {
                         id: 'asset-snx', 
                         content: 'SNX', 
                         type: 'asset', 
-                        index: 'asset',
+                        index: 'start',
                         iconName: 'snx.png',
                         mainnet: '',
                         rinkeby: '',
@@ -42,7 +42,7 @@ const INITIAL_CONTEXT = {
                         id: 'asset-dai', 
                         content: 'DAI', 
                         type: 'asset', 
-                        index: 'asset',
+                        index: 'start',
                         iconName: 'dai.png',
                         mainnet: '',
                         rinkeby: '',
@@ -52,7 +52,7 @@ const INITIAL_CONTEXT = {
                         id: 'asset-mkr', 
                         content: 'MKR', 
                         type: 'asset', 
-                        index: 'asset',
+                        index: 'start',
                         iconName: 'mkr.png',
                         mainnet: '',
                         rinkeby: '',
@@ -62,7 +62,7 @@ const INITIAL_CONTEXT = {
                         id: 'asset-u', 
                         content: 'U', 
                         type: 'asset', 
-                        index: 'asset',
+                        index: 'start',
                         iconName: 'u.png',
                         mainnet: '',
                         rinkeby: '',
@@ -72,7 +72,7 @@ const INITIAL_CONTEXT = {
                         id: 'asset-s', 
                         content: 'S', 
                         type: 'asset', 
-                        index: 'asset',
+                        index: 'start',
                         iconName: 's.png',
                         mainnet: '',
                         rinkeby: '',
@@ -82,11 +82,11 @@ const INITIAL_CONTEXT = {
     },
     expirations: {
         'expirationIds': ['expiration-2'],
-        'expiration-2': {id: 'expiration-2', content: '1609459200', type: 'expiration', index: 'expiration', payload: '1609459200',},
+        'expiration-2': {id: 'expiration-2', content: '1609459200', type: 'expiration', index: 'start', payload: '1609459200',},
     },
     addresses: {
         'addressIds': ['address-3'],
-        'address-3': {id: 'address-3', content: 'address 3', type: 'address', index: 'address',},
+        'address-3': {id: 'address-3', content: 'address 3', type: 'address', index: 'start',},
     },
     columns: {
         'start': {
@@ -150,8 +150,45 @@ const INITIAL_CONTEXT = {
             itemIds: [],
             board: true,
         },
+
+
+        '5': {
+            id: '5',
+            title: 'Test',
+            itemIds: [],
+            board: true,
+        },
+        '6': {
+            id: '6',
+            title: 'Test',
+            itemIds: [],
+            board: true,
+        },
+        '7': {
+            id: '7',
+            title: 'Test',
+            itemIds: [],
+            board: true,
+        },
+        '8': {
+            id: '8',
+            title: 'Test',
+            itemIds: [],
+            board: true,
+        },
+        '9': {
+            id: '9',
+            title: 'Test',
+            itemIds: [],
+            board: true,
+        },
     },
-    columnOrder: ['start', 'collateralBoard', 'paymentBoard', 'expirationBoard', 'addressBoard'],
+    columnOrder: [
+        'start', 
+        'collateralBoard', 'paymentBoard', 'expirationBoard', 
+        'addressBoard', '5', '6', 
+        '7', '8', '9',
+    ],
 };
 
 export default INITIAL_CONTEXT;
