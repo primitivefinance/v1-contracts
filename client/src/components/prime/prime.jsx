@@ -25,6 +25,13 @@ import Page from './page';
 import Inventory from './inventory';
 import HorizontalLinearStepper from './stepper';
 import Board from './board';
+import Table from '@material-ui/core/Table';
+import TableBody from '@material-ui/core/TableBody';
+import TableCell from '@material-ui/core/TableCell';
+import TableContainer from '@material-ui/core/TableContainer';
+import TableHead from '@material-ui/core/TableHead';
+import TableRow from '@material-ui/core/TableRow';
+import Paper from '@material-ui/core/Paper';
 
 
 const styles = theme => ({
@@ -32,11 +39,11 @@ const styles = theme => ({
         flex: 1,
         display: 'flex',
         width: '100%',
-        height: '85vh',
+        height: '85%',
         justifyContent: 'left',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         flexDirection: 'column',
-        minHeight: '75vh',
+        minHeight: '20vh',
         [theme.breakpoints.up('sm')]: {
             flexDirection: 'row',
         }
@@ -45,7 +52,7 @@ const styles = theme => ({
         flex: 1,
         display: 'flex',
         width: '80%',
-        height: '90%',
+        minHeight: '20vh',
         flexDirection: 'column',
         [theme.breakpoints.up('sm')]: {
             flexDirection: 'row',
@@ -77,11 +84,21 @@ const styles = theme => ({
         }
     },
     transitionButton: {
-        //display: 'flex',
+        display: 'flex',
         height: '100%',
+        minHeight: '100vh',
         backgroundColor: colors.white,
         '&:hover': {
             backgroundColor: colors.lightblue,
+        },
+    },
+    submitButton: {
+        display: 'flex',
+        height: '100%',
+        minHeight: '100vh',
+        backgroundColor: state => state.isValid ? colors.lightgreen : colors.white,
+        '&:hover': {
+            backgroundColor: state => state.isValid ? colors.lightgreen : colors.green,
         },
     },
     profileCard: {
@@ -97,6 +114,18 @@ const styles = theme => ({
     },
     stepper: {
         display: 'flex',
+    },
+    submitPrime: {
+        margin: '16px',
+        display: 'flex',
+        minHeight: '10%',
+        height: '33vh',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'column',
+        [theme.breakpoints.up('sm')]: {
+            flexDirection: 'column',
+        },
     },
 });
 
@@ -168,8 +197,9 @@ class InnerList extends PureComponent {
         } = this.props;
         const items = column.itemIds.map(itemId => itemMap[itemId]);
         switch(column.id){
-            case 'board':
-                return  <Board 
+            case 'start':
+                return  (
+                        <Board 
                             key={column.id} 
                             column={column} 
                             items={items} 
@@ -183,7 +213,8 @@ class InnerList extends PureComponent {
                             handleBoardSubmit={handleBoardSubmit}
                             isValid={isValid}
                             isOnBoard={this.props.isOnBoard}
-                        />;
+                        />
+                );
             default:
                 return  <Column 
                             key={column.id} 
@@ -297,7 +328,6 @@ class Prime extends Component {
         ) {
             return;
         }
-
         const start = this.state.columns[source.droppableId];
         const finish = this.state.columns[destination.droppableId];
 
@@ -347,10 +377,9 @@ class Prime extends Component {
         };
         this.setState(newState);
 
-
         // GETS BOARD ITEMS AND PASSES TO DRAGGABLE COMPONENTS
         let boardItems = this.state.boardItems ? this.state.boardItems : [];
-        if(destination.droppableId === 'board') {
+        if(destination.droppableId !== 'start') {
             boardItems.push(draggableId);
             console.log('board items array', boardItems)
         }
@@ -505,7 +534,7 @@ class Prime extends Component {
         const items = this.state.items;
 
         // IF ITEM IS IN COLUMN, DONT ADD ANOTHER
-        if(columnId === 'address') {
+        if(columnId === 'addressBoard') {
             const newAddress = {
                 'newAddress': {
                     id: `address-${address}`,
@@ -544,11 +573,11 @@ class Prime extends Component {
         console.timeEnd('handleAdd');
     };
     
-    handleBoardSubmit = async (columnId) => {
+    handleBoardSubmit = async () => {
         console.time('handleBoardSubmit');
-        
+        console.log('HANDLE BOARD SUBMIT', this.state.boardItems)
         // GET BOARD STATE AND LOAD INTO PAYLOAD FOR ETHEREUM TX
-        const boardIds = this.state.columns[columnId].itemIds;
+        const boardIds = this.state.boardItems;
         const payloadArray = [];
         const cAssetIndex = 0;
         const pAssetIndex = 1;
@@ -560,9 +589,10 @@ class Prime extends Component {
             const payload = this.state.items[(boardIds[i])].payload;
             let type = this.state.items[(boardIds[i])].type;
             if(type === 'asset') {
-                type = boardIds.indexOf(this.state.items[(boardIds[i])].id);
-                switch(type) {
-                    case 0:
+                /* type = boardIds.indexOf(this.state.items[(boardIds[i])].id); */
+                let collateralColumn = (this.state.columns['collateralBoard'].itemIds.indexOf(boardIds[i]) !== -1) ? false : true;
+                switch(collateralColumn) {
+                    case true:
                         type = 'collateralAsset';
                         break;
                     default:
@@ -609,7 +639,7 @@ class Prime extends Component {
     };
 
     isOnBoard = (itemId) => {
-        const boardIds = this.state.columns['board'].itemIds;
+        const boardIds = (this.state.boardItems) ? (this.state.boardItems) : [];
         if(boardIds.indexOf(itemId) !== -1) {
             console.log('ON BOARD', itemId)
             return true;
@@ -756,13 +786,6 @@ class Prime extends Component {
                 account
             );
 
-            await this.handleApprove(
-                sInstance, 
-                primeAddress, 
-                DEFAULT_AMOUNT_WEI, 
-                account
-            );
-
             const _xis = DEFAULT_AMOUNT_WEI;
             const _yak = this.getTokenAddress(networkId, collateralAsset);
             const _zed = DEFAULT_AMOUNT_WEI;
@@ -867,6 +890,7 @@ class Prime extends Component {
                 <Inventory web3={this.state.web3} goToPrime={this.goToPrime} />
             );
         }
+        const primeRows = [];
         return (
             <Page key='prime'>
                 <div className={classes.stepper} key='stepper'>
@@ -903,6 +927,17 @@ class Prime extends Component {
                         })}
                     </Box>
                 </DragDropContext>
+                <Card className={classes.submitPrime}>
+                    <Button 
+                        className={classes.submitButton}
+                        disabled={(this.state.isValid) ? false : true}
+                        onClick={ () => {this.handleBoardSubmit()}} 
+                    >
+                        <Typography>
+                            Create Prime
+                        </Typography>
+                    </Button>
+                </Card>
                 <LinkM 
                     href={`/inventory/${this.state.account}`}
                     underline='none'

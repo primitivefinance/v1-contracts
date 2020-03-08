@@ -25,12 +25,16 @@ import Board from './board';
 
 const styles = theme => ({
     board: {
-        flex: 1,
-        display: 'flex',
-        minHeight: '25vh',
         margin: '16px',
-        flexDirection: 'column',
-        transition: 'background-color 0.25s linear',
+        display: 'flex',
+        width: '40%',
+        height: '30%',
+        flexWrap: 'wrap',
+        minHeight: '10%',
+        flexDirection: 'row',
+        [theme.breakpoints.up('sm')]: {
+            flexDirection: 'column',
+        }
     },
     list: {
         flexGrow: 1,
@@ -107,6 +111,14 @@ const styles = theme => ({
             backgroundColor: props => props.isValid ? colors.lightgreen : colors.palered,
         },
     },
+    miniBoard: {
+        flex: 1,
+        display: 'flex',
+        minHeight: '20vh',
+        margin: '4px',
+        flexDirection: 'column',
+        transition: 'background-color 0.25s linear',
+    },
 });
 
 
@@ -154,14 +166,14 @@ function FormDiaglogue(props) {
 
     let selectOption;
     switch(props.columnId) {
-        case 'asset':
+        case 'start':
             selectOption = assetIds.map((asset) => {
                 return(
                     <MenuItem value={asset}>{(assets[asset]).content}</MenuItem>
                 )
             });
             break;
-        case 'expiration':
+        case 'start':
             selectOption = expirationIds.map((expiration) => {
                 return(
                     <MenuItem 
@@ -344,73 +356,44 @@ class Column extends Component {
 
         return(
             <Card className={
-                    (column.id === 'board') 
-                        ? `${classes.txBoard} ${classes.board} ${classes.prime}` 
-                            : `${classes.board} ${classes.prime}`
-                    }>
-                <Typography variant={'h1'} className={`${classes.title} title`}>
-                    {column.title}
-                </Typography>
-                <Card className={classes.miniBoard}>
-                    <Droppable 
-                        droppableId={'collateral'}
-                        isDropDisabled={isDropDisabled}
+                (column.id === 'start') 
+                    ? `${classes.txBoard} ${classes.board} ${classes.prime}` 
+                        : `${classes.board} ${classes.prime}`
+                }>
+            <Typography variant={'h1'} className={`${classes.title} title`}>
+                {column.title}
+            </Typography>
+            <Droppable 
+                droppableId={column.id}
+                isDropDisabled={isDropDisabled}
+            >
+                {(provided) => (
+                    <>
+                    <Box
+                        className={classes.list}
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
                     >
-                        {(provided) => (
-                            <>
-                            <Box
-                                className={classes.list}
-                                ref={provided.innerRef}
-                                {...provided.droppableProps}
-                            >
-                                <InnerList 
-                                    items={items}
-                                    boardItems={boardItems}
-                                    column={column}
-                                    handleUndo={handleUndo}
-                                    handleAdd={handleAdd}
-                                    handleDelete={handleDelete}
-                                    isOnBoard={this.props.isOnBoard}
-                                />
-                                {provided.placeholder}
-                            </Box>
-                            </>
-                        )}
-                    </Droppable>
-                </Card>
-                <Card className={classes.miniBoard}>
-                    <Droppable 
-                        droppableId={'payment'}
-                        isDropDisabled={isDropDisabled}
-                    >
-                        {(provided) => (
-                            <>
-                            <Box
-                                className={classes.list}
-                                ref={provided.innerRef}
-                                {...provided.droppableProps}
-                            >
-                                <InnerList 
-                                    items={items}
-                                    boardItems={boardItems}
-                                    column={column}
-                                    handleUndo={handleUndo}
-                                    handleAdd={handleAdd}
-                                    handleDelete={handleDelete}
-                                    isOnBoard={this.props.isOnBoard}
-                                />
-                                {provided.placeholder}
-                            </Box>
-                            </>
-                        )}
-                    </Droppable>
-                </Card>
-                {
-                    (column.id === 'board') 
-                        ? boardForm 
-                            : form
-                }
-            </Card>
+                        <InnerList 
+                            items={items}
+                            boardItems={boardItems}
+                            column={column}
+                            handleUndo={handleUndo}
+                            handleAdd={handleAdd}
+                            handleDelete={handleDelete}
+                            isOnBoard={this.props.isOnBoard}
+                        />
+                        {provided.placeholder}
+                    </Box>
+                    </>
+                )}
+            </Droppable>
+            {
+                (column.id === 'board') 
+                    ? boardForm 
+                        : form
+            }
+        </Card>
         );
     }
 }

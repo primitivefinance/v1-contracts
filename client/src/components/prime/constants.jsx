@@ -89,6 +89,19 @@ const INITIAL_CONTEXT = {
         'address-3': {id: 'address-3', content: 'address 3', type: 'address', index: 'address',},
     },
     columns: {
+        'start': {
+            id: 'start',
+            title: 'Parts',
+            itemIds: [
+                        'asset-dai', 
+                        'asset-mkr', 
+                        'asset-s', 
+                        'asset-u',
+                        'expiration-2',
+                        'address-3'
+                    ],
+            board: false,
+        },
         'asset': {
             id: 'asset',
             title: 'Assets',
@@ -113,8 +126,32 @@ const INITIAL_CONTEXT = {
             itemIds: ['address-3'],
             board: false,
         },
+        'collateralBoard': {
+            id: 'collateralBoard',
+            title: 'Collateral',
+            itemIds: [],
+            board: true,
+        },
+        'paymentBoard': {
+            id: 'paymentBoard',
+            title: 'Payment',
+            itemIds: [],
+            board: true,
+        },
+        'expirationBoard': {
+            id: 'expirationBoard',
+            title: 'Expires',
+            itemIds: [],
+            board: true,
+        },
+        'addressBoard': {
+            id: 'addressBoard',
+            title: 'Receiver',
+            itemIds: [],
+            board: true,
+        },
     },
-    columnOrder: ['asset', 'expiration', 'address', 'board',],
+    columnOrder: ['start', 'collateralBoard', 'paymentBoard', 'expirationBoard', 'addressBoard'],
 };
 
 export default INITIAL_CONTEXT;

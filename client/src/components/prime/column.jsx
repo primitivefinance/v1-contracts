@@ -25,12 +25,13 @@ import Address from './address';
 
 const styles = theme => ({
     board: {
-        flex: 1,
-        display: 'flex',
-        minHeight: '25vh',
         margin: '16px',
+        display: 'flex',
+        width: '40%',
+        height: '30%',
+        flexWrap: 'wrap',
+        minHeight: '10%',
         flexDirection: 'column',
-        transition: 'background-color 0.25s linear',
     },
     list: {
         flexGrow: 1,
@@ -153,15 +154,23 @@ function FormDiaglogue(props) {
     };
 
     let selectOption;
+    console.log('COLUMN ID', props.columnId);
     switch(props.columnId) {
-        case 'asset':
+        case 'collateralBoard':
             selectOption = assetIds.map((asset) => {
                 return(
                     <MenuItem value={asset}>{(assets[asset]).content}</MenuItem>
                 )
             });
             break;
-        case 'expiration':
+        case 'paymentBoard':
+            selectOption = assetIds.map((asset) => {
+                return(
+                    <MenuItem value={asset}>{(assets[asset]).content}</MenuItem>
+                )
+            });
+            break;
+        case 'expirationBoard':
             selectOption = expirationIds.map((expiration) => {
                 return(
                     <MenuItem 
@@ -173,7 +182,7 @@ function FormDiaglogue(props) {
                 )
             });
             break;
-        case 'address':
+        case 'addressBoard':
             break;
     }
 
@@ -206,14 +215,14 @@ function FormDiaglogue(props) {
                 <AddCircleIcon />
             </IconButton>
             <Dialog open={open} onClose={handleClose} aria-labelledby="form-dialog-title">
-                <DialogTitle id="form-dialog-title">Add an {(props.columnId).charAt(0).toUpperCase() + (props.columnId).slice(1)}</DialogTitle>
+                <DialogTitle id="form-dialog-title">Add a part</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                    {(props.columnId === 'address') ? 'Enter a valid Ethereum Address' : 'Choose from the available options.'}
+                    {(props.columnId === 'addressBoard') ? 'Enter a valid Ethereum Address' : 'Choose from the available options.'}
                       
                     </DialogContentText>
                     <FormControl className={`${props.classes.formControl} ${props.classes.inputLabel}`}>
-                      {(props.columnId === 'address') ? addressForm : selectForm}
+                      {(props.columnId === 'addressBoard') ? addressForm : selectForm}
                     </FormControl>
                 </DialogContent>
                 <DialogActions>
