@@ -13,6 +13,11 @@ import Paper from '@material-ui/core/Paper';
 import Card from '@material-ui/core/Card';
 import Popover from '@material-ui/core/Popover';
 import Button from '@material-ui/core/Button';
+import Link from '@material-ui/core/Link';
+
+const RINKEBY_ETHERSCAN_BASE_URL = 'https://rinkeby.etherscan.io/';
+const RINKEBY_PRIME_ADDRESS = '0x2d77b1d0ff56f6c0ba59a8993f58823d68285e0f';
+
 
 const styles = theme => ({
     root: {
@@ -214,7 +219,14 @@ class Interface extends Component {
                                         <TableBody>
                                             {primeRows.map(row => (
                                                 <TableRow key={row.name}>
-                                                    <TableCell align='right'>{row.tokenId}</TableCell>
+                                                    <TableCell align='right'>
+                                                        SP # [
+                                                                <Link 
+                                                                    href={`${RINKEBY_ETHERSCAN_BASE_URL}/token/${RINKEBY_PRIME_ADDRESS}/?a=${row.tokenId}`}
+                                                                >
+                                                                    {row.tokenId}
+                                                                </Link>]
+                                                    </TableCell>
                                                     <TableCell align='right'>
                                                         <Button 
                                                             variant='contained' 

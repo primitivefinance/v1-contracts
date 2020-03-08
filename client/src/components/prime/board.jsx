@@ -20,7 +20,7 @@ import Select from '@material-ui/core/Select';
 import Asset from './asset';
 import Expiration from './expiration';
 import Address from './address';
-
+import Board from './board';
 
 
 const styles = theme => ({
@@ -351,31 +351,60 @@ class Column extends Component {
                 <Typography variant={'h1'} className={`${classes.title} title`}>
                     {column.title}
                 </Typography>
-                <Droppable 
-                    droppableId={column.id}
-                    isDropDisabled={isDropDisabled}
-                >
-                    {(provided) => (
-                        <>
-                        <Box
-                            className={classes.list}
-                            ref={provided.innerRef}
-                            {...provided.droppableProps}
-                        >
-                            <InnerList 
-                                items={items}
-                                boardItems={boardItems}
-                                column={column}
-                                handleUndo={handleUndo}
-                                handleAdd={handleAdd}
-                                handleDelete={handleDelete}
-                                isOnBoard={this.props.isOnBoard}
-                            />
-                            {provided.placeholder}
-                        </Box>
-                        </>
-                    )}
-                </Droppable>
+                <Card className={classes.miniBoard}>
+                    <Droppable 
+                        droppableId={'collateral'}
+                        isDropDisabled={isDropDisabled}
+                    >
+                        {(provided) => (
+                            <>
+                            <Box
+                                className={classes.list}
+                                ref={provided.innerRef}
+                                {...provided.droppableProps}
+                            >
+                                <InnerList 
+                                    items={items}
+                                    boardItems={boardItems}
+                                    column={column}
+                                    handleUndo={handleUndo}
+                                    handleAdd={handleAdd}
+                                    handleDelete={handleDelete}
+                                    isOnBoard={this.props.isOnBoard}
+                                />
+                                {provided.placeholder}
+                            </Box>
+                            </>
+                        )}
+                    </Droppable>
+                </Card>
+                <Card className={classes.miniBoard}>
+                    <Droppable 
+                        droppableId={'payment'}
+                        isDropDisabled={isDropDisabled}
+                    >
+                        {(provided) => (
+                            <>
+                            <Box
+                                className={classes.list}
+                                ref={provided.innerRef}
+                                {...provided.droppableProps}
+                            >
+                                <InnerList 
+                                    items={items}
+                                    boardItems={boardItems}
+                                    column={column}
+                                    handleUndo={handleUndo}
+                                    handleAdd={handleAdd}
+                                    handleDelete={handleDelete}
+                                    isOnBoard={this.props.isOnBoard}
+                                />
+                                {provided.placeholder}
+                            </Box>
+                            </>
+                        )}
+                    </Droppable>
+                </Card>
                 {
                     (column.id === 'board') 
                         ? boardForm 

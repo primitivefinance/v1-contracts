@@ -23,6 +23,7 @@ import Underlying from '../../artifacts/Underlying.json';
 import Strike from '../../artifacts/Strike.json';
 import Page from './page';
 import Fade from '@material-ui/core/Fade';
+import LinkM from '@material-ui/core/Link';
 
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
@@ -36,6 +37,8 @@ import loading from '../home/830.svg';
 import Prime from './prime';
 import Interface from './interface';
 
+
+
 const styles = theme => ({
     root: {
         flex: 1,
@@ -43,7 +46,6 @@ const styles = theme => ({
         width: '100%',
         height: '100vh',
         justifyContent: 'left',
-        alignItems: 'center',
         flexDirection: 'column',
         [theme.breakpoints.up('sm')]: {
             flexDirection: 'row',
@@ -88,7 +90,7 @@ const styles = theme => ({
         //display: 'flex',
         height: '100%',
         width: '5%',
-        backgroundColor: colors.lightGrey,
+        backgroundColor: colors.white,
         '&:hover': {
             backgroundColor: colors.lightblue,
         },
@@ -104,11 +106,9 @@ const styles = theme => ({
     },
     primeInventory: {
         alignItems: '',
-        height: '100%',
         
     },
     walletBalances: {
-        height: '100%',
     },
     profileInfo: {
         margin: '16px',
@@ -140,7 +140,13 @@ const styles = theme => ({
         minWidth: '0%',
 
     },
+    buttonText: {
+        padding: '4px',
+        width: '100%',
+    },
 });
+
+
 
 function SimplePopover(props) {
     const classes = props.classes;
@@ -216,7 +222,7 @@ class Inventory extends Component {
         const web3 = await this.getWeb3();
         this.setState({
             web3: web3,
-        })
+        });
         console.log('WEB3: ', this.state.web3)
         await this.getAccount();
         await this.getBalanceOfPrime();
@@ -224,6 +230,7 @@ class Inventory extends Component {
         await this.getPrimeProperties('2');
         await this.getPastEvents('SlateMinted');
         await this.getPrimeInventory();
+        
         
     };
 
@@ -486,22 +493,26 @@ class Inventory extends Component {
         const web3 = this.state.web3;
         const account = await this.getAccount();
         const networkId = await this.getNetwork();
+        let primeInstance = await this.getContractInstance(PrimeContract);
+
+        let nonce = await primeInstance.methods.nonce().call();
 
         function createData(tokenId, xis, yakSymbol, zed, waxSymbol, pow, gem) {
             return { tokenId, xis, yakSymbol, zed, waxSymbol, pow, gem };
         };
-        let primeRows = [];
 
-        let userMintedPrimes = this.state.userMintedPrimes[account];
+        let primeRows = [];
         let userOwnedPrimes = [];
-        for(var i = 0; i < userMintedPrimes.length; i++) {
-            if(this.getOwnerOfPrime(userMintedPrimes[i])) {
-                userOwnedPrimes.push(userMintedPrimes[i]);
+        
+        for(var i = 1; i <= nonce; i++) {
+            console.log(nonce)
+            if((await this.getOwnerOfPrime(i)) === account) {
+                userOwnedPrimes.push(i);
             } else {
-                console.log('Does not own: ', userMintedPrimes[i])
+                console.log('Does not own: ', i)
             }
         };
-        
+
         for(var i = 0; i < userOwnedPrimes.length; i++) {
             let properties = await this.getPrimeProperties(userOwnedPrimes[i]);
             let yakInstance = new web3.eth.Contract(
@@ -534,13 +545,9 @@ class Inventory extends Component {
             primeRows.push(data)
             console.log({primeRows})
         }
-
-        
-
         this.setState({
             primeRows: primeRows,
         });
-        console.log(this.state.userMintedPrimes[account])
     };
 
     getWalletInventory = async () => {
@@ -610,23 +617,72 @@ class Inventory extends Component {
     };
 
     primeExercise = async (tokenId) => {
-        console.log('PRIME EXERCISE');
-        /* const web3 = this.state.web3;
+        // GETS KEY PARAMS
+        const web3 = this.state.web3;
         const account = await this.getAccount();
+        const networkId = await this.getNetwork();
         let primeInstance = await this.getContractInstance(PrimeContract);
 
-        let result = await primeInstance.methods.exercise(
+        // GETS PRIME PROPERTIES
+        let properties = await this.getPrimeProperties(tokenId);
+
+        // GETS PAYMENT CONTRACT INTERFACE
+        let paymentInstance = new web3.eth.Contract(
+            Erc20.abi,
+            networkId && properties['wax'],
+        );
+
+        // APPROVES PRIME TO GET PAYMENT FROM OWNER
+        let approvePayment = await this.handleApprove(
+            paymentInstance, 
+            primeInstance._address,
+            (await web3.utils.toWei(properties['zed'])),
+            account
+        );
+
+        // EXERCISES PRIME TOKEN
+        let exercise = await primeInstance.methods.exercise(
             tokenId
         ).send({
             from: account
         });
 
-        console.log('PRIME EXERCISE', {result})
-        return result; */
+        // SENDS COLLATERAL TO PAYMENT RECEIVER
+        let withdraw = await primeInstance.methods.withdraw(
+            properties['xis'],
+            properties['yak']
+        ).send({
+            from: account
+        });
+
+        // GETS THE NEW INVENTORY STATE
+        console.log('PRIME EXERCISE', {exercise})
+        await this.getPrimeInventory();
+        return exercise;
     };
 
-    primeClose = async () => {
-        console.log('PRIME CLOSE');
+    primeClose = async (tokenId) => {
+        // GETS KEY PARAMS
+        const web3 = this.state.web3;
+        const account = await this.getAccount();
+        const networkId = await this.getNetwork();
+        let primeInstance = await this.getContractInstance(PrimeContract);
+
+        // GETS PRIME PROPERTIES
+        let properties = await this.getPrimeProperties(tokenId);
+
+        // Close PRIME TOKEN
+        let close = await primeInstance.methods.close(
+            tokenId,
+            tokenId
+        ).send({
+            from: account
+        });
+
+        // GETS THE NEW INVENTORY STATE
+        console.log('PRIME CLOSE', {close})
+        await this.getPrimeInventory();
+        return close;
     };
 
     render() {
@@ -640,22 +696,28 @@ class Inventory extends Component {
             <Page display='flex' key='inventory'>
                 <div className={classes.root} key='inventory'>
                 <Box className={classes.boards}>
-                    <Button 
-                        className={classes.transitionButton} 
-                        onClick={() => this.props.goToPrime()}
-                    >
-                        {<ArrowLeftIcon />}Prev Page
-                    </Button>
+                    <LinkM href='/prime' underline='none' className={classes.transitionButton}>
+                        <Button 
+                            className={classes.transitionButton} 
+                            /* onClick={() => this.props.goToPrime()} */
+                        >
+                            <Typography className={classes.buttonText}>
+                                {<ArrowLeftIcon />}Prev Page
+                            </Typography>
+                        </Button>
+                    </LinkM>
 
                     <Card className={classes.profileCard}>
                         {!openInventory ? (
                             <Typography>
+                                <LinkM href='/prime' underline='none' className={classes.createPrime}>
                                 <Button
                                     className={classes.createPrime}
-                                    onClick={() => this.openPrime()}
+                                    /* onClick={() => this.openPrime()} */
                                 >
                                     Create Prime
                                 </Button>
+                                </LinkM>
                             </Typography>
                         ) : (
                             <Fade in={openInventory} timeout={500}>
@@ -689,10 +751,11 @@ class Inventory extends Component {
                                                 <TableCell align='right' className={classes.address}>Paid To</TableCell>
                                             </TableRow>
                                         </TableHead>
+                                        
                                         <TableBody>
                                             {primeRows.map(row => (
                                                 <TableRow key={row.name}>
-                                                    <TableCell align='right'>{row.tokenId}</TableCell>
+                                                    <TableCell align='right'>#{row.tokenId}</TableCell>
                                                     <TableCell align='right'>{row.xis} {row.yakSymbol}</TableCell>
                                                     <TableCell align='right'>{row.zed} {row.waxSymbol}</TableCell>
                                                     <TableCell align='right'>{row.pow}</TableCell>
@@ -702,6 +765,7 @@ class Inventory extends Component {
                                                 </TableRow>
                                             ))}
                                         </TableBody>
+                                        
                                     </Table>
                                 </TableContainer>
 
@@ -717,11 +781,15 @@ class Inventory extends Component {
                     </Grid>
 
                     
-                    <Button
-                        className={classes.transitionButton}
-                    >
-                        Next Page{<ArrowRightIcon />}
-                    </Button>
+                    <LinkM href='/prime' underline='none' className={classes.transitionButton}>
+                        <Button 
+                            className={classes.transitionButton} 
+                        >
+                            <Typography className={classes.buttonText}>
+                                Next Page{<ArrowRightIcon />}
+                            </Typography>
+                        </Button>
+                    </LinkM>
                 </Box>
                 </div>
             </Page>

@@ -23,7 +23,8 @@ import Underlying from '../../artifacts/Underlying.json';
 import Strike from '../../artifacts/Strike.json';
 import Page from './page';
 import Inventory from './inventory';
-
+import HorizontalLinearStepper from './stepper';
+import Board from './board';
 
 
 const styles = theme => ({
@@ -31,10 +32,11 @@ const styles = theme => ({
         flex: 1,
         display: 'flex',
         width: '100%',
-        height: '100vh',
+        height: '85vh',
         justifyContent: 'left',
         alignItems: 'center',
         flexDirection: 'column',
+        minHeight: '75vh',
         [theme.breakpoints.up('sm')]: {
             flexDirection: 'row',
         }
@@ -43,7 +45,7 @@ const styles = theme => ({
         flex: 1,
         display: 'flex',
         width: '80%',
-        height: '100%',
+        height: '90%',
         flexDirection: 'column',
         [theme.breakpoints.up('sm')]: {
             flexDirection: 'row',
@@ -77,8 +79,7 @@ const styles = theme => ({
     transitionButton: {
         //display: 'flex',
         height: '100%',
-        width: '5%',
-        backgroundColor: colors.lightGrey,
+        backgroundColor: colors.white,
         '&:hover': {
             backgroundColor: colors.lightblue,
         },
@@ -88,7 +89,15 @@ const styles = theme => ({
        /*  minHeight: '96%', */
         height: '96%',
         margin: '16px',
-    }
+    },
+    buttonText: {
+        padding: '4px',
+        width: '100%',
+        minWidth: '90%',
+    },
+    stepper: {
+        display: 'flex',
+    },
 });
 
 function SimplePopover(props) {
@@ -158,21 +167,40 @@ class InnerList extends PureComponent {
             isValid,
         } = this.props;
         const items = column.itemIds.map(itemId => itemMap[itemId]);
-        return <Column 
-                    key={column.id} 
-                    column={column} 
-                    items={items} 
-                    isDropDisabled={isDropDisabled} 
-                    boardItems={boardItems}
-                    handleUndo={handleUndo}
-                    handleAdd={handleAdd}
-                    handleDelete={handleDelete}
-                    assetMap={this.props.assetMap}
-                    expirationMap={this.props.expirationMap}
-                    handleBoardSubmit={handleBoardSubmit}
-                    isValid={isValid}
-                    isOnBoard={this.props.isOnBoard}
-                />;
+        switch(column.id){
+            case 'board':
+                return  <Board 
+                            key={column.id} 
+                            column={column} 
+                            items={items} 
+                            isDropDisabled={isDropDisabled} 
+                            boardItems={boardItems}
+                            handleUndo={handleUndo}
+                            handleAdd={handleAdd}
+                            handleDelete={handleDelete}
+                            assetMap={this.props.assetMap}
+                            expirationMap={this.props.expirationMap}
+                            handleBoardSubmit={handleBoardSubmit}
+                            isValid={isValid}
+                            isOnBoard={this.props.isOnBoard}
+                        />;
+            default:
+                return  <Column 
+                            key={column.id} 
+                            column={column} 
+                            items={items} 
+                            isDropDisabled={isDropDisabled} 
+                            boardItems={boardItems}
+                            handleUndo={handleUndo}
+                            handleAdd={handleAdd}
+                            handleDelete={handleDelete}
+                            assetMap={this.props.assetMap}
+                            expirationMap={this.props.expirationMap}
+                            handleBoardSubmit={handleBoardSubmit}
+                            isValid={isValid}
+                            isOnBoard={this.props.isOnBoard}
+                        />;
+        }
     }
 }
 
@@ -195,6 +223,7 @@ class Prime extends Component {
         this.isValid = this.isValid.bind(this);
         this.goToPrime = this.goToPrime.bind(this);
         this.isOnBoard = this.isOnBoard.bind(this);
+        this.checkStep = this.checkStep.bind(this);
     };
 
     componentDidMount = async () => {
@@ -202,8 +231,12 @@ class Prime extends Component {
         this.setState({
             web3: web3,
         })
+        let account = await this.getAccount();
+        this.setState({
+            account: account,
+            step: 0,
+        });
         console.log('WEB3: ', this.state.web3)
-        this.getAccount();
     };
 
     getWeb3 = () =>
@@ -251,6 +284,7 @@ class Prime extends Component {
 
     onDragEnd = result => {
         console.time('onDragEnd');
+        
         const { destination, source, draggableId } = result;
 
         if(!destination) {
@@ -770,6 +804,61 @@ class Prime extends Component {
         });
     };
 
+    checkStep = () => {
+        let step = (this.state.step) ? this.state.step : 0;
+        let itemId = this.state.columns['board'].itemIds[step];
+        if(
+            this.isOnBoard(itemId) 
+            && this.state.items[itemId].type === 'asset'
+            && this.state.columns['board'].itemIds[0] === itemId
+        ) {
+            this.setState({
+                step: 1,
+            });
+            step = 1;
+            console.log('set step to 1')
+        };
+
+        if(
+            this.isOnBoard(itemId) 
+            && this.state.items[itemId].type === 'asset'
+            && this.state.columns['board'].itemIds[0] !== itemId
+        ) {
+            this.setState({
+                step: 2,
+            });
+            step = 2;
+            console.log('set step to 2')
+        };
+
+        if(
+            this.isOnBoard(itemId) 
+            && this.state.items[itemId].type === 'expiration'
+            && this.state.columns['board'].itemIds[step - 1] !== itemId
+        ) {
+            this.setState({
+                step: 3,
+            });
+            step = 3;
+            console.log('set step to 3')
+        };
+
+        if(
+            this.isOnBoard(itemId) 
+            && this.state.items[itemId].type === 'address'
+            && this.state.columns['board'].itemIds[step - 1] !== itemId
+        ) {
+            this.setState({
+                step: 4,
+            });
+            step = 4;
+            console.log('set step to 4')
+        };
+
+        console.log(this.state.step, step, 'STEP')
+        return step;
+    };
+
 
     render() {
         const { classes } = this.props;
@@ -780,6 +869,11 @@ class Prime extends Component {
         }
         return (
             <Page key='prime'>
+                <div className={classes.stepper} key='stepper'>
+                    <HorizontalLinearStepper 
+                        checkStep={this.checkStep}
+                    />
+                </div>
             <div className={classes.root} key='prime'>
                 <DragDropContext 
                     onBeforeDragStart={this.onBeforeDragStart}
@@ -811,15 +905,16 @@ class Prime extends Component {
                 </DragDropContext>
                 <LinkM 
                     href={`/inventory/${this.state.account}`}
-                    /* style={{ textDecoration: 'none' }} */
                     underline='none'
-                >
-                <Button 
                     className={classes.transitionButton} 
-                    /* onClick={() => this.goToPrime()} */
                 >
-                    Next Page{<ArrowRightIcon />}
-                </Button>
+                    <Button 
+                        className={classes.transitionButton} 
+                    >
+                        <Typography className={classes.buttonText}>
+                            Next Page{<ArrowRightIcon />}
+                        </Typography>
+                    </Button>
                 </LinkM>
             </div>
             </Page>
