@@ -73,7 +73,7 @@ const styles = theme => ({
         },
     },
     activeButton: {
-        color: colors.grey,
+        /* color: colors.blue, */
     },
     disabledButton: {
         color: colors.blue,
@@ -120,7 +120,9 @@ class Asset extends Component {
             isOnBoard,
         } = this.props;
 
-        let isDragDisabled;
+        let isDragDisabled = false;
+
+        /* let isDragDisabled;
         let counter = 0;
         // CONDITIONAL LOGIC FOR ASSET COMPONENTS
         if(boardItems) {
@@ -141,9 +143,8 @@ class Asset extends Component {
             
         } else {
             isDragDisabled = false;
-        }
-
-        isOnBoard(item.id);
+        } */
+        let onBoard = isOnBoard(item.id, column.id);
         return (
             <Draggable 
                 draggableId={item.id} 
@@ -159,7 +160,7 @@ class Asset extends Component {
                     >
                         <Card 
                             className={
-                                (isOnBoard(item.id))
+                                (onBoard)
                                 ? `${classes.item} ${classes.onBoard}`
                                     :
                                         (isDragDisabled) 
@@ -174,9 +175,9 @@ class Asset extends Component {
                                 {this.props.item.type == 'asset' ? 'true' : 'false'}
                             </Typography>
                             <IconButton
-                                className={(isDragDisabled) ? `${classes.disabledButton}` : `${classes.activeButton}`}
+                                color='primary'
+                                /* className={`${classes.activeButton}`} */
                                 onClick={() => handleUndo(item.id, column.id)}
-                                disabled={(isDragDisabled) ? false : true}
                             >
                                 <RestoreIcon />
                             </IconButton>

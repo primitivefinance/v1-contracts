@@ -76,10 +76,26 @@ const mainTheme = {
                 },
             },
         },
+        MuiStepLabel: {
+            label: {
+                color: colors.blue,
+            },
+            active: {
+                color: colors.green,
+            },
+            '.MuiStepLabel': {
+                active: colors.green,
+                color: colors.green,
+            },
+        },
+        '.MuiStepLabel-label.MuiStepLabel': {
+            active: colors.green,
+            color: colors.green,
+        },
     },
     palette: {
         primary: {
-            main: colors.blue,
+            main: colors.activeBlue,
             lightblue: colors.lightblue,
         },
         background: {

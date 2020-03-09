@@ -46,7 +46,7 @@ const styles = theme => ({
         minHeight: '20vh',
         [theme.breakpoints.up('sm')]: {
             flexDirection: 'row',
-        }
+        },
     },
     boards: {
         flex: 1,
@@ -250,8 +250,9 @@ class Prime extends Component {
         this.isValid = this.isValid.bind(this);
         this.goToPrime = this.goToPrime.bind(this);
         this.isOnBoard = this.isOnBoard.bind(this);
-        this.checkStep = this.checkStep.bind(this);
+        this.undoStep = this.undoStep.bind(this);
         this.handleBoardState = this.handleBoardState.bind(this);
+        this.handleStepComplete = this.handleStepComplete.bind(this);
     };
 
     componentDidMount = async () => {
@@ -268,9 +269,7 @@ class Prime extends Component {
     };
 
     componentDidUpdate = () => {
-        let board = this.state.boardStates;
-        let state = this.state;
-        console.log({state})
+        console.log(this.state.boardStates)
     };
 
     getWeb3 = () =>
@@ -309,6 +308,7 @@ class Prime extends Component {
     });
 
 
+    /* BOARD STATE FUNCTIONS */
     onDragEnd = result => {
         console.time('onDragEnd');
         
@@ -371,7 +371,7 @@ class Prime extends Component {
                 [newFinish.id]: newFinish,
             },
         };
-        this.setState(newState, () => this.handleBoardState());
+        this.setState(newState, () => { this.handleBoardState(); /* this.handleStepComplete(draggableId, destination.droppableId); */ });
 
         // GETS BOARD ITEMS AND PASSES TO DRAGGABLE COMPONENTS
         let boardItems = this.state.boardItems ? this.state.boardItems : [];
@@ -430,9 +430,13 @@ class Prime extends Component {
         console.timeEnd('onDragEnd');
     };
 
-
     handleBoardState = () => {
         console.log('HANDLE BOARD STATE')
+
+        /* FOR STEPPER */
+        let newCompleted = (this.state.newCompleted) ? this.state.newCompleted : {};
+        let index;
+        let activeStep;
 
         /* GET ALL BOARDS */
         let boardNames = Array.from(this.state.columnOrder.slice(1, 10))
@@ -454,26 +458,31 @@ class Prime extends Component {
                             boardName === 'collateralBoard' 
                             || boardName === 'paymentBoard'
                         ) {
+                            /* BOARD STATE */
                             valid = true;
-                        }
+                        };
                         break;
                     case 'expiration':
+                        index = 2;
                         if(
                             boardName === 'expirationBoard' 
                         ) {
+                            /* BOARD STATE */
                             valid = true;
-                        }
+                        };
                         break;
                     case 'address':
+                        index = 3;
                         if(
                             boardName === 'addressBoard' 
                         ) {
+                            /* BOARD STATE */
                             valid = true;
-                        }
+                        };
                         break;
                 };
 
-                console.log('UPDATING BOARD STATE: ', {boardName, itemIds, valid})
+                /* console.log('UPDATING BOARD STATE: ', {boardName, itemIds, valid}) */
                 /* NEW BOARD STATE */
                 newBoard[boardName] = {
                     itemIds: itemIds,
@@ -481,7 +490,7 @@ class Prime extends Component {
                 };
             } else {
 
-                console.log('REVERTING BOARD STATE: ', {boardName}, [], false)
+                /* console.log('REVERTING BOARD STATE: ', {boardName}, [], false) */
                 /* SET BOARD STATE TO INITIAL VALUES FOR BOARD  */
                 newBoard[boardName] = {
                     itemIds: [],
@@ -490,9 +499,22 @@ class Prime extends Component {
             };
         };
 
+        /* STEPPER */
+        let cB = newBoard['collateralBoard'];
+        let pB = newBoard['paymentBoard'];
+        let eB = newBoard['expirationBoard'];
+        let aB = newBoard['addressBoard'];
+        let _B = [cB, pB, eB, aB,];
+        for(var i = 0; i < _B.length; i++) {
+            newCompleted[i] = _B[i].valid;
+            activeStep = i;
+        }
+
         /* UPDATE STATE */
         this.setState({
             boardStates: newBoard,
+            newCompleted: newCompleted,
+            activeStep: activeStep,
         }, () => this.isValid());
     };
 
@@ -511,7 +533,7 @@ class Prime extends Component {
             console.log('VALID BOARD DETECTED:', boardState);
         } else {
             valid = false;
-            console.log('BOARD NOT VALID', boardState);
+            /* console.log('BOARD NOT VALID', boardState); */
         }
 
         this.setState({
@@ -537,6 +559,11 @@ class Prime extends Component {
 
     handleUndo = (itemId, columnId) => {
         console.time('handleUndo');
+
+        /* FOR STEPPER */
+        let newCompleted = (this.state.newCompleted) ? this.state.newCompleted : {};
+        let index;
+        let activeStep;
 
         /* RETURN ITEM TO ORIGINAL POSITION */
         let currentIndex = columnId;
@@ -571,7 +598,7 @@ class Prime extends Component {
             },
         };
 
-        this.setState(newState, () => this.handleBoardState());
+        this.setState(newState, () => { this.handleBoardState(); this.undoStep(itemId, columnId); });
         console.timeEnd('handleUndo');
     };
 
@@ -600,7 +627,7 @@ class Prime extends Component {
         };
 
         /* UPDATES STATE */
-        this.setState(newState, () => this.handleBoardState());
+        this.setState(newState, () => { this.handleBoardState(); this.undoStep(itemId, columnId); });
         console.timeEnd('handleDelete');
     };
 
@@ -747,35 +774,119 @@ class Prime extends Component {
         console.timeEnd('handleBoardSubmit');
     };
 
-    isOnBoard = (itemId) => {
-        /* const boardIds = (this.state.boardItems) ? (this.state.boardItems) : [];
-        if(boardIds.indexOf(itemId) !== -1) {
-            console.log('ON BOARD', itemId)
-            return true;
-        } else {
-            return false;
-        } */
+    isOnBoard = (itemId, columnId) => {
         let isOnBoard = false;
         let boardState = (this.state.boardStates) ? this.state.boardStates : '';
         let columns = this.state.columnOrder.slice(1, 10);
-        if(boardState !== '') {
-            for(var i = 0; i < 9; i++) {
-                let index = boardState[columns[i]].itemIds.indexOf(itemId);
+        if(boardState !== '' && columnId !== 'start') {
+            let board = boardState[columnId];
+            if(typeof board !== 'undefined') {
+                let index = board.itemIds.indexOf(itemId);
                 if(index !== -1) {
-                    isOnBoard = true;
-                }
-            }
-        }
-        
-
-        if(isOnBoard) {
-            console.log('ON BOARD', itemId)
-            return true;
-        } else {
-            return false;
-        }
+                    if(board.valid) {
+                        isOnBoard = true;
+                    };
+                };
+            };
+        };
+    
+        return isOnBoard;
     };
 
+    undoStep = (itemId, columnId) => {
+        /* FOR STEPPER */
+        let newCompleted = (this.state.newCompleted) ? this.state.newCompleted : {};
+        let index;
+        let activeStep;
+        let itemType = (this.state.items[itemId].type).split('-')[0];
+        switch(itemType) {
+            case 'asset':
+                switch(columnId) {
+                    case 'collateralBoard':
+                        /* STEPPER */
+                        index = 0;
+                        newCompleted[index] = false;
+                        activeStep = index;
+                        break;
+                    case 'paymentBoard':
+                        /* STEPPER */
+                        index = 1;
+                        newCompleted[index] = false;
+                        activeStep = index - 1;
+                        break;
+                }
+                break;
+            case 'expiration':
+                /* STEPPER */
+                index = 2;
+                newCompleted[index] = false;
+                activeStep = index - 1;
+                break;
+
+            case 'address':
+                /* STEPPER */
+                index = 3;
+                newCompleted[index] = false;
+                activeStep = index - 1;
+                break;
+
+        }
+        this.setState({
+            newCompleted: newCompleted,
+            activeStep: activeStep,
+        });
+    };
+
+    handleStepComplete = (itemId, columnId) => {
+        let items = this.state.items;
+        let itemType = (items[itemId].type).split('-')[0];
+        let newCompleted = (this.state.newCompleted) ? this.state.newCompleted : {};
+        let index;
+        let activeStep;
+        switch(columnId) {
+            case 'collateralBoard':
+                if(itemType === 'asset') {
+                    console.log('C asset on C board')
+                    index = 0;
+                    newCompleted[index] = true;
+                    activeStep = index;
+                }
+                break;
+            case 'paymentBoard':
+                if(itemType === 'asset') {
+                    console.log('P asset on P board')
+                    index = 1;
+                    newCompleted[index] = true;
+                    activeStep = index;
+                }
+                break;
+            case 'expirationBoard':
+                if(itemType === 'expiration') {
+                    console.log('Expiration on E board')
+                    index = 2;
+                    newCompleted[index] = true;
+                    activeStep = index;
+                }
+                break;
+            case 'addressBoard':
+                if(itemType === 'address') {
+                    console.log('Address on A board')
+                    index = 3;
+                    newCompleted[index] = true;
+                    activeStep = index;
+                }
+                break;
+        }
+
+        console.log({newCompleted, index})
+        this.setState({
+            newCompleted: newCompleted,
+            activeStep: index,
+        })
+        return newCompleted;
+    };
+
+    /* WEB3 FUNCTIONS */
     getAccount = async () => {
         console.time('getAccount');
         const web3 = this.state.web3;
@@ -955,61 +1066,6 @@ class Prime extends Component {
         });
     };
 
-    checkStep = () => {
-        /* let step = (this.state.step) ? this.state.step : 0;
-        let itemId = this.state.columns['board'].itemIds[step];
-        if(
-            this.isOnBoard(itemId) 
-            && this.state.items[itemId].type === 'asset'
-            && this.state.columns['board'].itemIds[0] === itemId
-        ) {
-            this.setState({
-                step: 1,
-            });
-            step = 1;
-            console.log('set step to 1')
-        };
-
-        if(
-            this.isOnBoard(itemId) 
-            && this.state.items[itemId].type === 'asset'
-            && this.state.columns['board'].itemIds[0] !== itemId
-        ) {
-            this.setState({
-                step: 2,
-            });
-            step = 2;
-            console.log('set step to 2')
-        };
-
-        if(
-            this.isOnBoard(itemId) 
-            && this.state.items[itemId].type === 'expiration'
-            && this.state.columns['board'].itemIds[step - 1] !== itemId
-        ) {
-            this.setState({
-                step: 3,
-            });
-            step = 3;
-            console.log('set step to 3')
-        };
-
-        if(
-            this.isOnBoard(itemId) 
-            && this.state.items[itemId].type === 'address'
-            && this.state.columns['board'].itemIds[step - 1] !== itemId
-        ) {
-            this.setState({
-                step: 4,
-            });
-            step = 4;
-            console.log('set step to 4')
-        };
-
-        console.log(this.state.step, step, 'STEP')
-        return step; */
-    };
-
 
     render() {
         const { classes } = this.props;
@@ -1023,7 +1079,10 @@ class Prime extends Component {
             <Page key='prime'>
                 <div className={classes.stepper} key='stepper'>
                     <HorizontalNonLinearStepper 
-                        checkStep={this.checkStep}
+                        undoStep={this.undoStep}
+                        boardStates={this.state.boardStates}
+                        activeStep={this.state.activeStep}
+                        newCompleted={this.state.newCompleted}
                     />
                 </div>
             <div className={classes.root} key='prime'>

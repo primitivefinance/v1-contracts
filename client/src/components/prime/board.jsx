@@ -25,10 +25,12 @@ import Board from './board';
 
 const styles = theme => ({
     board: {
-        margin: '16px',
         display: 'flex',
-        minWidth: '25%',
-        height: '30%',
+        margin: '16px',
+        marginRight: '32px',
+        width: '20%',
+        height: '20%',
+        minWidth: '10%',
         minHeight: '10%',
         flexDirection: 'row',
         [theme.breakpoints.up('sm')]: {
@@ -36,13 +38,15 @@ const styles = theme => ({
         }
     },
     list: {
-        /* flexGrow: 1, */
-        flex: 1,
         padding: '16px',
         minHeight: '10vh',
+        minWidth: '30vh',
         backgroundColor: colors.lightpink,
         '&:hover': {
             backgroundColor: colors.lightblue,
+        },
+        [theme.breakpoints.up('sm')]: {
+            minWidth: '10vh',
         },
     },
     prime: {

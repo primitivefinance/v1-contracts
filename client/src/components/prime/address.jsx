@@ -70,7 +70,7 @@ const styles = theme => ({
         },
     },
     activeButton: {
-        color: colors.grey,
+        color: colors.blue,
     },
     disabledButton: {
         color: colors.blue,
@@ -107,29 +107,9 @@ class Address extends Component {
     
     render() {
         const { classes, t, boardItems, item, index, handleUndo, column, handleDelete, isOnBoard } = this.props;
-        let isDragDisabled;
-        let counter = 0;
-        // CONDITIONAL LOGIC FOR ASSET COMPONENTS
-        if(boardItems) {
-            let boardLimit = 1;
-            for(var i = 0; i < boardItems.length; i++) {
-                let _boardItem = (boardItems[i]).split('-')[0];
-                // if the board item is an asset and the item id is not the board item,
-                // then dont let the asset components be draggable.
-                if(_boardItem === 'address') {
-                    counter++;
-                }
+        let isDragDisabled = false;
 
-                if(counter >= boardLimit) {
-                    isDragDisabled = true;
-                } else {
-                    isDragDisabled = false;
-                }
-            }
-            
-        } else {
-            isDragDisabled = false;
-        }
+        let onBoard = isOnBoard(item.id, column.id);
 
         return (
             <Draggable 
@@ -146,7 +126,7 @@ class Address extends Component {
                     >
                         <Card 
                             className={
-                                (isOnBoard(item.id))
+                                (onBoard)
                                 ? `${classes.item} ${classes.onBoard}`
                                     :
                                         (isDragDisabled) 
@@ -161,9 +141,8 @@ class Address extends Component {
                                 {this.props.item.type == 'asset' ? 'true' : 'false'}
                             </Typography>
                             <IconButton
-                                className={(isDragDisabled) ? `${classes.disabledButton}` : `${classes.activeButton}`}
+                                color='primary'
                                 onClick={() => handleUndo(item.id, column.id)}
-                                disabled={(isDragDisabled) ? false : true}
                             >
                                 <RestoreIcon />
                             </IconButton>

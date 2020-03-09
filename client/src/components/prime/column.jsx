@@ -25,27 +25,34 @@ import Address from './address';
 
 const styles = theme => ({
     board: {
-        margin: '16px',
         display: 'flex',
-        width: '30%',
+        margin: '16px',
+        width: '90%',
         height: '30%',
-        flexWrap: 'wrap',
+        minWidth: '10%',
         minHeight: '10%',
-        flexDirection: 'column',
+        flexWrap: 'wrap',
+        flexDirection: 'row',
+        [theme.breakpoints.up('sm')]: {
+            flexDirection: 'column',
+            width: '30%',
+        },
     },
     list: {
         padding: '16px',
         minHeight: '10vh',
-        maxHeight: '10vh',
+        minWidth: '30vh',
         backgroundColor: colors.lightpink,
         '&:hover': {
             backgroundColor: colors.lightblue,
+        },
+        [theme.breakpoints.up('sm')]: {
+            minWidth: '10vh',
         },
     },
     prime: {
         backgroundColor: colors.white,
         '&:hover': {
-            /* backgroundColor: colors.lightblue, */
             '& .title': {
                 color: colors.blue
             },
