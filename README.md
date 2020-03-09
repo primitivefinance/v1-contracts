@@ -1,4 +1,5 @@
 # Carbon Protocol
+## Financial Crafting
 ## Financial Smart Contract - Create ERC20 Token Purchase Agreements.
 Party **A** agrees to sell token **X** for token **Z** within time period **P**.
 Party **A** uses `Prime.sol` to mint a Slate, which is an ERC-721 from `Slate.sol`, to represent this agreement.

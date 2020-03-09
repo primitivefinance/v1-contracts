@@ -186,7 +186,8 @@ class InnerList extends PureComponent {
         if(
             nextProps.column === this.props.column &&
             nextProps.itemMap === this.props.itemMap &&
-            nextProps.index === this.props.index
+            nextProps.index === this.props.index &&
+            nextProps.isDropDisabled === this.props.isDropDisabled
         ) {
             return false;
         }
@@ -250,6 +251,7 @@ class Prime extends Component {
         this.goToPrime = this.goToPrime.bind(this);
         this.isOnBoard = this.isOnBoard.bind(this);
         this.checkStep = this.checkStep.bind(this);
+        this.handleBoardState = this.handleBoardState.bind(this);
     };
 
     componentDidMount = async () => {
@@ -263,6 +265,12 @@ class Prime extends Component {
             step: 0,
         });
         console.log('WEB3: ', this.state.web3)
+    };
+
+    componentDidUpdate = () => {
+        let board = this.state.boardStates;
+        let state = this.state;
+        console.log({state})
     };
 
     getWeb3 = () =>
@@ -300,13 +308,6 @@ class Prime extends Component {
             });
     });
 
-    onDragStart = start => {
-
-    };
-
-    onDragUpdate = () => {
-
-    };
 
     onDragEnd = result => {
         console.time('onDragEnd');
@@ -370,7 +371,7 @@ class Prime extends Component {
                 [newFinish.id]: newFinish,
             },
         };
-        this.setState(newState);
+        this.setState(newState, () => this.handleBoardState());
 
         // GETS BOARD ITEMS AND PASSES TO DRAGGABLE COMPONENTS
         let boardItems = this.state.boardItems ? this.state.boardItems : [];
@@ -384,29 +385,21 @@ class Prime extends Component {
             boardItems.push(draggableId);
             
             let item = draggableId.split('-')[0];
-            console.log(item)
             switch(item) {
                 case 'asset':
                     let dest = destination.droppableId;
-                    console.log(dest)
                     if(dest === 'collateralBoard'){
                         (collateralItems).push(draggableId);
-                        console.log(collateralItems)
                     } else {
                         (paymentItems).push(draggableId);
-                        console.log(paymentItems)
                     }
-                break;
+                    break;
                 case 'expiration':
                     (expirationItems).push(draggableId);
-                    console.log({expirationItems})
                     break;
                 case 'address':
                     (addressItems).push(draggableId);
-                    console.log({addressItems})
                     break;
-                default:
-                    return null;
             }
         }
 
@@ -423,6 +416,7 @@ class Prime extends Component {
             console.log('remove', boardItems)
         }
 
+
         this.setState({
             boardItems: boardItems,
             boardArray: boardArray,
@@ -431,80 +425,103 @@ class Prime extends Component {
             expirationItems: expirationItems,
             addressItems: addressItems,
             
-        });
+        }, );
 
-        this.isValid();
         console.timeEnd('onDragEnd');
     };
 
-    isValid = () => {
-        // GETS BOARD STATE AND RETURNS VALID IF FILLED
-        let assets = 0;
-        let addresses = 0;
-        let expirations = 0;
-        let boards = this.state.columnOrder.slice(1, 10)
-        let columns = this.state.columns;
-        let boardItems = this.state.boardItems ? this.state.boardItems : [];
-        let collateralItems = this.state.collateralItems ? this.state.collateralItems : [];
-        let paymentItems = this.state.paymentItems ? this.state.paymentItems : [];
-        let expirationItems = this.state.expirationItems ? this.state.expirationItems : [];
-        let addressItems = this.state.addressItems ? this.state.addressItems : [];
-        let boardArray = [collateralItems, paymentItems, expirationItems, addressItems]
-        console.log(boardArray)
-        /* if(typeof this.state.boardItems !== 'undefined') {
-            let board = this.state.boardItems;
-            for(var i = 0; i < board.length; i++) {
-                let boardItem = (board[i]).split('-')[0];
-                switch(boardItem) {
+
+    handleBoardState = () => {
+        console.log('HANDLE BOARD STATE')
+
+        /* GET ALL BOARDS */
+        let boardNames = Array.from(this.state.columnOrder.slice(1, 10))
+        let newBoard = (typeof this.state.boardStates !== 'undefined') ? this.state.boardStates : {};
+
+        /* FOR EACH BOARD, CHECK THE ITEMS */
+        for(var i = 0; i < boardNames.length; i++) {
+            let itemIds = this.state.columns[boardNames[i]].itemIds;
+            let boardName = boardNames[i];
+
+            /* IF BOARD HAS ITEMS, CHECK THEIR TYPES AND RETURN VALIDITY */
+            if(itemIds.length > 0) {
+                let valid = false;
+                let item = itemIds[0];
+                let type = (this.state.items[item].id).split('-')[0];
+                switch(type) {
                     case 'asset':
-                        assets++;
+                        if(
+                            boardName === 'collateralBoard' 
+                            || boardName === 'paymentBoard'
+                        ) {
+                            valid = true;
+                        }
                         break;
                     case 'expiration':
-                        expirations++;
+                        if(
+                            boardName === 'expirationBoard' 
+                        ) {
+                            valid = true;
+                        }
                         break;
                     case 'address':
-                        addresses++;
+                        if(
+                            boardName === 'addressBoard' 
+                        ) {
+                            valid = true;
+                        }
                         break;
-                }
-            }
-        } */
+                };
 
-            for(var i = 0; i < boardArray.length; i++) {
-                /* console.log(`BOARD`, i, columns[boards[i]].itemIds) */
-                for(var x = 0; x < (boardArray[i]).length; x++) {
-                    /* console.log('BOARD 2', columns[boards[i]], columns[boards[i]].itemIds) */
-                    let board = (boardArray[i])[x];
-                    let boardItem = (board).split('-')[0];
-                    console.log(board, boardItem, i , x)
-                    switch(boardItem) {
-                        case 'asset':
-                            assets++;
-                            break;
-                        case 'expiration':
-                            expirations++;
-                            break;
-                        case 'address':
-                            addresses++;
-                            break;
-                    }
-                }
-            }
+                console.log('UPDATING BOARD STATE: ', {boardName, itemIds, valid})
+                /* NEW BOARD STATE */
+                newBoard[boardName] = {
+                    itemIds: itemIds,
+                    valid: valid,
+                };
+            } else {
+
+                console.log('REVERTING BOARD STATE: ', {boardName}, [], false)
+                /* SET BOARD STATE TO INITIAL VALUES FOR BOARD  */
+                newBoard[boardName] = {
+                    itemIds: [],
+                    valid: false,
+                };
+            };
+        };
+
+        /* UPDATE STATE */
+        this.setState({
+            boardStates: newBoard,
+        }, () => this.isValid());
+    };
+
+    isValid = () => {
+
+        /* GETS BOARD STATE AND RETURNS VALID IF FILLED CORRECTLY */
+        let valid;
+        let boardState = (typeof this.state.boardStates !== 'undefined') ? this.state.boardStates : 'Board not initialized';
+        let collateralValid = (boardState['collateralBoard']) ? (boardState['collateralBoard'].valid) ? true : false : false;
+        let paymentValid = (boardState['paymentBoard']) ? (boardState['paymentBoard'].valid) ? true : false : false;
+        let expirationValid = (boardState['expirationBoard']) ? (boardState['expirationBoard'].valid) ? true : false : false;
+        let addressValid = (boardState['addressBoard']) ? (boardState['addressBoard'].valid) ? true : false : false;
         
-
-        if(assets === 2 && addresses === 1 && expirations === 1) {
-            this.setState({
-                isValid: true,
-            });
-            console.log('VALID BOARD DETECTED:', this.state.boardItems);
+        if(collateralValid && paymentValid && expirationValid && addressValid) {
+            valid = true;
+            console.log('VALID BOARD DETECTED:', boardState);
         } else {
-            console.log('BOARD NOT VALID', this.state.boardItems, {assets}, {addresses}, {expirations});
-            this.setState({
-                isValid: false,
-            });
+            valid = false;
+            console.log('BOARD NOT VALID', boardState);
         }
-    }
+
+        this.setState({
+            isValid: valid,
+        });
+        return valid;
+    };
 
     hasDuplicates = (array) => {
+        /* CHECKS TWO ARRAYS FOR DUPLICATES */
         var valuesSoFar = Object.create(null);
             for (var i = 0; i < array.length; ++i) {
                 var value = array[i];
@@ -520,17 +537,15 @@ class Prime extends Component {
 
     handleUndo = (itemId, columnId) => {
         console.time('handleUndo');
-        // RETURN ITEM TO ORIGINAL POSITION
+
+        /* RETURN ITEM TO ORIGINAL POSITION */
         let currentIndex = columnId;
         let initialIndex = this.state.items[itemId].index;
-
-        if(currentIndex === initialIndex) {
-            return;
-        }
-
+        if(currentIndex === initialIndex) {return;}
         const start = this.state.columns[columnId];
         const finish = this.state.columns[initialIndex];
 
+        /* UPDATE SOURCE ARRAY */
         const startItemIds = Array.from(start.itemIds);
         startItemIds.splice(startItemIds.indexOf(itemId), 1);
         const newStart = {
@@ -538,6 +553,7 @@ class Prime extends Component {
             itemIds: startItemIds,
         };
 
+        /* UPDATE DESTINATION ARRAY */
         const finishItemIds = Array.from(finish.itemIds);
         finishItemIds.push(itemId)
         const newFinish = {
@@ -545,9 +561,7 @@ class Prime extends Component {
             itemIds: finishItemIds,
         };
 
-        let boardItems = this.state.boardItems ? this.state.boardItems : [];
-        boardItems.splice(boardItems.indexOf(itemId), 1);
-
+        /* NEW SOURCE AND DESTINATION COLUMN DATA */
         const newState = {
             ...this.state,
             columns: {
@@ -556,19 +570,19 @@ class Prime extends Component {
                 [newFinish.id]: newFinish,
             },
         };
-        this.setState(newState);
 
-        this.isValid();
+        this.setState(newState, () => this.handleBoardState());
         console.timeEnd('handleUndo');
     };
 
     handleDelete = (itemId, columnId) => {
         console.time('handleDelete');
-        // DELETE ITEM
-        let currentIndex = columnId;
 
+        /* DELETE ITEM */
+        let currentIndex = columnId;
         const start = this.state.columns[columnId];
 
+        /* UPDATE SOURCE ARRAY */
         const startItemIds = Array.from(start.itemIds);
         startItemIds.splice(startItemIds.indexOf(itemId), 1);
         const newStart = {
@@ -576,10 +590,7 @@ class Prime extends Component {
             itemIds: startItemIds,
         };
 
-
-        let boardItems = this.state.boardItems ? this.state.boardItems : [];
-        boardItems.splice(boardItems.indexOf(itemId), 1);
-
+        /* NEW SOURCE DATA */
         const newState = {
             ...this.state,
             columns: {
@@ -587,25 +598,23 @@ class Prime extends Component {
                 [newStart.id]: newStart,
             },
         };
-        this.setState(newState);
 
-        this.isValid();
+        /* UPDATES STATE */
+        this.setState(newState, () => this.handleBoardState());
         console.timeEnd('handleDelete');
     };
 
     handleAdd = (itemId, columnId, address) => {
         console.time('handleAdd');
-        if(this.isValid()) {
-            return;
-        }
+
+        /* ADD AN ITEM TO A COLUMN */
+        if(this.isValid()) {return;}
         let currentIndex = columnId;
-
         const start = this.state.columns[columnId];
-
         const startItemIds = Array.from(start.itemIds);
         const items = this.state.items;
 
-        // IF ITEM IS IN COLUMN, DONT ADD ANOTHER
+        /* PREVENT DUPLICATES IN THE SAME COLUMN */
         if(columnId === 'addressBoard') {
             const newAddress = {
                 'newAddress': {
@@ -614,18 +623,20 @@ class Prime extends Component {
                     type: 'address',
                     index: '',
                     payload: address,
-                }
-            }
+                },
+            };
 
             items[`address-${address}`] = newAddress['newAddress'];
             itemId = `address-${address}`;
         }
 
+        /* UPDATE ITEMS LOCALLY */
         startItemIds.push(items[itemId].id);
-        if(this.hasDuplicates(startItemIds) || this.state.isValid) {
+        if(this.hasDuplicates(startItemIds) || this.isValid()) {
             return;
         }
 
+        /* NEW SOURCE COLUMN ITEMS DATA */
         const newStart = {
             ...start,
             itemIds: startItemIds,
@@ -639,111 +650,70 @@ class Prime extends Component {
                 [newStart.id]: newStart,
             },
         };
-        this.setState(newState);
 
-        this.isValid();
+        /* UPDATES STATE */
+        this.setState(newState, () => this.handleBoardState());
         console.timeEnd('handleAdd');
     };
     
     handleBoardSubmit = async () => {
         console.time('handleBoardSubmit');
         console.log('HANDLE BOARD SUBMIT', this.state.boardItems)
-        // GET BOARD STATE AND LOAD INTO PAYLOAD FOR ETHEREUM TX
-        const boardIds = this.state.boardItems;
-        const payloadArray = [];
-        const cAssetIndex = 0;
-        const pAssetIndex = 1;
+
+        /* GET BOARD STATE AND LOAD INTO PAYLOAD FOR ETHEREUM TX */
+        let payloadArray = [];
         let collateralAsset;
         let paymentAsset;
         let addressReceiver;
         let expirationDate;
+        const boardState = this.state.boardStates;
         
-        /* for(var i = 0; i < boardIds.length; i++) {
-            const payload = this.state.items[(boardIds[i])].payload;
-            let type = this.state.items[(boardIds[i])].type;
-            if(type === 'asset') {
-                let collateralColumn = (this.state.columns['collateralBoard'].itemIds.indexOf(boardIds[i]) === 0) ? true : false;
-                switch(collateralColumn) {
-                    case true:
-                        type = 'collateralAsset';
-                        break;
-                    default:
-                        type = 'paymentAsset';
-                }
-            }
-            if(payload) {
-                payloadArray.push([type, payload]);
-            }
-        } */
+        /* 
+        * IN THIS CURRENT ITERATION, ONLY ONE ITEM IS ALLOWED PER BOARD,
+        * SO THE ITEM ID WILL ALWAYS BE AT 0 INDEX. WILL CHANGE IN FUTURE ITERATIONS.
+        * ALSO THE BOARDS HAVE SPECIFIC NAMES, WILL CHANGE IN FUTURE.
+        */
+        let _collateral = boardState['collateralBoard'].itemIds[0];
+        let _payment = boardState['paymentBoard'].itemIds[0];
+        let _expiration = boardState['expirationBoard'].itemIds[0];
+        let _address = boardState['addressBoard'].itemIds[0];
 
-        let collateralBoard;
-        let paymentBoard;
-        let expirationBoard;
-        let addressBoard;
-        for(var i = 0; i < boardIds.length; i++) {
-            const payload = this.state.items[(boardIds[i])].payload;
-            let type = this.state.items[(boardIds[i])].type;
+        /* 
+        * IRDER MATTERS - FIX - CAN BE IMPROVED 
+        * 0 = COLLATERAL
+        * 1 = PAYMENT 
+        */
+        let _paramIds = [
+            _collateral, 
+            _payment, 
+            _expiration,
+            _address
+        ];
 
-            switch(type) {
-                case 'asset':
-                    let collateralColumn = (this.state.columns['collateralBoard'].itemIds.indexOf(boardIds[i]) === 0) ? true : false;
-                    switch(collateralColumn) {
-                        case true:
-                            type = 'collateralAsset';
-                            break;
-                        default:
-                            type = 'paymentAsset';
-                    }
-                    if(payload) {
-                        payloadArray.push([type, payload]);
-                    }
-                case 'expiration':
-                    let expirationColumn = (this.state.columns['expirationBoard'].itemIds.indexOf(boardIds[i]) === 0) ? true : false;
-                    switch(expirationColumn) {
-                        case true:
-                            type = 'expiration';
-                            break;
-                        default:
-                            type = 'Not Found';
-                    }
-                    if(payload) {
-                        payloadArray.push([type, payload]);
-                    }
-                case 'address':
-                    let addressColumn = (this.state.columns['addressBoard'].itemIds.indexOf(boardIds[i]) === 0) ? true : false;
-                    switch(addressColumn) {
-                        case true:
-                            type = 'address';
-                            break;
-                        default:
-                            type = 'Not Found';
-                    }
-                    if(payload) {
-                        payloadArray.push([type, payload]);
-                    }
+        /* GET ITEM PAYLOAD AND TYPE AND PUSH TO ARRAY - FIX - CAN BE IMPROVED*/
+        for(var i = 0; i < _paramIds.length; i++){
+            let type;
+            let items = this.state.items;
+            let item = items[(_paramIds[i])];
+            let payload = item.payload;
+            switch(i) {
+                case 0:
+                    type = 'collateralAsset';
+                    break;
+                case 1:
+                    type = 'paymentAsset';
+                    break;
                 default:
-                    console.log('not found')
-            }
+                    type = item.type;
+                    break;
+            };
 
-            if(type === 'asset') {
-                /* type = boardIds.indexOf(this.state.items[(boardIds[i])].id); */
-                let collateralColumn = (this.state.columns['collateralBoard'].itemIds.indexOf(boardIds[i]) === 0) ? true : false;
-                switch(collateralColumn) {
-                    case true:
-                        type = 'collateralAsset';
-                        break;
-                    default:
-                        type = 'paymentAsset';
-                }
-            }
-
-
-            if(payload) {
+            if(payload){
                 payloadArray.push([type, payload]);
             }
-        }
+        };
 
-
+        /* LINK PAYLOAD INFO TO PARAMETER BY USING PAYLOAD ARRAY */
         for(var x = 0; x < payloadArray.length; x++) {
             switch(payloadArray[x][0]) {
                 case 'expiration':
@@ -761,8 +731,7 @@ class Prime extends Component {
             }
         }
 
-        
-        
+        /* PASS PARAMETERS TO CONTRACT FUNCTION AND SEND TRANSACTION */
         try {
             await this.createSlate(
                 collateralAsset,
@@ -773,15 +742,33 @@ class Prime extends Component {
         } catch(error) {
             console.log({error})
         }
-        
-        console.trace({collateralAsset, paymentAsset, addressReceiver, expirationDate, })
-        this.isValid();
+
+        console.trace({payloadArray, collateralAsset, paymentAsset, addressReceiver, expirationDate, })
         console.timeEnd('handleBoardSubmit');
     };
 
     isOnBoard = (itemId) => {
-        const boardIds = (this.state.boardItems) ? (this.state.boardItems) : [];
+        /* const boardIds = (this.state.boardItems) ? (this.state.boardItems) : [];
         if(boardIds.indexOf(itemId) !== -1) {
+            console.log('ON BOARD', itemId)
+            return true;
+        } else {
+            return false;
+        } */
+        let isOnBoard = false;
+        let boardState = (this.state.boardStates) ? this.state.boardStates : '';
+        let columns = this.state.columnOrder.slice(1, 10);
+        if(boardState !== '') {
+            for(var i = 0; i < 9; i++) {
+                let index = boardState[columns[i]].itemIds.indexOf(itemId);
+                if(index !== -1) {
+                    isOnBoard = true;
+                }
+            }
+        }
+        
+
+        if(isOnBoard) {
             console.log('ON BOARD', itemId)
             return true;
         } else {
@@ -969,7 +956,7 @@ class Prime extends Component {
     };
 
     checkStep = () => {
-        let step = (this.state.step) ? this.state.step : 0;
+        /* let step = (this.state.step) ? this.state.step : 0;
         let itemId = this.state.columns['board'].itemIds[step];
         if(
             this.isOnBoard(itemId) 
@@ -1020,7 +1007,7 @@ class Prime extends Component {
         };
 
         console.log(this.state.step, step, 'STEP')
-        return step;
+        return step; */
     };
 
 
@@ -1066,12 +1053,16 @@ class Prime extends Component {
                     <Box className={classes.cells}>
                         {this.state.columnOrder.map((columnId, index) => {
                             const column = this.state.columns[columnId];
+                            let boardState = (this.state.boardStates) ? this.state.boardStates : [];
+                            let isDropDisabled = (typeof boardState[columnId] !== 'undefined') ? boardState[columnId].valid : false;
+                            /* console.log({columnId}, {isDropDisabled}) */
                             return (
                                 <InnerList
                                     key={column.id}
                                     column={column}
                                     itemMap={this.state.items}
                                     index={index}
+                                    isDropDisabled={(typeof boardState[columnId] !== 'undefined') ? boardState[columnId].valid : false}
                                     boardItems={this.state.boardItems}
                                     handleUndo={this.handleUndo}
                                     handleAdd={this.handleAdd}

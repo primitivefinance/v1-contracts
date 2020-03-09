@@ -1,7 +1,7 @@
 {
   "name": "carbon.finance",
   "version": "0.1.0",
-  "description": "Carbon - Interchangeable finance.",
+  "description": "Carbon - Financial Crafting.",
   "main": "truffle-config.js",
   "directories": {
     "test": "test"
