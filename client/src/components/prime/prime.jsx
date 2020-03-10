@@ -32,10 +32,27 @@ import TableContainer from '@material-ui/core/TableContainer';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Paper from '@material-ui/core/Paper';
-
+import SimpleBottomNavigation from './bottomNavigation';
+import Footer from './footer';
+import GitHubIcon from '@material-ui/icons/GitHub';
+import TwitterIcon from '@material-ui/icons/Twitter';
 
 const styles = theme => ({
     root: {
+        flex: 1,
+        display: 'flex',
+        width: '100%',
+        height: '100%',
+        justifyContent: 'left',
+        alignItems: 'flex-start',
+        flexDirection: 'column',
+        minHeight: '20vh',
+        backgroundColor: colors.background,
+        [theme.breakpoints.up('sm')]: {
+            flexDirection: 'column',
+        },
+    },
+    body: {
         flex: 1,
         display: 'flex',
         width: '100%',
@@ -47,6 +64,16 @@ const styles = theme => ({
         [theme.breakpoints.up('sm')]: {
             flexDirection: 'row',
         },
+    },
+    bottom: {
+        flex: 1,
+        display: 'flex',
+        width: '100%',
+        justifyContent: 'space-evenly',
+        alignItems: 'center',
+        flexDirection: 'column',
+        /* minHeight: '22.4vh', */
+        height: '100%',
     },
     boards: {
         flex: 1,
@@ -81,10 +108,10 @@ const styles = theme => ({
             },
         },
         '& .title': {
-            color: colors.blue
+            color: colors.background
         },
         '& .icon': {
-            color: colors.blue
+            color: colors.background
         },
     },
     title: {
@@ -107,10 +134,12 @@ const styles = theme => ({
         display: 'flex',
         height: '100%',
         minHeight: '100vh',
-        backgroundColor: state => state.isValid ? colors.lightgreen : colors.white,
+        color: colors.background,
+        backgroundColor: state => state.isValid ? colors.success : colors.success,
         '&:hover': {
-            backgroundColor: state => state.isValid ? colors.lightgreen : colors.green,
+            backgroundColor: state => state.isValid ? colors.success : colors.success,
         },
+        
     },
     profileCard: {
         display: 'flex',
@@ -125,19 +154,42 @@ const styles = theme => ({
     },
     stepper: {
         display: 'flex',
+        active: colors.primary,
     },
     submitPrime: {
         margin: '16px',
         display: 'flex',
         minHeight: '10%',
-        height: '81.75vh',
+        height: '66vh',
+        minWidth: '5%',
         alignItems: 'center',
         justifyContent: 'center',
         flexDirection: 'column',
         [theme.breakpoints.up('sm')]: {
             flexDirection: 'column',
         },
+        color: colors.background,
     },
+    submitInventory: {
+        margin: '16px',
+        display: 'flex',
+        minHeight: '10%',
+        height: '66vh',
+        minWidth: '5%',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'column',
+        [theme.breakpoints.up('sm')]: {
+            flexDirection: 'column',
+        },
+        color: colors.primary,
+        backgroundColor: colors.banner,
+        '&:hover': {
+            backgroundColor: colors.lightblue,
+            color: colors.background,
+        },
+    },
+    
 });
 
 function SimplePopover(props) {
@@ -226,6 +278,7 @@ class InnerList extends PureComponent {
                             handleBoardSubmit={handleBoardSubmit}
                             isValid={isValid}
                             isOnBoard={this.props.isOnBoard}
+                            index={index}
                         />;
         }
     }
@@ -637,18 +690,18 @@ class Prime extends Component {
         /* ADD AN ITEM TO A COLUMN */
         if(this.isValid()) {return;}
         let currentIndex = columnId;
-        const start = this.state.columns[columnId];
+        const start = this.state.columns['start'];
         const startItemIds = Array.from(start.itemIds);
-        const items = this.state.items;
+        let items = this.state.items;
 
         /* PREVENT DUPLICATES IN THE SAME COLUMN */
-        if(columnId === 'addressBoard') {
+        if(columnId === 'start' && address !== '') {
             const newAddress = {
                 'newAddress': {
                     id: `address-${address}`,
                     content: address,
                     type: 'address',
-                    index: '',
+                    index: 'start',
                     payload: address,
                 },
             };
@@ -658,6 +711,7 @@ class Prime extends Component {
         }
 
         /* UPDATE ITEMS LOCALLY */
+        console.log({items, itemId})
         startItemIds.push(items[itemId].id);
         if(this.hasDuplicates(startItemIds) || this.isValid()) {
             return;
@@ -1076,92 +1130,115 @@ class Prime extends Component {
         }
         const primeRows = [];
         return (
-            <Page key='prime'>
-                <div className={classes.stepper} key='stepper'>
+            <div className={classes.root}>
+            {/* <Page key='prime' color='primary'> */}
+                <HorizontalNonLinearStepper 
+                    undoStep={this.undoStep}
+                    boardStates={this.state.boardStates}
+                    activeStep={this.state.activeStep}
+                    newCompleted={this.state.newCompleted}
+                    className={classes.stepper}
+                    classes={classes}
+                />
+                <div className={classes.body} key='prime'>
+                    <DragDropContext 
+                        onBeforeDragStart={this.onBeforeDragStart}
+                        onDragStart={this.onDragStart}
+                        onDragEnd={this.onDragEnd}
+                    >
+
+
+                            <Board 
+                                key={'start'} 
+                                column={this.state.columns['start']} 
+                                items={this.state.columns['start'].itemIds.map(itemId => this.state.items[itemId])} 
+                                index={0}
+                                boardItems={this.state.boardItems}
+                                handleUndo={this.handleUndo}
+                                handleAdd={this.handleAdd}
+                                handleDelete={this.handleDelete}
+                                handleBoardSubmit={this.handleBoardSubmit}
+                                assetMap={this.state.assets}
+                                expirationMap={this.state.expirations}
+                                isValid={this.state.isValid}
+                                isOnBoard={this.isOnBoard}
+                            />
+
+                        <Box className={classes.cells}>
+                            {this.state.columnOrder.map((columnId, index) => {
+                                const column = this.state.columns[columnId];
+                                let boardState = (this.state.boardStates) ? this.state.boardStates : [];
+                                let isDropDisabled = (typeof boardState[columnId] !== 'undefined') ? boardState[columnId].valid : false;
+                                console.log({index})
+                                return (
+                                    <InnerList
+                                        key={column.id}
+                                        column={column}
+                                        itemMap={this.state.items}
+                                        index={index}
+                                        isDropDisabled={(typeof boardState[columnId] !== 'undefined') ? boardState[columnId].valid : false}
+                                        boardItems={this.state.boardItems}
+                                        handleUndo={this.handleUndo}
+                                        handleAdd={this.handleAdd}
+                                        handleDelete={this.handleDelete}
+                                        handleBoardSubmit={this.handleBoardSubmit}
+                                        assetMap={this.state.assets}
+                                        expirationMap={this.state.expirations}
+                                        isValid={this.state.isValid}
+                                        isOnBoard={this.isOnBoard}
+                                    />
+                                );
+                            })}
+                        </Box>
+                    </DragDropContext>
+                    <Card className={classes.submitPrime}>
+                        <Button 
+                            className={classes.submitButton}
+                            disabled={(this.state.isValid) ? false : true}
+                            onClick={ () => {this.handleBoardSubmit()}} 
+                        >
+                            <Typography variant={'h1'}>
+                                Create Prime
+                            </Typography>
+                        </Button>
+                    </Card>
+                    <Card className={classes.submitInventory}>
+                        <LinkM 
+                            href={`/inventory/${this.state.account}`}
+                            underline='none'
+                            className={classes.submitInventory}
+                        >
+                            <Typography variant={'h1'}>
+                                Next Page
+                            </Typography>
+                        </LinkM>
+                    </Card>
+                </div>
+                <div className={classes.bottom}>
                     <HorizontalNonLinearStepper 
                         undoStep={this.undoStep}
                         boardStates={this.state.boardStates}
                         activeStep={this.state.activeStep}
                         newCompleted={this.state.newCompleted}
+                        className={classes.stepper}
+                        classes={classes}
+                        bottom={true}
+                    />
+                    <Footer 
+                        title={
+                            <div>
+                            <LinkM href="https://github.com/Alexangelj/carbon" underline='none'>
+                                <GitHubIcon />
+                            </LinkM>
+                            <LinkM href="https://github.com/Alexangelj/carbon" underline='none'>
+                                <TwitterIcon />
+                            </LinkM>
+                            </div>
+                        }
                     />
                 </div>
-            <div className={classes.root} key='prime'>
-                <DragDropContext 
-                    onBeforeDragStart={this.onBeforeDragStart}
-                    onDragStart={this.onDragStart}
-                    onDragEnd={this.onDragEnd}
-                >
-                    
-
-                        <Board 
-                            key={'start'} 
-                            column={this.state.columns['start']} 
-                            items={this.state.columns['start'].itemIds.map(itemId => this.state.items[itemId])} 
-                            index={0}
-                            boardItems={this.state.boardItems}
-                            handleUndo={this.handleUndo}
-                            handleAdd={this.handleAdd}
-                            handleDelete={this.handleDelete}
-                            handleBoardSubmit={this.handleBoardSubmit}
-                            assetMap={this.state.assets}
-                            expirationMap={this.state.expirations}
-                            isValid={this.state.isValid}
-                            isOnBoard={this.isOnBoard}
-                        />
-
-                    <Box className={classes.cells}>
-                        {this.state.columnOrder.map((columnId, index) => {
-                            const column = this.state.columns[columnId];
-                            let boardState = (this.state.boardStates) ? this.state.boardStates : [];
-                            let isDropDisabled = (typeof boardState[columnId] !== 'undefined') ? boardState[columnId].valid : false;
-                            /* console.log({columnId}, {isDropDisabled}) */
-                            return (
-                                <InnerList
-                                    key={column.id}
-                                    column={column}
-                                    itemMap={this.state.items}
-                                    index={index}
-                                    isDropDisabled={(typeof boardState[columnId] !== 'undefined') ? boardState[columnId].valid : false}
-                                    boardItems={this.state.boardItems}
-                                    handleUndo={this.handleUndo}
-                                    handleAdd={this.handleAdd}
-                                    handleDelete={this.handleDelete}
-                                    handleBoardSubmit={this.handleBoardSubmit}
-                                    assetMap={this.state.assets}
-                                    expirationMap={this.state.expirations}
-                                    isValid={this.state.isValid}
-                                    isOnBoard={this.isOnBoard}
-                                />
-                            );
-                        })}
-                    </Box>
-                </DragDropContext>
-                <Card className={classes.submitPrime}>
-                    <Button 
-                        className={classes.submitButton}
-                        disabled={(this.state.isValid) ? false : true}
-                        onClick={ () => {this.handleBoardSubmit()}} 
-                    >
-                        <Typography>
-                            Create Prime
-                        </Typography>
-                    </Button>
-                </Card>
-                <LinkM 
-                    href={`/inventory/${this.state.account}`}
-                    underline='none'
-                    className={classes.transitionButton} 
-                >
-                    <Button 
-                        className={classes.transitionButton} 
-                    >
-                        <Typography className={classes.buttonText}>
-                            Next Page{<ArrowRightIcon />}
-                        </Typography>
-                    </Button>
-                </LinkM>
+            {/* </Page> */}
             </div>
-            </Page>
         );
     };
 };

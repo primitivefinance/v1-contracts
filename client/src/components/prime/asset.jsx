@@ -41,6 +41,7 @@ const styles = theme => ({
         padding: '24px',
         margin: '8px',
         cursor: 'pointer',
+        alignItems: 'center',
         transition: 'background-color 0.2s linear',
         [theme.breakpoints.up('sm')]: {
             height: '2.5vh',
@@ -100,7 +101,7 @@ const styles = theme => ({
         //paddingLeft: '10%',
     },
     onBoard: {
-        backgroundColor: colors.green,
+        backgroundColor: colors.success,
     },
 });
 
@@ -121,29 +122,6 @@ class Asset extends Component {
         } = this.props;
 
         let isDragDisabled = false;
-
-        /* let isDragDisabled;
-        let counter = 0;
-        // CONDITIONAL LOGIC FOR ASSET COMPONENTS
-        if(boardItems) {
-            let boardLimit = 2;
-            for(var i = 0; i < boardItems.length; i++) {
-                let _boardItem = (boardItems[i]).split('-')[0];
-                // if the board item is an asset and the item id is not the board item,
-                // then dont let the asset components be draggable.
-                if(_boardItem === 'asset') {
-                    counter++;
-                }
-                if(counter >= boardLimit) {
-                    isDragDisabled = true;
-                } else {
-                    isDragDisabled = false;
-                }
-            }
-            
-        } else {
-            isDragDisabled = false;
-        } */
         let onBoard = isOnBoard(item.id, column.id);
         return (
             <Draggable 
@@ -167,22 +145,20 @@ class Asset extends Component {
                                         ? `${classes.item} ${classes.disabled}` 
                                             :  `${classes.item} ${classes.prime}`
                             }
+                            color={(onBoard) ? 'success' : colors.white}
                         >
                             <Typography variant={'h2'} className={`${classes.title}`}>
                                 {this.props.item.content}
                             </Typography>
-                            <Typography variant={'h3'} className={`${classes.icon}`}>
-                                {this.props.item.type == 'asset' ? 'true' : 'false'}
-                            </Typography>
                             <IconButton
-                                color='primary'
+                                color={colors.background}
                                 /* className={`${classes.activeButton}`} */
                                 onClick={() => handleUndo(item.id, column.id)}
                             >
                                 <RestoreIcon />
                             </IconButton>
                             <IconButton
-                                color='primary'
+                                color={colors.background}
                                 onClick={() => handleDelete(item.id, column.id)} 
                             >
                                 <HighlightOffIcon />

@@ -38,6 +38,7 @@ const styles = theme => ({
         padding: '24px',
         margin: '8px',
         cursor: 'pointer',
+        alignItems: 'center',
         transition: 'background-color 0.2s linear',
         [theme.breakpoints.up('sm')]: {
             height: '2.5vh',
@@ -145,17 +146,14 @@ class Expiration extends Component {
                             <Typography variant={'h2'} className={`${classes.title}`}>
                                 {this.convertUnixTimestamp(this.props.item.content)}
                             </Typography>
-                            <Typography variant={'h3'} className={`${classes.icon}`}>
-                                {this.props.item.type == 'asset' ? 'true' : 'false'}
-                            </Typography>
                             <IconButton
-                                color='primary'
+                                color={colors.background}
                                 onClick={() => handleUndo(item.id, column.id)}
                             >
                                 <RestoreIcon />
                             </IconButton>
                             <IconButton
-                                color='primary'
+                                color={colors.background}
                                 onClick={() => handleDelete(item.id, column.id)} 
                             >
                                 <HighlightOffIcon />

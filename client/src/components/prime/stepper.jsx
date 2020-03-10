@@ -10,24 +10,51 @@ import { colors } from '../../theme/theme';
 const useStyles = makeStyles(theme => ({
   root: {
     width: '100%',
+    fontSize: '12px',
+    fontWeight: '500',
+    letterSpacing: '1px',
+    textTransform: 'uppercase',
+  },
+  label: {
+    '&$active': {
+      color: colors.primary,
+      fontWeight: 500,
+    },
   },
   active: {
-    color: colors.green,
+    color: colors.primary,
   },
   button: {
     marginRight: theme.spacing(1),
   },
   completed: {
     display: 'inline-block',
+    color: colors.primary,
+    '& $line': {
+      borderColor: '#784af4',
+    },
   },
   instructions: {
     marginTop: theme.spacing(1),
     marginBottom: theme.spacing(1),
   },
+  MuiStepLabel: {
+    active: {
+      color: colors.primary,
+    },
+  },
+  '.MuiStepLabel-label.MuiStepLabel-completed' : {
+    color: colors.primary,
+  },
+
 }));
 
 function getSteps() {
   return ['Select Collateral', 'Select Payment', 'Select Expiration', 'Select Payment Receiver'];
+}
+
+function getBottomSteps() {
+  return ['Select Double Collateral', 'Select Double Payment', 'Select NFT', 'Select Interest Receiver'];
 }
 
 function getStepContent(step) {
@@ -45,11 +72,34 @@ function getStepContent(step) {
   }
 }
 
+function getBpttomStepContent(step) {
+  switch (step) {
+    case 4:
+      return 'Collateral';
+    case 5:
+      return 'Payment Asset';
+    case 6:
+      return 'Option expires?';
+    case 7: 
+      return 'Who gets the payment?';
+    case 8: 
+      return 'Who gets the payment?';
+    default:
+      return 'Unknown step';
+  }
+}
+
 export default function HorizontalNonLinearStepper(props) {
   const classes = useStyles();
   const [activeStep, setActiveStep] = React.useState(0);
   const [completed, setCompleted] = React.useState({});
-  const steps = getSteps();
+  let steps;
+  if(props.bottom) {
+    steps = getBottomSteps();
+  } else {
+    steps = getSteps();
+  }
+  
   
 
   const totalSteps = () => {

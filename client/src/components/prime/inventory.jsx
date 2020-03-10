@@ -39,6 +39,7 @@ import Interface from './interface';
 
 
 
+
 const styles = theme => ({
     root: {
         flex: 1,
@@ -49,7 +50,8 @@ const styles = theme => ({
         flexDirection: 'column',
         [theme.breakpoints.up('sm')]: {
             flexDirection: 'row',
-        }
+        },
+        backgroundColor: colors.background,
     },
     boards: {
         flex: 1,
@@ -84,7 +86,8 @@ const styles = theme => ({
         paddingBottom: '0px',
         [theme.breakpoints.up('sm')]: {
             paddingBottom: '24px'
-        }
+        },
+        color: colors.primary,
     },
     transitionButton: {
         //display: 'flex',
@@ -103,12 +106,18 @@ const styles = theme => ({
         width: '100%',
         alignItems: 'center',
         justifyContent: 'center',
+        backgroundColor: colors.banner,
     },
     primeInventory: {
         alignItems: '',
-        
+        color: colors.primary,
+        backgroundColor: colors.banner,
     },
-    walletBalances: {
+    walletTable: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: colors.primary,
+        backgroundColor: colors.banner,
     },
     profileInfo: {
         margin: '16px',
@@ -116,6 +125,8 @@ const styles = theme => ({
         display: 'grid',
         flexDirection: 'row',
         width: '25%',
+
+        backgroundColor: colors.banner,
     },
     createPrime: {
         backgroundColor: colors.white,
@@ -130,7 +141,8 @@ const styles = theme => ({
         },
     },
     primeTable: {
-
+        color: colors.primary,
+        backgroundColor: colors.banner,
     },
     address: {
         textOverflow: 'ellipsis',
@@ -143,6 +155,24 @@ const styles = theme => ({
     buttonText: {
         padding: '4px',
         width: '100%',
+    },
+    submitInventory: {
+        margin: '16px',
+        color: colors.blue,
+        display: 'flex',
+        minHeight: '10%',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'column',
+        [theme.breakpoints.up('sm')]: {
+            flexDirection: 'column',
+        },
+        backgroundColor: colors.banner,
+        color: colors.primary,
+        '&:hover': {
+            backgroundColor: colors.primary,
+            color: colors.banner,
+        },
     },
 });
 
@@ -208,6 +238,7 @@ class Inventory extends Component {
         this.openPrime = this.openPrime.bind(this);
         this.primeExercise = this.primeExercise.bind(this);
         this.primeClose = this.primeClose.bind(this);
+        this.getBalanceOfErc20 = this.getBalanceOfErc20.bind(this);
 
 
         this.state = {
@@ -230,6 +261,7 @@ class Inventory extends Component {
         await this.getPrimeProperties('2');
         await this.getPastEvents('SlateMinted');
         await this.getPrimeInventory();
+        await this.getWalletInventory();
         
         
     };
@@ -406,6 +438,27 @@ class Inventory extends Component {
         return result;
     };
 
+    getBalanceOfErc20 = async () => {
+        console.time('getBalanceOfErc20')
+        // GET WEB3 AND ACCOUNT
+        const web3 = this.state.web3;
+
+        // GET INJECTED ACCOUNT
+        const account = await this.getAccount();
+
+        // GET PRIME CONTRACT
+        let ercInstance = await this.getContractInstance(Erc20);
+
+        let result = await ercInstance.methods.balanceOf(
+            account
+        ).call();
+        this.setState({
+            ercBalance: result,
+        });
+        console.timeEnd('getBalanceOfErc20');
+        return result;
+    };
+
     getOwnerOfPrime = async (tokenId) => {
         console.time('getOwnerOfPrime')
         // GET WEB3 AND ACCOUNT
@@ -551,55 +604,44 @@ class Inventory extends Component {
     };
 
     getWalletInventory = async () => {
-        /* const web3 = this.state.web3;
+        const web3 = this.state.web3;
         const account = await this.getAccount();
         const networkId = await this.getNetwork();
 
         function createData(symbol, balance) {
             return { symbol, balance };
         };
-        let walletRows = [];
 
-        let userBalances = [];
-        for(var i = 0; i < userMintedPrimes.length; i++) {
-            if(this.getOwnerOfPrime(userMintedPrimes[i])) {
-                userBalances.push(userMintedPrimes[i]);
-            } else {
-                console.log('Does not own: ', userMintedPrimes[i])
-            }
-        };
-        
-        for(var i = 0; i < userBalances.length; i++) {
-            let properties = await this.getPrimeProperties(userBalances[i]);
-            let yakInstance = new web3.eth.Contract(
-                Erc20.abi,
-                networkId && properties['yak'],
-            );
-            let yakSymbol = await yakInstance.methods.symbol().call();
 
-            let waxInstance = new web3.eth.Contract(
-                Erc20.abi,
-                networkId && properties['wax'],
-            );
-            let waxSymbol = await waxInstance.methods.symbol().call();
-
-            let tokenId = userBalances[i];
-            let xis = await web3.utils.fromWei(properties['xis']);
-            let zed = await web3.utils.fromWei(properties['zed']);
-            const date = new Date(properties['pow'] * 1000);
-            let pow = (date.toDateString());
-            let data = createData(
-                tokenId,
-                xis,
-                yakSymbol,
-                zed,
-                waxSymbol,
-                pow,
-                properties['gem'],
+        // GET CONTRACTS
+        const uNetwork = await Underlying.networks[networkId];
+        const uInstance = new web3.eth.Contract(
+            Underlying.abi,
+            uNetwork && uNetwork.address,
         );
 
-            walletRows.push(data)
-            console.log({walletRows}) */
+        const sNetwork = await Strike.networks[networkId];
+        const sInstance = new web3.eth.Contract(
+            Strike.abi,
+            sNetwork && sNetwork.address,
+        );
+
+        let uBal = await web3.utils.fromWei(await uInstance.methods.balanceOf(account).call());
+        let sBal = await web3.utils.fromWei(await sInstance.methods.balanceOf(account).call());
+        let uSym = await uInstance.methods.symbol().call();
+        let sSym = await sInstance.methods.symbol().call();
+        let walletRows = [];
+        let userBalances = [];
+        let uData = createData(uSym, uBal);
+        let sData = createData(sSym, sBal);
+
+        walletRows.push(uData)
+        walletRows.push(sData)
+        console.log({walletRows})
+
+        this.setState({
+            walletRows: walletRows,
+        });
     };
 
     testWeb3 = async () => {
@@ -688,6 +730,7 @@ class Inventory extends Component {
     render() {
         const { classes } = this.props;
         const primeRows = (this.state.primeRows) ? (this.state.primeRows) : [];
+        const walletRows = (this.state.walletRows) ? (this.state.walletRows) : [];
         const openInventory = (this.state.primeRows) 
                                 ? (this.state.primeRows.length > 0) 
                                     : false
@@ -696,16 +739,34 @@ class Inventory extends Component {
             <Page display='flex' key='inventory'>
                 <div className={classes.root} key='inventory'>
                 <Box className={classes.boards}>
-                    <LinkM href='/prime' underline='none' className={classes.transitionButton}>
-                        <Button 
-                            className={classes.transitionButton} 
-                            /* onClick={() => this.props.goToPrime()} */
+                    {/* <Card className={classes.submitInventory}>
+                        <LinkM 
+                            href={`/prime`}
+                            underline='none'
+                            className={classes.submitInventory}
                         >
-                            <Typography className={classes.buttonText}>
-                                {<ArrowLeftIcon />}Prev Page
+                            <Typography>
+                                Prev Page
                             </Typography>
-                        </Button>
-                    </LinkM>
+                            <Typography>
+                                {<ArrowLeftIcon />}
+                            </Typography>
+                        </LinkM>
+                    </Card> */}
+
+
+                    <Card className={classes.submitInventory}>
+                        <LinkM 
+                            href={`/prime`}
+                            underline='none'
+                            className={classes.submitInventory}
+                        >
+                            <Typography variant={'h1'}>
+                                Prev. Page
+                            </Typography>
+                        </LinkM>
+                    </Card>
+
 
                     <Card className={classes.profileCard}>
                         {!openInventory ? (
@@ -736,7 +797,7 @@ class Inventory extends Component {
                     <Grid container className={classes.profileInfo}>
                         <Grid item>
                             <Card className={classes.primeInventory}>
-                                <Typography className={classes.title}>
+                                <Typography className={classes.title} variant={'h1'}>
                                     Prime Inventory
                                 </Typography>
 
@@ -744,22 +805,22 @@ class Inventory extends Component {
                                     <Table className={classes.primeTable}>
                                         <TableHead>
                                             <TableRow>
-                                                <TableCell align='right'>ID</TableCell>
-                                                <TableCell align='right'>Collateral</TableCell>
-                                                <TableCell align='right'>Payment</TableCell>
-                                                <TableCell align='right'>Expires</TableCell>
-                                                <TableCell align='right' className={classes.address}>Paid To</TableCell>
+                                                <TableCell align='right' variant={'h1'}>ID</TableCell>
+                                                <TableCell align='right' variant={'h1'}>Collateral</TableCell>
+                                                <TableCell align='right' variant={'h1'}>Payment</TableCell>
+                                                <TableCell align='right' variant={'h1'}>Expires</TableCell>
+                                                <TableCell align='right' variant={'h1'} className={classes.address}>Paid To</TableCell>
                                             </TableRow>
                                         </TableHead>
                                         
                                         <TableBody>
                                             {primeRows.map(row => (
                                                 <TableRow key={row.name}>
-                                                    <TableCell align='right'>#{row.tokenId}</TableCell>
-                                                    <TableCell align='right'>{row.xis} {row.yakSymbol}</TableCell>
-                                                    <TableCell align='right'>{row.zed} {row.waxSymbol}</TableCell>
-                                                    <TableCell align='right'>{row.pow}</TableCell>
-                                                    <TableCell align='right' className={classes.address}>
+                                                    <TableCell align='right' variant={'h1'}>#{row.tokenId}</TableCell>
+                                                    <TableCell align='right' variant={'h1'}>{row.xis} {row.yakSymbol}</TableCell>
+                                                    <TableCell align='right' variant={'h1'}>{row.zed} {row.waxSymbol}</TableCell>
+                                                    <TableCell align='right' variant={'h1'}>{row.pow}</TableCell>
+                                                    <TableCell align='right' variant={'h1'} className={classes.address}>
                                                         <SimplePopover address={row.gem}/>
                                                     </TableCell>
                                                 </TableRow>
@@ -773,23 +834,63 @@ class Inventory extends Component {
                         </Grid>
                         <Grid item>
                             <Card className={classes.walletBalances}>
-                                <Typography className={classes.title}>
+                                <Typography className={classes.title} variant={'h1'}>
                                     Wallet Balances
                                 </Typography>
+
+                                <TableContainer component={Paper}>
+                                    <Table className={classes.walletTable}>
+                                        <TableHead>
+                                            <TableRow>
+                                                <TableCell align='right' variant={'h1'}>Symbol</TableCell>
+                                                <TableCell align='right' variant={'h1'}>Balance</TableCell>
+                                            </TableRow>
+                                        </TableHead>
+                                        
+                                        <TableBody>
+                                            {walletRows.map(row => (
+                                                <TableRow key={row.symbol}>
+                                                    <TableCell align='right' variant={'h1'}>{row.symbol}</TableCell>
+                                                    <TableCell align='right' variant={'h1'}>{row.balance}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                        
+                                    </Table>
+                                </TableContainer>
+
                             </Card>
                         </Grid>
                     </Grid>
 
                     
-                    <LinkM href='/prime' underline='none' className={classes.transitionButton}>
-                        <Button 
-                            className={classes.transitionButton} 
+                    {/* <Card className={classes.submitInventory}>
+                        <LinkM 
+                            href={`/inventory/${this.state.account}`}
+                            underline='none'
+                            className={classes.submitInventory}
                         >
-                            <Typography className={classes.buttonText}>
-                                Next Page{<ArrowRightIcon />}
+                            <Typography>
+                                Next Page
                             </Typography>
-                        </Button>
-                    </LinkM>
+                            <Typography>
+                                {<ArrowRightIcon />}
+                            </Typography>
+                        </LinkM>
+                    </Card> */}
+
+                    
+                    <Card className={classes.submitInventory}>
+                        <LinkM 
+                            href={`/inventory/${this.state.account}`}
+                            underline='none'
+                            className={classes.submitInventory}
+                        >
+                            <Typography variant={'h1'}>
+                                Next Page
+                            </Typography>
+                        </LinkM>
+                    </Card>
                 </Box>
                 </div>
             </Page>

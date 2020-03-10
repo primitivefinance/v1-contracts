@@ -200,7 +200,7 @@ class Interface extends Component {
         const primeRows = this.props.primeRows;
         return (
             <div className={classes.container} key='interface'>
-                <Typography className={classes.title}>
+                <Typography className={classes.title} variant={'h1'}>
                     PRIME ERC-721 NFT TOKENS
                 </Typography>
                 <Grid className={classes.interface}>
@@ -209,17 +209,17 @@ class Interface extends Component {
                                     <Table >
                                         <TableHead>
                                             <TableRow>
-                                                <TableCell align='right'>ID</TableCell>
-                                                <TableCell align='right'>Exercise</TableCell>
-                                                <TableCell align='right'>Withdraw</TableCell>
-                                                <TableCell align='right'>Create Another</TableCell>
-                                                <TableCell align='right' className={this.props.classes.address}>Paid To</TableCell>
+                                                <TableCell align='right' variant={'h1'}>ID</TableCell>
+                                                <TableCell align='right' variant={'h1'}>Exercise</TableCell>
+                                                <TableCell align='right' variant={'h1'}>Withdraw</TableCell>
+                                                <TableCell align='right' variant={'h1'}>Create Another</TableCell>
+                                                <TableCell align='right' variant={'h1'} className={this.props.classes.address}>Paid To</TableCell>
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
                                             {primeRows.map(row => (
                                                 <TableRow key={row.name}>
-                                                    <TableCell align='right'>
+                                                    <TableCell align='right' variant={'h1'}>
                                                         SP # [
                                                                 <Link 
                                                                     href={`${RINKEBY_ETHERSCAN_BASE_URL}/token/${RINKEBY_PRIME_ADDRESS}/?a=${row.tokenId}`}
@@ -227,7 +227,7 @@ class Interface extends Component {
                                                                     {row.tokenId}
                                                                 </Link>]
                                                     </TableCell>
-                                                    <TableCell align='right'>
+                                                    <TableCell align='right' variant={'h1'}>
                                                         <Button 
                                                             variant='contained' 
                                                             className={classes.actionButtons}
@@ -236,7 +236,7 @@ class Interface extends Component {
                                                             Exercise
                                                         </Button>
                                                     </TableCell>
-                                                    <TableCell align='right'>
+                                                    <TableCell align='right' variant={'h1'}>
                                                         <Button 
                                                             variant='contained' 
                                                             className={classes.actionButtons}
@@ -245,12 +245,12 @@ class Interface extends Component {
                                                             Withdraw
                                                         </Button>
                                                     </TableCell>
-                                                    <TableCell align='right'>
+                                                    <TableCell align='right' variant={'h1'}>
                                                         <Button variant='contained' className={classes.actionButtons}>
                                                             Create
                                                         </Button>
                                                     </TableCell>
-                                                    <TableCell align='right' className={this.props.classes.address}>
+                                                    <TableCell align='right' variant={'h1'} className={this.props.classes.address}>
                                                         <SimplePopover address={row.gem}/>
                                                     </TableCell>
                                                 </TableRow>

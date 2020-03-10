@@ -42,26 +42,28 @@ const styles = theme => ({
         padding: '16px',
         minHeight: '10vh',
         minWidth: '30vh',
-        backgroundColor: colors.lightpink,
+        backgroundColor: colors.secondary,
         '&:hover': {
-            backgroundColor: colors.lightblue,
+            backgroundColor: colors.highlight,
         },
         [theme.breakpoints.up('sm')]: {
             minWidth: '10vh',
         },
+        borderColor: colors.primary,
     },
     prime: {
-        backgroundColor: colors.white,
+        backgroundColor: colors.background,
         '&:hover': {
             '& .title': {
-                color: colors.blue
+                color: colors.primary
             },
             '& .icon': {
                 color: colors.blue
             },
         },
         '& .title': {
-            color: colors.blue
+            color: colors.primary,
+            fontWeight: '600',
         },
         '& .icon': {
             color: colors.blue
@@ -72,9 +74,12 @@ const styles = theme => ({
         paddingBottom: '0px',
         justifyContent: 'center',
         alignItems: 'center',
+        fontWeight: '500',
         [theme.breakpoints.up('sm')]: {
             paddingBottom: '8px'
-        }
+        },
+        backgroundColor: colors.banner,
+        color: colors.primary,
     },
     iconButton: {
         color: colors.green,
@@ -345,6 +350,7 @@ class Column extends Component {
             assetMap,
             expirationMap,
             boardItems,
+            index
         } = this.props;
 
         let form = <FormDiaglogue 
@@ -361,7 +367,7 @@ class Column extends Component {
                             onClick={ () => {this.handleBoard(column.id);}}    
                             >Submit Board
                         </Button>
-
+    console.log({index})
         return(
             <Card className={
                     (column.id === 'board') 
@@ -370,6 +376,8 @@ class Column extends Component {
                     }>
                 <Typography variant={'h1'} className={`${classes.title} title`}>
                     {column.title}
+                    {' '}
+                    {index}
                 </Typography>
                 <Droppable 
                     droppableId={column.id}

@@ -4,7 +4,7 @@ const INITIAL_CONTEXT = {
         'expiration-2': {id: 'expiration-2', content: '1609459200', type: 'expiration', index: 'start', payload: '1609459200',},
         'address-3': {id: 'address-3', content: 'address 3', type: 'address', index: 'start', payload: 'carbonprotocol.eth',},
         'asset-mkr': {id: 'asset-mkr', content: 'MKR', type: 'asset', index: 'start', payload: 'MKR',},
-        'asset-snx': {id: 'asset-snx', content: 'SNX', type: 'asset', index: '', payload: 'SNX'},
+        'asset-snx': {id: 'asset-snx', content: 'SNX', type: 'asset', index: 'start', payload: 'SNX'},
         'asset-u': {
             id: 'asset-u', 
             content: 'U', 
@@ -154,31 +154,31 @@ const INITIAL_CONTEXT = {
 
         '5': {
             id: '5',
-            title: 'Test',
+            title: 'Evolution',
             itemIds: [],
             board: true,
         },
         '6': {
             id: '6',
-            title: 'Test',
+            title: 'Double Collateral',
             itemIds: [],
             board: true,
         },
         '7': {
             id: '7',
-            title: 'Test',
+            title: 'Double Payment',
             itemIds: [],
             board: true,
         },
         '8': {
             id: '8',
-            title: 'Test',
+            title: 'NFT',
             itemIds: [],
             board: true,
         },
         '9': {
             id: '9',
-            title: 'Test',
+            title: 'Interest Receiver',
             itemIds: [],
             board: true,
         },

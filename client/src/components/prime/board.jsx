@@ -35,36 +35,38 @@ const styles = theme => ({
         flexDirection: 'row',
         [theme.breakpoints.up('sm')]: {
             flexDirection: 'column',
-        }
+        },
+        borderRadius: '0px',
     },
     list: {
         padding: '16px',
         minHeight: '10vh',
         minWidth: '30vh',
-        backgroundColor: colors.lightpink,
+        backgroundColor: colors.secondary,
         '&:hover': {
-            backgroundColor: colors.lightblue,
+            backgroundColor: colors.highlight,
         },
         [theme.breakpoints.up('sm')]: {
             minWidth: '10vh',
         },
     },
     prime: {
-        backgroundColor: colors.white,
+        backgroundColor: colors.banner,
         '&:hover': {
-            backgroundColor: colors.lightblue,
+            backgroundColor: colors.highlight,
             '& .title': {
-                color: colors.blue
+                color: colors.primary
             },
             '& .icon': {
-                color: colors.blue
+                color: colors.primary
             },
         },
         '& .title': {
-            color: colors.blue
+            color: colors.primary,
+            fontWeight: '600',
         },
         '& .icon': {
-            color: colors.blue
+            color: colors.primary
         }
     },
     title: {
@@ -72,12 +74,14 @@ const styles = theme => ({
         padding: '16px',
         paddingBottom: '0px',
         justifyContent: 'center',
+        fontWeight: '600',
         [theme.breakpoints.up('sm')]: {
             paddingBottom: '8px'
-        }
+        },
+        backgroundColor: colors.banner,
     },
     iconButton: {
-        color: colors.green,
+        color: colors.success,
         backgroundColor: 'transparent',
         opacity: '100%',
         '&:hover': {
@@ -99,13 +103,21 @@ const styles = theme => ({
             backgroundColor: colors.lightblue,
         },
         border: '0px',
+        color: colors.primary,
     },
     inputLabel: {
         bottomBorder: '0px',
-        variant: 'outlined',
     },
     menuItem: {
-        backgroundColor: props => props.isDuplicate ? colors.palered : colors.lightblue
+        backgroundColor: props => props.isDuplicate ? colors.palered : colors.lightblue,
+        color: colors.primary,
+        backgroundColor: colors.background,
+        '&:hover': {
+            color: colors.primary,
+            backgroundColor: colors.background,
+        },
+
+        
     },
     txBoard: {
         backgroundColor: props => props.isValid ? colors.white : colors.white,
@@ -127,6 +139,12 @@ const styles = theme => ({
         flexDirection: 'column',
         transition: 'background-color 0.25s linear',
     },
+    addButtons: {
+        display: 'flex',
+        flexDirection: 'row',
+        justifyContent: 'space-evenly',
+        backgroundColor: colors.banner,
+    }
 });
 
 
@@ -139,6 +157,7 @@ function FormDiaglogue(props) {
     const items = props.items; // items in column
     const assetIds = assets['assetIds'];
     const expirationIds = expirations['expirationIds'];
+    const name = props.name;
     
     
     function hasDuplicates(array) {
@@ -173,22 +192,25 @@ function FormDiaglogue(props) {
     };
 
     let selectOption;
-    switch(props.columnId) {
-        case 'start':
+    switch(props.name) {
+        case 'asset':
             selectOption = assetIds.map((asset) => {
                 return(
-                    <MenuItem value={asset}>{(assets[asset]).content}</MenuItem>
+                    <MenuItem className={props.classes.menuItem} value={asset}>{(assets[asset]).content} </MenuItem>
                 )
             });
             break;
-        case 'start':
+        case 'expiration':
             selectOption = expirationIds.map((expiration) => {
+                const timestamp = (expirations[expiration]).content;
+                const date = (new Date(timestamp * 1000))
+                const datetime = ((date.toDateString() + ' ' + date.toTimeString()).split('G'))[0];
                 return(
                     <MenuItem 
                         value={expiration} 
                         className={props.classes.menuItem}
                     >
-                        {(expirations[expiration]).content}
+                        {datetime}
                     </MenuItem>
                 )
             });
@@ -217,7 +239,7 @@ function FormDiaglogue(props) {
 
 
     return (
-        <div>
+        <>
             <IconButton
                     color='primary'
                     onClick={handleClickOpen}
@@ -226,9 +248,9 @@ function FormDiaglogue(props) {
                 <AddCircleIcon />
             </IconButton>
             <Dialog open={open} onClose={handleClose} aria-labelledby="form-dialog-title">
-                <DialogTitle id="form-dialog-title">Add an {(props.columnId).charAt(0).toUpperCase() + (props.columnId).slice(1)}</DialogTitle>
+                <DialogTitle id="form-dialog-title" color='primary' style={{color: colors.primary}}>Add {props.name}</DialogTitle>
                 <DialogContent>
-                    <DialogContentText>
+                    <DialogContentText style={{color: colors.primary}}>
                     {(props.columnId === 'address') ? 'Enter a valid Ethereum Address' : 'Choose from the available options.'}
                       
                     </DialogContentText>
@@ -242,7 +264,7 @@ function FormDiaglogue(props) {
                     </Button>
                     <Button
                         onClick={ () => {
-                            props.handleAddForm(itemId, props.columnId, address); 
+                            props.handleAddForm(itemId, 'start', address); 
                             handleClose();
                         }} 
                         color="primary"
@@ -251,7 +273,7 @@ function FormDiaglogue(props) {
                     </Button>
                 </DialogActions>
             </Dialog>
-        </div>
+        </>
     );
 }
 
@@ -347,20 +369,33 @@ class Column extends Component {
             boardItems,
         } = this.props;
 
-        let form = <FormDiaglogue 
+        let assetForm = <FormDiaglogue
                     items={items}
-                    columnId={column.id}
+                    columnId={'start'}
+                    name={'asset'}
                     handleAddForm={this.handleAddForm}
                     classes={classes}
                     assetMap={assetMap}
                     expirationMap={expirationMap}
                 />
-        let boardForm = <Button
-                            className={classes.submit}
-                            disabled={(this.props.isValid) ? false : true}
-                            onClick={ () => {this.handleBoard(column.id);}}    
-                            >Submit Board
-                        </Button>
+        let expirationForm = <FormDiaglogue
+                items={items}
+                columnId={'start'}
+                name={'expiration'}
+                handleAddForm={this.handleAddForm}
+                classes={classes}
+                assetMap={assetMap}
+                expirationMap={expirationMap}
+            />
+        let addressForm = <FormDiaglogue
+                items={items}
+                columnId={'address'}
+                name={'address'}
+                handleAddForm={this.handleAddForm}
+                classes={classes}
+                assetMap={assetMap}
+                expirationMap={expirationMap}
+            />
 
         return(
             <Card className={
@@ -396,11 +431,11 @@ class Column extends Component {
                     </>
                 )}
             </Droppable>
-            {
-                (column.id === 'board') 
-                    ? boardForm 
-                        : form
-            }
+            <Box className={classes.addButtons}>
+                {assetForm}
+                {expirationForm}
+                {addressForm}
+            </Box>
         </Card>
         );
     }
