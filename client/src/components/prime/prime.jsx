@@ -36,6 +36,8 @@ import SimpleBottomNavigation from './bottomNavigation';
 import Footer from './footer';
 import GitHubIcon from '@material-ui/icons/GitHub';
 import TwitterIcon from '@material-ui/icons/Twitter';
+import TextField from '@material-ui/core/TextField';
+import OrderSummary from './summary';
 
 
 const styles = theme => ({
@@ -134,7 +136,7 @@ const styles = theme => ({
     submitButton: {
         display: 'flex',
         height: '100%',
-        minHeight: '100vh',
+        /* minHeight: '100vh', */
         color: colors.background,
         backgroundColor: state => state.isValid ? colors.success : colors.secondary,
         '&:hover': {
@@ -202,9 +204,49 @@ const styles = theme => ({
         height: '100%',
         fontWeight: '700',
     },
-    
+    submitCard: {
+        display: 'flex',
+        margin: '16px',
+        /* marginRight: '32px', */
+        width: '15%',
+        height: '20%',
+        minWidth: '10%',
+        minHeight: '10%',
+        flexDirection: 'row',
+        [theme.breakpoints.up('sm')]: {
+            flexDirection: 'column',
+        },
+        backgroundColor: colors.banner,
+        color: colors.primary,
+        borderRadius: '0px',
+    },
+    submitCardTypography: {
+        /* margin: '16px', */
+        marginLeft: '16px',
+        marginRight: '16px',
+        marginTop: '16px',
+        marginBottom: '4px',
+    },
+    submitCardText: {
+        /* margin: '12px', */
+        marginLeft: '12px',
+        marginRight: '12px',
+        marginBottom: '12px',
+        display: 'flex',
+        flexDirection: 'row',
+        
+    },
+    submitCardButton: {
+        margin: '8px',
+        color: colors.background,
+        backgroundColor: state => state.isValid ? colors.success : colors.secondary,
+        '&:hover': {
+            backgroundColor: state => state.isValid ? colors.success : colors.success,
+        },
+    },
 });
 
+/* SEPARATE */
 function SimplePopover(props) {
     const classes = props.classes;
     const [anchorEl, setAnchorEl] = React.useState(null);
@@ -243,8 +285,33 @@ function SimplePopover(props) {
         </Popover>
       </div>
     );
-}
+};
 
+/* SEPARATE */
+function MultilineTextFields(props) {
+    const { classes } = props;
+    const [value, setValue] = React.useState();
+  
+    const handleChange = event => {
+        setValue(event.target.value);
+        let value = event.target.value;
+        props.handleAssetAmount(props.columnId, value)
+    };
+
+    const handleSubmit = () => {
+        props.handleAssetAmount(props.columnId, value)
+    };
+  
+    return (
+      <form className={classes.amountForm} noValidate autoComplete="off" onSubmit={(e) => e.preventDefault()}>
+          <TextField
+            placeholder='Amount'
+            value={value}
+            onChange={handleChange}
+          />
+    </form>
+    );
+};
 
 class InnerList extends PureComponent {
     shouldComponentUpdate(nextProps) {
@@ -262,15 +329,7 @@ class InnerList extends PureComponent {
     render() {
         const { 
             column, 
-            itemMap, 
-            index, 
-            isDropDisabled, 
-            boardItems, 
-            handleUndo, 
-            handleAdd,
-            handleDelete,
-            handleBoardSubmit, 
-            isValid,
+            itemMap,
         } = this.props;
         const items = column.itemIds.map(itemId => itemMap[itemId]);
         switch(column.id){
@@ -279,24 +338,24 @@ class InnerList extends PureComponent {
             default:
                 return  <Column 
                             key={column.id} 
-                            column={column} 
+                            column={this.props.column} 
                             items={items} 
-                            isDropDisabled={isDropDisabled} 
-                            boardItems={boardItems}
-                            handleUndo={handleUndo}
-                            handleAdd={handleAdd}
-                            handleDelete={handleDelete}
+                            isDropDisabled={this.props.isDropDisabled} 
+                            boardItems={this.props.boardItems}
+                            handleUndo={this.props.handleUndo}
+                            handleAdd={this.props.handleAdd}
+                            handleDelete={this.props.handleDelete}
                             assetMap={this.props.assetMap}
                             expirationMap={this.props.expirationMap}
-                            handleBoardSubmit={handleBoardSubmit}
-                            isValid={isValid}
+                            handleBoardSubmit={this.props.handleBoardSubmit}
+                            isValid={this.props.isValid}
                             isOnBoard={this.props.isOnBoard}
-                            index={index}
+                            index={this.props.index}
                             handleAssetAmount={this.props.handleAssetAmount}
                         />;
         }
     }
-}
+};
 
 class Prime extends Component {
     constructor(props){
@@ -1251,7 +1310,6 @@ class Prime extends Component {
         });
     };
 
-
     render() {
         const { classes } = this.props;
         if(this.state.inventoryPage) {
@@ -1260,9 +1318,46 @@ class Prime extends Component {
             );
         }
         const primeRows = [];
+        let cAsset, pAsset, eTimestamp, aReceiver, cAmt, pAmt, boardState, items;
+        boardState = (typeof this.state.boardStates !== 'undefined') ? this.state.boardStates : 'undefined';
+        items = this.state.items;
+        if(typeof boardState !== 'undefined') {
+            if(boardState['collateralBoard']) {
+                if(boardState['collateralBoard']['itemIds'].length > 0) {
+                    cAsset = items[boardState['collateralBoard']['itemIds'][0]].payload;
+                    cAmt = ((this.state.collateralAmount) / 10**18).toFixed(6);
+                };
+            };
+
+            if(boardState['paymentBoard']) {
+                if(boardState['paymentBoard']['itemIds'].length > 0) {
+                    pAsset = items[boardState['paymentBoard']['itemIds'][0]].payload;
+                    pAmt = this.state.paymentAmount;
+                };
+            };
+
+            if(boardState['expirationBoard']) {
+                if(boardState['expirationBoard']['itemIds'].length > 0) {
+                    eTimestamp = items[boardState['expirationBoard']['itemIds'][0]].payload;
+                    let date = new Date(eTimestamp * 1000);
+                    let datetime = date.toDateString();
+                    eTimestamp = datetime;
+                };
+            };
+
+            if(boardState['addressBoard']) {
+                if(boardState['addressBoard']['itemIds'].length > 0) {
+                    aReceiver = items[boardState['addressBoard']['itemIds'][0]].payload;
+                };
+            };
+        };
+
+
+
         return (
             <div className={classes.root}>
-            {/* <Page key='prime' color='primary'> */}
+
+                {/* STEPPER */}
                 <HorizontalNonLinearStepper 
                     undoStep={this.undoStep}
                     boardStates={this.state.boardStates}
@@ -1271,30 +1366,32 @@ class Prime extends Component {
                     className={classes.stepper}
                     classes={classes}
                 />
+
+                {/* CORE BOARD INTERFACE */}
                 <div className={classes.body} key='prime'>
                     <DragDropContext 
                         onBeforeDragStart={this.onBeforeDragStart}
                         onDragStart={this.onDragStart}
                         onDragEnd={this.onDragEnd}
                     >
+                        {/* BOARD */}
+                        <Board 
+                            key={'start'} 
+                            column={this.state.columns['start']} 
+                            items={this.state.columns['start'].itemIds.map(itemId => this.state.items[itemId])} 
+                            index={0}
+                            boardItems={this.state.boardItems}
+                            handleUndo={this.handleUndo}
+                            handleAdd={this.handleAdd}
+                            handleDelete={this.handleDelete}
+                            handleBoardSubmit={this.handleBoardSubmit}
+                            assetMap={this.state.assets}
+                            expirationMap={this.state.expirations}
+                            isValid={this.state.isValid}
+                            isOnBoard={this.isOnBoard}
+                        />
 
-
-                            <Board 
-                                key={'start'} 
-                                column={this.state.columns['start']} 
-                                items={this.state.columns['start'].itemIds.map(itemId => this.state.items[itemId])} 
-                                index={0}
-                                boardItems={this.state.boardItems}
-                                handleUndo={this.handleUndo}
-                                handleAdd={this.handleAdd}
-                                handleDelete={this.handleDelete}
-                                handleBoardSubmit={this.handleBoardSubmit}
-                                assetMap={this.state.assets}
-                                expirationMap={this.state.expirations}
-                                isValid={this.state.isValid}
-                                isOnBoard={this.isOnBoard}
-                            />
-
+                        {/* CELLS */}
                         <Box className={classes.cells}>
                             {this.state.columnOrder.map((columnId, index) => {
                                 const column = this.state.columns[columnId];
@@ -1322,9 +1419,61 @@ class Prime extends Component {
                             })}
                         </Box>
                     </DragDropContext>
-                    <Card className={classes.submitPrime}>
+
+
+                    {/* ORDER SUMMARY */}
+                    <OrderSummary
+                        boardStates={this.state.boardStates}
+                        items={this.state.items}
+                        collateralAmount={this.state.collateralAmount}
+                        paymentAmount={this.state.paymentAmount}
+                        handleAssetAmount={this.handleAssetAmount}
+                        handleBoardSubmit={this.handleBoardSubmit}
+                        isValid={this.isValid}
+                    />
+                    <Card className={classes.submitCard}>
+                        <Typography variant={'h1'} className={classes.submitCardTypography}>
+                                Order Summary
+                        </Typography>
+                        <Typography variant={'h2'} className={classes.submitCardTypography}>
+                                Collateral: {cAsset}
+                        </Typography>
+                        <form noValidate autoComplete="off" className={classes.submitCardText}>
+                              <MultilineTextFields
+                                classes={classes}
+                                columnId={'collateralBoard'}
+                                handleAssetAmount={this.handleAssetAmount}
+                              />
+                        </form>
+                        <Typography variant={'h2'} className={classes.submitCardTypography}>
+                                Payment: {pAsset}
+                        </Typography>
+
+                            <form noValidate autoComplete="off" className={classes.submitCardText}>
+                                  <MultilineTextFields
+                                    classes={classes}
+                                    columnId={'paymentBoard'}
+                                    handleAssetAmount={this.handleAssetAmount}
+                                  />
+                                  <Typography variant={'h2'} style={{ alignItems: 'center', display: 'flex', marginLeft: '8px', fontWeight: '600' }}>
+                                    {pAsset}
+                                </Typography>
+                            </form> 
+                        <Typography variant={'h2'} className={classes.submitCardTypography}>
+                                Expires: {eTimestamp}
+                        </Typography>
+                        <Typography variant={'h2'} className={classes.submitCardTypography}>
+                                Payment Receiver: {aReceiver}
+                        </Typography>
+                        <Typography variant={'h2'} className={classes.submitCardTypography}>
+                                ------------------------------------
+                        </Typography>
+                        <Typography variant={'h1'} className={classes.submitCardTypography}>
+                                Deposit Subtotal: {cAmt} {cAsset}
+                        </Typography>
+                        
                         <Button 
-                            className={classes.submitButton}
+                            className={classes.submitCardButton}
                             disabled={(this.state.isValid) ? false : true}
                             onClick={ () => {this.handleBoardSubmit()}} 
                         >
@@ -1333,6 +1482,9 @@ class Prime extends Component {
                             </Typography>
                         </Button>
                     </Card>
+
+                    
+                    {/* NAVIGATION */}
                     <Card className={classes.submitInventory}>
                         <Button 
                             href={`/inventory/${this.state.account}`}
@@ -1344,6 +1496,9 @@ class Prime extends Component {
                         </Button>
                     </Card>
                 </div>
+
+
+                {/* BOTTOM STEPPER AND FOOTER */}
                 <div className={classes.bottom}>
                     <HorizontalNonLinearStepper 
                         undoStep={this.undoStep}
@@ -1368,7 +1523,7 @@ class Prime extends Component {
                         }
                     />
                 </div>
-            {/* </Page> */}
+
             </div>
         );
     };

@@ -239,10 +239,11 @@ class Interface extends Component {
                                         <TableHead>
                                             <TableRow>
                                                 <TableCell align='left' variant={'h1'}>ID</TableCell>
+                                                <TableCell align='left' variant={'h1'}>Collateral</TableCell>
+                                                <TableCell align='left' variant={'h1'}>Payment</TableCell>
+                                                <TableCell align='left' variant={'h1'}>Net</TableCell>
                                                 <TableCell align='left' variant={'h1'}>Exercise</TableCell>
                                                 <TableCell align='left' variant={'h1'}>Withdraw</TableCell>
-                                                <TableCell align='left' variant={'h1'}>Create Another</TableCell>
-                                                <TableCell align='left' variant={'h1'}>Net Value</TableCell>
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
@@ -257,6 +258,15 @@ class Interface extends Component {
                                                                 >
                                                                     {row.tokenId}
                                                                 </Link>]
+                                                    </TableCell>
+                                                    <TableCell align='left' variant={'h1'}> 
+                                                        $ {(typeof statsData !== 'undefined') ? statsData['tokenValues'][row.tokenId]['cV'] : 'n/a'}
+                                                    </TableCell>
+                                                    <TableCell align='left' variant={'h1'}> 
+                                                        $ {(typeof statsData !== 'undefined') ? statsData['tokenValues'][row.tokenId]['pV'] : 'n/a'}
+                                                    </TableCell>
+                                                    <TableCell align='left' variant={'h1'}> 
+                                                        $ {(typeof statsData !== 'undefined') ? statsData['tokenValues'][row.tokenId]['nV'] : 'n/a'}
                                                     </TableCell>
                                                     <TableCell align='left' variant={'h1'}>
                                                         <Button 
@@ -275,14 +285,6 @@ class Interface extends Component {
                                                         >
                                                             Withdraw
                                                         </Button>
-                                                    </TableCell>
-                                                    <TableCell align='left' variant={'h1'}>
-                                                        <Button variant='contained' className={classes.actionButtons} href='/prime'>
-                                                            Create
-                                                        </Button>
-                                                    </TableCell>
-                                                    <TableCell align='left' variant={'h1'}> 
-                                                        $ {(typeof statsData !== 'undefined') ? statsData['tokenValues'][row.tokenId]['nV'] : 'n/a'}
                                                     </TableCell>
                                                 </TableRow>
                                             ))}

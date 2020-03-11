@@ -455,17 +455,6 @@ class Column extends Component {
                     }>
                 <Typography variant={'h1'} className={`${classes.title} title`}>
                     {column.title}
-                    {' '}
-                    {amountForm}
-                    {/* <form className={classes.root} noValidate autoComplete="off">
-                        <TextField 
-                            id="outlined-basic" 
-                            label="Outlined" 
-                            variant='outlined' 
-                            value={this.props.qty}
-                            onChange={() => {this.props.updateQty();}}
-                        />
-                    </form> */}
                 </Typography>
                 
                 <Droppable 
