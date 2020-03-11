@@ -15,6 +15,7 @@ import DialogContentText from '@material-ui/core/DialogContentText';
 import DialogTitle from '@material-ui/core/DialogTitle';
 import Input from '@material-ui/core/Input';
 import MenuItem from '@material-ui/core/MenuItem';
+import Paper from '@material-ui/core/Paper';
 import FormControl from '@material-ui/core/FormControl';
 import Select from '@material-ui/core/Select';
 import Asset from './asset';
@@ -94,23 +95,33 @@ const styles = theme => ({
     select: {
         display: 'flex',
         width: '100%',
+        backgroundColor: colors.banner,
+        color: colors.primary,
+
     },
     formControl: {
-        width: '100%',
+        /* width: '100%',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: colors.white,
+        backgroundColor: colors.banner,
         '&:hover': {
-            backgroundColor: colors.lightblue,
+            backgroundColor: colors.banner,
         },
-        border: '0px',
+        color: colors.primary,
+        border: '0px', */
     },
     inputLabel: {
         bottomBorder: '0px',
         variant: 'outlined',
+        backgroundColor: colors.banner,
+        '&:hover': {
+            backgroundColor: colors.banner,
+        },
+        color: colors.primary,
     },
     menuItem: {
-        backgroundColor: props => props.isDuplicate ? colors.palered : colors.lightblue
+        backgroundColor: props => props.isDuplicate ? colors.palered : colors.lightblue,
+        backgroundColor: colors.banner,
     },
     txBoard: {
         backgroundColor: props => props.isValid ? colors.white : colors.white,
@@ -182,7 +193,7 @@ function FormDiaglogue(props) {
         case 'paymentBoard':
             selectOption = assetIds.map((asset) => {
                 return(
-                    <MenuItem value={asset}>{(assets[asset]).content}</MenuItem>
+                    <MenuItem value={asset}><Typography variant={'h1'}>{(assets[asset]).content}</Typography></MenuItem>
                 )
             });
             break;
@@ -191,7 +202,7 @@ function FormDiaglogue(props) {
                 return(
                     <MenuItem 
                         value={expiration} 
-                        className={props.classes.menuItem}
+                        /* className={props.classes.menuItem} */
                     >
                         {(expirations[expiration]).content}
                     </MenuItem>
@@ -237,7 +248,7 @@ function FormDiaglogue(props) {
                     {(props.columnId === 'addressBoard') ? 'Enter a valid Ethereum Address' : 'Choose from the available options.'}
                       
                     </DialogContentText>
-                    <FormControl className={`${props.classes.formControl} ${props.classes.inputLabel}`}>
+                    <FormControl fullWidth component={Paper} variant='outlined' color='secondary' /* className={`${props.classes.formControl} ${props.classes.inputLabel}`} */>
                       {(props.columnId === 'addressBoard') ? addressForm : selectForm}
                     </FormControl>
                 </DialogContent>

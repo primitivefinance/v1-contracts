@@ -9,9 +9,13 @@
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.3.2",
     "@testing-library/user-event": "^7.1.2",
+    "chart.js": "^2.9.3",
     "classnames": "^2.2.6",
+    "dotenv": "^8.2.0",
+    "dotenv-webpack": "^1.7.0",
     "react": "^16.13.0",
     "react-beautiful-dnd": "^13.0.0",
+    "react-chartjs-2": "^2.9.0",
     "react-dnd": "^10.0.2",
     "react-dnd-html5-backend": "^10.0.2",
     "react-dnd-touch-backend": "^10.0.2",
@@ -19,6 +23,7 @@
     "react-router-dom": "^5.1.2",
     "react-scripts": "3.4.0",
     "react-transition-group": "^4.3.0",
+    "request-promise": "^4.2.5",
     "web3": "^1.2.6"
   },
   "scripts": {

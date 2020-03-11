@@ -47,9 +47,9 @@ const styles = theme => ({
         },
     },
     prime: {
-        backgroundColor: props => (props.isDragDisabled ? colors.palered : colors.white),
+        backgroundColor: colors.primary,
         '&:hover': {
-            backgroundColor: colors.lightblue,
+            backgroundColor: colors.lightSuccess,
             '& .title': {
                 color: colors.blue
             },
@@ -77,6 +77,7 @@ const styles = theme => ({
         color: colors.blue,
     },
     title: {
+        color: colors.banner,
     },
     dragging: {
         opacity: 1,

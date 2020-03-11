@@ -37,6 +37,7 @@ import Footer from './footer';
 import GitHubIcon from '@material-ui/icons/GitHub';
 import TwitterIcon from '@material-ui/icons/Twitter';
 
+
 const styles = theme => ({
     root: {
         flex: 1,
@@ -135,7 +136,7 @@ const styles = theme => ({
         height: '100%',
         minHeight: '100vh',
         color: colors.background,
-        backgroundColor: state => state.isValid ? colors.success : colors.success,
+        backgroundColor: state => state.isValid ? colors.success : colors.secondary,
         '&:hover': {
             backgroundColor: state => state.isValid ? colors.success : colors.success,
         },
@@ -168,7 +169,7 @@ const styles = theme => ({
         [theme.breakpoints.up('sm')]: {
             flexDirection: 'column',
         },
-        color: colors.background,
+        color: colors.banner,
     },
     submitInventory: {
         margin: '16px',
@@ -188,6 +189,18 @@ const styles = theme => ({
             backgroundColor: colors.lightblue,
             color: colors.background,
         },
+    },
+    linkButton: {
+        backgroundColor: colors.banner,
+        color: colors.primary,
+        '&:hover' : {
+            backgroundColor: colors.primary,
+            color: colors.banner,
+        },
+        letterSpacing: '1px',
+        textTransform: 'uppercase',
+        height: '100%',
+        fontWeight: '700',
     },
     
 });
@@ -1028,6 +1041,20 @@ class Prime extends Component {
         }
     };
 
+    getTokenAbi = (networkId, symbol) => {
+        console.time('getTokenAbi');
+        let token = TOKENS_CONTEXT[networkId][symbol];
+        if(typeof token !== 'undefined' && typeof token.address !== 'undefined') {
+            /* console.trace(token.address) */
+            console.timeEnd('getTokenAbi');
+            return token.abi;
+        } else {
+            /* console.trace(token.address) */
+            console.timeEnd('getTokenAbi');
+            return '';
+        }
+    };
+
     handleApprove = async (contractInstance, approveAddr, approveAmt, _from) => {
         console.time('handleApprove');
         let approve = await contractInstance.methods.approve(
@@ -1203,15 +1230,14 @@ class Prime extends Component {
                         </Button>
                     </Card>
                     <Card className={classes.submitInventory}>
-                        <LinkM 
+                        <Button 
                             href={`/inventory/${this.state.account}`}
-                            underline='none'
-                            className={classes.submitInventory}
+                            className={classes.linkButton}
                         >
                             <Typography variant={'h1'}>
                                 Next Page
                             </Typography>
-                        </LinkM>
+                        </Button>
                     </Card>
                 </div>
                 <div className={classes.bottom}>
@@ -1223,6 +1249,7 @@ class Prime extends Component {
                         className={classes.stepper}
                         classes={classes}
                         bottom={true}
+                        disabled={true}
                     />
                     <Footer 
                         title={

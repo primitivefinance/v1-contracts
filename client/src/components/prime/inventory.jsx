@@ -38,8 +38,6 @@ import Prime from './prime';
 import Interface from './interface';
 
 
-
-
 const styles = theme => ({
     root: {
         flex: 1,
@@ -100,8 +98,6 @@ const styles = theme => ({
     },
     profileCard: {
         display: 'flex',
-       /*  minHeight: '96%', */
-        height: '96%',
         margin: '16px',
         width: '100%',
         alignItems: 'center',
@@ -118,6 +114,9 @@ const styles = theme => ({
         justifyContent: 'center',
         color: colors.primary,
         backgroundColor: colors.banner,
+    },
+    walletBalances: {
+        textTransform: 'uppercase',
     },
     profileInfo: {
         margin: '16px',
@@ -143,6 +142,7 @@ const styles = theme => ({
     primeTable: {
         color: colors.primary,
         backgroundColor: colors.banner,
+        textTransform: 'uppercase',
     },
     address: {
         textOverflow: 'ellipsis',
@@ -150,7 +150,8 @@ const styles = theme => ({
         maxWidth: '0%',
         width: '0%',
         minWidth: '0%',
-
+        color: colors.primary,
+        backgroundColor: colors.banner,
     },
     buttonText: {
         padding: '4px',
@@ -174,6 +175,39 @@ const styles = theme => ({
             color: colors.banner,
         },
     },
+    addressButton: {
+        backgroundColor: colors.secondary,
+        color: colors.banner,
+        '&:hover': {
+            backgroundColor: colors.primary,
+        },
+    },
+    linkButton: {
+        backgroundColor: colors.banner,
+        color: colors.primary,
+        '&:hover' : {
+            backgroundColor: colors.primary,
+            color: colors.banner,
+        },
+        letterSpacing: '1px',
+        textTransform: 'uppercase',
+        height: '100%',
+        fontWeight: '700',
+        align: 'center',
+        justify: 'center',
+        textAlign: 'center',
+    },
+    mintButton: {
+        backgroundColor: colors.primary,
+        color: colors.banner,
+        '&:hover' : {
+            backgroundColor: colors.banner,
+            color: colors.primary,
+            fontWeight: '600',
+        },
+        fontWeight: '500',
+        marginLeft: '24px',
+    },
 });
 
 
@@ -195,7 +229,7 @@ function SimplePopover(props) {
   
     return (
       <div>
-        <Button aria-describedby={id} variant="contained" onClick={handleClick}>
+        <Button aria-describedby={id} className={classes.addressButton} onClick={handleClick}>
           Address
         </Button>
         <Popover
@@ -239,13 +273,45 @@ class Inventory extends Component {
         this.primeExercise = this.primeExercise.bind(this);
         this.primeClose = this.primeClose.bind(this);
         this.getBalanceOfErc20 = this.getBalanceOfErc20.bind(this);
+        this.getTokenAbi = this.getTokenAbi.bind(this);
+        this.getWalletData = this.getWalletData.bind(this);
+        this.handleMint = this.handleMint.bind(this);
+        this.getProfitData = this.getProfitData.bind(this);
 
+
+        const data = {
+            labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+            datasets: [
+              {
+                label: 'Net Profit in USD $',
+                fill: false,
+                lineTension: 0.1,
+                backgroundColor: 'rgba(75,192,192,0.4)',
+                borderColor: 'rgba(75,192,192,1)',
+                borderCapStyle: 'butt',
+                borderDash: [],
+                borderDashOffset: 0.0,
+                borderJoinStyle: 'miter',
+                pointBorderColor: 'rgba(75,192,192,1)',
+                pointBackgroundColor: '#fff',
+                pointBorderWidth: 1,
+                pointHoverRadius: 5,
+                pointHoverBackgroundColor: 'rgba(75,192,192,1)',
+                pointHoverBorderColor: 'rgba(220,220,220,1)',
+                pointHoverBorderWidth: 2,
+                pointRadius: 1,
+                pointHitRadius: 10,
+                data: [65, 59, 80, 81, 56, 55, 40]
+              }
+            ]
+          };
 
         this.state = {
             web3: props.web3,
             goToPrime: props.goToPrime,
             primeOpen: false,
         }
+        
         
     };
 
@@ -262,7 +328,7 @@ class Inventory extends Component {
         await this.getPastEvents('SlateMinted');
         await this.getPrimeInventory();
         await this.getWalletInventory();
-        
+        await this.getProfitData();
         
     };
 
@@ -401,6 +467,20 @@ class Inventory extends Component {
         } else {
             /* console.trace(token.address) */
             console.timeEnd('getTokenAddress');
+            return '';
+        }
+    };
+
+    getTokenAbi = (networkId, symbol) => {
+        console.time('getTokenAbi');
+        let token = TOKENS_CONTEXT[networkId][symbol];
+        if(typeof token !== 'undefined' && typeof token.address !== 'undefined') {
+            /* console.trace(token.address) */
+            console.timeEnd('getTokenAbi');
+            return token.abi;
+        } else {
+            /* console.trace(token.address) */
+            console.timeEnd('getTokenAbi');
             return '';
         }
     };
@@ -600,7 +680,18 @@ class Inventory extends Component {
         }
         this.setState({
             primeRows: primeRows,
-        });
+        },);
+    };
+
+    getWalletData = async (instance, account) => {
+        const web3 = this.state.web3;
+        function createData(symbol, balance) {
+            return { symbol, balance };
+        };
+        let sym = await instance.methods.symbol().call();
+        let bal = await web3.utils.fromWei(await instance.methods.balanceOf(account).call());
+        let data = createData(sym, bal);
+        return data;
     };
 
     getWalletInventory = async () => {
@@ -626,22 +717,47 @@ class Inventory extends Component {
             sNetwork && sNetwork.address,
         );
 
-        let uBal = await web3.utils.fromWei(await uInstance.methods.balanceOf(account).call());
-        let sBal = await web3.utils.fromWei(await sInstance.methods.balanceOf(account).call());
-        let uSym = await uInstance.methods.symbol().call();
-        let sSym = await sInstance.methods.symbol().call();
-        let walletRows = [];
-        let userBalances = [];
-        let uData = createData(uSym, uBal);
-        let sData = createData(sSym, sBal);
+        const daiAbi = this.getTokenAbi(networkId, 'DAI')
+        const daiAddress = this.getTokenAddress(networkId, 'DAI')
+        const daiNetwork = '4';
+        const daiInstance = new web3.eth.Contract(
+            daiAbi,
+            daiNetwork && daiAddress,
+        );
 
-        walletRows.push(uData)
-        walletRows.push(sData)
+        const tUSDAbi = this.getTokenAbi(networkId, 'tUSD')
+        const tUSDAddress = this.getTokenAddress(networkId, 'tUSD')
+        const tUSDNetwork = '4';
+        const tUSDInstance = new web3.eth.Contract(
+            tUSDAbi,
+            tUSDNetwork && tUSDAddress,
+        );
+
+        const tETHAbi = this.getTokenAbi(networkId, 'tETH')
+        const tETHAddress = this.getTokenAddress(networkId, 'tETH')
+        const tETHNetwork = '4';
+        const tETHInstance = new web3.eth.Contract(
+            tETHAbi,
+            tETHNetwork && tETHAddress,
+        );
+
+        let ethBal = await web3.utils.fromWei(await web3.eth.getBalance(account));
+        let ethSym = 'ETH'
+        let ethData = createData(ethSym, ethBal);
+        let walletRows = [];
+        walletRows.push(ethData);
+        walletRows.push(await this.getWalletData(daiInstance, account));
+        walletRows.push(await this.getWalletData(tUSDInstance, account));
+        walletRows.push(await this.getWalletData(tETHInstance, account));
+        walletRows.push(await this.getWalletData(uInstance, account));
+        walletRows.push(await this.getWalletData(sInstance, account));
         console.log({walletRows})
 
         this.setState({
             walletRows: walletRows,
-        });
+        },);
+
+        return walletRows;
     };
 
     testWeb3 = async () => {
@@ -727,6 +843,216 @@ class Inventory extends Component {
         return close;
     };
 
+    handleMint = async (symbol) => {
+        console.log('MINT: ', symbol)
+        console.time('handleMint');
+
+        if(symbol === 'U' || symbol === 'S' || symbol === 'ETH') {
+            console.log('SYMBOL DOESNT HAVE MINT FUNCTION', symbol)
+            return;
+        };
+
+        const web3 = this.state.web3;
+        const account = await this.getAccount();
+        const networkId = await this.getNetwork();
+
+
+        /* GET CONTRACTS */
+        let address = this.getTokenAddress(networkId, symbol);
+        let abi = this.getTokenAbi(networkId, symbol);
+        const instance = new web3.eth.Contract(
+            abi,
+            networkId && address,
+        );
+
+        let amount = await web3.utils.toWei((100).toString());
+        let mint = await instance.methods.mint(
+            account,
+            amount,
+        ).send({
+            from: account,
+        });
+
+        console.log({mint})
+        await this.getWalletInventory();
+        console.timeEnd('handleMint');
+    };
+
+    getProfitData = async () => {
+        /* 
+        * GETS DATA FOR GRAPH INFO 
+        * NEED TO GET ALL PRIME DATA
+        * ETH/USD RATE
+        * CONVERT TOKENS TO THEIR USD VALUE
+        * COMPARE USD VALUES
+        * RETURN DATA OBJECT
+        */
+
+        /* KEY VARIABLES */
+        const web3 = this.state.web3;
+        const account = await this.getAccount();
+        const networkId = await this.getNetwork();
+        let data = (this.state.data) ? this.state.data 
+            : {
+            labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+            datasets: [
+              {
+                label: 'Net Profit in USD $',
+                fill: false,
+                lineTension: 0.1,
+                backgroundColor: 'rgba(75,192,192,0.4)',
+                borderColor: 'rgba(75,192,192,1)',
+                borderCapStyle: 'butt',
+                borderDash: [],
+                borderDashOffset: 0.0,
+                borderJoinStyle: 'miter',
+                pointBorderColor: 'rgba(75,192,192,1)',
+                pointBackgroundColor: '#fff',
+                pointBorderWidth: 1,
+                pointHoverRadius: 5,
+                pointHoverBackgroundColor: 'rgba(75,192,192,1)',
+                pointHoverBorderColor: 'rgba(220,220,220,1)',
+                pointHoverBorderWidth: 2,
+                pointRadius: 1,
+                pointHitRadius: 10,
+                data: [65, 59, 80, 81, 56, 55, 40]
+              }
+            ]
+          };
+        console.log({data})
+        let collateralAmt;
+        let collateralSym;
+        let paymentAmt;
+        let paymentSym;
+        let cRatio;
+        let pRatio;
+        let cValue;
+        let pValue;
+        let netValue;
+        let tokenId;
+        let usdToEth;
+
+        /* USD TO ETH PRICE */
+        const cUsdEthAbi = this.getTokenAbi(networkId, 'CHAIN-USDETH')
+        const cUsdEthAddress = this.getTokenAddress(networkId, 'CHAIN-USDETH')
+        const cUsdEthNetwork = networkId;
+        const cUsdEthInstance = new web3.eth.Contract(
+            cUsdEthAbi,
+            cUsdEthNetwork && cUsdEthAddress,
+        );
+
+        let price;
+        try {
+            price = await cUsdEthInstance.methods.latestAnswer().call({from: account});
+        } catch (err) {
+            console.log({err})
+        }
+
+        let timestamp;
+        try {
+            timestamp = await cUsdEthInstance.methods.latestTimestamp().call({from: account});
+        } catch (err) {
+            console.log({err})
+        }
+        
+        usdToEth = price / 10**8;
+        console.log({usdToEth, timestamp})
+        
+        
+
+        /* let walletRows = (this.state.walletRows) ? this.state.walletRows : [];
+        console.log({walletRows}, 'GET PROFIT DATA') */
+
+        let primeRows = (this.state.primeRows) ? this.state.primeRows : [];
+        console.log({primeRows}, 'GET PROFIT DATA')
+
+        for(var i = 0; i < primeRows.length; i++) {
+            collateralAmt = primeRows[i].xis;
+            paymentAmt = primeRows[i].zed;
+            collateralSym = primeRows[i].yakSymbol;
+            paymentSym = primeRows[i].waxSymbol;
+            tokenId = primeRows[i].tokenId;
+            switch(collateralSym) {
+                case 'DAI':
+                    cRatio = 1;
+                    break;
+                case 'U':
+                    cRatio = usdToEth;
+                    break;
+                case 'S':
+                    cRatio = 1;
+                    break;
+                case 'tUSD':
+                    cRatio = 1;
+                    break;
+                case 'tETH':
+                    cRatio = usdToEth;
+                    break;    
+            };
+
+            switch(paymentSym) {
+                case 'DAI':
+                    pRatio = 1;
+                    break;
+                case 'U':
+                    pRatio = usdToEth;
+                    break;
+                case 'S':
+                    pRatio = 1;
+                    break;
+                case 'tUSD':
+                    pRatio = 1;
+                    break;
+                case 'tETH':
+                    pRatio = usdToEth;
+                    break;  
+            };
+
+            cValue = collateralAmt * cRatio;
+            pValue = paymentAmt * pRatio;
+            console.log({cValue, pValue})
+            const valueData = {
+                [collateralSym]: {
+                    cValue: cValue,
+                },
+                [paymentSym]: {
+                    pValue: pValue,
+                },
+                ['tokenId']: {
+                    tokenId: tokenId,
+                },
+            };
+
+            netValue = cValue - pValue;
+
+            const labels = data['labels'];
+            console.log({labels})
+            const newLabel = Array.from(labels)
+            newLabel.push(timestamp);
+
+            const dataArray = data['datasets'][0]['data'];
+            console.log({dataArray})
+            const addedData = Array.from(dataArray)
+            addedData.push(netValue)
+
+            console.log({newLabel, addedData})
+            const newData = {
+                ...data,
+                labels: newLabel,
+                datasets: [{
+                    ...data['datasets'][0],
+                    data: addedData,
+                }],
+            };
+
+            console.log({netValue})
+            this.setState({
+                data: newData,
+            },)
+        };
+        
+    };
+
     render() {
         const { classes } = this.props;
         const primeRows = (this.state.primeRows) ? (this.state.primeRows) : [];
@@ -735,36 +1061,21 @@ class Inventory extends Component {
                                 ? (this.state.primeRows.length > 0) 
                                     : false
                                         ? true : false;
+
         return (
             <Page display='flex' key='inventory'>
                 <div className={classes.root} key='inventory'>
                 <Box className={classes.boards}>
-                    {/* <Card className={classes.submitInventory}>
-                        <LinkM 
-                            href={`/prime`}
-                            underline='none'
-                            className={classes.submitInventory}
-                        >
-                            <Typography>
-                                Prev Page
-                            </Typography>
-                            <Typography>
-                                {<ArrowLeftIcon />}
-                            </Typography>
-                        </LinkM>
-                    </Card> */}
-
 
                     <Card className={classes.submitInventory}>
-                        <LinkM 
+                        <Button 
                             href={`/prime`}
-                            underline='none'
-                            className={classes.submitInventory}
+                            className={classes.linkButton}
                         >
                             <Typography variant={'h1'}>
-                                Prev. Page
+                                Prev Page
                             </Typography>
-                        </LinkM>
+                        </Button>
                     </Card>
 
 
@@ -774,7 +1085,6 @@ class Inventory extends Component {
                                 <LinkM href='/prime' underline='none' className={classes.createPrime}>
                                 <Button
                                     className={classes.createPrime}
-                                    /* onClick={() => this.openPrime()} */
                                 >
                                     Create Prime
                                 </Button>
@@ -788,6 +1098,7 @@ class Inventory extends Component {
                                 primeRows={primeRows}
                                 primeExercise={this.primeExercise}
                                 primeClose={this.primeClose}
+                                data={this.state.data}
                             />
                             </div>
                             </Fade>
@@ -805,23 +1116,23 @@ class Inventory extends Component {
                                     <Table className={classes.primeTable}>
                                         <TableHead>
                                             <TableRow>
-                                                <TableCell align='right' variant={'h1'}>ID</TableCell>
-                                                <TableCell align='right' variant={'h1'}>Collateral</TableCell>
-                                                <TableCell align='right' variant={'h1'}>Payment</TableCell>
-                                                <TableCell align='right' variant={'h1'}>Expires</TableCell>
-                                                <TableCell align='right' variant={'h1'} className={classes.address}>Paid To</TableCell>
+                                                <TableCell align='center' variant={'h1'}>ID</TableCell>
+                                                <TableCell align='center' variant={'h1'}>Collateral</TableCell>
+                                                <TableCell align='center' variant={'h1'}>Payment</TableCell>
+                                                <TableCell align='center' variant={'h1'}>Expires</TableCell>
+                                                <TableCell align='center' variant={'h1'} className={classes.address}>Paid To</TableCell>
                                             </TableRow>
                                         </TableHead>
                                         
                                         <TableBody>
                                             {primeRows.map(row => (
                                                 <TableRow key={row.name}>
-                                                    <TableCell align='right' variant={'h1'}>#{row.tokenId}</TableCell>
-                                                    <TableCell align='right' variant={'h1'}>{row.xis} {row.yakSymbol}</TableCell>
-                                                    <TableCell align='right' variant={'h1'}>{row.zed} {row.waxSymbol}</TableCell>
-                                                    <TableCell align='right' variant={'h1'}>{row.pow}</TableCell>
-                                                    <TableCell align='right' variant={'h1'} className={classes.address}>
-                                                        <SimplePopover address={row.gem}/>
+                                                    <TableCell align='center' variant={'h1'}>#{row.tokenId}</TableCell>
+                                                    <TableCell align='center' variant={'h1'}>{row.xis} {row.yakSymbol}</TableCell>
+                                                    <TableCell align='center' variant={'h1'}>{row.zed} {row.waxSymbol}</TableCell>
+                                                    <TableCell align='center' variant={'h1'}>{row.pow}</TableCell>
+                                                    <TableCell align='center' variant={'h1'} className={classes.address}>
+                                                        <SimplePopover address={row.gem} classes={classes}/>
                                                     </TableCell>
                                                 </TableRow>
                                             ))}
@@ -842,16 +1153,26 @@ class Inventory extends Component {
                                     <Table className={classes.walletTable}>
                                         <TableHead>
                                             <TableRow>
-                                                <TableCell align='right' variant={'h1'}>Symbol</TableCell>
-                                                <TableCell align='right' variant={'h1'}>Balance</TableCell>
+                                                <TableCell align='center' variant={'h1'}>Symbol</TableCell>
+                                                <TableCell align='center' variant={'h1'}>Balance</TableCell>
+                                                <TableCell align='center' variant={'h1'}>Deposit</TableCell>
                                             </TableRow>
                                         </TableHead>
                                         
                                         <TableBody>
                                             {walletRows.map(row => (
                                                 <TableRow key={row.symbol}>
-                                                    <TableCell align='right' variant={'h1'}>{row.symbol}</TableCell>
-                                                    <TableCell align='right' variant={'h1'}>{row.balance}</TableCell>
+                                                    <TableCell align='center' variant={'h1'}>{row.symbol}</TableCell>
+                                                    <TableCell align='center' variant={'h1'}>{row.balance}</TableCell>
+                                                    <TableCell align='center' variant={'h1'} >{
+                                                        <Button 
+                                                            onClick={() => this.handleMint(row.symbol)}
+                                                            className={classes.mintButton}
+                                                        >
+                                                            Mint
+                                                        </Button>
+                                                        }
+                                                    </TableCell>
                                                 </TableRow>
                                             ))}
                                         </TableBody>
@@ -863,34 +1184,19 @@ class Inventory extends Component {
                         </Grid>
                     </Grid>
 
-                    
-                    {/* <Card className={classes.submitInventory}>
-                        <LinkM 
-                            href={`/inventory/${this.state.account}`}
-                            underline='none'
-                            className={classes.submitInventory}
-                        >
-                            <Typography>
-                                Next Page
-                            </Typography>
-                            <Typography>
-                                {<ArrowRightIcon />}
-                            </Typography>
-                        </LinkM>
-                    </Card> */}
 
                     
                     <Card className={classes.submitInventory}>
-                        <LinkM 
+                        <Button 
                             href={`/inventory/${this.state.account}`}
-                            underline='none'
-                            className={classes.submitInventory}
+                            className={classes.linkButton}
                         >
                             <Typography variant={'h1'}>
                                 Next Page
                             </Typography>
-                        </LinkM>
+                        </Button>
                     </Card>
+
                 </Box>
                 </div>
             </Page>

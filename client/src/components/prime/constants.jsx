@@ -146,7 +146,7 @@ const INITIAL_CONTEXT = {
         },
         'addressBoard': {
             id: 'addressBoard',
-            title: 'Receiver',
+            title: 'Payment Receiver',
             itemIds: [],
             board: true,
         },

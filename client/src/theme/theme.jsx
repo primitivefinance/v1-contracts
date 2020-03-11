@@ -34,7 +34,11 @@ export const colors = {
     darkGrey: '#1c1d23',
     darkBlue: '#070a0e',
     leafGreen: '#88ca6a',
+    lightSuccess: '#ccffca',
+    
 }
+
+
 
 const breakpoints = createBreakpoints({
     keys: ["xs", "sm", "md", "lg", "xl"],
@@ -133,13 +137,18 @@ const mainTheme = {
         MuiPaper: {
             root: {
                 backgroundColor: colors.background,
+                color: colors.primary,
+                
             },
         },
         MuiStepIcon: {
             root: {
                 color: colors.primary,
-                '&:active' : {
-                    color: colors.primary,
+                '&$active' : {
+                    color: colors.success,
+                },
+                '&$completed' : {
+                    color: colors.success,
                 },
             },
             text: {
@@ -157,15 +166,30 @@ const mainTheme = {
         },
         MuiInputBase: {
             input: {
-                backgroundColor: colors.background,
-                color: colors.primary,
+                backgroundColor: colors.primary,
+                color: colors.banner,
+                '&:hover': {
+                    backgroundColor: colors.lightSuccess,
+                },
+                width: '100%',
             },
         },
         MuiSelect: {
             outlined: {
                 borderRadius: '0px',
             },
+            backgroundColor: colors.banner,
+            selectMenu: {
+                textAlign: 'center',
+                fontSize: '14px',
+                fontWeight: '600',
+                textTransform: 'uppercase',
+                '&:hover': {
+                    backgroundColor: colors.lightSuccess,
+                },
+            },
         },
+
         MuiTypography: {
             root: {
                 MuiStepLabel: {
@@ -187,6 +211,27 @@ const mainTheme = {
             root: {
                 paddingLeft: '12px',
                 paddingRight: '12px'
+            },
+        },
+        MuiButton: {
+            contained: {
+                backgroundColor: colors.secondary,
+                color: colors.banner,
+                '&:hover' : {
+                    backgroundColor: colors.primary,
+                    color: colors.banner,
+                },
+            },
+        },
+        Column: {
+            formControl: {
+                backgroundColor: colors.banner,
+            }
+        },
+        MuiFormControl: {
+            root: {
+                color: colors.primary,
+                backgroundColor: colors.banner,
             },
         },
     },

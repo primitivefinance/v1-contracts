@@ -14,6 +14,8 @@ import Card from '@material-ui/core/Card';
 import Popover from '@material-ui/core/Popover';
 import Button from '@material-ui/core/Button';
 import Link from '@material-ui/core/Link';
+import CustomizedExpansionPanels from './expansionPanel';
+import Chart from './chart';
 
 const RINKEBY_ETHERSCAN_BASE_URL = 'https://rinkeby.etherscan.io/';
 const RINKEBY_PRIME_ADDRESS = '0x2d77b1d0ff56f6c0ba59a8993f58823d68285e0f';
@@ -65,7 +67,9 @@ const styles = theme => ({
         paddingBottom: '0px',
         [theme.breakpoints.up('sm')]: {
             paddingBottom: '24px'
-        }
+        },
+        backgroundColor: colors.banner,
+        color: colors.primary,
     },
     transitionButton: {
         //display: 'flex',
@@ -78,8 +82,6 @@ const styles = theme => ({
     },
     profileCard: {
         display: 'flex',
-       /*  minHeight: '96%', */
-        height: '96%',
         margin: '16px',
         width: '100%',
         alignItems: 'center',
@@ -113,7 +115,8 @@ const styles = theme => ({
         },
     },
     primeTable: {
-
+        backgroundColor: colors.banner,
+        color: colors.primary,
     },
     address: {
         textOverflow: 'ellipsis',
@@ -124,8 +127,10 @@ const styles = theme => ({
 
     },
     interface: {
-        display: 'flex',
-        flexDirection: 'column',
+        backgroundColor: colors.banner,
+        color: colors.primary,
+        letterSpacing: '1px',
+        textTransform: 'uppercase',
     },
     container: {
         flex: 1,
@@ -134,13 +139,21 @@ const styles = theme => ({
         width: '90%',
         [theme.breakpoints.up('sm')]: {
             flexDirection: 'column',
-        }
+        },
+        backgroundColor: colors.banner,
+        color: colors.primary,
     },
     actionButtons: {
         backgroundColor: colors.lightblue,
         '&:hover': {
             backgroundColor: colors.green,
         },
+    },
+    etherscanLink: {
+        '&:hover': {
+            color: colors.success,
+        },
+        
     },
 });
 
@@ -204,30 +217,35 @@ class Interface extends Component {
                     PRIME ERC-721 NFT TOKENS
                 </Typography>
                 <Grid className={classes.interface}>
-                        <Grid item className={classes.interface}>
-                                <TableContainer component={Paper}>
-                                    <Table >
+                        <Grid item>
+                            
+                            <Card className={classes.interface}>
+
+                                <TableContainer component={Card}>
+                                    <Table className={classes.interface}>
                                         <TableHead>
                                             <TableRow>
-                                                <TableCell align='right' variant={'h1'}>ID</TableCell>
-                                                <TableCell align='right' variant={'h1'}>Exercise</TableCell>
-                                                <TableCell align='right' variant={'h1'}>Withdraw</TableCell>
-                                                <TableCell align='right' variant={'h1'}>Create Another</TableCell>
-                                                <TableCell align='right' variant={'h1'} className={this.props.classes.address}>Paid To</TableCell>
+                                                <TableCell align='left' variant={'h1'}>ID</TableCell>
+                                                <TableCell align='left' variant={'h1'}>Exercise</TableCell>
+                                                <TableCell align='left' variant={'h1'}>Withdraw</TableCell>
+                                                <TableCell align='left' variant={'h1'}>Create Another</TableCell>
+                                                <TableCell align='left' variant={'h1'} className={this.props.classes.address}>Paid To</TableCell>
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
                                             {primeRows.map(row => (
                                                 <TableRow key={row.name}>
-                                                    <TableCell align='right' variant={'h1'}>
+                                                    <TableCell align='left' variant={'h1'}>
                                                         SP # [
                                                                 <Link 
                                                                     href={`${RINKEBY_ETHERSCAN_BASE_URL}/token/${RINKEBY_PRIME_ADDRESS}/?a=${row.tokenId}`}
+                                                                    className={classes.etherscanLink}
+                                                                    underline='none'
                                                                 >
                                                                     {row.tokenId}
                                                                 </Link>]
                                                     </TableCell>
-                                                    <TableCell align='right' variant={'h1'}>
+                                                    <TableCell align='left' variant={'h1'}>
                                                         <Button 
                                                             variant='contained' 
                                                             className={classes.actionButtons}
@@ -236,7 +254,7 @@ class Interface extends Component {
                                                             Exercise
                                                         </Button>
                                                     </TableCell>
-                                                    <TableCell align='right' variant={'h1'}>
+                                                    <TableCell align='left' variant={'h1'}>
                                                         <Button 
                                                             variant='contained' 
                                                             className={classes.actionButtons}
@@ -245,20 +263,35 @@ class Interface extends Component {
                                                             Withdraw
                                                         </Button>
                                                     </TableCell>
-                                                    <TableCell align='right' variant={'h1'}>
+                                                    <TableCell align='left' variant={'h1'}>
                                                         <Button variant='contained' className={classes.actionButtons}>
                                                             Create
                                                         </Button>
                                                     </TableCell>
-                                                    <TableCell align='right' variant={'h1'} className={this.props.classes.address}>
+                                                    <TableCell align='left' variant={'h1'} className={this.props.classes.address}>
                                                         <SimplePopover address={row.gem}/>
                                                     </TableCell>
                                                 </TableRow>
                                             ))}
+                                            
                                         </TableBody>
                                     </Table>
                                 </TableContainer>
+
+                                    
+                                    
+                                
+                                </Card>
+                                
                         </Grid>
+
+                        <Grid item>
+                            <Chart 
+                                data={this.props.data}
+                            />
+                        </Grid>
+
+
                     </Grid>
             </div>
         );

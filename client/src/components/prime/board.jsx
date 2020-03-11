@@ -120,9 +120,9 @@ const styles = theme => ({
         
     },
     txBoard: {
-        backgroundColor: props => props.isValid ? colors.white : colors.white,
+        backgroundColor: colors.banner,
         '&:hover': {
-            backgroundColor: props => props.isValid ? colors.white : colors.white,
+            backgroundColor: colors.banner,
         },
     },
     submit: {

@@ -54,7 +54,7 @@ function getSteps() {
 }
 
 function getBottomSteps() {
-  return ['Select Double Collateral', 'Select Double Payment', 'Select NFT', 'Select Interest Receiver'];
+  return ['Select Evolution', 'Select Double Collateral', 'Select Double Payment', 'Select NFT', 'Select Interest Receiver'];
 }
 
 function getStepContent(step) {
@@ -72,7 +72,7 @@ function getStepContent(step) {
   }
 }
 
-function getBpttomStepContent(step) {
+function getBottomStepContent(step) {
   switch (step) {
     case 4:
       return 'Collateral';
@@ -152,7 +152,7 @@ export default function HorizontalNonLinearStepper(props) {
     <div className={classes.root}>
       <Stepper nonLinear activeStep={props.activeStep}>
         {steps.map((label, index) => (
-          <Step key={label}>
+          <Step key={label} disabled={(props.bottom) ? true : false}>
             <StepButton onClick={handleStep(index)} completed={(props.newCompleted) ? (props.newCompleted[index]) : completed[index]}>
               {label}
             </StepButton>
