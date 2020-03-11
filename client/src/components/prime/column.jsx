@@ -21,6 +21,7 @@ import Select from '@material-ui/core/Select';
 import Asset from './asset';
 import Expiration from './expiration';
 import Address from './address';
+import TextField from '@material-ui/core/TextField';
 
 
 
@@ -81,6 +82,8 @@ const styles = theme => ({
         },
         backgroundColor: colors.banner,
         color: colors.primary,
+        display: 'flex',
+        justifyContent: 'space-evenly',
     },
     iconButton: {
         color: colors.green,
@@ -134,6 +137,21 @@ const styles = theme => ({
         '&:hover': {
             backgroundColor: props => props.isValid ? colors.lightgreen : colors.palered,
         },
+    },
+    amountForm: {
+        display: 'flex',
+        justifyContent: 'center',
+    },
+    mintButton: {
+        backgroundColor: colors.primary,
+        color: colors.banner,
+        '&:hover' : {
+            backgroundColor: colors.background,
+            color: colors.primary,
+            fontWeight: '600',
+        },
+        fontWeight: '500',
+        height: '2%',
     },
 });
 
@@ -271,6 +289,34 @@ function FormDiaglogue(props) {
     );
 }
 
+function MultilineTextFields(props) {
+    const { classes } = props;
+    const [value, setValue] = React.useState();
+  
+    const handleChange = event => {
+      setValue(event.target.value);
+      props.handleAssetAmount(props.columnId, value)
+    };
+
+    const handleSubmit = () => {
+        props.handleAssetAmount(props.columnId, value)
+    };
+  
+    return (
+      <form className={classes.amountForm} noValidate autoComplete="off">
+          <TextField
+            placeholder='Amount'
+            value={value}
+            onChange={handleChange}
+          />
+          <Button 
+            className={classes.mintButton}
+            onSubmit={() => handleSubmit}
+          >Set</Button>
+    </form>
+    );
+}
+
 
 class InnerList extends PureComponent {
     shouldComponentUpdate(nextProps) {
@@ -378,7 +424,29 @@ class Column extends Component {
                             onClick={ () => {this.handleBoard(column.id);}}    
                             >Submit Board
                         </Button>
-    console.log({index})
+
+        let amountForm;
+        if(column.id) {
+            switch(column.id) {
+                case 'collateralBoard':
+                    amountForm = <MultilineTextFields 
+                                    classes={classes}
+                                    columnId={column.id}
+                                    handleAssetAmount={this.props.handleAssetAmount}
+                                 />
+                    break;
+                case 'paymentBoard':
+                    amountForm = <MultilineTextFields 
+                                    classes={classes}
+                                    columnId={column.id}
+                                    handleAssetAmount={this.props.handleAssetAmount}
+                                 />
+                    break;
+                default:
+                    amountForm = '';
+                    break;
+            };
+        };
         return(
             <Card className={
                     (column.id === 'board') 
@@ -388,8 +456,18 @@ class Column extends Component {
                 <Typography variant={'h1'} className={`${classes.title} title`}>
                     {column.title}
                     {' '}
-                    {index}
+                    {amountForm}
+                    {/* <form className={classes.root} noValidate autoComplete="off">
+                        <TextField 
+                            id="outlined-basic" 
+                            label="Outlined" 
+                            variant='outlined' 
+                            value={this.props.qty}
+                            onChange={() => {this.props.updateQty();}}
+                        />
+                    </form> */}
                 </Typography>
+                
                 <Droppable 
                     droppableId={column.id}
                     isDropDisabled={isDropDisabled}

@@ -211,6 +211,19 @@ class Interface extends Component {
     render () {
         const { classes } = this.props;
         const primeRows = this.props.primeRows;
+        let statsData = (this.props.statsData) ? (this.props.statsData) : undefined;
+        let tCV;
+        let tPV;
+        let tNV;
+        let hNV;
+        let hID
+        if(typeof statsData !== 'undefined') {
+            tCV = this.props.statsData['tCV'];
+            tPV = this.props.statsData['tPV'];
+            tNV = this.props.statsData['tNV'];
+            hNV = this.props.statsData['hNV'];
+            hID = this.props.statsData['hID'];
+        };
         return (
             <div className={classes.container} key='interface'>
                 <Typography className={classes.title} variant={'h1'}>
@@ -229,7 +242,7 @@ class Interface extends Component {
                                                 <TableCell align='left' variant={'h1'}>Exercise</TableCell>
                                                 <TableCell align='left' variant={'h1'}>Withdraw</TableCell>
                                                 <TableCell align='left' variant={'h1'}>Create Another</TableCell>
-                                                <TableCell align='left' variant={'h1'} className={this.props.classes.address}>Paid To</TableCell>
+                                                <TableCell align='left' variant={'h1'}>Net Value</TableCell>
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
@@ -264,12 +277,12 @@ class Interface extends Component {
                                                         </Button>
                                                     </TableCell>
                                                     <TableCell align='left' variant={'h1'}>
-                                                        <Button variant='contained' className={classes.actionButtons}>
+                                                        <Button variant='contained' className={classes.actionButtons} href='/prime'>
                                                             Create
                                                         </Button>
                                                     </TableCell>
-                                                    <TableCell align='left' variant={'h1'} className={this.props.classes.address}>
-                                                        <SimplePopover address={row.gem}/>
+                                                    <TableCell align='left' variant={'h1'}> 
+                                                        $ {(typeof statsData !== 'undefined') ? statsData['tokenValues'][row.tokenId]['nV'] : 'n/a'}
                                                     </TableCell>
                                                 </TableRow>
                                             ))}
@@ -286,7 +299,8 @@ class Interface extends Component {
                         </Grid>
 
                         <Grid item>
-                            <Chart 
+                            <Chart
+                                statsData={this.props.statsData}
                                 data={this.props.data}
                             />
                         </Grid>

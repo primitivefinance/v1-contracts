@@ -172,6 +172,9 @@ const mainTheme = {
                     backgroundColor: colors.lightSuccess,
                 },
                 width: '100%',
+                borderRadius: '4px',
+                padding: '4px',
+                margin: '4px',
             },
         },
         MuiSelect: {

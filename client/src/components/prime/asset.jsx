@@ -15,6 +15,7 @@ import DeleteIcon from '@material-ui/icons/Delete';
 import RestoreIcon from '@material-ui/icons/Restore';
 import AddCircleIcon from '@material-ui/icons/AddCircle';
 import HighlightOffIcon from '@material-ui/icons/HighlightOff';
+import TextField from '@material-ui/core/TextField';
 
 
 
@@ -151,6 +152,8 @@ class Asset extends Component {
                             <Typography variant={'h2'} className={`${classes.title}`}>
                                 {this.props.item.content}
                             </Typography>
+
+
                             <IconButton
                                 color={colors.background}
                                 /* className={`${classes.activeButton}`} */

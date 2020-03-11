@@ -894,7 +894,7 @@ class Inventory extends Component {
         const networkId = await this.getNetwork();
         let data = (this.state.data) ? this.state.data 
             : {
-            labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+            labels: [],
             datasets: [
               {
                 label: 'Net Profit in USD $',
@@ -915,7 +915,7 @@ class Inventory extends Component {
                 pointHoverBorderWidth: 2,
                 pointRadius: 1,
                 pointHitRadius: 10,
-                data: [65, 59, 80, 81, 56, 55, 40]
+                data: []
               }
             ]
           };
@@ -931,6 +931,12 @@ class Inventory extends Component {
         let netValue;
         let tokenId;
         let usdToEth;
+        let totalCollateralValue = 0;
+        let totalPaymentValue = 0;
+        let totalNetValue = 0;
+        let highestNetValue = 0;
+        let highestTokenId;
+        let statsArray = [];
 
         /* USD TO ETH PRICE */
         const cUsdEthAbi = this.getTokenAbi(networkId, 'CHAIN-USDETH')
@@ -957,14 +963,19 @@ class Inventory extends Component {
         
         usdToEth = price / 10**8;
         console.log({usdToEth, timestamp})
-        
-        
-
-        /* let walletRows = (this.state.walletRows) ? this.state.walletRows : [];
-        console.log({walletRows}, 'GET PROFIT DATA') */
 
         let primeRows = (this.state.primeRows) ? this.state.primeRows : [];
         console.log({primeRows}, 'GET PROFIT DATA')
+
+        const labels = data['labels'];
+        console.log({labels})
+        const newLabel = Array.from(labels)
+
+        const dataArray = data['datasets'][0]['data'];
+        console.log({dataArray})
+        const addedData = Array.from(dataArray)
+
+        let tokenValues = {};
 
         for(var i = 0; i < primeRows.length; i++) {
             collateralAmt = primeRows[i].xis;
@@ -972,6 +983,7 @@ class Inventory extends Component {
             collateralSym = primeRows[i].yakSymbol;
             paymentSym = primeRows[i].waxSymbol;
             tokenId = primeRows[i].tokenId;
+            console.log({tokenId})
             switch(collateralSym) {
                 case 'DAI':
                     cRatio = 1;
@@ -1023,34 +1035,52 @@ class Inventory extends Component {
                 },
             };
 
-            netValue = cValue - pValue;
+            netValue = (cValue - pValue);
+            newLabel.push(tokenId);
+            addedData.push((netValue).toFixed(2))
+            console.log({newLabel, addedData, netValue})
 
-            const labels = data['labels'];
-            console.log({labels})
-            const newLabel = Array.from(labels)
-            newLabel.push(timestamp);
-
-            const dataArray = data['datasets'][0]['data'];
-            console.log({dataArray})
-            const addedData = Array.from(dataArray)
-            addedData.push(netValue)
-
-            console.log({newLabel, addedData})
-            const newData = {
-                ...data,
-                labels: newLabel,
-                datasets: [{
-                    ...data['datasets'][0],
-                    data: addedData,
-                }],
+            totalCollateralValue = totalCollateralValue + cValue;
+            totalPaymentValue = totalPaymentValue + pValue;
+            totalNetValue = totalNetValue + netValue;
+            console.log({totalNetValue})
+            if(netValue > highestNetValue) {
+                highestNetValue = netValue;
+                highestTokenId = tokenId;
             };
 
-            console.log({netValue})
-            this.setState({
-                data: newData,
-            },)
+            tokenValues[tokenId] = {
+                nV: (netValue).toFixed(2),
+                pV: (pValue).toFixed(2),
+                cV: (cValue).toFixed(2),
+            };
+            
         };
         
+        const newData = {
+            ...data,
+            labels: newLabel,
+            datasets: [{
+                ...data['datasets'][0],
+                data: addedData,
+            }],
+        };
+
+        const newStatsData = {
+            tCV: (totalCollateralValue).toFixed(2),
+            tPV: (totalPaymentValue).toFixed(2),
+            tNV: (totalNetValue).toFixed(2),
+            hNV: (highestNetValue).toFixed(2),
+            hID: highestTokenId,
+            tokenValues: tokenValues,
+
+        }
+
+        
+        this.setState({
+            data: newData,
+            statsData: newStatsData,
+        },)
     };
 
     render() {
@@ -1061,6 +1091,18 @@ class Inventory extends Component {
                                 ? (this.state.primeRows.length > 0) 
                                     : false
                                         ? true : false;
+        let statsData = (this.state.statsData) ? (this.state.statsData) : undefined;
+        let tCV;
+        let tPV;
+        let tNV;
+        let hNV;
+        if(typeof statsData !== 'undefined') {
+            tCV = this.state.statsData['tCV'];
+            tPV = this.state.statsData['tPV'];
+            tNV = this.state.statsData['tNV'];
+            hNV = this.state.statsData['hNV'];
+            console.log(statsData)
+        };
 
         return (
             <Page display='flex' key='inventory'>
@@ -1099,6 +1141,7 @@ class Inventory extends Component {
                                 primeExercise={this.primeExercise}
                                 primeClose={this.primeClose}
                                 data={this.state.data}
+                                statsData={this.state.statsData}
                             />
                             </div>
                             </Fade>

@@ -292,6 +292,7 @@ class InnerList extends PureComponent {
                             isValid={isValid}
                             isOnBoard={this.props.isOnBoard}
                             index={index}
+                            handleAssetAmount={this.props.handleAssetAmount}
                         />;
         }
     }
@@ -319,6 +320,8 @@ class Prime extends Component {
         this.undoStep = this.undoStep.bind(this);
         this.handleBoardState = this.handleBoardState.bind(this);
         this.handleStepComplete = this.handleStepComplete.bind(this);
+        this.handleAssetAmount = this.handleAssetAmount.bind(this);
+        this.getInstance = this.getInstance.bind(this);
     };
 
     componentDidMount = async () => {
@@ -594,7 +597,11 @@ class Prime extends Component {
         let expirationValid = (boardState['expirationBoard']) ? (boardState['expirationBoard'].valid) ? true : false : false;
         let addressValid = (boardState['addressBoard']) ? (boardState['addressBoard'].valid) ? true : false : false;
         
-        if(collateralValid && paymentValid && expirationValid && addressValid) {
+        if(
+            collateralValid && paymentValid && expirationValid && addressValid
+            && typeof this.state.collateralAmount !== 'undefined'
+            && typeof this.state.paymentAmount !== 'undefined'
+        ) {
             valid = true;
             console.log('VALID BOARD DETECTED:', boardState);
         } else {
@@ -825,6 +832,18 @@ class Prime extends Component {
             }
         }
 
+        /* GET QUANTITY OF ASSETS */
+        let collateralAmount = (this.state.collateralAmount) ? (this.state.collateralAmount) : undefined;
+        let paymentAmount = (this.state.paymentAmount) ? (this.state.paymentAmount) : undefined;
+        if(
+            typeof collateralAmount === 'undefined'
+            || typeof paymentAmount === 'undefined'
+        ) {
+            console.log({collateralAmount, paymentAmount}, 'COLLAT OR PAYMENT QTY UNDEFINED')
+            return;
+        }
+        console.log({collateralAmount, paymentAmount})
+
         /* PASS PARAMETERS TO CONTRACT FUNCTION AND SEND TRANSACTION */
         try {
             await this.createSlate(
@@ -832,12 +851,22 @@ class Prime extends Component {
                 paymentAsset,
                 addressReceiver,
                 expirationDate,
+                collateralAmount,
+                paymentAmount
             );
         } catch(error) {
             console.log({error})
         }
 
-        console.trace({payloadArray, collateralAsset, paymentAsset, addressReceiver, expirationDate, })
+        console.trace({
+            payloadArray, 
+            collateralAsset, 
+            paymentAsset, 
+            addressReceiver, 
+            expirationDate, 
+            collateralAmount,
+            paymentAmount 
+        });
         console.timeEnd('handleBoardSubmit');
     };
 
@@ -953,6 +982,31 @@ class Prime extends Component {
         return newCompleted;
     };
 
+    handleAssetAmount = async (columnId, amount) => {
+        const web3 = this.state.web3;
+        let collateralAmount = (this.state.collateralAmount) ? this.state.collateralAmount : 0;
+        let paymentAmount = (this.state.paymentAmount) ? this.state.paymentAmount : 0;
+        let amtWei;
+        console.log({amount})
+        let rawAmt = (amount) ? (amount).toString() : '0';
+        switch(columnId) {
+            case 'collateralBoard':
+                amtWei = (await web3.utils.toWei(rawAmt)).toString();
+                collateralAmount = amtWei;
+                break;
+            case 'paymentBoard':
+                amtWei = (await web3.utils.toWei(rawAmt)).toString();
+                paymentAmount = amtWei;
+                break;  
+        };
+
+        this.setState({
+            collateralAmount: collateralAmount,
+            paymentAmount: paymentAmount,
+        }, () => {this.isValid();})
+        console.log('HANDLE ASSET AMOUNT', {collateralAmount, paymentAmount})
+    };
+
     /* WEB3 FUNCTIONS */
     getAccount = async () => {
         console.time('getAccount');
@@ -1055,6 +1109,53 @@ class Prime extends Component {
         }
     };
 
+    getInstance = async (symbol) => {
+        console.time('getContractInstance');
+        if(
+            this.state.instances
+            && this.state.instances[symbol]
+        ) {
+            let _instance = this.state.instances[symbol][0]['instance']
+            console.timeEnd('getContractInstance');
+            return _instance;
+        };
+
+
+        const web3 = this.state.web3;
+        const account = await this.getAccount();
+        const networkId = await this.getNetwork();
+
+        // GET CONTRACT
+        const deployedNetwork = networkId;
+        let address = await this.getTokenAddress(networkId, symbol);
+        let abi = await this.getTokenAbi(networkId, symbol);
+        const instance = new web3.eth.Contract(
+            abi,
+            deployedNetwork && address,
+        );
+
+        const name = await instance.methods.name().call();
+
+        /* console.trace({instance}) */
+        let instanceArray = (this.state.instances) ? Array.from(this.state.instances) : [];
+        let newArray = [
+            {
+                name: name,
+                instance: instance,
+                address: deployedNetwork.address
+            }
+        ]
+        instanceArray.push(newArray);
+        this.setState({
+            instances: {
+                ...this.state.instances,
+                [symbol]: newArray,
+            }
+        });
+        console.timeEnd('getContractInstance');
+        return instance;
+    };
+
     handleApprove = async (contractInstance, approveAddr, approveAmt, _from) => {
         console.time('handleApprove');
         let approve = await contractInstance.methods.approve(
@@ -1071,7 +1172,9 @@ class Prime extends Component {
             collateralAsset, 
             paymentAsset, 
             addressReceiver, 
-            expirationDate
+            expirationDate,
+            collateralAmount,
+            paymentAmount
         ) => 
     {
         // GET WEB3 AND ACCOUNT
@@ -1087,6 +1190,7 @@ class Prime extends Component {
         let primeInstance = await this.getContractInstance(PrimeContract);
         let uInstance = await this.getContractInstance(Underlying);
         let sInstance = await this.getContractInstance(Strike);
+        let collateralInstance = await this.getInstance(collateralAsset);
 
 
         // CALL PRIME METHOD
@@ -1100,15 +1204,15 @@ class Prime extends Component {
 
             let primeAddress = primeInstance._address;
             await this.handleApprove(
-                uInstance, 
+                collateralInstance, 
                 primeAddress, 
-                DEFAULT_AMOUNT_WEI, 
+                collateralAmount, 
                 account
             );
 
-            const _xis = DEFAULT_AMOUNT_WEI;
+            const _xis = collateralAmount;
             const _yak = this.getTokenAddress(networkId, collateralAsset);
-            const _zed = DEFAULT_AMOUNT_WEI;
+            const _zed = paymentAmount;
             const _wax = this.getTokenAddress(networkId, paymentAsset);
             const _pow = expirationDate;
             const _gem = addressReceiver;
@@ -1196,7 +1300,6 @@ class Prime extends Component {
                                 const column = this.state.columns[columnId];
                                 let boardState = (this.state.boardStates) ? this.state.boardStates : [];
                                 let isDropDisabled = (typeof boardState[columnId] !== 'undefined') ? boardState[columnId].valid : false;
-                                console.log({index})
                                 return (
                                     <InnerList
                                         key={column.id}
@@ -1213,6 +1316,7 @@ class Prime extends Component {
                                         expirationMap={this.state.expirations}
                                         isValid={this.state.isValid}
                                         isOnBoard={this.isOnBoard}
+                                        handleAssetAmount={this.handleAssetAmount}
                                     />
                                 );
                             })}

@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Line } from 'react-chartjs-2';
+import { Line, Bar } from 'react-chartjs-2';
 import { withStyles } from '@material-ui/core/styles';
 import { colors } from '../../theme/theme';
 import Typography from '@material-ui/core/Typography';
@@ -63,24 +63,37 @@ class Chart extends Component {
 
     render () {
         const { classes } = this.props;
+        let statsData = (this.props.statsData) ? (this.props.statsData) : undefined;
+        let tCV;
+        let tPV;
+        let tNV;
+        let hNV;
+        let hID
+        if(typeof statsData !== 'undefined') {
+            tCV = this.props.statsData['tCV'];
+            tPV = this.props.statsData['tPV'];
+            tNV = this.props.statsData['tNV'];
+            hNV = this.props.statsData['hNV'];
+            hID = this.props.statsData['hID'];
+        };
         return (
             <div className={classes.chart}>
                 <Card className={classes.data}>
                     <Typography variant={'h2'} className={classes.dataText}>
-                        Total Prime Collateral Value in $:
+                        Total Prime Collateral Value: ${tCV}
                     </Typography>
                     <Typography variant={'h2'} className={classes.dataText}>
-                        Total Prime Payment Value in $:
+                        Total Prime Payment Value: ${tPV}
                     </Typography>
                     <Typography variant={'h2'} className={classes.dataText}>
-                        Net $ USD Value:
+                        Total Net Value: ${tNV}
                     </Typography>
                     <Typography variant={'h2'} className={classes.dataText}>
-                        Most Profitable Prime in $: 
+                        Most Profitable Prime is #{hID}: ${hNV}
                     </Typography>
                 </Card>
                 
-                <Line 
+                <Bar 
                     data={this.props.data}
                     className={classes.chart}
                 />
