@@ -165,6 +165,7 @@ class OrderSummary extends Component {
                         Deposit Subtotal: {cAmt} {cAsset}
                 </Typography>
                 
+                {/* FIX - SHOULDNT BE VALID IF QTY IS NOT ENTERED */}
                 <Button 
                     className={classes.submitCardButton}
                     disabled={(this.props.isValid) ? false : true}

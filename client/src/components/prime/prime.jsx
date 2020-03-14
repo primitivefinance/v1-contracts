@@ -1,44 +1,26 @@
 import React, { Component, PureComponent } from 'react';
+import { DragDropContext } from 'react-beautiful-dnd';
 import { withRouter } from "react-router-dom";
-import Link from 'react-router-dom/Link';
 import { withStyles } from '@material-ui/core/styles';
 import { colors } from '../../theme/theme';
-import { DragDropContext } from 'react-beautiful-dnd';
-import Typography from '@material-ui/core/Typography';
-import Card from '@material-ui/core/Card';
-import Button from '@material-ui/core/Button';
-import Popover from '@material-ui/core/Popover';
 import Box from '@material-ui/core/Box';
-import ArrowRightIcon from '@material-ui/icons/ArrowRight';
-import Slide from '@material-ui/core/Slide';
-import Collapse from '@material-ui/core/Collapse';
 import LinkM from '@material-ui/core/Link';
-import INITIAL_CONTEXT from './constants';
-import Column from './column';
-import Web3 from 'web3';
-import PrimeContract from '../../artifacts/Prime.json';
-import Slate from '../../artifacts/Slate.json';
-import TOKENS_CONTEXT from './tokenAddresses';
-import Underlying from '../../artifacts/Underlying.json';
-import Strike from '../../artifacts/Strike.json';
-import Page from './page';
-import Inventory from './inventory';
-import HorizontalNonLinearStepper from './stepper';
-import Board from './board';
-import Table from '@material-ui/core/Table';
-import TableBody from '@material-ui/core/TableBody';
-import TableCell from '@material-ui/core/TableCell';
-import TableContainer from '@material-ui/core/TableContainer';
-import TableHead from '@material-ui/core/TableHead';
-import TableRow from '@material-ui/core/TableRow';
-import Paper from '@material-ui/core/Paper';
-import SimpleBottomNavigation from './bottomNavigation';
-import Footer from './footer';
 import GitHubIcon from '@material-ui/icons/GitHub';
 import TwitterIcon from '@material-ui/icons/Twitter';
-import TextField from '@material-ui/core/TextField';
-import OrderSummary from './summary';
 
+import Web3 from 'web3';
+import HorizontalNonLinearStepper from './stepper';
+import Board from './board';
+import Column from './column';
+import OrderSummary from './summary';
+import NavButton from './navButton';
+import Footer from './footer';
+
+import INITIAL_CONTEXT from './constants';
+import TOKENS_CONTEXT from './tokenAddresses';
+import PrimeContract from '../../artifacts/Prime.json';
+import Underlying from '../../artifacts/Underlying.json';
+import Strike from '../../artifacts/Strike.json';
 
 const styles = theme => ({
     root: {
@@ -68,26 +50,6 @@ const styles = theme => ({
             flexDirection: 'row',
         },
     },
-    bottom: {
-        flex: 1,
-        display: 'flex',
-        width: '100%',
-        justifyContent: 'space-evenly',
-        alignItems: 'center',
-        flexDirection: 'column',
-        /* minHeight: '22.4vh', */
-        height: '100%',
-    },
-    boards: {
-        flex: 1,
-        display: 'flex',
-        width: '80%',
-        minHeight: '20vh',
-        flexDirection: 'column',
-        [theme.breakpoints.up('sm')]: {
-            flexDirection: 'row',
-        },
-    },
     cells: {
         flex: 1,
         display: 'flex',
@@ -99,219 +61,22 @@ const styles = theme => ({
             flexDirection: 'row',
         },
     },
-    prime: {
-        backgroundColor: colors.white,
-        '&:hover': {
-            backgroundColor: colors.lightblue,
-            '& .title': {
-                color: colors.blue
-            },
-            '& .icon': {
-                color: colors.blue
-            },
-        },
-        '& .title': {
-            color: colors.background
-        },
-        '& .icon': {
-            color: colors.background
-        },
-    },
-    title: {
-        padding: '24px',
-        paddingBottom: '0px',
-        [theme.breakpoints.up('sm')]: {
-            paddingBottom: '24px'
-        }
-    },
-    transitionButton: {
+
+    bottom: {
+        flex: 1,
         display: 'flex',
-        height: '100%',
-        minHeight: '100vh',
-        backgroundColor: colors.white,
-        '&:hover': {
-            backgroundColor: colors.lightblue,
-        },
-    },
-    submitButton: {
-        display: 'flex',
-        height: '100%',
-        /* minHeight: '100vh', */
-        color: colors.background,
-        backgroundColor: state => state.isValid ? colors.success : colors.secondary,
-        '&:hover': {
-            backgroundColor: state => state.isValid ? colors.success : colors.success,
-        },
-        
-    },
-    profileCard: {
-        display: 'flex',
-       /*  minHeight: '96%', */
-        height: '96%',
-        margin: '16px',
-    },
-    buttonText: {
-        padding: '4px',
         width: '100%',
-        minWidth: '90%',
+        justifyContent: 'space-evenly',
+        alignItems: 'center',
+        flexDirection: 'column',
+        height: '100%',
     },
+    
     stepper: {
         display: 'flex',
         active: colors.primary,
     },
-    submitPrime: {
-        margin: '16px',
-        display: 'flex',
-        minHeight: '10%',
-        height: '66vh',
-        minWidth: '5%',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexDirection: 'column',
-        [theme.breakpoints.up('sm')]: {
-            flexDirection: 'column',
-        },
-        color: colors.banner,
-    },
-    submitInventory: {
-        margin: '16px',
-        display: 'flex',
-        minHeight: '10%',
-        height: '66vh',
-        minWidth: '5%',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexDirection: 'column',
-        [theme.breakpoints.up('sm')]: {
-            flexDirection: 'column',
-        },
-        color: colors.primary,
-        backgroundColor: colors.banner,
-        '&:hover': {
-            backgroundColor: colors.lightblue,
-            color: colors.background,
-        },
-    },
-    linkButton: {
-        backgroundColor: colors.banner,
-        color: colors.primary,
-        '&:hover' : {
-            backgroundColor: colors.primary,
-            color: colors.banner,
-        },
-        letterSpacing: '1px',
-        textTransform: 'uppercase',
-        height: '100%',
-        fontWeight: '700',
-    },
-    submitCard: {
-        display: 'flex',
-        margin: '16px',
-        /* marginRight: '32px', */
-        width: '15%',
-        height: '20%',
-        minWidth: '10%',
-        minHeight: '10%',
-        flexDirection: 'row',
-        [theme.breakpoints.up('sm')]: {
-            flexDirection: 'column',
-        },
-        backgroundColor: colors.banner,
-        color: colors.primary,
-        borderRadius: '0px',
-    },
-    submitCardTypography: {
-        /* margin: '16px', */
-        marginLeft: '16px',
-        marginRight: '16px',
-        marginTop: '16px',
-        marginBottom: '4px',
-    },
-    submitCardText: {
-        /* margin: '12px', */
-        marginLeft: '12px',
-        marginRight: '12px',
-        marginBottom: '12px',
-        display: 'flex',
-        flexDirection: 'row',
-        
-    },
-    submitCardButton: {
-        margin: '8px',
-        color: colors.background,
-        backgroundColor: state => state.isValid ? colors.success : colors.secondary,
-        '&:hover': {
-            backgroundColor: state => state.isValid ? colors.success : colors.success,
-        },
-    },
 });
-
-/* SEPARATE */
-function SimplePopover(props) {
-    const classes = props.classes;
-    const [anchorEl, setAnchorEl] = React.useState(null);
-  
-    const handleClick = event => {
-      setAnchorEl(event.currentTarget);
-    };
-  
-    const handleClose = () => {
-      setAnchorEl(null);
-    };
-  
-    const open = Boolean(anchorEl);
-    const id = open ? 'simple-popover' : undefined;
-  
-    return (
-      <div>
-        <Button aria-describedby={id} variant="contained" color="primary" onClick={handleClick}>
-          Open Popover
-        </Button>
-        <Popover
-          id={id}
-          open={open}
-          anchorEl={anchorEl}
-          onClose={handleClose}
-          anchorOrigin={{
-            vertical: 'bottom',
-            horizontal: 'center',
-          }}
-          transformOrigin={{
-            vertical: 'top',
-            horizontal: 'center',
-          }}
-        >
-          <Typography>The content of the Popover.</Typography>
-        </Popover>
-      </div>
-    );
-};
-
-/* SEPARATE */
-function MultilineTextFields(props) {
-    const { classes } = props;
-    const [value, setValue] = React.useState();
-  
-    const handleChange = event => {
-        setValue(event.target.value);
-        let value = event.target.value;
-        props.handleAssetAmount(props.columnId, value)
-    };
-
-    const handleSubmit = () => {
-        props.handleAssetAmount(props.columnId, value)
-    };
-  
-    return (
-      <form className={classes.amountForm} noValidate autoComplete="off" onSubmit={(e) => e.preventDefault()}>
-          <TextField
-            placeholder='Amount'
-            value={value}
-            onChange={handleChange}
-          />
-    </form>
-    );
-};
 
 class InnerList extends PureComponent {
     shouldComponentUpdate(nextProps) {
@@ -1312,47 +1077,6 @@ class Prime extends Component {
 
     render() {
         const { classes } = this.props;
-        if(this.state.inventoryPage) {
-            return (
-                <Inventory web3={this.state.web3} goToPrime={this.goToPrime} />
-            );
-        }
-        const primeRows = [];
-        let cAsset, pAsset, eTimestamp, aReceiver, cAmt, pAmt, boardState, items;
-        boardState = (typeof this.state.boardStates !== 'undefined') ? this.state.boardStates : 'undefined';
-        items = this.state.items;
-        if(typeof boardState !== 'undefined') {
-            if(boardState['collateralBoard']) {
-                if(boardState['collateralBoard']['itemIds'].length > 0) {
-                    cAsset = items[boardState['collateralBoard']['itemIds'][0]].payload;
-                    cAmt = ((this.state.collateralAmount) / 10**18).toFixed(6);
-                };
-            };
-
-            if(boardState['paymentBoard']) {
-                if(boardState['paymentBoard']['itemIds'].length > 0) {
-                    pAsset = items[boardState['paymentBoard']['itemIds'][0]].payload;
-                    pAmt = this.state.paymentAmount;
-                };
-            };
-
-            if(boardState['expirationBoard']) {
-                if(boardState['expirationBoard']['itemIds'].length > 0) {
-                    eTimestamp = items[boardState['expirationBoard']['itemIds'][0]].payload;
-                    let date = new Date(eTimestamp * 1000);
-                    let datetime = date.toDateString();
-                    eTimestamp = datetime;
-                };
-            };
-
-            if(boardState['addressBoard']) {
-                if(boardState['addressBoard']['itemIds'].length > 0) {
-                    aReceiver = items[boardState['addressBoard']['itemIds'][0]].payload;
-                };
-            };
-        };
-
-
 
         return (
             <div className={classes.root}>
@@ -1420,7 +1144,6 @@ class Prime extends Component {
                         </Box>
                     </DragDropContext>
 
-
                     {/* ORDER SUMMARY */}
                     <OrderSummary
                         boardStates={this.state.boardStates}
@@ -1429,72 +1152,14 @@ class Prime extends Component {
                         paymentAmount={this.state.paymentAmount}
                         handleAssetAmount={this.handleAssetAmount}
                         handleBoardSubmit={this.handleBoardSubmit}
-                        isValid={this.isValid}
+                        isValid={this.state.isValid}
                     />
-                    <Card className={classes.submitCard}>
-                        <Typography variant={'h1'} className={classes.submitCardTypography}>
-                                Order Summary
-                        </Typography>
-                        <Typography variant={'h2'} className={classes.submitCardTypography}>
-                                Collateral: {cAsset}
-                        </Typography>
-                        <form noValidate autoComplete="off" className={classes.submitCardText}>
-                              <MultilineTextFields
-                                classes={classes}
-                                columnId={'collateralBoard'}
-                                handleAssetAmount={this.handleAssetAmount}
-                              />
-                        </form>
-                        <Typography variant={'h2'} className={classes.submitCardTypography}>
-                                Payment: {pAsset}
-                        </Typography>
 
-                            <form noValidate autoComplete="off" className={classes.submitCardText}>
-                                  <MultilineTextFields
-                                    classes={classes}
-                                    columnId={'paymentBoard'}
-                                    handleAssetAmount={this.handleAssetAmount}
-                                  />
-                                  <Typography variant={'h2'} style={{ alignItems: 'center', display: 'flex', marginLeft: '8px', fontWeight: '600' }}>
-                                    {pAsset}
-                                </Typography>
-                            </form> 
-                        <Typography variant={'h2'} className={classes.submitCardTypography}>
-                                Expires: {eTimestamp}
-                        </Typography>
-                        <Typography variant={'h2'} className={classes.submitCardTypography}>
-                                Payment Receiver: {aReceiver}
-                        </Typography>
-                        <Typography variant={'h2'} className={classes.submitCardTypography}>
-                                ------------------------------------
-                        </Typography>
-                        <Typography variant={'h1'} className={classes.submitCardTypography}>
-                                Deposit Subtotal: {cAmt} {cAsset}
-                        </Typography>
-                        
-                        <Button 
-                            className={classes.submitCardButton}
-                            disabled={(this.state.isValid) ? false : true}
-                            onClick={ () => {this.handleBoardSubmit()}} 
-                        >
-                            <Typography variant={'h1'}>
-                                Create Prime
-                            </Typography>
-                        </Button>
-                    </Card>
-
-                    
                     {/* NAVIGATION */}
-                    <Card className={classes.submitInventory}>
-                        <Button 
-                            href={`/inventory/${this.state.account}`}
-                            className={classes.linkButton}
-                        >
-                            <Typography variant={'h1'}>
-                                Next Page
-                            </Typography>
-                        </Button>
-                    </Card>
+                    <NavButton 
+                        text={'Next'}
+                        link={`/inventory/${this.state.account}`}
+                    />
                 </div>
 
 
@@ -1513,12 +1178,12 @@ class Prime extends Component {
                     <Footer 
                         title={
                             <div>
-                            <LinkM href="https://github.com/Alexangelj/carbon" underline='none'>
-                                <GitHubIcon />
-                            </LinkM>
-                            <LinkM href="https://github.com/Alexangelj/carbon" underline='none'>
-                                <TwitterIcon />
-                            </LinkM>
+                                <LinkM href="https://github.com/Alexangelj/carbon" underline='none'>
+                                    <GitHubIcon />
+                                </LinkM>
+                                <LinkM href="https://github.com/Alexangelj/carbon" underline='none'>
+                                    <TwitterIcon />
+                                </LinkM>
                             </div>
                         }
                     />

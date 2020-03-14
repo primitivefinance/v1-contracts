@@ -1,41 +1,26 @@
-import React, { Component, PureComponent, useEffect } from 'react';
+import React, { Component } from 'react';
 import { withRouter } from "react-router-dom";
-import Link from 'react-router-dom/Link';
 import { withStyles } from '@material-ui/core/styles';
 import { colors } from '../../theme/theme';
-import { DragDropContext } from 'react-beautiful-dnd';
+
 import Typography from '@material-ui/core/Typography';
 import Card from '@material-ui/core/Card';
 import Button from '@material-ui/core/Button';
-import Paper from '@material-ui/core/Paper';
-import Popover from '@material-ui/core/Popover';
-import Grid from '@material-ui/core/Grid';
-import Box from '@material-ui/core/Box';
-import ArrowRightIcon from '@material-ui/icons/ArrowRight';
-import ArrowLeftIcon from '@material-ui/icons/ArrowLeft';
-import INITIAL_CONTEXT from './constants';
-import Column from './column';
-import Web3 from 'web3';
-import PrimeContract from '../../artifacts/Prime.json';
-import Slate from '../../artifacts/Slate.json';
-import TOKENS_CONTEXT from './tokenAddresses';
-import Underlying from '../../artifacts/Underlying.json';
-import Strike from '../../artifacts/Strike.json';
-import Page from './page';
+import Grid from '@materi al-ui/core/Grid';
 import Fade from '@material-ui/core/Fade';
 import LinkM from '@material-ui/core/Link';
 
-import Table from '@material-ui/core/Table';
-import TableBody from '@material-ui/core/TableBody';
-import TableCell from '@material-ui/core/TableCell';
-import TableContainer from '@material-ui/core/TableContainer';
-import TableHead from '@material-ui/core/TableHead';
-import TableRow from '@material-ui/core/TableRow';
-import { Tab } from '@material-ui/core';
+import Web3 from 'web3';
+import INITIAL_CONTEXT from './constants';
+import TOKENS_CONTEXT from './tokenAddresses';
+import PrimeContract from '../../artifacts/Prime.json';
+import Underlying from '../../artifacts/Underlying.json';
+import Strike from '../../artifacts/Strike.json';
 import Erc20 from '../../artifacts/Strike.json';
-import loading from '../home/830.svg';
-import Prime from './prime';
+
 import Interface from './interface';
+import WalletTable from './walletTable';
+import PrimeTable from './primeTable';
 
 
 const styles = theme => ({
@@ -43,7 +28,6 @@ const styles = theme => ({
         flex: 1,
         display: 'flex',
         width: '100%',
-        height: '100vh',
         justifyContent: 'left',
         flexDirection: 'column',
         [theme.breakpoints.up('sm')]: {
@@ -209,48 +193,6 @@ const styles = theme => ({
         marginLeft: '24px',
     },
 });
-
-
-
-function SimplePopover(props) {
-    const classes = props.classes;
-    const [anchorEl, setAnchorEl] = React.useState(null);
-  
-    const handleClick = event => {
-      setAnchorEl(event.currentTarget);
-    };
-  
-    const handleClose = () => {
-      setAnchorEl(null);
-    };
-  
-    const open = Boolean(anchorEl);
-    const id = open ? 'simple-popover' : undefined;
-  
-    return (
-      <div>
-        <Button aria-describedby={id} className={classes.addressButton} onClick={handleClick}>
-          Address
-        </Button>
-        <Popover
-          id={id}
-          open={open}
-          anchorEl={anchorEl}
-          onClose={handleClose}
-          anchorOrigin={{
-            vertical: 'bottom',
-            horizontal: 'center',
-          }}
-          transformOrigin={{
-            vertical: 'top',
-            horizontal: 'center',
-          }}
-        >
-          <Typography>{props.address}</Typography>
-        </Popover>
-      </div>
-    );
-}
 
 class Inventory extends Component {
     constructor(props){
@@ -1085,30 +1027,17 @@ class Inventory extends Component {
 
     render() {
         const { classes } = this.props;
-        const primeRows = (this.state.primeRows) ? (this.state.primeRows) : [];
-        const walletRows = (this.state.walletRows) ? (this.state.walletRows) : [];
         const openInventory = (this.state.primeRows) 
                                 ? (this.state.primeRows.length > 0) 
                                     : false
                                         ? true : false;
-        let statsData = (this.state.statsData) ? (this.state.statsData) : undefined;
-        let tCV;
-        let tPV;
-        let tNV;
-        let hNV;
-        if(typeof statsData !== 'undefined') {
-            tCV = this.state.statsData['tCV'];
-            tPV = this.state.statsData['tPV'];
-            tNV = this.state.statsData['tNV'];
-            hNV = this.state.statsData['hNV'];
-            console.log(statsData)
-        };
 
         return (
-            <Page display='flex' key='inventory'>
-                <div className={classes.root} key='inventory'>
-                <Box className={classes.boards}>
 
+            /* INVENTORY PAGE CONTAINER */
+            <div className={classes.root} key='inventory'>
+
+                    {/* NAVIGATION */}
                     <Card className={classes.submitInventory}>
                         <Button 
                             href={`/prime`}
@@ -1121,6 +1050,7 @@ class Inventory extends Component {
                     </Card>
 
 
+                    {/* CORE INTERFACE */}
                     <Card className={classes.profileCard}>
                         {!openInventory ? (
                             <Typography>
@@ -1134,101 +1064,36 @@ class Inventory extends Component {
                             </Typography>
                         ) : (
                             <Fade in={openInventory} timeout={500}>
-                            <div className={classes.root} key='interface'>
-                            <Interface 
-                                classes={classes}
-                                primeRows={primeRows}
-                                primeExercise={this.primeExercise}
-                                primeClose={this.primeClose}
-                                data={this.state.data}
-                                statsData={this.state.statsData}
-                            />
-                            </div>
+                                <Interface 
+                                    classes={classes}
+                                    primeRows={this.state.primeRows}
+                                    primeExercise={this.primeExercise}
+                                    primeClose={this.primeClose}
+                                    data={this.state.data}
+                                    statsData={this.state.statsData}
+                                />
                             </Fade>
                         )}
                     </Card>
 
+                    {/* INVENTORY CONTAINER */}
                     <Grid container className={classes.profileInfo}>
-                        <Grid item>
-                            <Card className={classes.primeInventory}>
-                                <Typography className={classes.title} variant={'h1'}>
-                                    Prime Inventory
-                                </Typography>
 
-                                <TableContainer component={Paper}>
-                                    <Table className={classes.primeTable}>
-                                        <TableHead>
-                                            <TableRow>
-                                                <TableCell align='center' variant={'h1'}>ID</TableCell>
-                                                <TableCell align='center' variant={'h1'}>Collateral</TableCell>
-                                                <TableCell align='center' variant={'h1'}>Payment</TableCell>
-                                                <TableCell align='center' variant={'h1'}>Expires</TableCell>
-                                                <TableCell align='center' variant={'h1'} className={classes.address}>Paid To</TableCell>
-                                            </TableRow>
-                                        </TableHead>
-                                        
-                                        <TableBody>
-                                            {primeRows.map(row => (
-                                                <TableRow key={row.name}>
-                                                    <TableCell align='center' variant={'h1'}>#{row.tokenId}</TableCell>
-                                                    <TableCell align='center' variant={'h1'}>{row.xis} {row.yakSymbol}</TableCell>
-                                                    <TableCell align='center' variant={'h1'}>{row.zed} {row.waxSymbol}</TableCell>
-                                                    <TableCell align='center' variant={'h1'}>{row.pow}</TableCell>
-                                                    <TableCell align='center' variant={'h1'} className={classes.address}>
-                                                        <SimplePopover address={row.gem} classes={classes}/>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                        
-                                    </Table>
-                                </TableContainer>
+                        {/* PRIME INVENTORY CONTAINER */}
+                        <PrimeTable 
+                            primeRows={this.state.primeRows}
+                        />
+                        
+                        {/* WALLET INVENTORY CONTAINER */}
+                        <WalletTable
+                            walletRows={this.state.walletRows}
+                            handleMint={this.handleMint}
+                        />
 
-                            </Card>
-                        </Grid>
-                        <Grid item>
-                            <Card className={classes.walletBalances}>
-                                <Typography className={classes.title} variant={'h1'}>
-                                    Wallet Balances
-                                </Typography>
-
-                                <TableContainer component={Paper}>
-                                    <Table className={classes.walletTable}>
-                                        <TableHead>
-                                            <TableRow>
-                                                <TableCell align='center' variant={'h1'}>Symbol</TableCell>
-                                                <TableCell align='center' variant={'h1'}>Balance</TableCell>
-                                                <TableCell align='center' variant={'h1'}>Deposit</TableCell>
-                                            </TableRow>
-                                        </TableHead>
-                                        
-                                        <TableBody>
-                                            {walletRows.map(row => (
-                                                <TableRow key={row.symbol}>
-                                                    <TableCell align='center' variant={'h1'}>{row.symbol}</TableCell>
-                                                    <TableCell align='center' variant={'h1'}>{row.balance}</TableCell>
-                                                    <TableCell align='center' variant={'h1'} >{
-                                                        <Button 
-                                                            onClick={() => this.handleMint(row.symbol)}
-                                                            className={classes.mintButton}
-                                                        >
-                                                            Mint
-                                                        </Button>
-                                                        }
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                        
-                                    </Table>
-                                </TableContainer>
-
-                            </Card>
-                        </Grid>
                     </Grid>
 
 
-                    
+                    {/* NAVIGATION */}
                     <Card className={classes.submitInventory}>
                         <Button 
                             href={`/inventory/${this.state.account}`}
@@ -1240,9 +1105,7 @@ class Inventory extends Component {
                         </Button>
                     </Card>
 
-                </Box>
-                </div>
-            </Page>
+            </div>
         );
     };
 };
