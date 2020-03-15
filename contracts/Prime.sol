@@ -8,8 +8,8 @@ pragma solidity ^0.6.2;
  */
 
 
-import "./tokens/SafeMath.sol";
-import "./Slate.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721Full.sol";
 
 
 abstract contract ERC20 {
@@ -103,7 +103,7 @@ abstract contract IPrime {
 }
 
 
-contract Prime is IPrime, Slate {
+contract Prime is IPrime, ERC721Full {
     using SafeMath for uint256;
 
     /** 
@@ -129,6 +129,7 @@ contract Prime is IPrime, Slate {
     string constant URI = '';
     uint256 constant INCREMENT = 1;
     uint256 public nonce;
+    address public _controller;
 
     // Map NFT IDs to Slates
     mapping(uint256 => Slates) public _slates;
@@ -144,15 +145,13 @@ contract Prime is IPrime, Slate {
         string memory name, 
         string memory symbol
     ) 
-        public 
-        Slate(name, symbol) 
+        public
+        ERC721Full(
+            "Prime Derivative",
+            "PD"
+        )
     {
-        _name = name;
-        _symbol = symbol;
         _controller = msg.sender;
-
-        // register the supported interfaces to conform to ERC721 via ERC165
-        _registerInterface(_INTERFACE_ID_ERC721_METADATA);
     }
 
     /** 
@@ -210,10 +209,9 @@ contract Prime is IPrime, Slate {
             block.timestamp
         );
 
-        mintSlate(
+        _safeMint(
             msg.sender, 
-            nonce, 
-            URI
+            nonce
         );
 
         return yak.transferFrom(msg.sender, address(this), _xis);
@@ -282,7 +280,8 @@ contract Prime is IPrime, Slate {
             _tokenId, 
             block.timestamp
         );
-        return burn(msg.sender, _tokenId);
+        _burn(msg.sender, _tokenId);
+        return true;
     }
 
     /** 
@@ -359,7 +358,7 @@ contract Prime is IPrime, Slate {
             block.timestamp
         );
 
-        burn(msg.sender, _burnId);
+        _burn(msg.sender, _burnId);
 
         return _yakBurn.transfer(msg.sender, _burnSlate.xis);
     }
