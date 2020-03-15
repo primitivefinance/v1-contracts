@@ -1,7 +1,7 @@
 {
-  "name": "carbon.finance",
+  "name": "Karbon.finance",
   "version": "0.1.0",
-  "description": "Carbon - Financial Crafting.",
+  "description": "Karbon - Financial Crafting.",
   "main": "truffle-config.js",
   "directories": {
     "test": "test"
@@ -13,7 +13,7 @@
     "type": "git",
     "url": "git+https://github.com/Alexangelj/carbon.git"
   },
-  "author": "Alexander Angel",
+  "author": "Karbon",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/Alexangelj/carbon/issues"
@@ -25,5 +25,8 @@
     "dotenv": "^8.2.0",
     "react": "^16.13.0",
     "truffle-hdwallet-provider": "^1.0.17"
+  },
+  "devDependencies": {
+    "truffle": "^5.1.14"
   }
 }
