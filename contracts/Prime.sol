@@ -2,7 +2,7 @@ pragma solidity ^0.6.2;
 
 /**
  * @title   Karbon's Prime Contract
- * @notice  The core ERC721 contract that holds all Primes.
+ * @notice  The core ERC721 contract that holds all Instruments.Primes.
  *          A Prime isn ERC-721 token that wraps ERC-20 assets
  *          with functions to interact with them.
  * @author  Karbon
@@ -10,7 +10,10 @@ pragma solidity ^0.6.2;
 
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721Full.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "./Instruments.sol";
 
 
 abstract contract ERC20 {
@@ -97,58 +100,39 @@ abstract contract IPrime {
     );
 
 
-    function createPrime(uint256 _xis, address _yak, uint256 _zed, address _wax, uint256 _pow, address _gem) public virtual returns (bool);
-    function exercise(uint256 _tokenId) public virtual returns (bool);
+    function createPrime(uint256 _xis, address _yak, uint256 _zed, address _wax, uint256 _pow, address _gem) external virtual returns (bool);
+    function exercise(uint256 _tokenId) external virtual returns (bool);
+    function close(uint256 _collateralId, uint256 _burnId) external virtual returns (bool);
     function withdraw(uint256 _amount, address _asset) public virtual returns (bool);
-    function close(uint256 _collateralId, uint256 _burnId) public virtual returns (bool);
 }
 
 
-contract Prime is IPrime, ERC721Full {
+contract Prime is IPrime, ERC721Full, ReentrancyGuard, Ownable {
     using SafeMath for uint256;
-
-    /** 
-     * @dev A Prime has these properties.
-     * @param ace `msg.sender` of the createPrime function.
-     * @param xis Quantity of collateral asset token.
-     * @param yak Address of collateral asset token.
-     * @param zed Purchase price of collateral, denominated in quantity of token z.
-     * @param wax Address of purchase price asset token.
-     * @param pow UNIX timestamp of valid time period.
-     * @param gem Address of payment receiver of token z.
-     */
-    struct Primes {
-        address ace;
-        uint256 xis;
-        address yak;
-        uint256 zed;
-        address wax;
-        uint256 pow;
-        address gem;
-    }
 
     string constant URI = '';
     uint256 constant INCREMENT = 1;
     uint256 public nonce;
-    address public _controller;
 
     // Map NFT IDs to Prime Struct
-    mapping(uint256 => Primes) public _primes;
+    mapping(uint256 => Instruments.Primes) public _primes;
 
-    // Maps a user's withdrawable
+    // Maps a user's withdrawable asset balance
     mapping(address => mapping(address => uint256)) private _bank;
 
+    // Maps user addresses to Actor accounts
+    mapping(address => Instruments.Actors) public _actors;
 
-    constructor (
-    ) 
-        public
+
+    constructor () public
         ERC721Full(
             "Prime Derivative",
             "PD"
-        )
-    {
-        _controller = msg.sender;
-    }
+        ) {}
+    
+
+    /* CORE FUNCTIONS */
+
 
     /** 
      * @dev `msg.sender` Deposits asset x, mints new Slate.
@@ -168,8 +152,8 @@ contract Prime is IPrime, ERC721Full {
         uint256 _pow,
         address _gem
     ) 
-        public 
-        override 
+        external 
+        override
         returns (bool) 
     {
 
@@ -182,7 +166,7 @@ contract Prime is IPrime, ERC721Full {
 
         // EFFECTS
         _incrementNonce();
-        _primes[nonce] = Primes(
+        _primes[nonce] = Instruments.Primes(
             msg.sender, 
             _xis,
             _yak, 
@@ -191,6 +175,9 @@ contract Prime is IPrime, ERC721Full {
             _pow, 
             _gem
         );
+
+        _actors[msg.sender].actor = msg.sender;
+        _actors[msg.sender].mintedTokens.push(nonce);
 
         _bank[msg.sender][_yak] = _bank[msg.sender][_yak].add(_xis);
 
@@ -221,8 +208,9 @@ contract Prime is IPrime, ERC721Full {
     function exercise(
         uint256 _tokenId
     ) 
-        public 
-        override 
+        external 
+        override
+        nonReentrant
         returns (bool) 
     {
         // CHECKS
@@ -239,7 +227,7 @@ contract Prime is IPrime, ERC721Full {
         );
 
         // Get Prime
-        Primes memory _prime = _primes[_tokenId];
+        Instruments.Primes memory _prime = _primes[_tokenId];
         ERC20 _wax = ERC20(_prime.wax);
 
         require(
@@ -253,6 +241,8 @@ contract Prime is IPrime, ERC721Full {
         );
 
         // EFFECTS
+
+        _actors[msg.sender].deactivatedTokens.push(_tokenId);
 
         // Original Minter has their collateral balance debited.
         _bank[_prime.ace][_prime.yak] = _bank[_prime.ace][_prime.yak].sub(_prime.xis);
@@ -297,8 +287,9 @@ contract Prime is IPrime, ERC721Full {
         uint256 _collateralId,
         uint256 _burnId
     ) 
-        public 
-        override 
+        external 
+        override
+        nonReentrant
         returns (bool) 
     {
         // CHECKS
@@ -312,11 +303,9 @@ contract Prime is IPrime, ERC721Full {
             'Owner of Prime is not sender'
         );
 
-        // Get Minter of Collateral Prime
-        Primes memory _collateralPrime = _primes[_collateralId];
 
         // Get Prime that will get Burned
-        Primes memory _burnPrime = _primes[_burnId];
+        Instruments.Primes memory _burnPrime = _primes[_burnId];
         ERC20 _yakBurn = ERC20(_burnPrime.yak);
 
         // Msg.sender burns a Prime that they did not mint.
@@ -339,6 +328,8 @@ contract Prime is IPrime, ERC721Full {
         );
 
         // EFFECTS
+
+        _actors[msg.sender].deactivatedTokens.push(_burnId);
 
         // Minter's collateral is debited.
         _bank[msg.sender][_burnPrime.yak] = _bank[msg.sender][_burnPrime.yak].sub(_burnPrime.xis);
@@ -368,7 +359,8 @@ contract Prime is IPrime, ERC721Full {
         address _asset
     ) 
         public 
-        override 
+        override
+        nonReentrant
         returns (bool) 
     {
         // CHECKS
@@ -395,6 +387,10 @@ contract Prime is IPrime, ERC721Full {
         return erc20.transfer(msg.sender, _amount);
     }
 
+
+    /* UTILITY FUNCTIONS */
+
+
     /** 
      * @dev Utility to update tokenId Nonce.
      * @return uint256 nonce.
@@ -406,7 +402,7 @@ contract Prime is IPrime, ERC721Full {
 
     /** 
      * @dev Utility to compare hashes of Prime properties.
-     * @return burn bool of whether Primes match.
+     * @return burn bool of whether Instruments.Primes match.
      */
     function _primeCompare(
         uint256 _collateralId,
@@ -417,8 +413,8 @@ contract Prime is IPrime, ERC721Full {
         returns
         (bool burn)
     {
-        Primes memory _collateralPrime = _primes[_collateralId];
-        Primes memory _burnPrime = _primes[_burnId];
+        Instruments.Primes memory _collateralPrime = _primes[_collateralId];
+        Instruments.Primes memory _burnPrime = _primes[_burnId];
 
         bytes32 hashCollateral = keccak256(
             abi.encodePacked(
@@ -440,7 +436,6 @@ contract Prime is IPrime, ERC721Full {
             )
         );
 
-        /* require((hashCollateral == hashBurn), 'Prime Properties do not match'); */
         if(hashCollateral == hashBurn) {
             return true;
         } else {
@@ -448,10 +443,14 @@ contract Prime is IPrime, ERC721Full {
         }
     }
 
+
+    /* VIEW FUNCTIONS */
+
+
     /** 
      * @dev Public view function to get Prime properties.
      */
-    function getPrime(uint256 _tokenId) public view returns (
+    function getPrime(uint256 _tokenId) external view returns (
             address ace,
             uint256 xis,
             address yak,
@@ -460,7 +459,7 @@ contract Prime is IPrime, ERC721Full {
             uint256 pow,
             address gem
         ) {
-            Primes memory _prime = _primes[_tokenId];
+            Instruments.Primes memory _prime = _primes[_tokenId];
             return (
                 _prime.ace,
                 _prime.xis,
@@ -479,5 +478,21 @@ contract Prime is IPrime, ERC721Full {
         uint256
         ) {
             return _bank[_user][_asset];
+    }
+
+    /** 
+     * @dev Public view function to Actor properties
+     */
+    function getActor(address _user) external view returns (
+        address actor,
+        uint[] memory mintedTokens,
+        uint[] memory deactivatedTokens
+        ) {
+            Instruments.Actors memory _actor = _actors[_user];
+            return (
+                _actor.actor,
+                _actor.mintedTokens,
+                _actor.deactivatedTokens
+            );
     }
 }

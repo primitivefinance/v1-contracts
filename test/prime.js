@@ -185,5 +185,16 @@ contract('Prime', accounts => {
         );
     });
 
+    it('get actor info', async () => {
+        console.log(
+            ((await _prime.getActor(Alice)).mintedTokens).toString(),
+            ((await _prime.getActor(Alice)).deactivatedTokens).toString()
+        );
+    });
+
+    it('asserts owner is correctly initialized', async () => {
+        assert.strictEqual(await _prime.owner(), Alice, 'Owner is not msg.sender');
+    });
+
 
 })
