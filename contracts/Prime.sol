@@ -1,10 +1,11 @@
 pragma solidity ^0.6.2;
 
 /**
- * @title Carbon's Prime Contract
- * @notice The core ERC721 contract that holds all Slates. 
- *         A Prime is two-party contract. A Slate is an NFT with the properties of the contract.
- * @author Carbon
+ * @title   Karbon's Prime Contract
+ * @notice  The core ERC721 contract that holds all Primes.
+ *          A Prime isn ERC-721 token that wraps ERC-20 assets
+ *          with functions to interact with them.
+ * @author  Karbon
  */
 
 
@@ -27,10 +28,10 @@ abstract contract IPrime {
     * @param _collateral Address of the deposited asset.
     * @param _paymentQty Quantity of the deposited asset.
     * @param _payment Address of the deposited asset.
-    * @param _tokenId Nonce of minted Slate -> ID.
+    * @param _tokenId Nonce of minted Prime -> ID.
     * @param _timestamp Block.timestamp of deposit.
     **/
-    event SlateMinted(
+    event PrimeMinted(
         address indexed _user,
         uint256 _collateralQty,
         address  _collateral,
@@ -47,10 +48,10 @@ abstract contract IPrime {
     * @param _collateral Address of the deposited asset.
     * @param _paymentQty Quantity of the deposited asset.
     * @param _payment Address of the deposited asset.
-    * @param _tokenId Nonce of minted Slate -> ID.
+    * @param _tokenId Nonce of minted Prime -> ID.
     * @param _timestamp Block.timestamp of deposit.
     **/
-    event SlateExercised(
+    event PrimeExercised(
         address indexed _user,
         uint256 _collateralQty,
         address  _collateral,
@@ -65,10 +66,10 @@ abstract contract IPrime {
     * @param _user Address of user.
     * @param _collateralQty Quantity of the deposited asset.
     * @param _collateral Address of the deposited asset.
-    * @param _tokenId Nonce of minted Slate -> ID.
+    * @param _tokenId Nonce of minted Prime -> ID.
     * @param _timestamp Block.timestamp of deposit.
     **/
-    event SlateClosed(
+    event PrimeClosed(
         address indexed _user,
         uint256 _collateralQty,
         address  indexed _collateral,
@@ -96,9 +97,9 @@ abstract contract IPrime {
     );
 
 
-    function createSlate(uint256 _xis, address _yak, uint256 _zed, address _wax, uint256 _pow, address _gem) public virtual returns (bool);
+    function createPrime(uint256 _xis, address _yak, uint256 _zed, address _wax, uint256 _pow, address _gem) public virtual returns (bool);
     function exercise(uint256 _tokenId) public virtual returns (bool);
-    function withdraw(uint256 _amount, address _addr) public virtual returns (bool);
+    function withdraw(uint256 _amount, address _asset) public virtual returns (bool);
     function close(uint256 _collateralId, uint256 _burnId) public virtual returns (bool);
 }
 
@@ -107,8 +108,8 @@ contract Prime is IPrime, ERC721Full {
     using SafeMath for uint256;
 
     /** 
-     * @dev A Slate has the properties of a Prime.
-     * @param ace `msg.sender` of the createSlate function.
+     * @dev A Prime has these properties.
+     * @param ace `msg.sender` of the createPrime function.
      * @param xis Quantity of collateral asset token.
      * @param yak Address of collateral asset token.
      * @param zed Purchase price of collateral, denominated in quantity of token z.
@@ -116,7 +117,7 @@ contract Prime is IPrime, ERC721Full {
      * @param pow UNIX timestamp of valid time period.
      * @param gem Address of payment receiver of token z.
      */
-    struct Slates {
+    struct Primes {
         address ace;
         uint256 xis;
         address yak;
@@ -131,19 +132,14 @@ contract Prime is IPrime, ERC721Full {
     uint256 public nonce;
     address public _controller;
 
-    // Map NFT IDs to Slates
-    mapping(uint256 => Slates) public _slates;
-
-    // Maps Slates to Collateral Assets and Quantity
-    mapping(uint256 => mapping(uint256 => uint256)) public _collateral;
+    // Map NFT IDs to Prime Struct
+    mapping(uint256 => Primes) public _primes;
 
     // Maps a user's withdrawable
-    mapping(address => mapping(address => uint256)) private _bank; // Users -> asset -> withdrawable balance.
+    mapping(address => mapping(address => uint256)) private _bank;
 
 
     constructor (
-        string memory name, 
-        string memory symbol
     ) 
         public
         ERC721Full(
@@ -164,7 +160,7 @@ contract Prime is IPrime, ERC721Full {
      * @param _gem Receiver address.
      * @return bool Success.
      */
-    function createSlate(
+    function createPrime(
         uint256 _xis,
         address _yak,
         uint256 _zed,
@@ -186,7 +182,7 @@ contract Prime is IPrime, ERC721Full {
 
         // EFFECTS
         _incrementNonce();
-        _slates[nonce] = Slates(
+        _primes[nonce] = Primes(
             msg.sender, 
             _xis,
             _yak, 
@@ -196,10 +192,10 @@ contract Prime is IPrime, ERC721Full {
             _gem
         );
 
-        _bank[msg.sender][_yak] = _xis; // Depositor can withdraw collateral
+        _bank[msg.sender][_yak] = _bank[msg.sender][_yak].add(_xis);
 
         // INTERACTIONS
-        emit SlateMinted(
+        emit PrimeMinted(
             msg.sender, 
             _xis,
             _yak,
@@ -219,7 +215,7 @@ contract Prime is IPrime, ERC721Full {
 
     /** 
      * @dev `msg.sender` Exercises right to purchase collateral.
-     * @param _tokenId ID of Slate.
+     * @param _tokenId ID of Prime.
      * @return bool Success.
      */
     function exercise(
@@ -242,60 +238,58 @@ contract Prime is IPrime, ERC721Full {
             'Owner is not sender'
         );
 
-        // Get Slate
-        Slates memory _slate = _slates[_tokenId];
-        ERC20 _yak = ERC20(_slate.yak);
-        ERC20 _wax = ERC20(_slate.wax);
+        // Get Prime
+        Primes memory _prime = _primes[_tokenId];
+        ERC20 _wax = ERC20(_prime.wax);
 
         require(
-            _wax.balanceOf(msg.sender) >= _slate.zed, 
+            _wax.balanceOf(msg.sender) >= _prime.zed, 
             'Bal cannot be < payment amount'
         );
         
         require(
-            _slate.pow >= block.timestamp, 
-            'Expired Slate'
+            _prime.pow >= block.timestamp, 
+            'Expired Prime'
         );
 
         // EFFECTS
-        require(
-            _wax.transferFrom(msg.sender, address(this), _slate.zed), 
-            'Payment not transferred'
-        );
 
-        // Depositor cannot withdraw collateral x.
-        _bank[_slate.ace][_slate.yak] = 0;
-        // Payment receiver can withdraw payment z.
-        _bank[_slate.gem][_slate.wax] = _slate.zed;
-        // Payer can withdraw collateral x.
-        _bank[msg.sender][_slate.yak] = _slate.xis;
+        // Original Minter has their collateral balance debited.
+        _bank[_prime.ace][_prime.yak] = _bank[_prime.ace][_prime.yak].sub(_prime.xis);
+        // Payment receiver has their payment balance credited.
+        _bank[_prime.gem][_prime.wax] = _bank[_prime.gem][_prime.wax].add(_prime.zed);
+        // Exercisor has their collateral balance credited.
+        _bank[msg.sender][_prime.yak] = _bank[msg.sender][_prime.yak].add(_prime.xis);
 
         // INTERACTIONS
-        emit SlateExercised(
+
+        _burn(msg.sender, _tokenId);
+
+        emit PrimeExercised(
             msg.sender,
-            _slate.xis,
-            _slate.yak,
-            _slate.zed,
-            _slate.wax,
+            _prime.xis,
+            _prime.yak,
+            _prime.zed,
+            _prime.wax,
             _tokenId, 
             block.timestamp
         );
-        _burn(msg.sender, _tokenId);
-        return true;
+        
+        return _wax.transferFrom(msg.sender, address(this), _prime.zed);
     }
 
     /** 
-     * @dev `msg.sender` Closes Slate and 
-     * can withdraw collateral as Slate minter.
-     * Msg.sender can burn any Slate NFT 
+     * @dev `msg.sender` Closes Prime and 
+     * can withdraw collateral as Prime minter.
+     * Msg.sender can burn any Prime NFT 
      * that has matching properties when compared
-     * to their minted Slate NFT. This way, 
-     * they can sell their Minted Slate, and if
+     * to their minted Prime NFT. This way, 
+     * they can sell their Minted Prime, and if
      * they need to close the position, 
-     * they can buy another Slate rather than track down 
+     * they can buy another Prime rather than track down 
      * the exact one they sold/traded away. 
-     * @param _collateralId Slate NFT ID with Minter's collateral.
-     * @param _burnId Slate NFT ID that Minter owns,
+     * @param _collateralId Prime NFT ID with Minter's collateral.
+     * @param _burnId Prime NFT ID that Minter owns,
      *  and intends to burn to withdraw collateral.
      * @return bool Success.
      */
@@ -310,89 +304,94 @@ contract Prime is IPrime, ERC721Full {
         // CHECKS
         require(
             balanceOf(msg.sender) >= 1, 
-            'Cannot send Slate amount > bal'
+            'Cannot send Prime amount > bal'
         );
 
         require(
             ownerOf(_burnId) == msg.sender, 
-            'Owner of Slate is not sender'
+            'Owner of Prime is not sender'
         );
 
-        // Get Minter of Collateral Slate
-        Slates memory _collateralSlate = _slates[_collateralId];
+        // Get Minter of Collateral Prime
+        Primes memory _collateralPrime = _primes[_collateralId];
 
-        // Get Burn Slate
-        Slates memory _burnSlate = _slates[_burnId];
-        ERC20 _yakBurn = ERC20(_burnSlate.yak);
+        // Get Prime that will get Burned
+        Primes memory _burnPrime = _primes[_burnId];
+        ERC20 _yakBurn = ERC20(_burnPrime.yak);
 
-        // Msg.sender burns a Slate that they did not mint.
-        // Slate properties need to match, else the tx reverts.
-        if(_collateralSlate.ace != _burnSlate.ace) {
-            bool burn = _slateCompare(_collateralId, _burnId);
-
-            require(
-                burn,
-                'Slate props do not match'
-            );
-        }
+        // Msg.sender burns a Prime that they did not mint.
+        // Prime properties need to match, else the tx reverts.
+        
+        bool burn = _primeCompare(_collateralId, _burnId);
+        require(
+            burn,
+            'Prime Properties do not match'
+        );
 
         require(
-            _bank[msg.sender][_burnSlate.yak] > 0, 
+            _bank[msg.sender][_burnPrime.yak] > 0, 
             'User has no collateral to claim'
         );
 
         require(
-            _burnSlate.pow >= block.timestamp, 
-            'Expired Slate'
+            _burnPrime.pow >= block.timestamp, 
+            'Expired Prime'
         );
 
         // EFFECTS
-        _bank[msg.sender][_burnSlate.yak] = 0;
+
+        // Minter's collateral is debited.
+        _bank[msg.sender][_burnPrime.yak] = _bank[msg.sender][_burnPrime.yak].sub(_burnPrime.xis);
 
         // INTERACTIONS
-        emit SlateClosed(
+        emit PrimeClosed(
             msg.sender, 
-            _burnSlate.xis,
-            _burnSlate.yak,
+            _burnPrime.xis,
+            _burnPrime.yak,
             _burnId, 
             block.timestamp
         );
 
         _burn(msg.sender, _burnId);
 
-        return _yakBurn.transfer(msg.sender, _burnSlate.xis);
+        return _yakBurn.transfer(msg.sender, _burnPrime.xis);
     }
 
     /** 
      * @dev `msg.sender` Withdraw assets from contract.
      * @param _amount Quantity to withdraw.
-     * @param _addr Address of asset.
+     * @param _asset Address of asset.
      * @return success
      */
     function withdraw(
         uint256 _amount, 
-        address _addr
+        address _asset
     ) 
         public 
         override 
         returns (bool) 
     {
         // CHECKS
-        uint256 bank = _bank[msg.sender][_addr];
+        uint256 bank = _bank[msg.sender][_asset];
         require(
             bank >= _amount, 
             'Cannot withdraw amount > bal'
         );
 
+        // EFFECTS
+
+        // User's account is debited
+        _bank[msg.sender][_asset] = bank.sub(_amount);
+
         // INTERACTIONS 
         emit Withdrawal(
             msg.sender, 
             _amount,
-            _addr,
+            _asset,
             block.timestamp
         );
 
-        ERC20 erc20 = ERC20(_addr);
+        ERC20 erc20 = ERC20(_asset);
         return erc20.transfer(msg.sender, _amount);
     }
 
@@ -406,10 +405,10 @@ contract Prime is IPrime, ERC721Full {
     }
 
     /** 
-     * @dev Utility to compare hashes of Slate properties.
-     * @return burn Whether Slates match.
+     * @dev Utility to compare hashes of Prime properties.
+     * @return burn bool of whether Primes match.
      */
-    function _slateCompare(
+    function _primeCompare(
         uint256 _collateralId,
         uint256 _burnId
     ) 
@@ -418,40 +417,41 @@ contract Prime is IPrime, ERC721Full {
         returns
         (bool burn)
     {
-        Slates memory _collateralSlate = _slates[_collateralId];
-        Slates memory _burnSlate = _slates[_burnId];
+        Primes memory _collateralPrime = _primes[_collateralId];
+        Primes memory _burnPrime = _primes[_burnId];
 
         bytes32 hashCollateral = keccak256(
             abi.encodePacked(
-                _collateralSlate.xis,
-                _collateralSlate.yak,
-                _collateralSlate.zed,
-                _collateralSlate.wax,
-                _collateralSlate.pow
+                _collateralPrime.xis,
+                _collateralPrime.yak,
+                _collateralPrime.zed,
+                _collateralPrime.wax,
+                _collateralPrime.pow
             )
         );
 
         bytes32 hashBurn = keccak256(
             abi.encodePacked(
-                _burnSlate.xis,
-                _burnSlate.yak,
-                _burnSlate.zed,
-                _burnSlate.wax,
-                _burnSlate.pow
+                _burnPrime.xis,
+                _burnPrime.yak,
+                _burnPrime.zed,
+                _burnPrime.wax,
+                _burnPrime.pow
             )
         );
 
+        /* require((hashCollateral == hashBurn), 'Prime Properties do not match'); */
         if(hashCollateral == hashBurn) {
             return true;
         } else {
-            revert();
+            revert('Prime Properties do not match');
         }
     }
 
     /** 
-     * @dev Public view function to get Slate properties.
+     * @dev Public view function to get Prime properties.
      */
-    function getSlate(uint256 _tokenId) public view returns (
+    function getPrime(uint256 _tokenId) public view returns (
             address ace,
             uint256 xis,
             address yak,
@@ -460,15 +460,24 @@ contract Prime is IPrime, ERC721Full {
             uint256 pow,
             address gem
         ) {
-            Slates memory _slate = _slates[_tokenId];
+            Primes memory _prime = _primes[_tokenId];
             return (
-                _slate.ace,
-                _slate.xis,
-                _slate.yak,
-                _slate.zed,
-                _slate.wax,
-                _slate.pow,
-                _slate.gem
+                _prime.ace,
+                _prime.xis,
+                _prime.yak,
+                _prime.zed,
+                _prime.wax,
+                _prime.pow,
+                _prime.gem
             );
+    }
+
+    /** 
+     * @dev Public view function to get the Bank's balance of a User
+     */
+    function getBalance(address _user, address _asset) public view returns (
+        uint256
+        ) {
+            return _bank[_user][_asset];
     }
 }

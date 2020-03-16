@@ -33,6 +33,7 @@ module.exports = {
    *
    * $ truffle test --network <network-name>
    */
+  contracts_directory: './build/contracts',
   contracts_build_directory: './client/src/artifacts/',
 
   networks: {
