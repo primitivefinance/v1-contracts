@@ -1,7 +1,7 @@
 {
-  "name": "Karbon.finance",
+  "name": "Decentralized Financial Crafting Protocol",
   "version": "0.1.0",
-  "description": "Karbon - Financial Crafting.",
+  "description": "Decentralized Financial Crafting Protocol - DFCP",
   "main": "truffle-config.js",
   "directories": {
     "test": "test"

@@ -1,4 +1,4 @@
-# Karbon Protocol
+# Decentralized Financial Crafting Protocol
 ## Financial Crafting
 ## Financial Smart Contract - Create ERC20 Token Purchase Agreements.
 Party **A** agrees to sell token **X** for token **Z** within time period **P**.
@@ -26,7 +26,7 @@ Party **A** uses `Prime.sol` to mint a Slate, which is an ERC-721 from `Slate.so
 - Monetary contract between parties; asset/liability.
 - Cash instruments determined by market, derivative instruments derive value from characteristics.
 
-## Karbon Overview:
+## DFCP Overview:
 - Instrument Controller
     - Agreement/obligation
         - Asset Class

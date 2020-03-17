@@ -1,11 +1,11 @@
 pragma solidity ^0.6.2;
 
 /**
- * @title   Karbon's Prime Contract
+ * @title   DFCP's Prime Contract
  * @notice  The core ERC721 contract that holds all Instruments.Primes.
  *          A Prime isn ERC-721 token that wraps ERC-20 assets
  *          with functions to interact with them.
- * @author  Karbon
+ * @author  Decentralized Financial Crafting Protocol
  */
 
 

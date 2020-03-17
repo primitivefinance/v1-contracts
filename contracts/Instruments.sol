@@ -1,8 +1,8 @@
 pragma solidity ^0.6.0;
 
 /** 
- *  @title Karbon's Instruments
- * @author Karbon
+ *  @title DFCP's Instruments
+ * @author Decentralized Financial Crafting Protocol
  */
 
 
