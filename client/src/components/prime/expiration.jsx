@@ -100,7 +100,7 @@ class Expiration extends Component {
 
                             {/* TITLE */}
                             <Typography variant={'h2'} className={`${classes.title}`}>
-                                {this.convertUnixTimestamp(this.props.item.content)}
+                                {this.convertUnixTimestamp(this.props.item.payload)}
                             </Typography>
 
                             {/* FUNCTIONS */}

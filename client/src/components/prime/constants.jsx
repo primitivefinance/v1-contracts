@@ -1,5 +1,6 @@
 const INITIAL_CONTEXT = {
     items: {
+        'N/A' : {id: 'N/A', content: 'N/A', payload: 'N/A'},
         'asset-dai': {id: 'asset-dai', content: 'DAI', type: 'asset', index: 'start', payload: 'DAI'},
         'expiration-2': {id: 'expiration-2', content: '1609459200', type: 'expiration', index: 'start', payload: '1609459200',},
         'address-3': {id: 'address-3', content: 'address 3', type: 'address', index: 'start', payload: 'carbonprotocol.eth',},
@@ -45,9 +46,33 @@ const INITIAL_CONTEXT = {
             rinkeby: '',
             payload: 'tETH',
         },
+        'expiration-may': {
+            id: 'expiration-may', 
+            content: 'May 15, 2020, 11:59pm UTC', 
+            type: 'expiration', 
+            payload: '1589587185',
+        },
+        'expiration-june': {
+            id: 'expiration-june', 
+            content: 'June 19, 2020, 11:59pm UTC', 
+            type: 'expiration', 
+            payload: '1592611185',
+        },
+        'expiration-september': {
+            id: 'expiration-september', 
+            content: 'September 18, 2020, 11:59pm UTC', 
+            type: 'expiration', 
+            payload: '1600473585',
+        },
+        'expiration-december': {
+            id: 'expiration-december', 
+            content: 'December 18, 2020, 11:59pm UTC', 
+            type: 'expiration', 
+            payload: '1608335985',
+        },
     },
     assets: {
-        'assetIds' : ['asset-snx', 'asset-dai', 'asset-mkr', 'asset-u', 'asset-s',],
+        'assetIds' : ['asset-dai', 'asset-tUSD', 'asset-tETH',],
         'asset-snx': {
                         id: 'asset-snx', 
                         content: 'SNX', 
@@ -121,8 +146,33 @@ const INITIAL_CONTEXT = {
                     
     },
     expirations: {
-        'expirationIds': ['expiration-2'],
-        'expiration-2': {id: 'expiration-2', content: '1609459200', type: 'expiration', index: 'start', payload: '1609459200',},
+        /* 'expirationIds': ['expiration-2'],
+        'expiration-2': {id: 'expiration-2', content: '1609459200', type: 'expiration', index: 'start', payload: '1609459200',}, */
+        'expirationIds': ['expiration-may', 'expiration-june', 'expiration-september', 'expiration-december',],
+        'expiration-may': {
+            id: 'expiration-may', 
+            content: 'May 15, 2020, 11:59pm UTC', 
+            type: 'expiration', 
+            payload: '1589587185',
+        },
+        'expiration-june': {
+            id: 'expiration-june', 
+            content: 'June 19, 2020, 11:59pm UTC', 
+            type: 'expiration', 
+            payload: '1592611185',
+        },
+        'expiration-september': {
+            id: 'expiration-september', 
+            content: 'September 18, 2020, 11:59pm UTC', 
+            type: 'expiration', 
+            payload: '1600473585',
+        },
+        'expiration-december': {
+            id: 'expiration-december', 
+            content: 'December 18, 2020, 11:59pm UTC', 
+            type: 'expiration', 
+            payload: '1608335985',
+        },
     },
     addresses: {
         'addressIds': ['address-3'],
@@ -133,19 +183,17 @@ const INITIAL_CONTEXT = {
             id: 'start',
             title: 'Parts',
             itemIds: [
-                        'asset-dai', 
-                        'asset-mkr', 
+                        'asset-dai',  
                         'asset-tUSD', 
                         'asset-tETH',
-                        'expiration-2',
-                        'address-3'
+                        'expiration-june',
                     ],
             board: false,
         },
         'asset': {
             id: 'asset',
             title: 'Assets',
-            itemIds: ['asset-dai', 'asset-mkr', 'asset-s', 'asset-u'],
+            itemIds: ['asset-dai', 'asset-tUSD', 'asset-tETH',],
             board: false,
         },
         'board': {

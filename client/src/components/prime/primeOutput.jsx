@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { colors } from '../../theme';
+import { colors } from '../../theme/theme';
 import { withStyles } from '@material-ui/core/styles';
 import Card from '@material-ui/core/Card';
 import Typography from '@material-ui/core/Typography';
@@ -32,6 +32,7 @@ const styles = theme => ({
             paddingBottom: '24px'
         },
         color: colors.primary,
+        alignItems: 'center',
     },
     address: {
         textOverflow: 'ellipsis',
@@ -53,7 +54,7 @@ const styles = theme => ({
 });
 
 
-class PrimeTable extends Component {
+class PrimeOutput extends Component {
     constructor(props) {
         super(props);
     }
@@ -68,7 +69,7 @@ class PrimeTable extends Component {
                 <Grid item>
                     <Card className={classes.primeInventory}>
                         <Typography className={classes.title} variant={'h1'}>
-                            ACTIVE & INVENTORY PRIMES
+                            Crafted Prime Output
                         </Typography>
 
                         {/* PRIME TABLE */}
@@ -78,11 +79,9 @@ class PrimeTable extends Component {
                                 {/* HEAD */}
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell align='center' variant={'h1'}>ID</TableCell>
-                                        <TableCell align='center' variant={'h1'}>Collateral</TableCell>
-                                        <TableCell align='center' variant={'h1'}>Payment</TableCell>
-                                        <TableCell align='center' variant={'h1'}>Expires</TableCell>
-                                        <TableCell align='center' variant={'h1'} className={classes.address}>Paid To</TableCell>
+                                        <TableCell align='center' variant={'h2'}>Underlying</TableCell>
+                                        <TableCell align='center' variant={'h2'}>Strike Price</TableCell>
+                                        <TableCell align='center' variant={'h2'}>Expiration</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 
@@ -90,13 +89,9 @@ class PrimeTable extends Component {
                                 <TableBody>
                                     {primeRows.map(row => (
                                         <TableRow key={row.name}>
-                                            <TableCell align='center' variant={'h1'}>#{row.tokenId}</TableCell>
-                                            <TableCell align='center' variant={'h1'}>{row.xis} {row.yakSymbol}</TableCell>
-                                            <TableCell align='center' variant={'h1'}>{row.zed} {row.waxSymbol}</TableCell>
-                                            <TableCell align='center' variant={'h1'}>{row.pow}</TableCell>
-                                            <TableCell align='center' variant={'h1'} className={classes.address}>
-                                                <AddressPop address={row.gem} classes={classes}/>
-                                            </TableCell>
+                                            <TableCell align='center' variant={'h3'}>{row.xis} {row.yakSymbol}</TableCell>
+                                            <TableCell align='center' variant={'h3'}>{row.zed} {row.waxSymbol}</TableCell>
+                                            <TableCell align='center' variant={'h3'}>{row.pow}</TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
@@ -111,4 +106,4 @@ class PrimeTable extends Component {
     };
 };
 
-export default withStyles(styles)(PrimeTable);
+export default withStyles(styles)(PrimeOutput);

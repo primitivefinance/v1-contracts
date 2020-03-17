@@ -6,7 +6,7 @@ import { colors } from '../../theme/theme';
 import Typography from '@material-ui/core/Typography';
 import Card from '@material-ui/core/Card';
 import Button from '@material-ui/core/Button';
-import Grid from '@materi al-ui/core/Grid';
+import Grid from '@material-ui/core/Grid';
 import Fade from '@material-ui/core/Fade';
 import LinkM from '@material-ui/core/Link';
 
@@ -14,9 +14,7 @@ import Web3 from 'web3';
 import INITIAL_CONTEXT from './constants';
 import TOKENS_CONTEXT from './tokenAddresses';
 import PrimeContract from '../../artifacts/Prime.json';
-import Underlying from '../../artifacts/Underlying.json';
-import Strike from '../../artifacts/Strike.json';
-import Erc20 from '../../artifacts/Strike.json';
+import Erc20 from '../../artifacts/tUSD.json';
 
 import Interface from './interface';
 import WalletTable from './walletTable';
@@ -205,7 +203,6 @@ class Inventory extends Component {
         this.getTokenAddress = this.getTokenAddress.bind(this);
         this.handleApprove = this.handleApprove.bind(this);
         this.getContractInstance = this.getContractInstance.bind(this);
-        this.testWeb3 = this.testWeb3.bind(this);
         this.getBalanceOfPrime = this.getBalanceOfPrime.bind(this);
         this.getOwnerOfPrime = this.getOwnerOfPrime.bind(this);
         this.getPrimeProperties = this.getPrimeProperties.bind(this);
@@ -219,6 +216,11 @@ class Inventory extends Component {
         this.getWalletData = this.getWalletData.bind(this);
         this.handleMint = this.handleMint.bind(this);
         this.getProfitData = this.getProfitData.bind(this);
+        this.getBankData = this.getBankData.bind(this);
+        this.getBankInventory = this.getBankInventory.bind(this);
+        this.getMintedPrimes = this.getMintedPrimes.bind(this);
+        this.getDeactivatedPrimes = this.getDeactivatedPrimes.bind(this);
+        this.getActivePrimes = this.getActivePrimes.bind(this);
 
 
         const data = {
@@ -267,10 +269,12 @@ class Inventory extends Component {
         await this.getBalanceOfPrime();
         await this.getOwnerOfPrime('2');
         await this.getPrimeProperties('2');
-        await this.getPastEvents('SlateMinted');
+        await this.getPastEvents('PrimeMinted');
         await this.getPrimeInventory();
         await this.getWalletInventory();
+        await this.getBankInventory();
         await this.getProfitData();
+        await this.getActivePrimes();
         
     };
 
@@ -515,7 +519,7 @@ class Inventory extends Component {
         // GET PRIME CONTRACT
         let primeInstance = await this.getContractInstance(PrimeContract);
 
-        let result = await primeInstance.methods.getSlate(
+        let result = await primeInstance.methods.getPrime(
             tokenId
         ).call();
         this.setState({
@@ -572,21 +576,29 @@ class Inventory extends Component {
 
         let nonce = await primeInstance.methods.nonce().call();
 
-        function createData(tokenId, xis, yakSymbol, zed, waxSymbol, pow, gem) {
-            return { tokenId, xis, yakSymbol, zed, waxSymbol, pow, gem };
+        function createData(tokenId, xis, yakSymbol, zed, waxSymbol, pow, gem, position) {
+            return { tokenId, xis, yakSymbol, zed, waxSymbol, pow, gem, position };
         };
 
         let primeRows = [];
+        let activePrimes = await this.getActivePrimes();
         let userOwnedPrimes = [];
-        
+        let position = {};
+
         for(var i = 1; i <= nonce; i++) {
-            console.log(nonce)
             if((await this.getOwnerOfPrime(i)) === account) {
                 userOwnedPrimes.push(i);
+                position[`${i}`] = 'Long';
             } else {
                 console.log('Does not own: ', i)
+                if(activePrimes.indexOf(`${i}`) !== -1) {
+                    position[`${i}`] = 'Short';
+                    userOwnedPrimes.push(i);
+                }
             }
         };
+
+        console.log({position})
 
         for(var i = 0; i < userOwnedPrimes.length; i++) {
             let properties = await this.getPrimeProperties(userOwnedPrimes[i]);
@@ -615,6 +627,7 @@ class Inventory extends Component {
                 waxSymbol,
                 pow,
                 properties['gem'],
+                position[`${tokenId}`]
             );
 
             primeRows.push(data)
@@ -627,11 +640,15 @@ class Inventory extends Component {
 
     getWalletData = async (instance, account) => {
         const web3 = this.state.web3;
+        let _prime = await this.getContractInstance(PrimeContract);
         function createData(symbol, balance) {
             return { symbol, balance };
         };
         let sym = await instance.methods.symbol().call();
-        let bal = await web3.utils.fromWei(await instance.methods.balanceOf(account).call());
+        let bal = await web3.utils.fromWei(await instance.methods.balanceOf(account).call()); /* BAL OF WALLET */
+        /* let bal;
+        bal = await web3.utils.fromWei(await _prime.methods.getBalance(account, instance._address).call()); */
+        
         let data = createData(sym, bal);
         return data;
     };
@@ -647,17 +664,6 @@ class Inventory extends Component {
 
 
         // GET CONTRACTS
-        const uNetwork = await Underlying.networks[networkId];
-        const uInstance = new web3.eth.Contract(
-            Underlying.abi,
-            uNetwork && uNetwork.address,
-        );
-
-        const sNetwork = await Strike.networks[networkId];
-        const sInstance = new web3.eth.Contract(
-            Strike.abi,
-            sNetwork && sNetwork.address,
-        );
 
         const daiAbi = this.getTokenAbi(networkId, 'DAI')
         const daiAddress = this.getTokenAddress(networkId, 'DAI')
@@ -691,8 +697,6 @@ class Inventory extends Component {
         walletRows.push(await this.getWalletData(daiInstance, account));
         walletRows.push(await this.getWalletData(tUSDInstance, account));
         walletRows.push(await this.getWalletData(tETHInstance, account));
-        walletRows.push(await this.getWalletData(uInstance, account));
-        walletRows.push(await this.getWalletData(sInstance, account));
         console.log({walletRows})
 
         this.setState({
@@ -702,11 +706,62 @@ class Inventory extends Component {
         return walletRows;
     };
 
-    testWeb3 = async () => {
-        this.forceUpdate();
-        await this.getAccount();
-        console.log(this.state.web3, this.state.account)
-        this.handleApprove((await this.getContractInstance(Strike)), this.state.account, 10, this.state.account);
+    getBankData = async (instance, account) => {
+        const web3 = this.state.web3;
+        let _prime = await this.getContractInstance(PrimeContract);
+        function createData(symbol, balance) {
+            return { symbol, balance };
+        };
+        let sym = await instance.methods.symbol().call();
+        let bal;
+        bal = await web3.utils.fromWei(await _prime.methods.getBalance(account, instance._address).call());
+        
+        let data = createData(sym, bal);
+        return data;
+    };
+
+    getBankInventory = async () => {
+        const web3 = this.state.web3;
+        const account = await this.getAccount();
+        const networkId = await this.getNetwork();
+
+        // GET CONTRACTS
+
+        const daiAbi = this.getTokenAbi(networkId, 'DAI')
+        const daiAddress = this.getTokenAddress(networkId, 'DAI')
+        const daiNetwork = '4';
+        const daiInstance = new web3.eth.Contract(
+            daiAbi,
+            daiNetwork && daiAddress,
+        );
+
+        const tUSDAbi = this.getTokenAbi(networkId, 'tUSD')
+        const tUSDAddress = this.getTokenAddress(networkId, 'tUSD')
+        const tUSDNetwork = '4';
+        const tUSDInstance = new web3.eth.Contract(
+            tUSDAbi,
+            tUSDNetwork && tUSDAddress,
+        );
+
+        const tETHAbi = this.getTokenAbi(networkId, 'tETH')
+        const tETHAddress = this.getTokenAddress(networkId, 'tETH')
+        const tETHNetwork = '4';
+        const tETHInstance = new web3.eth.Contract(
+            tETHAbi,
+            tETHNetwork && tETHAddress,
+        );
+
+        let bankRows = [];
+        bankRows.push(await this.getBankData(daiInstance, account));
+        bankRows.push(await this.getBankData(tUSDInstance, account));
+        bankRows.push(await this.getBankData(tETHInstance, account));
+        console.log({bankRows})
+
+        this.setState({
+            bankRows: bankRows,
+        },);
+
+        return bankRows;
     };
 
     openPrime = () => {
@@ -783,6 +838,46 @@ class Inventory extends Component {
         console.log('PRIME CLOSE', {close})
         await this.getPrimeInventory();
         return close;
+    };
+
+    getMintedPrimes = async () => {
+        // GETS KEY PARAMS
+        const web3 = this.state.web3;
+        const account = await this.getAccount();
+        const networkId = await this.getNetwork();
+        let primeInstance = await this.getContractInstance(PrimeContract);
+
+        let mintedPrimes = (await primeInstance.methods.getActor(account).call()).mintedTokens;
+        this.setState({
+            mintedPrimes: mintedPrimes,
+        });
+        return mintedPrimes;
+    };
+
+    getDeactivatedPrimes = async () => {
+        // GETS KEY PARAMS
+        const web3 = this.state.web3;
+        const account = await this.getAccount();
+        const networkId = await this.getNetwork();
+        let primeInstance = await this.getContractInstance(PrimeContract);
+
+        let deactivatedPrimes = (await primeInstance.methods.getActor(account).call()).deactivatedTokens;
+        this.setState({
+            deactivatedPrimes: deactivatedPrimes,
+        });
+        return deactivatedPrimes;
+    };
+
+    getActivePrimes = async () => {
+        let minted = await this.getMintedPrimes();
+        let inactive = await this.getDeactivatedPrimes();
+
+        let activePrimes = minted.filter(val => !inactive.includes(val));
+        console.log(activePrimes)
+        this.setState({
+            activePrimes: activePrimes
+        });
+        return activePrimes;
     };
 
     handleMint = async (symbol) => {
@@ -1088,6 +1183,12 @@ class Inventory extends Component {
                         <WalletTable
                             walletRows={this.state.walletRows}
                             handleMint={this.handleMint}
+                            balancesOf={'Wallet'}
+                        />
+                        <WalletTable
+                            walletRows={this.state.bankRows}
+                            handleMint={this.handleMint}
+                            balancesOf={'Bank'}
                         />
 
                     </Grid>

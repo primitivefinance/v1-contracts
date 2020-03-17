@@ -70,7 +70,51 @@ const styles = theme => ({
         display: 'flex',
         justifyContent: 'space-evenly',
     },
-
+    disabledBoard: {
+        backgroundColor: colors.grey,
+        '&:hover': {
+            backgroundColor: colors.grey,
+            color: colors.grey,
+            '& .title': {
+                color: colors.grey
+            },
+            '& .icon': {
+                color: colors.blue
+            },
+        },
+        '& .title': {
+            color: colors.grey,
+            fontWeight: '600',
+        },
+        '& .icon': {
+            color: colors.blue
+        },
+        display: 'flex',
+        margin: '16px',
+        width: '90%',
+        height: '30%',
+        minWidth: '10%',
+        minHeight: '10%',
+        flexWrap: 'wrap',
+        flexDirection: 'row',
+        [theme.breakpoints.up('sm')]: {
+            flexDirection: 'column',
+            width: '30%',
+        },
+    },
+    disabledList: {
+        padding: '16px',
+        minHeight: '10vh',
+        minWidth: '30vh',
+        backgroundColor: colors.grey,
+        '&:hover': {
+            backgroundColor: colors.grey,
+        },
+        [theme.breakpoints.up('sm')]: {
+            minWidth: '10vh',
+        },
+        borderColor: colors.primary,
+    },
 });
 
 class InnerList extends PureComponent {
@@ -160,10 +204,16 @@ class Column extends Component {
             handleUndo, 
             handleAdd,
             handleDelete,
+            index
         } = this.props;
         return(
             /* CELL CONTAINER */
-            <Card className={`${classes.board} ${classes.prime}`}>
+            <Card className={
+                (isDropDisabled) 
+                ? (index < 4)
+                    ? `${classes.board} ${classes.prime}`
+                        : classes.disabledBoard 
+                            :`${classes.board} ${classes.prime}`}>
                 
                 {/* TITLES */}
                 <Typography variant={'h1'} className={`${classes.title} title`}>
@@ -178,7 +228,12 @@ class Column extends Component {
                     {(provided) => (
                         <>
                         <Box
-                            className={classes.list}
+                            className={
+                                (isDropDisabled) 
+                                ? (index < 4)
+                                    ? `${classes.list}`
+                                        : classes.disabledList
+                                            :`${classes.list}`}
                             ref={provided.innerRef}
                             {...provided.droppableProps}
                         >

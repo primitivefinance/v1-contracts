@@ -12,6 +12,7 @@ import {
 import mainTheme from './theme'
 import Home from './components/home';
 import Prime from './components/prime/prime';
+import PrimeV2 from './components/prime/primeV2';
 import Inventory from './components/prime/inventory';
 
 import {

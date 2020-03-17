@@ -64,7 +64,7 @@ class WalletTable extends Component {
                 <Grid item>
                     <Card className={classes.walletBalances}>
                         <Typography className={classes.title} variant={'h1'}>
-                            Wallet Balances
+                            {this.props.balancesOf} Balances
                         </Typography>
 
                         {/* WALLET TABLE */}

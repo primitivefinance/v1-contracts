@@ -272,7 +272,7 @@ class Column extends Component {
                 <Box className={classes.addButtons}>
                     {assetForm}
                     {expirationForm}
-                    {addressForm}
+                    {/* {addressForm} */}
                 </Box>
 
             </Card>

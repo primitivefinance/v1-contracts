@@ -10,7 +10,6 @@ pragma solidity ^0.6.2;
 
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721Full.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./Instruments.sol";
@@ -107,7 +106,7 @@ abstract contract IPrime {
 }
 
 
-contract Prime is IPrime, ERC721Full, ReentrancyGuard, Ownable {
+contract Prime is IPrime, ERC721Full, ReentrancyGuard {
     using SafeMath for uint256;
 
     string constant URI = '';

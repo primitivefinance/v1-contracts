@@ -19,8 +19,9 @@ import Footer from './footer';
 import INITIAL_CONTEXT from './constants';
 import TOKENS_CONTEXT from './tokenAddresses';
 import PrimeContract from '../../artifacts/Prime.json';
-import Underlying from '../../artifacts/Underlying.json';
-import Strike from '../../artifacts/Strike.json';
+
+import PrimeOutput from './primeOutput';
+
 
 const styles = theme => ({
     root: {
@@ -31,7 +32,7 @@ const styles = theme => ({
         justifyContent: 'left',
         alignItems: 'flex-start',
         flexDirection: 'column',
-        minHeight: '20vh',
+        minHeight: '100vh',
         backgroundColor: colors.background,
         [theme.breakpoints.up('sm')]: {
             flexDirection: 'column',
@@ -132,7 +133,7 @@ class Prime extends Component {
         this.handleBoardSubmit = this.handleBoardSubmit.bind(this);
         this.hasDuplicates = this.hasDuplicates.bind(this);
         this.getWeb3 = this.getWeb3.bind(this);
-        this.createSlate = this.createSlate.bind(this);
+        this.createPrime = this.createPrime.bind(this);
         this.getAccount = this.getAccount.bind(this);
         this.getNetwork = this.getNetwork.bind(this);
         this.getTokenAddress = this.getTokenAddress.bind(this);
@@ -146,6 +147,7 @@ class Prime extends Component {
         this.handleStepComplete = this.handleStepComplete.bind(this);
         this.handleAssetAmount = this.handleAssetAmount.bind(this);
         this.getInstance = this.getInstance.bind(this);
+        this.getCurrentPrimeOutput = this.getCurrentPrimeOutput.bind(this);
     };
 
     componentDidMount = async () => {
@@ -408,7 +410,7 @@ class Prime extends Component {
             boardStates: newBoard,
             newCompleted: newCompleted,
             activeStep: activeStep,
-        }, () => this.isValid());
+        }, () => {this.isValid(); this.getCurrentPrimeOutput();});
     };
 
     isValid = () => {
@@ -420,9 +422,12 @@ class Prime extends Component {
         let paymentValid = (boardState['paymentBoard']) ? (boardState['paymentBoard'].valid) ? true : false : false;
         let expirationValid = (boardState['expirationBoard']) ? (boardState['expirationBoard'].valid) ? true : false : false;
         let addressValid = (boardState['addressBoard']) ? (boardState['addressBoard'].valid) ? true : false : false;
+        let collateralAmountValid = (this.state.collateralAmount) ? (this.state.collateralAmount > 0) ? true : false : false;
+        let paymentAmountValid = (this.state.paymentAmount) ? (this.state.paymentAmount > 0) ? true : false : false;
         
         if(
-            collateralValid && paymentValid && expirationValid && addressValid
+            collateralValid && paymentValid && expirationValid
+            && collateralAmountValid && paymentAmountValid /* && addressValid */
             && typeof this.state.collateralAmount !== 'undefined'
             && typeof this.state.paymentAmount !== 'undefined'
         ) {
@@ -612,7 +617,7 @@ class Prime extends Component {
             _collateral, 
             _payment, 
             _expiration,
-            _address
+            /* _address */ /* DEACTIVATED WITH DISABLED ACCOUNT RECEIVER */
         ];
 
         /* GET ITEM PAYLOAD AND TYPE AND PUSH TO ARRAY - FIX - CAN BE IMPROVED*/
@@ -670,7 +675,7 @@ class Prime extends Component {
 
         /* PASS PARAMETERS TO CONTRACT FUNCTION AND SEND TRANSACTION */
         try {
-            await this.createSlate(
+            await this.createPrime(
                 collateralAsset,
                 paymentAsset,
                 addressReceiver,
@@ -827,7 +832,7 @@ class Prime extends Component {
         this.setState({
             collateralAmount: collateralAmount,
             paymentAmount: paymentAmount,
-        }, () => {this.isValid();})
+        }, () => {this.isValid(); this.getCurrentPrimeOutput();})
         console.log('HANDLE ASSET AMOUNT', {collateralAmount, paymentAmount})
     };
 
@@ -992,7 +997,7 @@ class Prime extends Component {
         return approve;
     };
 
-    createSlate = async (
+    createPrime = async (
             collateralAsset, 
             paymentAsset, 
             addressReceiver, 
@@ -1012,8 +1017,6 @@ class Prime extends Component {
 
         // GET PRIME CONTRACT
         let primeInstance = await this.getContractInstance(PrimeContract);
-        let uInstance = await this.getContractInstance(Underlying);
-        let sInstance = await this.getContractInstance(Strike);
         let collateralInstance = await this.getInstance(collateralAsset);
 
 
@@ -1034,6 +1037,7 @@ class Prime extends Component {
                 account
             );
 
+            addressReceiver = account;
             const _xis = collateralAmount;
             const _yak = this.getTokenAddress(networkId, collateralAsset);
             const _zed = paymentAmount;
@@ -1051,7 +1055,7 @@ class Prime extends Component {
             * @param _gem Receiver address.
             * @return bool Success.
             */
-            let result = await primeInstance.methods.createSlate(
+            let result = await primeInstance.methods.createPrime(
                 _xis,
                 _yak,
                 _zed,
@@ -1062,17 +1066,66 @@ class Prime extends Component {
                 from: account,
             });
             this.setState({
-                createSlateTx: result,
+                createPrimeTx: result,
             });
             console.trace({result});
         }
-        console.timeEnd('createSlate');
+        console.timeEnd('createPrime');
     };
 
     goToPrime = () => {
         this.setState({
             inventoryPage: !this.state.inventoryPage,
         });
+    };
+
+    getCurrentPrimeOutput = async () => {
+        const web3 = this.state.web3;
+        const account = await this.getAccount();
+        const networkId = await this.getNetwork();
+        let primeInstance = await this.getContractInstance(PrimeContract);
+        let xis, yakSymbol, zed, waxSymbol, pow;
+        let nonce = await primeInstance.methods.nonce().call();
+
+        function createData( xis, yakSymbol, zed, waxSymbol, pow) {
+            return { xis, yakSymbol, zed, waxSymbol, pow };
+        };
+
+        let primeOutput = [];
+        
+        let collateral = (this.state.collateralAmount) ? this.state.collateralAmount : 0;
+        let payment = (this.state.paymentAmount) ? this.state.paymentAmount : 0;
+        let expiration = (this.state.boardStates['expirationBoard'].itemIds[0]) ? this.state.boardStates['expirationBoard'].itemIds[0] : 'N/A';
+        let collateralSym = (this.state.boardStates['collateralBoard'].itemIds[0]) 
+                                ? this.state.items[this.state.boardStates['collateralBoard'].itemIds[0]].content
+                                    : '';
+        let paymentSym = (this.state.boardStates['paymentBoard'].itemIds[0]) 
+                                ? this.state.items[this.state.boardStates['paymentBoard'].itemIds[0]].content
+                                    : '';
+                                
+
+
+        xis = await web3.utils.fromWei((collateral).toString());
+        yakSymbol = collateralSym;
+        zed = await web3.utils.fromWei((payment).toString());
+        waxSymbol = paymentSym;
+        pow = this.state.items[expiration].payload;
+        const date = new Date(pow * 1000);
+        pow = (date.toDateString());
+        let data = createData(
+            xis,
+            yakSymbol,
+            zed,
+            waxSymbol,
+            pow,
+        );
+
+        primeOutput.push(data)
+        console.log({primeOutput})
+        this.setState({
+            primeOutput: primeOutput,
+        })
+        return primeOutput;
     };
 
     render() {
@@ -1120,14 +1173,18 @@ class Prime extends Component {
                             {this.state.columnOrder.map((columnId, index) => {
                                 const column = this.state.columns[columnId];
                                 let boardState = (this.state.boardStates) ? this.state.boardStates : [];
-                                let isDropDisabled = (typeof boardState[columnId] !== 'undefined') ? boardState[columnId].valid : false;
+                                let isDropDisabled = (index > 3) 
+                                    ? true 
+                                        : (typeof boardState[columnId] !== 'undefined') 
+                                            ? boardState[columnId].valid
+                                                : false;
                                 return (
                                     <InnerList
                                         key={column.id}
                                         column={column}
                                         itemMap={this.state.items}
                                         index={index}
-                                        isDropDisabled={(typeof boardState[columnId] !== 'undefined') ? boardState[columnId].valid : false}
+                                        isDropDisabled={isDropDisabled}
                                         boardItems={this.state.boardItems}
                                         handleUndo={this.handleUndo}
                                         handleAdd={this.handleAdd}
@@ -1153,6 +1210,7 @@ class Prime extends Component {
                         handleAssetAmount={this.handleAssetAmount}
                         handleBoardSubmit={this.handleBoardSubmit}
                         isValid={this.state.isValid}
+                        primeRows={this.state.primeOutput}
                     />
 
                     {/* NAVIGATION */}
@@ -1165,7 +1223,7 @@ class Prime extends Component {
 
                 {/* BOTTOM STEPPER AND FOOTER */}
                 <div className={classes.bottom}>
-                    <HorizontalNonLinearStepper 
+                    {/* <HorizontalNonLinearStepper 
                         undoStep={this.undoStep}
                         boardStates={this.state.boardStates}
                         activeStep={this.state.activeStep}
@@ -1174,7 +1232,11 @@ class Prime extends Component {
                         classes={classes}
                         bottom={true}
                         disabled={true}
-                    />
+                    /> */}
+
+                    {/* <PrimeOutput 
+                        primeRows={this.state.primeOutput}
+                    /> */}
                     <Footer 
                         title={
                             <div>

@@ -5,6 +5,7 @@ import Card from '@material-ui/core/Card';
 import Typography from '@material-ui/core/Typography';
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
+import PrimeOutput from './primeOutput';
 
 
 const styles = theme => ({
@@ -129,7 +130,7 @@ class OrderSummary extends Component {
                         Order Summary
                 </Typography>
                 <Typography variant={'h2'} className={classes.submitCardTypography}>
-                        Collateral: {cAsset}
+                        How much {cAsset} will you deposit?
                 </Typography>
                 <form noValidate autoComplete="off" className={classes.submitCardText}>
                       <MultilineTextFields
@@ -139,7 +140,7 @@ class OrderSummary extends Component {
                       />
                 </form>
                 <Typography variant={'h2'} className={classes.submitCardTypography}>
-                        Payment: {pAsset}
+                        How much will the collateral cost?
                 </Typography>
             
                     <form noValidate autoComplete="off" className={classes.submitCardText}>
@@ -152,15 +153,15 @@ class OrderSummary extends Component {
                             {pAsset}
                         </Typography>
                     </form> 
-                <Typography variant={'h2'} className={classes.submitCardTypography}>
+                {/* <Typography variant={'h2'} className={classes.submitCardTypography}>
                         Expires: {eTimestamp}
-                </Typography>
-                <Typography variant={'h2'} className={classes.submitCardTypography}>
+                </Typography> */}
+                {/* <Typography variant={'h2'} className={classes.submitCardTypography}>
                         Payment Receiver: {aReceiver}
-                </Typography>
-                <Typography variant={'h2'} className={classes.submitCardTypography}>
-                        ------------------------------------
-                </Typography>
+                </Typography> */}
+                <PrimeOutput
+                    primeRows={this.props.primeRows}
+                />
                 <Typography variant={'h1'} className={classes.submitCardTypography}>
                         Deposit Subtotal: {cAmt} {cAsset}
                 </Typography>
@@ -175,6 +176,9 @@ class OrderSummary extends Component {
                         Create Prime
                     </Typography>
                 </Button>
+                {/* <PrimeOutput
+                    primeRows={this.props.primeRows}
+                /> */}
             </Card>
             </>
         );

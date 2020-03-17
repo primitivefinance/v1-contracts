@@ -50,7 +50,7 @@ const useStyles = makeStyles(theme => ({
 }));
 
 function getSteps() {
-  return ['Select Collateral', 'Select Payment', 'Select Expiration', 'Select Payment Receiver'];
+  return ['Select Collateral', 'Select Payment', 'Select Expiration',];
 }
 
 function getBottomSteps() {

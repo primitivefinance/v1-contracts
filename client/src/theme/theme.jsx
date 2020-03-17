@@ -87,7 +87,8 @@ const mainTheme = {
             fontWeight: '250',
             [breakpoints.up('md')]: {
                 fontSize: '0.70rem',
-            }
+            },
+            textTransform: 'uppercase',
         },
         h4: {
             fontSize: '0.40rem',

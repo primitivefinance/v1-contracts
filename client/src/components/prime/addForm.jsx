@@ -49,7 +49,7 @@ function AddForm(props) {
             break;
         case 'expiration':
             selectOption = expirationIds.map((expiration) => {
-                const timestamp = (expirations[expiration]).content;
+                const timestamp = (expirations[expiration]).payload;
                 const date = (new Date(timestamp * 1000))
                 const datetime = ((date.toDateString() + ' ' + date.toTimeString()).split('G'))[0];
                 return(

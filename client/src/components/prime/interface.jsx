@@ -227,7 +227,7 @@ class Interface extends Component {
         return (
             <div className={classes.container} key='interface'>
                 <Typography className={classes.title} variant={'h1'}>
-                    PRIME ERC-721 NFT TOKENS
+                    YOUR ACTIVE PRIME ERC-721 NFT TOKENS
                 </Typography>
                 <Grid className={classes.interface}>
                         <Grid item>
@@ -244,6 +244,7 @@ class Interface extends Component {
                                                 <TableCell align='left' variant={'h1'}>Net</TableCell>
                                                 <TableCell align='left' variant={'h1'}>Exercise</TableCell>
                                                 <TableCell align='left' variant={'h1'}>Withdraw</TableCell>
+                                                <TableCell align='left' variant={'h1'}>Position</TableCell>
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
@@ -285,6 +286,9 @@ class Interface extends Component {
                                                         >
                                                             Withdraw
                                                         </Button>
+                                                    </TableCell>
+                                                    <TableCell align='left' variant={'h1'}>
+                                                        {row.position}
                                                     </TableCell>
                                                 </TableRow>
                                             ))}
