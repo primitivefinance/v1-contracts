@@ -2,7 +2,7 @@
 ## Financial Crafting
 ## Financial Smart Contract - Create ERC20 Token Purchase Agreements.
 Party **A** agrees to sell token **X** for token **Z** within time period **P**.
-Party **A** uses `Prime.sol` to mint a Slate, which is an ERC-721 from `Slate.sol`, to represent this agreement.
+Party **A** uses `Prime.sol` to mint a Prime, a Non-Fungible option token.
 
 ## What is it?
 - Party A agrees to sell **1 wEth for 250 DAI until May**.
@@ -32,7 +32,7 @@ Party **A** uses `Prime.sol` to mint a Slate, which is an ERC-721 from `Slate.so
         - Asset Class
             - Cash -> loan, bond, security
             - Derivative
-                - Slate
+                - Prime
                     - Properties
                         - Collateral Asset
                         - Payment Asset
@@ -51,7 +51,7 @@ Party **A** uses `Prime.sol` to mint a Slate, which is an ERC-721 from `Slate.so
 * Basically, how do you collateralize with an asset that will always worth paying down debt for?
 
 ## Solutions:
-* Price Oracles - Rather than track prices relatively, rational actors are incentivized to capture arbritrage value. If an exchange rate between assets of a Slate is better than the market rate, it would be exercised by the rational actor.
+* Price Oracles - Rather than track prices relatively, rational actors are incentivized to capture arbritrage value. If an exchange rate between assets of a Prime is better than the market rate, it would be exercised by the rational actor.
 * Interchangeability - We introduce a system of simplistic financial instruments deployed with the use of factory contracts and a hierarchy of 'stacks'.
 * Liquidity - Initial liquidity can be jumpstarted by creation instruments derived from the most liquid assets.
 * 'House of Cards' - Solution being explored.
