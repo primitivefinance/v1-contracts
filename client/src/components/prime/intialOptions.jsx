@@ -14,6 +14,7 @@ const INITIAL_OPTIONS = {
         ['put']: [],
     },
     optionSelection: {
+        'type': '',
         'properties': {},
         'cAsset': '',
         'sAsset': '',

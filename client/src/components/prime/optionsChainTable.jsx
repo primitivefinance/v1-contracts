@@ -90,7 +90,7 @@ class OptionsChainTable extends Component {
                                 {/* BODY */}
                                 <TableBody>
                                     {optionCallRows.map(row => (
-                                        <TableRow hover key={row.name}  style={{ cursor: 'pointer', }} onClick={() => this.props.handleOptionSelect(row.tokenId, row.collateralUnits, row.strikeUnits)}>
+                                        <TableRow hover key={row.name}  style={{ cursor: 'pointer', }} onClick={() => this.props.handleOptionSelect('call', row.tokenId, row.collateralUnits, row.strikeUnits)}>
                                             <TableCell align='center' variant={'h1'}>{row.bid}</TableCell>
                                             <TableCell align='center' variant={'h1'}>{row.ask}</TableCell>
                                             <TableCell align='center' variant={'h1'}>{row.qty}</TableCell>
@@ -126,7 +126,7 @@ class OptionsChainTable extends Component {
                                 {/* BODY */}
                                 <TableBody>
                                     {optionPutRows.map(row => (
-                                        <TableRow key={row.name}>
+                                        <TableRow hover key={row.name} style={{ cursor: 'pointer', }} onClick={() => this.props.handleOptionSelect('put', row.tokenId, row.collateralUnits, row.strikeUnits)}>
                                             <TableCell align='center' variant={'h1'}>{row.bid}</TableCell>
                                             <TableCell align='center' variant={'h1'}>{row.ask}</TableCell>
                                             <TableCell align='center' variant={'h1'}>{row.qty}</TableCell>

@@ -14,6 +14,7 @@ import TwitterIcon from '@material-ui/icons/Twitter';
 import Paper from '@material-ui/core/Paper';
 import Slide from '@material-ui/core/Slide';
 import Fade from '@material-ui/core/Fade';
+import Link from '@material-ui/core/Link';
 
 import Web3 from 'web3';
 import HorizontalNonLinearStepper from './stepper';
@@ -157,7 +158,7 @@ const styles = theme => ({
     body: {
         display: 'flex',
         flexDirection: 'row',
-        height: '90%',
+        minHeight: '90%',
         minHeight: '90vh',
         width: '100%',
         margin: '8px',
@@ -176,6 +177,7 @@ const styles = theme => ({
         flexDirection: 'column',
         backgroundColor: colors.background,
         width: '75%',
+        /* minHeight: '150vh', */
         margin: '8px',
     },
 
@@ -198,7 +200,7 @@ const styles = theme => ({
         display: 'flex',
         flexDirection: 'column',
         backgroundColor: colors.banner,
-        height: '60%',
+        /* height: '60%', */
         marginBottom: '8px',
     },
 
@@ -206,13 +208,14 @@ const styles = theme => ({
         display: 'flex',
         flexDirection: 'column',
         backgroundColor: colors.banner,
-        height: '40%',
+        /* minHeight: '40%', */
         marginTop: '8px',
     },
 
     footer: {
         display: 'flex',
-        height: '10%',
+        flexDirection: 'column',
+        margin: '16px',
     },
 
 });
@@ -280,6 +283,7 @@ class PrimeV3 extends Component {
         this.getPositions = this.getPositions.bind(this);
         this.getUsdToEth = this.getUsdToEth.bind(this);
         this.handleOptionSelect = this.handleOptionSelect.bind(this);
+        this.handleOrder = this.handleOrder.bind(this);
     }
 
     componentDidMount = async () => {
@@ -578,8 +582,8 @@ class PrimeV3 extends Component {
         let primeInstance = await this.getContractInstance(PrimeContract);
         let collateralInstance = await this.getInstance(collateralAsset);
 
-        collateralAmount = (await web3.utils.toWei(collateralAmount)).toString();
-        paymentAmount = (await web3.utils.toWei(paymentAmount)).toString();
+        /* collateralAmount = (await web3.utils.toWei(collateralAmount)).toString();
+        paymentAmount = (await web3.utils.toWei(paymentAmount)).toString(); */
         // CALL PRIME METHOD
         if(typeof primeInstance !== 'undefined') {
             let nonce = await primeInstance.methods.nonce().call();
@@ -628,7 +632,7 @@ class PrimeV3 extends Component {
                 from: account,
             });
             this.setState({
-                createPrimeTx: result,
+                /* createPrimeTx: result, */
                 onDashboard: true,
             }, 
                 await this.getPrimeInventory(),
@@ -1769,12 +1773,14 @@ class PrimeV3 extends Component {
         },);
     };
 
-    handleOptionSelect = async (tokenId, collateralSym, strikeSym) => {
+    handleOptionSelect = async (type, tokenId, collateralSym, strikeSym) => {
+        /* TYPE IS CALL OR PUT */
         let properties = await this.getPrimeProperties(tokenId);
 
 
         this.setState({
             optionSelection: {
+                'type': type,
                 'properties': properties,
                 'cAsset': collateralSym,
                 'sAsset': strikeSym,
@@ -1783,6 +1789,44 @@ class PrimeV3 extends Component {
 
         console.log({tokenId, collateralSym, strikeSym,});
         console.log(this.state.optionSelection)
+    };
+
+    handleOrder = async (deposit, bid, ask, collateralAmount, collateralSym, strikeAmount, strikeSym, expiration) => {
+        await this.getCurrentPrimeOutput();
+        const web3 = this.state.web3;
+        /* GET BOARD STATE AND LOAD INTO PAYLOAD FOR ETHEREUM TX */
+        const account = await this.getAccount();
+
+        let primesToMint = [];
+        let cAmount = await web3.utils.fromWei((collateralAmount).toString());
+        let sAmount = await web3.utils.fromWei((strikeAmount).toString());
+        let quantity = deposit / cAmount;
+        let remainder = deposit % cAmount;
+        let quantityLessRemainder = quantity - remainder;
+        console.log({quantity, remainder, quantityLessRemainder})
+
+        /* PASS PARAMETERS TO CONTRACT FUNCTION AND SEND TRANSACTION */
+        try {
+            await this.createPrime(
+                collateralSym,
+                strikeSym,
+                this.state.account,
+                expiration,
+                collateralAmount,
+                strikeAmount
+            );
+        } catch(error) {
+            console.log({error})
+        }
+
+        console.trace({
+            collateralSym,
+            strikeSym,
+            account,
+            expiration,
+            collateralAmount,
+            strikeAmount
+        });
     };
 
     render () {
@@ -1819,6 +1863,7 @@ class PrimeV3 extends Component {
 
                         <OpenPosition
                             optionSelection={this.state.optionSelection}
+                            handleOrder={this.handleOrder}
                         />
 
                     </Card>
@@ -1864,7 +1909,28 @@ class PrimeV3 extends Component {
 
                 </Card>
 
-                <div className={classes.footer}>
+                <Box className={classes.footer}>
+                    <Typography variant="h1" align="center" gutterBottom style={{ }}>
+                        <div>
+                            <LinkM href="https://github.com/Alexangelj/DFCP" underline='none'>
+                                <GitHubIcon />
+                            </LinkM>
+                            <LinkM href="https://github.com/Alexangelj/DFCP" underline='none'>
+                                <TwitterIcon />
+                            </LinkM>
+                        </div>
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary" align="center">
+                      {'Copyright © '}
+                      <Link color="inherit" href="/prime" underline='none'>
+                        Decentralized Financial Crafting Protocol
+                      </Link>{' '}
+                      {new Date().getFullYear()}
+                      {'.'}
+                    </Typography>
+                </Box>
+
+                {/* <div className={classes.footer}>
                 <Footer
                     
                     title={
@@ -1878,7 +1944,7 @@ class PrimeV3 extends Component {
                         </div>
                     }
                 />
-                </div>
+                </div> */}
                 
                 
             </div>    

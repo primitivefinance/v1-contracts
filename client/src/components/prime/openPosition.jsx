@@ -59,12 +59,15 @@ const styles = theme => ({
     containerTitle: {
         textAlign: 'center',
         margin: '8px',
+        letterSpacing: '2px',
+        fontSize: '18px',
     },
 
     rowContainer1: {
         display: 'flex',
         flexDirection: 'column',
         borderRadius: '6px',
+        marginTop: '16px',
 
     },
 
@@ -80,6 +83,13 @@ const styles = theme => ({
         /* textAlign: 'center', */
         fontWeight: '600'
     },
+
+    rowItem2H: {
+        width: '100%',
+        fontWeight: '600',
+        fontSpacing: '1px',
+    },
+
     rowItem1: {
         width: '33%',
         /* textAlign: 'center', */
@@ -106,6 +116,7 @@ const styles = theme => ({
         margin:'4px',
     },
     
+    
     rowButtonS: {
         backgroundColor: colors.background,
         width: '50%',
@@ -113,6 +124,18 @@ const styles = theme => ({
         margin:'4px',
         color: colors.primary,
         fontWeight: '600',
+    },
+
+    rowButtonSubmit: {
+        backgroundColor: colors.leafGreen,
+        color: colors.primary,
+        '&:hover' : {
+            backgroundColor: colors.leafGreen,
+            color: colors.primary,
+        },
+        fontWeight: '600',
+        width: '50%',
+        borderRadius: '4px',
     },
 
     amountForm: {
@@ -129,6 +152,12 @@ const styles = theme => ({
         marginTop: '16px',
     },
 
+    rowContainer4: {
+        display: 'flex',
+        flexDirection: 'row',
+        borderRadius: '4px',
+        marginTop: '16px',
+    },
 });
 
 
@@ -167,119 +196,376 @@ class OpenPosition extends Component {
         };
 
         this.handleChange = this.handleChange.bind(this);
+        this.newPosition = this.newPosition.bind(this);
     }
 
     handleChange = (event) => {
-        console.log(event.target.value)
+        console.log(event.target.value, event.target.name)
+        let name = event.target.name;
+        let value = event.target.value;
+        switch(name) {
+            case 'deposit':
+                this.setState({
+                    deposit: value
+                });
+                break;
+            case 'ask': 
+                this.setState({
+                    ask: value,
+                });
+                break;
+            case 'bid': 
+                this.setState({
+                    bid: value,
+                });
+                break;
+            case 'quantityBid': 
+                this.setState({
+                    quantityBid: value,
+                });
+                break;
+        }
     }; 
+
+    newPosition = async (position) => {
+        this.setState({
+            newPosition: true,
+            position: position,
+        })
+    };
 
     render () {
         const { classes } = this.props;
 
         /* GET PROPERTY DATA */
-        let cAsset, sAsset, eTimestamp, cAmt, pAmt;
+        let cAsset, sAsset, eTimestamp, cAmt, type;
 
         if(isNaN(cAmt) && typeof cAmt !== 'undefined') {
             cAmt = 'INVALID';
         }
         let properties = (this.props.optionSelection) ? (this.props.optionSelection['properties']) ? this.props.optionSelection['properties'] : { xis: '', yak: '', zed: '', wax: '', pow: '', gem: '',} : '';
+        let cAmount, sAmount, quantity;
+
+        if(this.state.newPosition) {
+            if(this.state.position === 'long') {
+                cAsset = (this.props.optionSelection) ? this.props.optionSelection['cAsset'] : '';
+                sAsset = (this.props.optionSelection) ? this.props.optionSelection['sAsset'] : '';
+                cAmount = properties.xis;
+                sAmount = properties.zed;
+            } else {
+                cAsset = (this.props.optionSelection) ? this.props.optionSelection['sAsset'] : '';
+                sAsset = (this.props.optionSelection) ? this.props.optionSelection['cAsset'] : '';
+                sAmount = properties.xis;
+                cAmount = properties.zed;
+            }
+            
+            type = (this.props.optionSelection) ? this.props.optionSelection['type'] : '';
+            const date = new Date(properties.pow * 1000);
+            eTimestamp = (date.toDateString());
+            switch(this.state.position) {
+                case 'long':
+                    if(this.state.long) {
+                        break;
+                    }
+                    this.setState({long: true})
+                    break;
+                case 'short':
+                    if(!this.state.long) {
+                        break;
+                    }
+                    this.setState({long: false})
+                    break;
+            }
+        } else {
+            cAsset = (this.props.optionSelection) ? this.props.optionSelection['cAsset'] : '';
+            sAsset = (this.props.optionSelection) ? this.props.optionSelection['sAsset'] : '';
+            type = (this.props.optionSelection) ? this.props.optionSelection['type'] : '';
+            const date = new Date(properties.pow * 1000);
+            eTimestamp = (date.toDateString());
+            cAmount = properties.xis;
+            sAmount = properties.zed;
+
+            switch(type) {
+                case 'call':
+                    if(this.state.long) {
+                        break;
+                    }
+                    this.setState({long: true})
+                    break;
+                case 'put':
+                    if(!this.state.long) {
+                        break;
+                    }
+                    this.setState({long: false})
+                    break;
+            }
+        }
         
-        cAsset = (this.props.optionSelection) ? this.props.optionSelection['cAsset'] : '';
-        sAsset = (this.props.optionSelection) ? this.props.optionSelection['sAsset'] : '';
-        const date = new Date(properties.pow * 1000);
-        eTimestamp = (date.toDateString());
-        
+        quantity = (this.state.deposit / (cAmount / 10**18)).toFixed(0);
+
         return (
             <>
                 <Box className={classes.container}>
 
                     <Typography variant={'h1'} className={classes.containerTitle}>
-                        Selected Option
+                        Open Position
                     </Typography>
 
-                    <Box className={classes.rowContainer1}>
-                        {/* FLEX DIRECTION ROW */}
-                        <Box className={classes.selectedRow1}>
-                            <Typography variant={'h2'} className={classes.rowItem1H}>
-                                Collateral
-                            </Typography>
-
-                            <Typography variant={'h2'} className={classes.rowItem1H}>
-                                Strike
-                            </Typography>
-
-                            <Typography variant={'h2'} className={classes.rowItem1H}>
-                                Expiration
-                            </Typography>
-                        </Box>
-
-                        {/* FLEX DIRECTION ROW */}
-                        <Box className={classes.selectedRow1}>
-                            <Typography variant={'h2'} className={classes.rowItem1}>
-                                {(properties.xis / 10**18)} {cAsset}
-                            </Typography>
-
-                            <Typography variant={'h2'} className={classes.rowItem1}>
-                                {(properties.zed / 10**18)} {sAsset}
-                            </Typography>
-
-                            <Typography variant={'h2'} className={classes.rowItem1}>
-                                {eTimestamp}
-                            </Typography>
-                        </Box>
-                    </Box>
-
-                    <Box className={classes.rowContainer2}>
-                        <Button className={(this.state.long) ? classes.rowButtonL : classes.rowButtonS} onClick={() => this.setState({ long: true})}>
-                            Long
-                        </Button>
-                        <Button className={(!this.state.long) ? classes.rowButtonL : classes.rowButtonS} onClick={() => this.setState({ long: false})}>
-                            Short
-                        </Button>
-                    </Box>
-
-                    <Box className={classes.rowContainer2}>
-                        <Button className={(this.state.buy) ? classes.rowButtonL : classes.rowButtonS} onClick={() => this.setState({ buy: true})}>
-                            Buy
-                        </Button>
-                        <Button className={(!this.state.buy) ? classes.rowButtonL : classes.rowButtonS} onClick={() => this.setState({ buy: false})}>
-                            Sell
-                        </Button>
-                    </Box>
-                    
-                    {(this.state.buy) 
-                        ?   
-                            <Box className={classes.rowContainer1}>
-                                {/* FLEX DIRECTION ROW */}
-                                <Box className={classes.selectedRow1}>
-                                    <Typography variant={'h1'} className={classes.rowItem1H} >
-                                        BID
-                                    </Typography>
+                    {(cAsset !== '')
+                            ?   <>
+                                <Box className={classes.rowContainer2}>
+                                    <Button className={(this.state.long) ? classes.rowButtonL : classes.rowButtonS} onClick={() => {this.setState({ long: true}); this.newPosition('long');}}>
+                                        Long
+                                    </Button>
+                                    <Button className={(!this.state.long) ? classes.rowButtonL : classes.rowButtonS} onClick={() => {this.setState({ long: false}); this.newPosition('short');}}>
+                                        Short
+                                    </Button>
                                 </Box>
-                                <Box className={classes.rowContainer3}>
 
-                                    <TextField
-                                      className={classes.amountForm}
-                                      placeholder={'Amount'}
-                                      value={this.state.amount}
-                                      onChange={this.handleChange}
-                                    />
-                                    <Typography variant={'h3'} style={{ fontWeight: '600', letterSpacing: '1px', width: '25%', textAlign: 'center', margin: '4px', padding: '4px', alignItems: 'center', justifyContent: 'center', display: 'flex', backgroundColor: colors.lightBanner, borderRadius: '4px'}}>
-                                        {'ETH'}
-                                    </Typography>
+                                <Box className={classes.rowContainer2}>
+                                    <Button className={(this.state.buy) ? classes.rowButtonL : classes.rowButtonS} onClick={() => this.setState({ buy: true})}>
+                                        Buy
+                                    </Button>
+                                    <Button className={(!this.state.buy) ? classes.rowButtonL : classes.rowButtonS} onClick={() => this.setState({ buy: false})}>
+                                        Sell
+                                    </Button>
                                 </Box>
-                            </Box>
-                            :   <Box className={classes.rowContainer3}>
-                                    <form className={classes.amountForm} noValidate autoComplete="off" onSubmit={(e) => e.preventDefault()}>
-                                          <TextField
-                                            placeholder={'Amount'}
-                                            value={this.state.amount}
-                                            onChange={this.handleChange}
-                                          />
-                                    </form>
+
+                                <Box className={classes.rowContainer1}>
+                                    {/* FLEX DIRECTION ROW */}
+                                    <Box className={classes.selectedRow1}>
+                                        <Typography variant={'h2'} className={classes.rowItem1H}>
+                                            Collateral
+                                        </Typography>
+
+                                        <Typography variant={'h2'} className={classes.rowItem1H}>
+                                            Strike
+                                        </Typography>
+
+                                        <Typography variant={'h2'} className={classes.rowItem1H}>
+                                            Expiration
+                                        </Typography>
+                                    </Box>
+
+                                    {/* FLEX DIRECTION ROW */}
+                                    <Box className={classes.selectedRow1}>
+                                        <Typography variant={'h2'} className={classes.rowItem1}>
+                                            {cAmount / 10**18} {cAsset}
+                                        </Typography>
+
+                                        <Typography variant={'h2'} className={classes.rowItem1}>
+                                            {sAmount / 10**18} {sAsset}
+                                        </Typography>
+
+                                        <Typography variant={'h2'} className={classes.rowItem1}>
+                                            {eTimestamp}
+                                        </Typography>
+                                    </Box>
                                 </Box>
-                    }
-                    
+
+
+                                {(this.state.buy) 
+                                    ?   
+                                        <Box className={classes.rowContainer1}>
+                                            {/* FLEX DIRECTION ROW */}
+                                            <Box className={classes.selectedRow1}>
+                                                <Typography variant={'h1'} className={classes.rowItem1H} >
+                                                    BID
+                                                </Typography>
+                                            </Box>
+                                            <Box className={classes.rowContainer3}>
+                                            
+                                                <TextField
+                                                  className={classes.amountForm}
+                                                  placeholder={'Bid Price'}
+                                                  value={this.state.bid}
+                                                  onChange={this.handleChange}
+                                                  name='bid'
+                                                />
+                                                <Typography variant={'h3'} style={{ fontWeight: '600', letterSpacing: '1px', width: '25%', textAlign: 'center', margin: '4px', padding: '4px', alignItems: 'center', justifyContent: 'center', display: 'flex', backgroundColor: colors.lightBanner, borderRadius: '4px'}}>
+                                                    {'ETH'}
+                                                </Typography>
+                                            </Box>
+
+                                            {/* FLEX DIRECTION ROW */}
+                                            <Box className={classes.selectedRow1}>
+                                                <Typography variant={'h1'} className={classes.rowItem1H} >
+                                                    Quantity
+                                                </Typography>
+                                            </Box>
+                                            <Box className={classes.rowContainer3}>
+                                            
+                                                <TextField
+                                                  className={classes.amountForm}
+                                                  placeholder={'Bid Quantity'}
+                                                  value={this.state.quantityBid}
+                                                  onChange={this.handleChange}
+                                                  name='quantityBid'
+                                                />
+                                                <Typography variant={'h3'} style={{ fontWeight: '600', letterSpacing: '1px', width: '25%', textAlign: 'center', margin: '4px', padding: '4px', alignItems: 'center', justifyContent: 'center', display: 'flex', backgroundColor: colors.lightBanner, borderRadius: '4px'}}>
+                                                    {'Primes'}
+                                                </Typography>
+                                            </Box>
+
+                                            <Box className={classes.selectedRow1}>
+                                                <Typography variant={'h1'} className={classes.rowItem2H} >
+                                                    Subtotal
+                                                </Typography>
+                                            </Box>
+                                            {/* FLEX DIRECTION ROW */}
+                                            <Box className={classes.selectedRow1}>
+                                                <Typography variant={'h2'} className={classes.rowItem1}>
+                                                    Cost:
+                                                </Typography>
+                                                <Typography variant={'h2'} className={classes.rowItem1}>
+                                                    {this.state.bid * this.state.quantityBid} {'ETH'}
+                                                </Typography>
+                                                <Typography variant={'h2'} className={classes.rowItem1}>
+                                                    Credited:
+                                                </Typography>
+                                                <Typography variant={'h2'} className={classes.rowItem1}>
+                                                    {this.state.quantityBid} {'Primes'}
+                                                </Typography>
+                                            </Box>
+                                                    
+
+                                        </Box>
+                                        :   <Box className={classes.rowContainer1}>
+                                                {/* FLEX DIRECTION ROW */}
+                                                <Box className={classes.selectedRow1}>
+                                                    <Typography variant={'h1'} className={classes.rowItem1H} >
+                                                        DEPOSIT
+                                                    </Typography>
+                                                </Box>
+                                                <Box className={classes.rowContainer3}>
+                                
+                                                    <TextField
+                                                      className={classes.amountForm}
+                                                      placeholder={'Deposit Amount'}
+                                                      value={this.state.deposit}
+                                                      onChange={this.handleChange}
+                                                      name='deposit'
+                                                    />
+                                                    <Typography variant={'h3'} style={{ fontWeight: '600', letterSpacing: '1px', width: '25%', textAlign: 'center', margin: '4px', padding: '4px', alignItems: 'center', justifyContent: 'center', display: 'flex', backgroundColor: colors.lightBanner, borderRadius: '4px'}}>
+                                                        {cAsset}
+                                                    </Typography>
+                                                </Box>
+
+
+                                                {/* FLEX DIRECTION ROW */}
+                                                <Box className={classes.selectedRow1}>
+                                                    <Typography variant={'h1'} className={classes.rowItem1H} >
+                                                        ASK
+                                                    </Typography>
+                                                </Box>
+                                                <Box className={classes.rowContainer3}>
+                                
+                                                    <TextField
+                                                      className={classes.amountForm}
+                                                      placeholder={'Ask Price'}
+                                                      value={this.state.ask}
+                                                      onChange={this.handleChange}
+                                                      name='ask'
+                                                    />
+                                                    <Typography variant={'h3'} style={{ fontWeight: '600', letterSpacing: '1px', width: '25%', textAlign: 'center', margin: '4px', padding: '4px', alignItems: 'center', justifyContent: 'center', display: 'flex', backgroundColor: colors.lightBanner, borderRadius: '4px'}}>
+                                                        {'ETH'}
+                                                    </Typography>
+                                                </Box>
+
+                                                <Box className={classes.rowContainer1}>
+
+                                                    <Box className={classes.selectedRow1}>
+                                                        <Typography variant={'h2'} className={classes.rowItem2H} >
+                                                            Sell {quantity} Primes for {this.state.ask} {'ETH'} each
+                                                        </Typography>
+                                                    </Box>
+
+                                                    <Box className={classes.selectedRow1}>
+                                                        <Typography variant={'h1'} className={classes.rowItem2H} >
+                                                            Mint Prime Option NFT
+                                                        </Typography>
+                                                    </Box>
+                                                    
+
+                                                    {/* FLEX DIRECTION ROW */}
+                                                    <Box className={classes.selectedRow1}>
+                                                        <Typography variant={'h2'} className={classes.rowItem1H}>
+                                                            Quantity
+                                                        </Typography>
+                                                        <Typography variant={'h2'} className={classes.rowItem1H}>
+                                                            Collateral
+                                                        </Typography>
+                                                
+                                                        <Typography variant={'h2'} className={classes.rowItem1H}>
+                                                            Strike
+                                                        </Typography>
+                                                
+                                                        <Typography variant={'h2'} className={classes.rowItem1H}>
+                                                            Expiration
+                                                        </Typography>
+                                                    </Box>
+
+                                                    {/* FLEX DIRECTION ROW */}
+                                                    <Box className={classes.selectedRow1}>
+                                                        <Typography variant={'h2'} className={classes.rowItem1}>
+                                                            {quantity}x
+                                                        </Typography>
+
+                                                        <Typography variant={'h2'} className={classes.rowItem1}>
+                                                            {cAmount / 10**18} {cAsset}
+                                                        </Typography>
+
+                                                        <Typography variant={'h2'} className={classes.rowItem1}>
+                                                            {sAmount / 10**18} {sAsset}
+                                                        </Typography>
+
+                                                        <Typography variant={'h2'} className={classes.rowItem1}>
+                                                            {eTimestamp}
+                                                        </Typography>
+                                                    </Box>
+
+                                                    <Box className={classes.selectedRow1}>
+                                                        <Typography variant={'h1'} className={classes.rowItem2H} >
+                                                            Subtotal
+                                                        </Typography>
+                                                    </Box>
+
+                                                    {/* FLEX DIRECTION ROW */}
+                                                    <Box className={classes.selectedRow1}>
+                                                        <Typography variant={'h2'} className={classes.rowItem1}>
+                                                            Deposit:
+                                                        </Typography>
+
+                                                        <Typography variant={'h2'} className={classes.rowItem1}>
+                                                            {this.state.deposit} {cAsset}
+                                                        </Typography>
+
+                                                        <Typography variant={'h2'} className={classes.rowItem1}>
+                                                            Credited:
+                                                        </Typography>
+
+                                                        <Typography variant={'h2'} className={classes.rowItem1}>
+                                                            {quantity * this.state.ask} {'ETH'}
+                                                        </Typography>
+                                                    </Box>
+
+                                                </Box>
+
+
+                                            </Box>
+                                }
+
+                                <Box className={classes.rowContainer4}>
+                                    <Button className={classes.rowButtonSubmit} onClick={() => this.props.handleOrder(this.state.deposit, this.state.bid, this.state.ask, cAmount, cAsset, sAmount, sAsset, properties.pow)}>
+                                        {(this.state.buy) ? 'Open Buy Order' :  'Open Sell Order'}
+                                    </Button>
+                                </Box>
+                                </>
+
+                            :   <Typography variant={'h1'} className={classes.containerTitle} style={{ height: '50vh', alignItems: 'center', display: 'flex', justifyContent: 'center',}}>
+                                    Select an Option
+                                </Typography>
+                        }
 
                 </Box>
             </>
