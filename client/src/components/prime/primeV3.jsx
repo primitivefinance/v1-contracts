@@ -346,8 +346,8 @@ class PrimeV3 extends Component {
         await this.getProfitData();
         await this.getActivePrimes(); */
         /* await this.getPrimeInventory(); */
-        await this.getOptionChain('call', '1', 'tETH', 'DAI');
-        await this.getOptionChain('put', '1', 'DAI', 'tETH');
+        await this.getOptionChain('call', '1', 'tETH', 'DAI', '1600473585');
+        await this.getOptionChain('put', '1', 'DAI', 'tETH', '1600473585');
         await this.getPositions();
         console.log({web3, provider, address,  chainId, networkId})
     };
@@ -1562,7 +1562,7 @@ class PrimeV3 extends Component {
     }
 
     /* OPTION CHAIN */
-    getOptionChain = async (type, collateralAmount, collateralType, strikeType) => {
+    getOptionChain = async (type, collateralAmount, collateralType, strikeType, expiration) => {
         console.log('GET OPTION CHAIN FOR', type)
         const web3 = this.state.web3;
         const account = await this.getAccount();
@@ -1622,6 +1622,7 @@ class PrimeV3 extends Component {
             collateral = await web3.utils.fromWei(properties.xis);
             strike = await web3.utils.fromWei(properties.zed);
             let underlyingMatch;
+            let expirationMatch = (properties.pow && expiration);
             switch(type) {
                 case 'call':
                     underlyingMatch = (collateral === collateralAmount)
@@ -1631,7 +1632,12 @@ class PrimeV3 extends Component {
                     break;
             };
 
-            if(collateralType === collateralSym && strikeType === strikeSym && underlyingMatch) {
+            if(
+                collateralType === collateralSym 
+                && strikeType === strikeSym 
+                && underlyingMatch
+                && expirationMatch
+            ) {
                 
                 console.log({tokenId, collateralType, collateralSym, collateral, strikeType, strikeSym,  strike})
                 
@@ -1893,7 +1899,9 @@ class PrimeV3 extends Component {
 
                         {/* FLEX DIRECTION COLUMN */}
                         <Card className={classes.positions} key='positions'>
-                            
+                            <Box className={classes.coreHeader}>
+                                <Typography className={classes.coreHeaderTypography}>Positions for {ellipseAddress(this.state.account)}</Typography>
+                            </Box> 
                             <PositionsTable
                                 title={''}
                                 positionRows={this.state.positionRows}
