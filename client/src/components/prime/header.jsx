@@ -33,6 +33,10 @@ function Header(props) {
             <Typography className={classes.chainHeaderTypography}>
                 Connected to {chain}
             </Typography>
+
+            <Typography className={classes.chainHeaderTypography}>
+                This project is in Alpha. Use at your own risk.
+            </Typography>
             <Typography className={classes.chainHeaderTypography}>
                 {(props.connected)
                     ?   

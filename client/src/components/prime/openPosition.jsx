@@ -90,8 +90,24 @@ const styles = theme => ({
         fontSpacing: '1px',
     },
 
+    rowItem3H: {
+        /* width: '25%', */
+        /* textAlign: 'center', */
+        width: '25%',
+        marginLeft: '4px',
+        fontWeight: '600',
+        lettingSpacing: '0px',
+        fontSize: '11px',
+    },
+
     rowItem1: {
         width: '33%',
+        /* textAlign: 'center', */
+    },
+
+    rowItem2: {
+        width: '25%',
+        marginLeft: '4px',
         /* textAlign: 'center', */
     },
 
@@ -397,7 +413,7 @@ class OpenPosition extends Component {
                                             
                                                 <TextField
                                                   className={classes.amountForm}
-                                                  placeholder={'Bid Quantity'}
+                                                  placeholder={'Quantity'}
                                                   value={this.state.quantityBid}
                                                   onChange={this.handleChange}
                                                   name='quantityBid'
@@ -481,7 +497,7 @@ class OpenPosition extends Component {
                                                     </Box>
 
                                                     <Box className={classes.selectedRow1}>
-                                                        <Typography variant={'h1'} className={classes.rowItem2H} >
+                                                        <Typography variant={'h1'} className={classes.rowItem2H} style={{marginTop: '16px',}} >
                                                             Mint Prime Option NFT
                                                         </Typography>
                                                     </Box>
@@ -489,37 +505,37 @@ class OpenPosition extends Component {
 
                                                     {/* FLEX DIRECTION ROW */}
                                                     <Box className={classes.selectedRow1}>
-                                                        <Typography variant={'h2'} className={classes.rowItem1H}>
+                                                        <Typography variant={'h2'} className={classes.rowItem3H}>
                                                             Quantity
                                                         </Typography>
-                                                        <Typography variant={'h2'} className={classes.rowItem1H}>
+                                                        <Typography variant={'h2'} className={classes.rowItem3H}>
                                                             Collateral
                                                         </Typography>
                                                 
-                                                        <Typography variant={'h2'} className={classes.rowItem1H}>
+                                                        <Typography variant={'h2'} className={classes.rowItem3H}>
                                                             Strike
                                                         </Typography>
                                                 
-                                                        <Typography variant={'h2'} className={classes.rowItem1H}>
+                                                        <Typography variant={'h2'} className={classes.rowItem3H}>
                                                             Expiration
                                                         </Typography>
                                                     </Box>
 
                                                     {/* FLEX DIRECTION ROW */}
                                                     <Box className={classes.selectedRow1}>
-                                                        <Typography variant={'h2'} className={classes.rowItem1}>
+                                                        <Typography variant={'h2'} className={classes.rowItem2}>
                                                             {quantity}x
                                                         </Typography>
 
-                                                        <Typography variant={'h2'} className={classes.rowItem1}>
+                                                        <Typography variant={'h2'} className={classes.rowItem2}>
                                                             {cAmount / 10**18} {cAsset}
                                                         </Typography>
 
-                                                        <Typography variant={'h2'} className={classes.rowItem1}>
+                                                        <Typography variant={'h2'} className={classes.rowItem2}>
                                                             {sAmount / 10**18} {sAsset}
                                                         </Typography>
 
-                                                        <Typography variant={'h2'} className={classes.rowItem1}>
+                                                        <Typography variant={'h2'} className={classes.rowItem2}>
                                                             {eTimestamp}
                                                         </Typography>
                                                     </Box>
