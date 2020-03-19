@@ -35,6 +35,7 @@ export const colors = {
     darkBlue: '#070a0e',
     leafGreen: '#88ca6a',
     lightSuccess: '#ccffca',
+    lightBanner: '#4b4e57',
     
 }
 
@@ -205,6 +206,11 @@ const mainTheme = {
             colorTextSecondary: {
                 color: colors.primary,
             },
+            body1: {
+                fontWeight: '500',
+                letterSpacing: '1px',
+                textTransform: 'uppercase',
+            },
             body2: {
                 fontWeight: '500',
                 letterSpacing: '1px',
@@ -238,6 +244,19 @@ const mainTheme = {
                 backgroundColor: colors.banner,
             },
         },
+        MuiFormLabel: {
+            root: {
+                color: colors.primary,
+                fontSize: '9px',
+                fontWeight: '550',
+                [breakpoints.up('md')]: {
+                    fontSize: '16px',
+                },
+                letterSpacing: '1px',
+                textTransform: 'uppercase',
+                margin: '4px',
+            },
+        },
     },
     palette: {
         primary: {
@@ -259,6 +278,9 @@ const mainTheme = {
         },
         button: {
             main: colors.lightgreen,
+        },
+        action: {
+            hover: colors.lightBanner,
         },
     },
     breakpoints: breakpoints,

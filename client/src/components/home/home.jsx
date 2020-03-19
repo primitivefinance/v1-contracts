@@ -22,6 +22,8 @@ import Link from '@material-ui/core/Link';
 /* import Link from 'react-router-dom/Link'; */
 import Page from '../prime/page';
 import getWeb3 from '../getWeb3';
+import SvgIcon from '@material-ui/core/SvgIcon';
+import DFCP from './dfcplogo.svg'
 
 
 const styles = theme => ({
@@ -180,7 +182,8 @@ class Home extends Component {
                                         underline='none'
                                     >
                                     <Card className={`${classes.card} ${classes.prime}`} href='/prime' /* onClick={ () => { this.navigate('/prime') }} */>
-                                        <GraphicEqIcon className={ `${classes.icon} icon` }/>
+                                        {/* <GraphicEqIcon className={ `${classes.icon} icon` }/> */}
+                                        <img alt="" src={DFCP} />
                                         <Typography variant={'h1'} className={ `${classes.title} title`}>Prime</Typography>
                                         <Typography variant={'h2'} className={ `${classes.title} title`}>ERC-20 Derivative</Typography>
                                     </Card>

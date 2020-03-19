@@ -1,4 +1,23 @@
 const INITIAL_OPTIONS = {
+    fetching: false,
+    address: "",
+    account: "",
+    web3: null,
+    provider: null,
+    connected: false,
+    chainId: null,
+    networkId: null,
+    result: null,
+    account: '',
+    optionRows: {
+        ['call']: [],
+        ['put']: [],
+    },
+    optionSelection: {
+        'properties': {},
+        'cAsset': '',
+        'sAsset': '',
+    },
     assets: {
         'assetIds' : ['asset-dai', 'asset-tUSD', 'asset-tETH',],
         'asset-dai': {

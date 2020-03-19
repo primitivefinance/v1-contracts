@@ -13,6 +13,7 @@ import mainTheme from './theme'
 import Home from './components/home';
 import Prime from './components/prime/prime';
 import PrimeV2 from './components/prime/primeV2';
+import PrimeV3 from './components/prime/primeV3';
 import Inventory from './components/prime/inventory';
 
 import {
@@ -46,7 +47,7 @@ class App extends Component {
                         <>
                           <Route exact path='/' component={Home}/>
                           <Route path='/home' component={Home}/>
-                          <Route path='/prime' component={Prime}/>
+                          <Route path='/prime' component={PrimeV3}/>
                           <Route path='/inventory/:address' component={Inventory}/>
                         </>
                       )}

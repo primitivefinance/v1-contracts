@@ -37,6 +37,10 @@ import { InjectedConnector } from '@web3-react/injected-connector';
 import Web3Modal from 'web3modal';
 import Header from './header';
 
+import OptionsChainTable from './optionsChainTable';
+import PositionsTable from './positionsTable';
+import OpenPosition from './openPosition';
+
 const providerOptions = {
 };
 
@@ -45,6 +49,22 @@ function ellipseAddress(address) {
     let width = 4;
     let newAddress = `${address.slice(0, width)}...${address.slice(-width)}`;
     return newAddress;
+}
+
+function initWeb3(provider) {
+    const web3 = new Web3(provider);
+  
+    web3.eth.extend({
+      methods: [
+        {
+          name: "chainId",
+          call: "eth_chainId",
+          outputFormatter: web3.utils.hexToNumber
+        }
+      ]
+    });
+  
+    return web3;
 }
 
 const styles = theme => ({
@@ -75,9 +95,11 @@ const styles = theme => ({
     },
     chainHeader: {
         display: 'flex',
+        height: '10%',
         width: '100%',
         flexDirection: 'row',
         alignItems: 'center',
+        textAlign: 'center',
         color: colors.primary,
     },
     chainHeaderTypography: {
@@ -122,13 +144,80 @@ const styles = theme => ({
         marginTop: '16px',
         alignItems: 'center',
         textAlign: 'center',
+        justifyContent: 'center',
         '&:hover': {
             backgroundColor: colors.success,
         },
     },
+    header: {
+        display: 'flex',
+        height: '10%',
+    },
+
+    body: {
+        display: 'flex',
+        flexDirection: 'row',
+        height: '90%',
+        minHeight: '90vh',
+        width: '100%',
+        margin: '8px',
+    },
+
+    openPosition: {
+        display: 'flex',
+        flexDirection: 'column',
+        backgroundColor: colors.banner,
+        width: '25%',
+        margin: '8px',
+    },
+
+    core: {
+        display: 'flex',
+        flexDirection: 'column',
+        backgroundColor: colors.background,
+        width: '75%',
+        margin: '8px',
+    },
+
+    coreHeader: {
+        display: 'flex',
+        flexDirection: 'row',
+        width: '100%',
+        backgroundColor: colors.banner ,
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '8px',
+    },
+
+    coreHeaderTypography: {
+        width: '33.33%',
+        textAlign: 'center',
+    },
+
+    chain: {
+        display: 'flex',
+        flexDirection: 'column',
+        backgroundColor: colors.banner,
+        height: '60%',
+        marginBottom: '8px',
+    },
+
+    positions: {
+        display: 'flex',
+        flexDirection: 'column',
+        backgroundColor: colors.banner,
+        height: '40%',
+        marginTop: '8px',
+    },
+
+    footer: {
+        display: 'flex',
+        height: '10%',
+    },
+
 });
 
-class PrimeV2 extends Component {
+class PrimeV3 extends Component {
     constructor(props) {
         super(props);
         this.state = {...INITIAL_OPTIONS};
@@ -187,6 +276,10 @@ class PrimeV2 extends Component {
         this.getActivePrimes = this.getActivePrimes.bind(this);
 
         this.onConnect = this.onConnect.bind(this);
+        this.getOptionChain = this.getOptionChain.bind(this);
+        this.getPositions = this.getPositions.bind(this);
+        this.getUsdToEth = this.getUsdToEth.bind(this);
+        this.handleOptionSelect = this.handleOptionSelect.bind(this);
     }
 
     componentDidMount = async () => {
@@ -215,19 +308,15 @@ class PrimeV2 extends Component {
           console.log('web3 on reset', web3)
         }
         await this.web3Modal.clearCachedProvider();
-        this.setState({ INITIAL_OPTIONS });
         console.log('RESET APP')
+        this.setState( INITIAL_OPTIONS );
     };
 
-    onConnect = async () => {
-        if(this.state.web3) {
-            await this.resetApp();
-            return;
-        }
 
+    onConnect = async () => {
         const provider = await this.web3Modal.connect();
 
-        const web3 = new Web3(provider)
+        const web3 = initWeb3(provider);
 
         const accounts = await web3.eth.getAccounts();
 
@@ -242,15 +331,20 @@ class PrimeV2 extends Component {
             connected: true,
             address: address,
             chainId: chainId,
-            networkI: networkId
+            networkId: networkId,
+            account: address,
         });
-        await this.getBalanceOfPrime();
+        /* await this.getBalanceOfPrime();
         await this.getPastEvents('PrimeMinted');
         await this.getPrimeInventory();
         await this.getWalletInventory();
         await this.getBankInventory();
         await this.getProfitData();
-        await this.getActivePrimes();
+        await this.getActivePrimes(); */
+        /* await this.getPrimeInventory(); */
+        await this.getOptionChain('call', '1', 'tETH', 'DAI');
+        await this.getOptionChain('put', '1', 'DAI', 'tETH');
+        await this.getPositions();
         console.log({web3, provider, address,  chainId, networkId})
     };
 
@@ -374,7 +468,6 @@ class PrimeV2 extends Component {
 
     getInstance = async (symbol) => {
         console.time('getContractInstance');
-        console.trace({symbol})
         if(
             this.state.instances
             && this.state.instances[symbol]
@@ -910,7 +1003,6 @@ class PrimeV2 extends Component {
             }
         };
 
-        console.log({position})
 
         for(var i = 0; i < userOwnedPrimes.length; i++) {
             let properties = await this.getPrimeProperties(userOwnedPrimes[i]);
@@ -948,6 +1040,7 @@ class PrimeV2 extends Component {
         this.setState({
             primeRows: primeRows,
         },);
+        return primeRows;
     };
 
     getWalletData = async (instance, account) => {
@@ -1176,9 +1269,11 @@ class PrimeV2 extends Component {
     getActivePrimes = async () => {
         let minted = await this.getMintedPrimes();
         let inactive = await this.getDeactivatedPrimes();
+        /* let ownedPrimes = await this.getPrimeInventory(); */
 
         let activePrimes = minted.filter(val => !inactive.includes(val));
-        console.log(activePrimes)
+        /* activePrimes = ownedPrimes.filter(val => !activePrimes.includes(val)); */
+        console.log({activePrimes})
         this.setState({
             activePrimes: activePrimes
         });
@@ -1431,6 +1526,265 @@ class PrimeV2 extends Component {
         });
     };
 
+    getUsdToEth = async () => {
+        const networkId = await this.getNetwork();
+        const web3 = this.state.web3;
+        const account = this.state.account;
+        /* USD TO ETH PRICE */
+        const cUsdEthAbi = this.getTokenAbi(networkId, 'CHAIN-USDETH')
+        const cUsdEthAddress = this.getTokenAddress(networkId, 'CHAIN-USDETH')
+        const cUsdEthNetwork = networkId;
+        const cUsdEthInstance = new web3.eth.Contract(
+            cUsdEthAbi,
+            cUsdEthNetwork && cUsdEthAddress,
+        );
+
+        let price;
+        try {
+            price = await cUsdEthInstance.methods.latestAnswer().call({from: account});
+        } catch (err) {
+            console.log({err})
+        }
+
+        let timestamp;
+        try {
+            timestamp = await cUsdEthInstance.methods.latestTimestamp().call({from: account});
+        } catch (err) {
+            console.log({err})
+        }
+        
+        let usdToEth = price / 10**8;
+        return usdToEth;
+    }
+
+    /* OPTION CHAIN */
+    getOptionChain = async (type, collateralAmount, collateralType, strikeType) => {
+        console.log('GET OPTION CHAIN FOR', type)
+        const web3 = this.state.web3;
+        const account = await this.getAccount();
+        const networkId = await this.getNetwork();
+        let primeInstance = await this.getContractInstance(PrimeContract);
+        let nonce = await primeInstance.methods.nonce().call();
+
+        let bid, ask, qty, strike, strikeUnits;
+        let collateral, collateralUnits, collateralSym, strikeSym;
+        function createData( tokenId, collateral, collateralUnits, bid, ask, qty, strike, strikeUnits ) {
+            return { tokenId, collateral, collateralUnits, bid, ask, qty, strike, strikeUnits };
+        };
+
+        /* THE OPTIONS AVAILABLE - TOKEN IDS */
+        let activeOptions = await this.getActivePrimes();
+
+        /* OPTION DATA GOES HERE */
+        let optionRows = [];
+        
+
+        /*  GET INSTANCES */
+        let collateralInstance = await this.getInstance(collateralType);
+        let strikeInstance = await this.getInstance(strikeType);
+        console.log('GOT INSTANCES', {collateralType, strikeType})
+
+        bid = '10';
+        ask = '15';
+        qty = '5';
+        strike = '100';
+        strikeUnits = strikeType;
+
+        
+        
+
+
+        /* FOR EACH AVAILABLE OPTION - GET THE OPTION DATA AND PUSH INTO ARRAY */
+        for(var i = 0; i < activeOptions.length; i++) {
+            let tokenId = activeOptions[i];
+            let properties = await primeInstance.methods.getPrime(
+                tokenId
+            ).call();
+
+            
+            
+            collateralInstance = new web3.eth.Contract(
+                Erc20.abi,
+                networkId && properties.yak,
+            );
+            collateralSym = await collateralInstance.methods.symbol().call();
+
+            strikeInstance = new web3.eth.Contract(
+                Erc20.abi,
+                networkId && properties.wax,
+            );
+            strikeSym = await strikeInstance.methods.symbol().call();
+            strikeUnits = strikeSym;
+            collateral = await web3.utils.fromWei(properties.xis);
+            strike = await web3.utils.fromWei(properties.zed);
+            let underlyingMatch;
+            switch(type) {
+                case 'call':
+                    underlyingMatch = (collateral === collateralAmount)
+                    break;
+                case 'put':
+                    underlyingMatch = (strike === collateralAmount)
+                    break;
+            };
+
+            if(collateralType === collateralSym && strikeType === strikeSym && underlyingMatch) {
+                
+                console.log({tokenId, collateralType, collateralSym, collateral, strikeType, strikeSym,  strike})
+                
+                collateralUnits = collateralType;
+                let data = createData(
+                    tokenId,
+                    collateral,
+                    collateralUnits,
+                    bid,
+                    ask,
+                    qty,
+                    strike,
+                    strikeUnits
+                );
+                
+                optionRows.push(data)
+            }
+        };
+
+        optionRows.sort((a, b) => parseFloat(a.strike) - parseFloat(b.strike));
+        this.setState({
+            optionRows: {
+                ...this.state.optionRows,
+                [type]: optionRows,
+            }
+        },);
+
+        console.log({optionRows})
+        return optionRows;
+    };
+
+    /* POSITION */
+
+    getPositions = async () => {
+        const web3 = this.state.web3;
+        const account = await this.getAccount();
+        const networkId = await this.getNetwork();
+        let primeInstance = await this.getContractInstance(PrimeContract);
+
+        let nonce = await primeInstance.methods.nonce().call();
+
+        let tokenId, longOrShort, name, netProfit, costBasis, premium, expiration;
+        let cValue, pValue;
+        function createData(tokenId, longOrShort, name, netProfit, costBasis, premium, expiration) {
+            return { tokenId, longOrShort, name, netProfit, costBasis, premium, expiration };
+        };
+
+
+        let primeRows = await this.getPrimeInventory();
+        let positionRows = [];
+        let usdEthRatio = await this.getUsdToEth();
+
+        for(var i = 0; i < primeRows.length; i++) {
+            
+            let row = primeRows[i];
+            let ratio;
+            switch(row.yakSymbol) {
+                case 'tETH':
+                    ratio = usdEthRatio;
+                    break;
+                case 'tUSD':
+                    ratio = 1;
+                    break;
+                case 'DAI':
+                    ratio = 1;
+                    break;
+            }
+            cValue = ratio * row.xis;
+
+            switch(row.waxSymbol) {
+                case 'tETH':
+                    ratio = usdEthRatio;
+                    break;
+                case 'tUSD':
+                    ratio = 1;
+                    break;
+                case 'DAI':
+                    ratio = 1;
+                    break;
+            }
+
+            
+            pValue = ratio * row.zed;
+            tokenId = row.tokenId;
+            longOrShort = row.position;
+            name = `${row.xis} ${row.yakSymbol} / ${row.zed} ${row.waxSymbol}`;
+            switch(longOrShort) {
+                case 'Long':
+                    netProfit = cValue - pValue;
+                    break;
+                case 'Short':
+                    netProfit = pValue - cValue;
+                    break;
+            }
+            costBasis = '10';
+            premium = '20';
+            netProfit = 
+                (longOrShort === 'Long')
+                ? (premium - costBasis) ? (`+ ${(premium - costBasis)}`) : (`- ${(premium - costBasis)}`)
+                    : (premium - costBasis) ? (`- ${(premium - costBasis)}`) : (`+ ${(premium - costBasis)}`);
+
+            expiration = row.pow;
+
+
+
+            let data = createData(
+                tokenId, 
+                longOrShort, 
+                name, 
+                netProfit, 
+                costBasis, 
+                premium, 
+                expiration
+            );
+
+            positionRows.push(data)
+
+            /* CHECK FOR DUPLICATES AND INCREMENT QTY */
+            for(var i = 0; i < positionRows.length; i++) {
+                const match = positionRows.filter(
+                    row => {
+                        return (
+                            data.longOrShort === row.longOrShort 
+                            && data.expiration === row.expiration
+                            && data.name === row.name
+                        );
+                    }
+                );
+
+                if(match.length > 1) {
+                    console.log({match});
+                }
+            }
+            
+        }
+        console.log({positionRows})
+        this.setState({
+            positionRows: positionRows,
+        },);
+    };
+
+    handleOptionSelect = async (tokenId, collateralSym, strikeSym) => {
+        let properties = await this.getPrimeProperties(tokenId);
+
+
+        this.setState({
+            optionSelection: {
+                'properties': properties,
+                'cAsset': collateralSym,
+                'sAsset': strikeSym,
+            }
+        });
+
+        console.log({tokenId, collateralSym, strikeSym,});
+        console.log(this.state.optionSelection)
+    };
+
     render () {
         const { classes } = this.props;
         
@@ -1439,119 +1793,93 @@ class PrimeV2 extends Component {
         let expiration = (this.state.selection) ? (this.state.selection['expiration']) ? this.state.selection['expiration'] : '' : '';
         let step = this.state.step;
         let allowanceSet = (this.state.allowances) ? (this.state.allowances[collateral]) ? (this.state.allowances[collateral] > 1000000) ? true : false : false : false;
+        
+        let optionChainName = 'tETH / DAI';
+        
         return(
             <>
             <div className={classes.root} key='root'>
-                        <Header 
-                            address={(this.state.account) ? this.state.account : ''}
-                            chainId={this.state.chainId}
-                            classes={classes}
-                            account={(this.state.account) ? this.state.account : ''}
-                            onConnect={this.onConnect}
+
+                <Header
+                    className={classes.header}
+                    address={(this.state.account) ? this.state.account : ''}
+                    chainId={this.state.chainId}
+                    classes={classes}
+                    account={(this.state.account) ? this.state.account : ''}
+                    onConnect={this.onConnect}
+                    connected={this.state.connected}
+                    resetApp={this.resetApp}
+                />
+
+                {/* FLEX DIRECTION IS ROW FOR CONTENTS */}
+                <Card className={classes.body} key='body'>
+
+                    {/* LEFT 25% PORTION OF SCREEN */}
+                    <Card className={classes.openPosition} key='open'>
+
+                        <OpenPosition
+                            optionSelection={this.state.optionSelection}
                         />
-                        <Button 
-                            className={classes.navButton}
-                            onClick={() => this.setState({onDashboard: !this.state.onDashboard})}
-                        >
-                            {(this.state.onDashboard) ? 'Craft Prime' : 'Go to Dashboard'}
-                        </Button>
-                        {/* <Button 
-                            className={classes.navButton}
-                            onClick={() => this.onConnect()}
-                        >
-                            {(this.state.account) ? ellipseAddress(this.state.account) : 'Connect'}
-                        </Button> */}
-                {(this.state.onDashboard)
-                    ?   <>
-                        <InventoryV2 
-                            primeRows={this.state.primeRows}
-                            walletRows={this.state.walletRows}
-                            bankRows={this.state.bankRows}
-                            statsData={this.state.statsData}
-                            data={this.state.data}
-                            goToDashboard={this.goToDashboard}
-                            primeExercise={this.primeExercise}
-                            primeClose={this.primeClose}
-                            handleMint={this.handleMint}
-                        />
-                        </>
-                        :   <>
-                                <Card className={classes.chainContainer}>
 
-                                    {/* CHAIN HEADER */}
-                                    <CardHeader 
-                                        variant={'h1'} 
-                                        title={'Craft a Prime Option'}>
-                                    </CardHeader>
+                    </Card>
 
 
-                                    {/* CHAIN BODY */}
-                                    {(step > 0)
-                                        ? (step === 1 && !allowanceSet) 
-                                            ?   <ApproveForm
-                                                    asset={collateral}
-                                                    handleAllowance={this.handleAllowance}
-                                                />
-                                                :   <Fade in={(step === 2)}>
-                                                        <OrderForm
-                                                            collateral={collateral}
-                                                            payment={payment}
-                                                            expiration={expiration}
-                                                            isValid={this.checkValid}
-                                                            handleSelectAmounts={this.handleSelectAmounts}
-                                                            handleSubmit={this.handleSubmit}
-                                                            collateralAmount={this.state.collateralAmount}
-                                                            paymentAmount={this.state.paymentAmount}
-                                                            primeRows={this.state.primeOutput}
-                                                        />
-                                                    </Fade>
-                                                    :   <Fade in={(step === 0)}>
-                                                            <MintForm
-                                                                classes={classes}
-                                                                assets={this.state.assets}
-                                                                expirations={this.state.expirations}
-                                                                handleSelect={this.handleSelect}
-                                                                collateral={collateral}
-                                                                payment={payment}
-                                                                expiration={expiration}
-                                                            />
-                                                        </Fade>
+                    {/* FLEX DIRECTION IS COLUMN - HOLDS CHAIN AND POSITIONS */}
+                    <Card className={classes.core} key='core'>
+                        
 
-                                    }
+                        {/* FLEX DIRECTION COLUMN */}
+                        <Card className={classes.chain} key='chain'>
+                            {/* CORE HEADER - FLEX DIRECTION ROW */}
+                            <Box className={classes.coreHeader}>
+                                <Typography className={classes.coreHeaderTypography}>CALLS</Typography>
+                                <Typography className={classes.coreHeaderTypography}>OPTION CHAIN FOR {optionChainName}</Typography>
+                                <Typography className={classes.coreHeaderTypography}>PUTS</Typography>
+                            </Box> 
 
-                                    <Box>
-                                        <Button 
-                                            className={classes.chainButton}
-                                            onClick={() => this.goBackward()}
-                                        >
-                                            {'Back'}
-                                        </Button>
-                                        <Button 
-                                            className={classes.chainButton}
-                                            onClick={() => this.goForward()}
-                                        >
-                                            {'Continue'}
-                                        </Button>
-                                    </Box>
+                            <OptionsChainTable
+                                title={''}
+                                optionCallRows={this.state.optionRows['call']}
+                                optionPutRows={this.state.optionRows['put']}
+                                handleOptionSelect={this.handleOptionSelect}
+                            />
 
-                                    {/* CHAIN FOOTER */}
+                        </Card>
 
-                                
-                                </Card>
-                                <Footer 
-                                        title={
-                                            <div>
-                                                <LinkM href="https://github.com/Alexangelj/DFCP" underline='none'>
-                                                    <GitHubIcon />
-                                                </LinkM>
-                                                <LinkM href="https://github.com/Alexangelj/DFCP" underline='none'>
-                                                    <TwitterIcon />
-                                                </LinkM>
-                                            </div>
-                                        }
-                                    />
-                                    </>
-                }
+                        {/* FLEX DIRECTION COLUMN */}
+                        <Card className={classes.positions} key='positions'>
+                            
+                            <PositionsTable
+                                title={''}
+                                positionRows={this.state.positionRows}
+                            />
+
+
+                        </Card>
+
+                    </Card>
+
+
+
+
+                </Card>
+
+                <div className={classes.footer}>
+                <Footer
+                    
+                    title={
+                        <div>
+                            <LinkM href="https://github.com/Alexangelj/DFCP" underline='none'>
+                                <GitHubIcon />
+                            </LinkM>
+                            <LinkM href="https://github.com/Alexangelj/DFCP" underline='none'>
+                                <TwitterIcon />
+                            </LinkM>
+                        </div>
+                    }
+                />
+                </div>
+                
                 
             </div>    
             </>
@@ -1560,4 +1888,4 @@ class PrimeV2 extends Component {
 
 };
 
-export default withStyles(styles)(PrimeV2);
+export default withStyles(styles)(PrimeV3);

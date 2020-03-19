@@ -46,5 +46,10 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@web3-react/core": "^6.0.7",
+    "@web3-react/injected-connector": "^6.0.7",
+    "web3modal": "^1.1.0"
   }
 }

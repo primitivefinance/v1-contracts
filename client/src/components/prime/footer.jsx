@@ -15,7 +15,7 @@ function Copyright() {
     <Typography variant="body2" color="textSecondary" align="center">
       {'Copyright © '}
       <Link color="inherit" href="/prime" underline='none'>
-        Karbon Protocol
+        Decentralized Financial Crafting Protocol
       </Link>{' '}
       {new Date().getFullYear()}
       {'.'}

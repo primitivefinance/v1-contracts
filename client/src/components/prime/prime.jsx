@@ -1240,10 +1240,10 @@ class Prime extends Component {
                     <Footer 
                         title={
                             <div>
-                                <LinkM href="https://github.com/Alexangelj/carbon" underline='none'>
+                                <LinkM href="https://github.com/Alexangelj/DFCP" underline='none'>
                                     <GitHubIcon />
                                 </LinkM>
-                                <LinkM href="https://github.com/Alexangelj/carbon" underline='none'>
+                                <LinkM href="https://github.com/Alexangelj/DFCP" underline='none'>
                                     <TwitterIcon />
                                 </LinkM>
                             </div>
