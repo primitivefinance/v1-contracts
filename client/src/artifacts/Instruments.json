@@ -1,25 +1,25 @@
 {
   "contractName": "Instruments",
   "abi": [],
-  "metadata": "{\"compiler\":{\"version\":\"0.6.2+commit.bacdbe57\"},\"language\":\"Solidity\",\"output\":{\"abi\":[],\"devdoc\":{\"author\":\"Karbon\",\"methods\":{},\"title\":\"Karbon's Instruments\"},\"userdoc\":{\"methods\":{}}},\"settings\":{\"compilationTarget\":{\"/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/Instruments.sol\":\"Instruments\"},\"evmVersion\":\"constantinople\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/Instruments.sol\":{\"keccak256\":\"0x8fd50a55a61c9af3acfbf310e5cf2530b0e9afd0179fd149e8803f1ae62ec6fb\",\"urls\":[\"bzz-raw://7797faed2d19c6c8f4eafd839d3c0266223caf01c6388b78f72e9b8a22a846f5\",\"dweb:/ipfs/QmUyYDMs6UQjJtjduCQZvhWUbD2hTbLsFRneduxBV2wutB\"]}},\"version\":1}",
-  "bytecode": "0x60566023600b82828239805160001a607314601657fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea264697066735822122055ad9dd976598a659d90d9ae6439093bb26f5ac49b009619fc3a5be2892f419964736f6c63430006020033",
-  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600080fdfea264697066735822122055ad9dd976598a659d90d9ae6439093bb26f5ac49b009619fc3a5be2892f419964736f6c63430006020033",
-  "sourceMap": "95:818:0:-:0;;132:2:-1;166:7;155:9;146:7;137:37;255:7;249:14;246:1;241:23;235:4;232:33;222:2;;269:9;222:2;293:9;290:1;283:20;323:4;314:7;306:22;347:7;338;331:24",
-  "deployedSourceMap": "95:818:0:-:0;;;;;;;;",
-  "source": "pragma solidity ^0.6.0;\r\n\r\n/** \r\n *  @title Karbon's Instruments\r\n * @author Karbon\r\n */\r\n\r\n\r\n library Instruments {\r\n     struct Actors {\r\n        address actor;\r\n        uint[] mintedTokens;\r\n        uint[] deactivatedTokens;\r\n    }\r\n\r\n     /** \r\n     * @dev A Prime has these properties.\r\n     * @param ace `msg.sender` of the createPrime function.\r\n     * @param xis Quantity of collateral asset token.\r\n     * @param yak Address of collateral asset token.\r\n     * @param zed Purchase price of collateral, denominated in quantity of token z.\r\n     * @param wax Address of purchase price asset token.\r\n     * @param pow UNIX timestamp of valid time period.\r\n     * @param gem Address of payment receiver of token z.\r\n     */\r\n    struct Primes {\r\n        address ace;\r\n        uint256 xis;\r\n        address yak;\r\n        uint256 zed;\r\n        address wax;\r\n        uint256 pow;\r\n        address gem;\r\n    }\r\n }",
+  "metadata": "{\"compiler\":{\"version\":\"0.6.2+commit.bacdbe57\"},\"language\":\"Solidity\",\"output\":{\"abi\":[],\"devdoc\":{\"author\":\"Decentralized Financial Crafting Protocol\",\"methods\":{},\"title\":\"DFCP's Instruments\"},\"userdoc\":{\"methods\":{}}},\"settings\":{\"compilationTarget\":{\"/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/Instruments.sol\":\"Instruments\"},\"evmVersion\":\"constantinople\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/Instruments.sol\":{\"keccak256\":\"0x9c5c27cdb4dcb5524d6647a77d0c6331f98aa3539fc8daf5b123f20d3dca9db0\",\"urls\":[\"bzz-raw://780436c9cf1a5a3b359409e7e65ae69eb854e1bb3d7b631a1c16efbebf503d7f\",\"dweb:/ipfs/QmQd93csgXE8XsdotEf11jJzwdipmX9zXk7AtfXtf1SD2w\"]}},\"version\":1}",
+  "bytecode": "0x60566023600b82828239805160001a607314601657fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea26469706673582212200f0acb0a1a7b982d946036f8c16fd83cf093c294a13b7a21a877dd8af85b97c564736f6c63430006020033",
+  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600080fdfea26469706673582212200f0acb0a1a7b982d946036f8c16fd83cf093c294a13b7a21a877dd8af85b97c564736f6c63430006020033",
+  "sourceMap": "128:818:1:-:0;;132:2:-1;166:7;155:9;146:7;137:37;255:7;249:14;246:1;241:23;235:4;232:33;222:2;;269:9;222:2;293:9;290:1;283:20;323:4;314:7;306:22;347:7;338;331:24",
+  "deployedSourceMap": "128:818:1:-:0;;;;;;;;",
+  "source": "pragma solidity ^0.6.0;\r\n\r\n/** \r\n *  @title DFCP's Instruments\r\n * @author Decentralized Financial Crafting Protocol\r\n */\r\n\r\n\r\n library Instruments {\r\n     struct Actors {\r\n        address actor;\r\n        uint[] mintedTokens;\r\n        uint[] deactivatedTokens;\r\n    }\r\n\r\n     /** \r\n     * @dev A Prime has these properties.\r\n     * @param ace `msg.sender` of the createPrime function.\r\n     * @param xis Quantity of collateral asset token.\r\n     * @param yak Address of collateral asset token.\r\n     * @param zed Purchase price of collateral, denominated in quantity of token z.\r\n     * @param wax Address of purchase price asset token.\r\n     * @param pow UNIX timestamp of valid time period.\r\n     * @param gem Address of payment receiver of token z.\r\n     */\r\n    struct Primes {\r\n        address ace;\r\n        uint256 xis;\r\n        address yak;\r\n        uint256 zed;\r\n        address wax;\r\n        uint256 pow;\r\n        address gem;\r\n    }\r\n }",
   "sourcePath": "C:\\Users\\alexa\\OneDrive\\Documents\\Master\\Blockchain\\Projects\\carbon\\contracts\\Instruments.sol",
   "ast": {
     "absolutePath": "/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/Instruments.sol",
     "exportedSymbols": {
       "Instruments": [
-        26
+        668
       ]
     },
-    "id": 27,
+    "id": 669,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 1,
+        "id": 643,
         "literals": [
           "solidity",
           "^",
@@ -27,34 +27,34 @@
           ".0"
         ],
         "nodeType": "PragmaDirective",
-        "src": "0:23:0"
+        "src": "0:23:1"
       },
       {
         "abstract": false,
         "baseContracts": [],
         "contractDependencies": [],
         "contractKind": "library",
-        "documentation": " @title Karbon's Instruments\n@author Karbon",
+        "documentation": " @title DFCP's Instruments\n@author Decentralized Financial Crafting Protocol",
         "fullyImplemented": true,
-        "id": 26,
+        "id": 668,
         "linearizedBaseContracts": [
-          26
+          668
         ],
         "name": "Instruments",
         "nodeType": "ContractDefinition",
         "nodes": [
           {
             "canonicalName": "Instruments.Actors",
-            "id": 10,
+            "id": 652,
             "members": [
               {
                 "constant": false,
-                "id": 3,
+                "id": 645,
                 "name": "actor",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 10,
-                "src": "148:13:0",
+                "scope": 652,
+                "src": "181:13:1",
                 "stateVariable": false,
                 "storageLocation": "default",
                 "typeDescriptions": {
@@ -62,10 +62,10 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 2,
+                  "id": 644,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
-                  "src": "148:7:0",
+                  "src": "181:7:1",
                   "stateMutability": "nonpayable",
                   "typeDescriptions": {
                     "typeIdentifier": "t_address",
@@ -77,12 +77,12 @@
               },
               {
                 "constant": false,
-                "id": 6,
+                "id": 648,
                 "name": "mintedTokens",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 10,
-                "src": "172:19:0",
+                "scope": 652,
+                "src": "205:19:1",
                 "stateVariable": false,
                 "storageLocation": "default",
                 "typeDescriptions": {
@@ -91,19 +91,19 @@
                 },
                 "typeName": {
                   "baseType": {
-                    "id": 4,
+                    "id": 646,
                     "name": "uint",
                     "nodeType": "ElementaryTypeName",
-                    "src": "172:4:0",
+                    "src": "205:4:1",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
                     }
                   },
-                  "id": 5,
+                  "id": 647,
                   "length": null,
                   "nodeType": "ArrayTypeName",
-                  "src": "172:6:0",
+                  "src": "205:6:1",
                   "typeDescriptions": {
                     "typeIdentifier": "t_array$_t_uint256_$dyn_storage_ptr",
                     "typeString": "uint256[]"
@@ -114,12 +114,12 @@
               },
               {
                 "constant": false,
-                "id": 9,
+                "id": 651,
                 "name": "deactivatedTokens",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 10,
-                "src": "202:24:0",
+                "scope": 652,
+                "src": "235:24:1",
                 "stateVariable": false,
                 "storageLocation": "default",
                 "typeDescriptions": {
@@ -128,19 +128,19 @@
                 },
                 "typeName": {
                   "baseType": {
-                    "id": 7,
+                    "id": 649,
                     "name": "uint",
                     "nodeType": "ElementaryTypeName",
-                    "src": "202:4:0",
+                    "src": "235:4:1",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
                     }
                   },
-                  "id": 8,
+                  "id": 650,
                   "length": null,
                   "nodeType": "ArrayTypeName",
-                  "src": "202:6:0",
+                  "src": "235:6:1",
                   "typeDescriptions": {
                     "typeIdentifier": "t_array$_t_uint256_$dyn_storage_ptr",
                     "typeString": "uint256[]"
@@ -152,22 +152,22 @@
             ],
             "name": "Actors",
             "nodeType": "StructDefinition",
-            "scope": 26,
-            "src": "123:111:0",
+            "scope": 668,
+            "src": "156:111:1",
             "visibility": "public"
           },
           {
             "canonicalName": "Instruments.Primes",
-            "id": 25,
+            "id": 667,
             "members": [
               {
                 "constant": false,
-                "id": 12,
+                "id": 654,
                 "name": "ace",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 25,
-                "src": "758:11:0",
+                "scope": 667,
+                "src": "791:11:1",
                 "stateVariable": false,
                 "storageLocation": "default",
                 "typeDescriptions": {
@@ -175,10 +175,10 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 11,
+                  "id": 653,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
-                  "src": "758:7:0",
+                  "src": "791:7:1",
                   "stateMutability": "nonpayable",
                   "typeDescriptions": {
                     "typeIdentifier": "t_address",
@@ -190,12 +190,12 @@
               },
               {
                 "constant": false,
-                "id": 14,
+                "id": 656,
                 "name": "xis",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 25,
-                "src": "780:11:0",
+                "scope": 667,
+                "src": "813:11:1",
                 "stateVariable": false,
                 "storageLocation": "default",
                 "typeDescriptions": {
@@ -203,10 +203,10 @@
                   "typeString": "uint256"
                 },
                 "typeName": {
-                  "id": 13,
+                  "id": 655,
                   "name": "uint256",
                   "nodeType": "ElementaryTypeName",
-                  "src": "780:7:0",
+                  "src": "813:7:1",
                   "typeDescriptions": {
                     "typeIdentifier": "t_uint256",
                     "typeString": "uint256"
@@ -217,12 +217,12 @@
               },
               {
                 "constant": false,
-                "id": 16,
+                "id": 658,
                 "name": "yak",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 25,
-                "src": "802:11:0",
+                "scope": 667,
+                "src": "835:11:1",
                 "stateVariable": false,
                 "storageLocation": "default",
                 "typeDescriptions": {
@@ -230,10 +230,10 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 15,
+                  "id": 657,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
-                  "src": "802:7:0",
+                  "src": "835:7:1",
                   "stateMutability": "nonpayable",
                   "typeDescriptions": {
                     "typeIdentifier": "t_address",
@@ -245,12 +245,12 @@
               },
               {
                 "constant": false,
-                "id": 18,
+                "id": 660,
                 "name": "zed",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 25,
-                "src": "824:11:0",
+                "scope": 667,
+                "src": "857:11:1",
                 "stateVariable": false,
                 "storageLocation": "default",
                 "typeDescriptions": {
@@ -258,10 +258,10 @@
                   "typeString": "uint256"
                 },
                 "typeName": {
-                  "id": 17,
+                  "id": 659,
                   "name": "uint256",
                   "nodeType": "ElementaryTypeName",
-                  "src": "824:7:0",
+                  "src": "857:7:1",
                   "typeDescriptions": {
                     "typeIdentifier": "t_uint256",
                     "typeString": "uint256"
@@ -272,12 +272,12 @@
               },
               {
                 "constant": false,
-                "id": 20,
+                "id": 662,
                 "name": "wax",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 25,
-                "src": "846:11:0",
+                "scope": 667,
+                "src": "879:11:1",
                 "stateVariable": false,
                 "storageLocation": "default",
                 "typeDescriptions": {
@@ -285,10 +285,10 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 19,
+                  "id": 661,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
-                  "src": "846:7:0",
+                  "src": "879:7:1",
                   "stateMutability": "nonpayable",
                   "typeDescriptions": {
                     "typeIdentifier": "t_address",
@@ -300,12 +300,12 @@
               },
               {
                 "constant": false,
-                "id": 22,
+                "id": 664,
                 "name": "pow",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 25,
-                "src": "868:11:0",
+                "scope": 667,
+                "src": "901:11:1",
                 "stateVariable": false,
                 "storageLocation": "default",
                 "typeDescriptions": {
@@ -313,10 +313,10 @@
                   "typeString": "uint256"
                 },
                 "typeName": {
-                  "id": 21,
+                  "id": 663,
                   "name": "uint256",
                   "nodeType": "ElementaryTypeName",
-                  "src": "868:7:0",
+                  "src": "901:7:1",
                   "typeDescriptions": {
                     "typeIdentifier": "t_uint256",
                     "typeString": "uint256"
@@ -327,12 +327,12 @@
               },
               {
                 "constant": false,
-                "id": 24,
+                "id": 666,
                 "name": "gem",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 25,
-                "src": "890:11:0",
+                "scope": 667,
+                "src": "923:11:1",
                 "stateVariable": false,
                 "storageLocation": "default",
                 "typeDescriptions": {
@@ -340,10 +340,10 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 23,
+                  "id": 665,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
-                  "src": "890:7:0",
+                  "src": "923:7:1",
                   "stateMutability": "nonpayable",
                   "typeDescriptions": {
                     "typeIdentifier": "t_address",
@@ -356,29 +356,29 @@
             ],
             "name": "Primes",
             "nodeType": "StructDefinition",
-            "scope": 26,
-            "src": "733:176:0",
+            "scope": 668,
+            "src": "766:176:1",
             "visibility": "public"
           }
         ],
-        "scope": 27,
-        "src": "95:818:0"
+        "scope": 669,
+        "src": "128:818:1"
       }
     ],
-    "src": "0:913:0"
+    "src": "0:946:1"
   },
   "legacyAST": {
     "absolutePath": "/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/Instruments.sol",
     "exportedSymbols": {
       "Instruments": [
-        26
+        668
       ]
     },
-    "id": 27,
+    "id": 669,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 1,
+        "id": 643,
         "literals": [
           "solidity",
           "^",
@@ -386,34 +386,34 @@
           ".0"
         ],
         "nodeType": "PragmaDirective",
-        "src": "0:23:0"
+        "src": "0:23:1"
       },
       {
         "abstract": false,
         "baseContracts": [],
         "contractDependencies": [],
         "contractKind": "library",
-        "documentation": " @title Karbon's Instruments\n@author Karbon",
+        "documentation": " @title DFCP's Instruments\n@author Decentralized Financial Crafting Protocol",
         "fullyImplemented": true,
-        "id": 26,
+        "id": 668,
         "linearizedBaseContracts": [
-          26
+          668
         ],
         "name": "Instruments",
         "nodeType": "ContractDefinition",
         "nodes": [
           {
             "canonicalName": "Instruments.Actors",
-            "id": 10,
+            "id": 652,
             "members": [
               {
                 "constant": false,
-                "id": 3,
+                "id": 645,
                 "name": "actor",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 10,
-                "src": "148:13:0",
+                "scope": 652,
+                "src": "181:13:1",
                 "stateVariable": false,
                 "storageLocation": "default",
                 "typeDescriptions": {
@@ -421,10 +421,10 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 2,
+                  "id": 644,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
-                  "src": "148:7:0",
+                  "src": "181:7:1",
                   "stateMutability": "nonpayable",
                   "typeDescriptions": {
                     "typeIdentifier": "t_address",
@@ -436,12 +436,12 @@
               },
               {
                 "constant": false,
-                "id": 6,
+                "id": 648,
                 "name": "mintedTokens",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 10,
-                "src": "172:19:0",
+                "scope": 652,
+                "src": "205:19:1",
                 "stateVariable": false,
                 "storageLocation": "default",
                 "typeDescriptions": {
@@ -450,19 +450,19 @@
                 },
                 "typeName": {
                   "baseType": {
-                    "id": 4,
+                    "id": 646,
                     "name": "uint",
                     "nodeType": "ElementaryTypeName",
-                    "src": "172:4:0",
+                    "src": "205:4:1",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
                     }
                   },
-                  "id": 5,
+                  "id": 647,
                   "length": null,
                   "nodeType": "ArrayTypeName",
-                  "src": "172:6:0",
+                  "src": "205:6:1",
                   "typeDescriptions": {
                     "typeIdentifier": "t_array$_t_uint256_$dyn_storage_ptr",
                     "typeString": "uint256[]"
@@ -473,12 +473,12 @@
               },
               {
                 "constant": false,
-                "id": 9,
+                "id": 651,
                 "name": "deactivatedTokens",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 10,
-                "src": "202:24:0",
+                "scope": 652,
+                "src": "235:24:1",
                 "stateVariable": false,
                 "storageLocation": "default",
                 "typeDescriptions": {
@@ -487,19 +487,19 @@
                 },
                 "typeName": {
                   "baseType": {
-                    "id": 7,
+                    "id": 649,
                     "name": "uint",
                     "nodeType": "ElementaryTypeName",
-                    "src": "202:4:0",
+                    "src": "235:4:1",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
                     }
                   },
-                  "id": 8,
+                  "id": 650,
                   "length": null,
                   "nodeType": "ArrayTypeName",
-                  "src": "202:6:0",
+                  "src": "235:6:1",
                   "typeDescriptions": {
                     "typeIdentifier": "t_array$_t_uint256_$dyn_storage_ptr",
                     "typeString": "uint256[]"
@@ -511,22 +511,22 @@
             ],
             "name": "Actors",
             "nodeType": "StructDefinition",
-            "scope": 26,
-            "src": "123:111:0",
+            "scope": 668,
+            "src": "156:111:1",
             "visibility": "public"
           },
           {
             "canonicalName": "Instruments.Primes",
-            "id": 25,
+            "id": 667,
             "members": [
               {
                 "constant": false,
-                "id": 12,
+                "id": 654,
                 "name": "ace",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 25,
-                "src": "758:11:0",
+                "scope": 667,
+                "src": "791:11:1",
                 "stateVariable": false,
                 "storageLocation": "default",
                 "typeDescriptions": {
@@ -534,10 +534,10 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 11,
+                  "id": 653,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
-                  "src": "758:7:0",
+                  "src": "791:7:1",
                   "stateMutability": "nonpayable",
                   "typeDescriptions": {
                     "typeIdentifier": "t_address",
@@ -549,12 +549,12 @@
               },
               {
                 "constant": false,
-                "id": 14,
+                "id": 656,
                 "name": "xis",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 25,
-                "src": "780:11:0",
+                "scope": 667,
+                "src": "813:11:1",
                 "stateVariable": false,
                 "storageLocation": "default",
                 "typeDescriptions": {
@@ -562,10 +562,10 @@
                   "typeString": "uint256"
                 },
                 "typeName": {
-                  "id": 13,
+                  "id": 655,
                   "name": "uint256",
                   "nodeType": "ElementaryTypeName",
-                  "src": "780:7:0",
+                  "src": "813:7:1",
                   "typeDescriptions": {
                     "typeIdentifier": "t_uint256",
                     "typeString": "uint256"
@@ -576,12 +576,12 @@
               },
               {
                 "constant": false,
-                "id": 16,
+                "id": 658,
                 "name": "yak",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 25,
-                "src": "802:11:0",
+                "scope": 667,
+                "src": "835:11:1",
                 "stateVariable": false,
                 "storageLocation": "default",
                 "typeDescriptions": {
@@ -589,10 +589,10 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 15,
+                  "id": 657,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
-                  "src": "802:7:0",
+                  "src": "835:7:1",
                   "stateMutability": "nonpayable",
                   "typeDescriptions": {
                     "typeIdentifier": "t_address",
@@ -604,12 +604,12 @@
               },
               {
                 "constant": false,
-                "id": 18,
+                "id": 660,
                 "name": "zed",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 25,
-                "src": "824:11:0",
+                "scope": 667,
+                "src": "857:11:1",
                 "stateVariable": false,
                 "storageLocation": "default",
                 "typeDescriptions": {
@@ -617,10 +617,10 @@
                   "typeString": "uint256"
                 },
                 "typeName": {
-                  "id": 17,
+                  "id": 659,
                   "name": "uint256",
                   "nodeType": "ElementaryTypeName",
-                  "src": "824:7:0",
+                  "src": "857:7:1",
                   "typeDescriptions": {
                     "typeIdentifier": "t_uint256",
                     "typeString": "uint256"
@@ -631,12 +631,12 @@
               },
               {
                 "constant": false,
-                "id": 20,
+                "id": 662,
                 "name": "wax",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 25,
-                "src": "846:11:0",
+                "scope": 667,
+                "src": "879:11:1",
                 "stateVariable": false,
                 "storageLocation": "default",
                 "typeDescriptions": {
@@ -644,10 +644,10 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 19,
+                  "id": 661,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
-                  "src": "846:7:0",
+                  "src": "879:7:1",
                   "stateMutability": "nonpayable",
                   "typeDescriptions": {
                     "typeIdentifier": "t_address",
@@ -659,12 +659,12 @@
               },
               {
                 "constant": false,
-                "id": 22,
+                "id": 664,
                 "name": "pow",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 25,
-                "src": "868:11:0",
+                "scope": 667,
+                "src": "901:11:1",
                 "stateVariable": false,
                 "storageLocation": "default",
                 "typeDescriptions": {
@@ -672,10 +672,10 @@
                   "typeString": "uint256"
                 },
                 "typeName": {
-                  "id": 21,
+                  "id": 663,
                   "name": "uint256",
                   "nodeType": "ElementaryTypeName",
-                  "src": "868:7:0",
+                  "src": "901:7:1",
                   "typeDescriptions": {
                     "typeIdentifier": "t_uint256",
                     "typeString": "uint256"
@@ -686,12 +686,12 @@
               },
               {
                 "constant": false,
-                "id": 24,
+                "id": 666,
                 "name": "gem",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 25,
-                "src": "890:11:0",
+                "scope": 667,
+                "src": "923:11:1",
                 "stateVariable": false,
                 "storageLocation": "default",
                 "typeDescriptions": {
@@ -699,10 +699,10 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 23,
+                  "id": 665,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
-                  "src": "890:7:0",
+                  "src": "923:7:1",
                   "stateMutability": "nonpayable",
                   "typeDescriptions": {
                     "typeIdentifier": "t_address",
@@ -715,16 +715,16 @@
             ],
             "name": "Primes",
             "nodeType": "StructDefinition",
-            "scope": 26,
-            "src": "733:176:0",
+            "scope": 668,
+            "src": "766:176:1",
             "visibility": "public"
           }
         ],
-        "scope": 27,
-        "src": "95:818:0"
+        "scope": 669,
+        "src": "128:818:1"
       }
     ],
-    "src": "0:913:0"
+    "src": "0:946:1"
   },
   "compiler": {
     "name": "solc",
@@ -732,11 +732,11 @@
   },
   "networks": {},
   "schemaVersion": "3.0.23",
-  "updatedAt": "2020-03-16T15:14:17.832Z",
+  "updatedAt": "2020-03-19T22:29:08.320Z",
   "devdoc": {
-    "author": "Karbon",
+    "author": "Decentralized Financial Crafting Protocol",
     "methods": {},
-    "title": "Karbon's Instruments"
+    "title": "DFCP's Instruments"
   },
   "userdoc": {
     "methods": {}

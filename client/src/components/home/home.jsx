@@ -58,12 +58,12 @@ const styles = theme => ({
     prime: {
         backgroundColor: colors.white,
         '&:hover': {
-            backgroundColor: colors.blue,
+            backgroundColor: colors.primeBlue,
             '& .title': {
-                color: colors.white
+                color: colors.background
             },
             '& .icon': {
-                color: colors.white
+                color: colors.background
             },
         },
         '& .title': {
@@ -94,7 +94,11 @@ const styles = theme => ({
         paddingBottom: '0px',
         [theme.breakpoints.up('sm')]: {
             paddingBottom: '24px'
-        }
+        },
+        fontWeight: '600',
+        letterSpacing: '2px',
+        textTransform: 'uppercase',
+        fontFamily: ['Roboto Mono', 'sans-serif'].join(","),
     },
     icon: {
         fontSize: '60px',

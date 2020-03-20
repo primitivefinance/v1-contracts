@@ -36,6 +36,7 @@ export const colors = {
     leafGreen: '#88ca6a',
     lightSuccess: '#ccffca',
     lightBanner: '#4b4e57',
+    primeBlue: '#cbe8ff',
     
 }
 

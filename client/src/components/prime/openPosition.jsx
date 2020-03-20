@@ -253,16 +253,44 @@ class OpenPosition extends Component {
     render () {
         const { classes } = this.props;
 
+        /* OPTION SELECTION DATA OBJECT:
+         *
+         *  optionSelection: {
+                'type': type,
+                'pair': pair,
+                'expiration': expiration,
+                'properties': {
+                    ace, 
+                    xis, 
+                    yak, 
+                    zed, 
+                    wax, 
+                    pow, 
+                    gem,
+                },
+                'cAsset': option.collateralUnits,
+                'sAsset': option.strikeUnits,
+                'tokenIds': tokenIds,
+            } 
+         * 
+         * 
+        */
+
         /* GET PROPERTY DATA */
-        let cAsset, sAsset, eTimestamp, cAmt, type;
+
+        
+        /* let cAmount, cAsset, sAmount, sAsset, expirationDate, cAmt, type, quantity;
 
         if(isNaN(cAmt) && typeof cAmt !== 'undefined') {
             cAmt = 'INVALID';
-        }
-        let properties = (this.props.optionSelection) ? (this.props.optionSelection['properties']) ? this.props.optionSelection['properties'] : { xis: '', yak: '', zed: '', wax: '', pow: '', gem: '',} : '';
-        let cAmount, sAmount, quantity;
+        } */
 
-        if(this.state.newPosition) {
+        /* let properties = (this.props.optionSelection) ? (this.props.optionSelection['properties']) ? this.props.optionSelection['properties'] : { xis: '', yak: '', zed: '', wax: '', pow: '', gem: '',} : '';
+        let tokenIds = (this.props.optionSelection) ? (this.props.optionSelection['tokenIds']) : []; */
+
+        /* SWITCHED FROM CALL TO PUT AFTER SELECTION? */
+
+        /* if(this.state.newPosition) {
             if(this.state.position === 'long') {
                 cAsset = (this.props.optionSelection) ? this.props.optionSelection['cAsset'] : '';
                 sAsset = (this.props.optionSelection) ? this.props.optionSelection['sAsset'] : '';
@@ -276,8 +304,9 @@ class OpenPosition extends Component {
             }
             
             type = (this.props.optionSelection) ? this.props.optionSelection['type'] : '';
+            
             const date = new Date(properties.pow * 1000);
-            eTimestamp = (date.toDateString());
+            expirationDate = (date.toDateString());
             switch(this.state.position) {
                 case 'long':
                     if(this.state.long) {
@@ -297,10 +326,71 @@ class OpenPosition extends Component {
             sAsset = (this.props.optionSelection) ? this.props.optionSelection['sAsset'] : '';
             type = (this.props.optionSelection) ? this.props.optionSelection['type'] : '';
             const date = new Date(properties.pow * 1000);
-            eTimestamp = (date.toDateString());
+            expirationDate = (date.toDateString());
             cAmount = properties.xis;
             sAmount = properties.zed;
 
+            switch(type) {
+                case 'call':
+                    if(this.state.long) {
+                        break;
+                    }
+                    this.setState({long: true})
+                    break;
+                case 'put':
+                    if(!this.state.long) {
+                        break;
+                    }
+                    this.setState({long: false})
+                    break;
+            }
+        } */
+
+        let cAmount, cAsset, sAmount, sAsset, expirationDate, cAmt, type, quantity, tokenIds;
+        const option = this.props.optionSelection;
+        const pair = option['pair'];
+        const expiration = option['expiration'];
+        const properties = option['properties'];
+
+        type = option['type'];
+        cAsset = option['cAsset'];
+        sAsset = option['sAsset'];
+        tokenIds = option['tokenIds'];
+        
+        cAmount = properties.xis;
+        sAmount = properties.zed;
+
+        const date = new Date(properties.pow * 1000);
+        expirationDate = (date.toDateString());
+
+        if(isNaN(cAmt) && typeof cAmt !== 'undefined') {
+            cAmt = 'INVALID';
+        }
+
+        if(this.state.newPosition) {
+            /* IF THE POSITION SWITCHES TYPE (LONG/SHORT) - SWITCH COLLATERAL AND STRIKE */
+            if(this.state.position !== 'long') {
+                cAsset = option['sAsset'];
+                sAsset = option['cAsset'];
+                cAmount = properties.zed;
+                sAmount = properties.xis;
+            }
+            
+            switch(this.state.position) {
+                case 'long':
+                    if(this.state.long) {
+                        break;
+                    }
+                    this.setState({long: true})
+                    break;
+                case 'short':
+                    if(!this.state.long) {
+                        break;
+                    }
+                    this.setState({long: false})
+                    break;
+            }
+        } else {
             switch(type) {
                 case 'call':
                     if(this.state.long) {
@@ -329,24 +419,39 @@ class OpenPosition extends Component {
 
                     {(cAsset !== '')
                             ?   <>
+                                {/* CALL OR PUT */}
                                 <Box className={classes.rowContainer2}>
-                                    <Button className={(this.state.long) ? classes.rowButtonL : classes.rowButtonS} onClick={() => {this.setState({ long: true}); this.newPosition('long');}}>
-                                        Long
+                                    <Button 
+                                        className={(this.state.long) ? classes.rowButtonL : classes.rowButtonS} 
+                                        onClick={() => {this.setState({ long: true}); this.newPosition('long');}}
+                                    >
+                                        Call
                                     </Button>
-                                    <Button className={(!this.state.long) ? classes.rowButtonL : classes.rowButtonS} onClick={() => {this.setState({ long: false}); this.newPosition('short');}}>
-                                        Short
+                                    <Button 
+                                        className={(!this.state.long) ? classes.rowButtonL : classes.rowButtonS} 
+                                        onClick={() => {this.setState({ long: false}); this.newPosition('short');}}
+                                    >
+                                        Put
                                     </Button>
                                 </Box>
 
+                                {/* BUY OR SELL */}
                                 <Box className={classes.rowContainer2}>
-                                    <Button className={(this.state.buy) ? classes.rowButtonL : classes.rowButtonS} onClick={() => this.setState({ buy: true})}>
+                                    <Button 
+                                        className={(this.state.buy) ? classes.rowButtonL : classes.rowButtonS} 
+                                        onClick={() => this.setState({ buy: true})}
+                                    >
                                         Buy
                                     </Button>
-                                    <Button className={(!this.state.buy) ? classes.rowButtonL : classes.rowButtonS} onClick={() => this.setState({ buy: false})}>
+                                    <Button 
+                                        className={(!this.state.buy) ? classes.rowButtonL : classes.rowButtonS} 
+                                        onClick={() => this.setState({ buy: false})}
+                                    >
                                         Sell
                                     </Button>
                                 </Box>
 
+                                {/* SELECTED PRIME DETAILS */}
                                 <Box className={classes.rowContainer1}>
                                     {/* FLEX DIRECTION ROW */}
                                     <Box className={classes.selectedRow1}>
@@ -374,15 +479,14 @@ class OpenPosition extends Component {
                                         </Typography>
 
                                         <Typography variant={'h2'} className={classes.rowItem1}>
-                                            {eTimestamp}
+                                            {expirationDate}
                                         </Typography>
                                     </Box>
                                 </Box>
 
-
-                                {(this.state.buy) 
-                                    ?   
-                                        <Box className={classes.rowContainer1}>
+                                {/* BID/ASK DEPOSIT/QTY FORM */}
+                                {(this.state.buy)   
+                                    ?   <Box className={classes.rowContainer1}>
                                             {/* FLEX DIRECTION ROW */}
                                             <Box className={classes.selectedRow1}>
                                                 <Typography variant={'h1'} className={classes.rowItem1H} >
@@ -536,7 +640,7 @@ class OpenPosition extends Component {
                                                         </Typography>
 
                                                         <Typography variant={'h2'} className={classes.rowItem2}>
-                                                            {eTimestamp}
+                                                            {expirationDate}
                                                         </Typography>
                                                     </Box>
 
@@ -571,8 +675,25 @@ class OpenPosition extends Component {
                                             </Box>
                                 }
 
+                                {/* SUBMIT ORDER BUTTON */}
                                 <Box className={classes.rowContainer4}>
-                                    <Button className={classes.rowButtonSubmit} onClick={() => this.props.handleOrder(this.state.deposit, this.state.bid, this.state.ask, cAmount, cAsset, sAmount, sAsset, properties.pow)}>
+                                    <Button 
+                                        className={classes.rowButtonSubmit} 
+                                        onClick={() => {
+                                                this.props.handleOrder(
+                                                    this.state.buy, 
+                                                    this.state.deposit, 
+                                                    this.state.bid, 
+                                                    this.state.ask, 
+                                                    cAmount, 
+                                                    cAsset, 
+                                                    sAmount, 
+                                                    sAsset, 
+                                                    properties.pow
+                                                );
+                                            }
+                                        }
+                                    >
                                         {(this.state.buy) ? 'Open Buy Order' :  'Open Sell Order'}
                                     </Button>
                                 </Box>
@@ -581,7 +702,7 @@ class OpenPosition extends Component {
                             :   <Typography variant={'h1'} className={classes.containerTitle} style={{ height: '50vh', alignItems: 'center', display: 'flex', justifyContent: 'center',}}>
                                     Select an Option
                                 </Typography>
-                        }
+                    }
 
                 </Box>
             </>
