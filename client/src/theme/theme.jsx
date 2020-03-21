@@ -26,18 +26,21 @@ export const colors = {
     darkPurple: '#2A1B3D',
     primary: '#fff',
     secondary: '#F0F0F0',
-    banner: '#23262e',
+    banner: '#282d3d',
+    /* banner: '#2d2b72', */
     highlight: '#fff',
     success: '#98FB98',
     button: '#A239CA',
-    background: '#1c1d23',
+    background: '#121a2d',
     darkGrey: '#1c1d23',
     darkBlue: '#070a0e',
-    leafGreen: '#88ca6a',
+    leafGreen: '#338736',
     lightSuccess: '#ccffca',
-    lightBanner: '#4b4e57',
+    lightBanner: '#333a4f',
     primeBlue: '#cbe8ff',
-    
+    headerBanner: '#2d2b72',
+    red: '#e23d48',
+    sidePanel: '#130e42',
 }
 
 
@@ -256,6 +259,14 @@ const mainTheme = {
                 letterSpacing: '1px',
                 textTransform: 'uppercase',
                 margin: '4px',
+            },
+        },
+        MuiLinearProgress: {
+            root: {
+                borderRadius: '24px',
+            },  
+            colorPrimary: {
+                backgroundColor: colors.primeBlue,
             },
         },
     },

@@ -30,14 +30,14 @@ function Header(props) {
 
     return (
         <div className={classes.chainHeader}>
-            <Typography className={classes.chainHeaderTypography}>
-                Connected to {chain}
+            <Typography className={classes.chainHeaderTypography1}>
+                PRIMITIVE
             </Typography>
 
-            <Typography className={classes.chainHeaderTypography}>
-                This project is in Alpha. Use at your own risk.
+            <Typography className={classes.chainHeaderTypography2}>
+               ! This project is in Alpha. Use at your own risk. !
             </Typography>
-            <Typography className={classes.chainHeaderTypography}>
+            <Typography className={classes.chainHeaderTypography3}>
                 {(props.connected)
                     ?   
                         <Button 
@@ -55,9 +55,12 @@ function Header(props) {
                                     {(props.account) ? ellipseAddress(props.account) : 'Connect'}
                             </Button>
                 
+                
                 }
                 
-                
+                <Typography variant="caption" display="block" gutterBottom>
+                    Connected to {chain}
+                </Typography>
             </Typography>
             {/* <Typography className={classes.chainHeaderTypography}>
                 {address}

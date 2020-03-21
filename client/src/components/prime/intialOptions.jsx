@@ -9,6 +9,9 @@ const INITIAL_OPTIONS = {
     networkId: null,
     result: null,
     account: '',
+    loadingChain: true,
+    loadingPositions: true,
+    pendingTx: false,
     callColumn: {
         'pair': null,
         'expiration': null,
@@ -191,6 +194,11 @@ const INITIAL_OPTIONS = {
         }
     },
 
+    optionGlossary: {
+        'TETHDAI' : {
+            '1600473585' : '0x1bae37c4',
+        },
+    },
     assets: {
         'assetIds' : ['asset-dai', 'asset-tUSD', 'asset-tETH',],
         'asset-dai': {

@@ -6,6 +6,10 @@ import Typography from '@material-ui/core/Typography';
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
 import Box from '@material-ui/core/Box';
+import { makeStyles } from '@material-ui/core/styles';
+import CircularProgress from '@material-ui/core/CircularProgress';
+import LinearProgress from '@material-ui/core/LinearProgress';
+
 
 
 
@@ -125,6 +129,7 @@ const styles = theme => ({
         '&:hover' : {
             backgroundColor: colors.leafGreen,
             color: colors.primary,
+            boxShadow: '0 0px 16px rgba(255, 255, 255, .4)',
         },
         fontWeight: '600',
         width: '50%',
@@ -146,8 +151,9 @@ const styles = theme => ({
         backgroundColor: colors.leafGreen,
         color: colors.primary,
         '&:hover' : {
-            backgroundColor: colors.leafGreen,
-            color: colors.primary,
+            backgroundColor: colors.success,
+            color: colors.lightBanner,
+            boxShadow: '0 0px 16px rgba(255, 255, 255, .4)',
         },
         fontWeight: '600',
         width: '50%',
@@ -174,8 +180,27 @@ const styles = theme => ({
         borderRadius: '4px',
         marginTop: '16px',
     },
+
+    txTracker: {
+        width: '50%',
+        marginLeft: '16px',
+        fontWeight: '600',
+        lettingSpacing: '0px',
+        fontSize: '11px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
 });
 
+const useStyles = makeStyles(theme => ({
+    root: {
+      display: 'flex',
+      '& > * + *': {
+        marginLeft: theme.spacing(2),
+      },
+    },
+  }));
 
 /* SEPARATE */
 function MultilineTextFields(props) {
@@ -199,6 +224,16 @@ function MultilineTextFields(props) {
             onChange={handleChange}
           />
     </form>
+    );
+};
+
+function CircularIndeterminate() {
+    const classes = useStyles();
+
+    return (
+        <div className={classes.root}>
+            <CircularProgress />
+        </div>
     );
 };
 
@@ -542,11 +577,11 @@ class OpenPosition extends Component {
                                                 {/* FLEX DIRECTION COLUMN */}
                                                 <Box className={classes.rowContainer1}>
 
-                                                    <Box className={classes.selectedRow1}>
+                                                    {/* <Box className={classes.selectedRow1}>
                                                         <Typography variant={'h2'} className={classes.rowItem2H} >
                                                             Sell a {multiplier}x multiplied Prime for {this.state.ask} {'ETH'} total
                                                         </Typography>
-                                                    </Box>
+                                                    </Box> */}
 
                                                     <Box className={classes.selectedRow1}>
                                                         <Typography variant={'h1'} className={classes.rowItem2H} style={{marginTop: '16px',}} >
@@ -644,8 +679,12 @@ class OpenPosition extends Component {
                                             }
                                         }
                                     >
-                                        {(this.state.buy) ? 'Open Buy Order' :  'Open Sell Order'}
+                                        {(this.props.pendingTx) ? <CircularProgress size='1.5rem'/> : (this.state.buy) ? 'Open Buy Order' :  'Open Sell Order'}
                                     </Button>
+
+                                    <Typography variant={'h2'} className={classes.txTracker}>
+                                        {(this.props.pendingTx) ? `Tx ${this.props.txNumber} of ${this.props.txAmount}` : 'Tx Number'}   
+                                    </Typography>
                                 </Box>
                                 </>
 

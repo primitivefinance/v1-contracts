@@ -125,7 +125,7 @@ class OptionsChainTableV2 extends Component {
                 <Box style={{display: 'flex', flexDirection: 'row'}}>
 
                     {/* CALL OPTION COLUMN */}
-                    <Card className={classes.primeInventory}>
+                    <Box className={classes.primeInventory}>
 
                         {/* CALL TABLE */}
                         <TableContainer component={Paper}>
@@ -148,7 +148,7 @@ class OptionsChainTableV2 extends Component {
                                         <TableRow 
                                             hover 
                                             key={option.name}  
-                                            style={{ cursor: 'pointer', }} 
+                                            style={{ cursor: 'pointer' }} 
                                             onClick={
                                                 () => {
                                                     this.props.handleOptionSelect(
@@ -182,10 +182,10 @@ class OptionsChainTableV2 extends Component {
 
                         
 
-                    </Card>
+                    </Box>
 
                     {/* CALL OPTION COLUMN */}
-                    <Card className={classes.primeInventory}>
+                    <Box className={classes.primeInventory}>
 
                         {/* PUT TABLE */}
                         <TableContainer component={Paper}>
@@ -240,7 +240,7 @@ class OptionsChainTableV2 extends Component {
                             </Table>
                         </TableContainer>
 
-                    </Card>
+                    </Box>
 
                 </Box>
             </>

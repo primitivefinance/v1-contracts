@@ -43,8 +43,27 @@ import OptionsChainTable from './optionsChainTable';
 import OptionsChainTableV2 from './optionsChainTableV2';
 import PositionsTableV2 from './positionsTableV2';
 import OpenPosition from './openPosition';
+import LinearProgress from '@material-ui/core/LinearProgress';
+import LinearIndeterminate from './linearIndeterminate';
+import { makeStyles } from '@material-ui/core/styles';
+import CircularProgress from '@material-ui/core/CircularProgress';
+import Fortmatic from "fortmatic";
+import DashboardIcon from '@material-ui/icons/Dashboard';
+import IconButton from '@material-ui/core/IconButton';
+import DetailsIcon from '@material-ui/icons/Details';
+import Dfcplogo2 from '../../primitivewhite2p.png';
+import Tooltip from '@material-ui/core/Tooltip';
+import FunctionsIcon from '@material-ui/icons/Functions';
+import HomeIcon from '@material-ui/icons/Home';
+
 
 const providerOptions = {
+    fortmatic: {
+        package: Fortmatic, // required
+        options: {
+          key: "FORTMATIC_KEY" // required
+        }
+      }
 };
 
 function ellipseAddress(address) {
@@ -75,13 +94,27 @@ const styles = theme => ({
         width: '100%',
         minHeight: '100vh',
         justifyContent: 'center',
-        alignItems: 'center',
-        flexDirection: 'column',
+        /* alignItems: 'center', */
+        flexDirection: 'row', /* CHANGED THIS TO ROW FOR THE SIDE PANEL */
         backgroundColor: colors.background,
+        [theme.breakpoints.up('sm')]: {
+            flexDirection: 'row',
+        },
+    },
+
+    sideColumn: {
+        display: 'flex',
+        width: '5%',
+        /* justifyContent: 'center', */
+        /* alignItems: 'center', */
+        flexDirection: 'column',
+        backgroundColor: colors.sidePanel,
         [theme.breakpoints.up('sm')]: {
             flexDirection: 'column',
         },
+        color: colors.primary,
     },
+
     chainContainer: {
         display: 'flex',
         minWidth: '30%',
@@ -103,13 +136,33 @@ const styles = theme => ({
         alignItems: 'center',
         textAlign: 'center',
         color: colors.primary,
+        /* borderTop: '0px',
+        borderRight: '0px',
+        borderLeft: '0px',
+        borderStyle: 'solid',
+        borderBottomWidth: '0.1px',
+        borderColor: colors.primary, */
+        backgroundColor: colors.headerBanner,
     },
-    chainHeaderTypography: {
+    chainHeaderTypography1: {
+        width: '25%',
+        alignItems: 'center',
+        textAlign: 'center',
+        fontWeight: '700',
+    },
+    chainHeaderTypography2: {
         width: '50%',
         alignItems: 'center',
         textAlign: 'center',
-
+        fontWeight: '700',
     },
+    chainHeaderTypography3: {
+        width:'25%',
+        alignItems: 'center',
+        textAlign: 'center',
+        fontWeight: '700',
+    },
+    
     chainBody: {
         display: 'flex',
         justifyContent: 'flex-start',
@@ -133,22 +186,28 @@ const styles = theme => ({
     navButton: {
         backgroundColor: colors.secondary,
         color: colors.banner,
-        borderRadius: '4px',
-        margin: '16px',
-        '&:hover': {
-            backgroundColor: colors.success,
-        },
-    },
-    connectButton: {
-        backgroundColor: colors.secondary,
-        color: colors.banner,
-        borderRadius: '16px',
+        borderRadius: '32px',
         marginTop: '16px',
         alignItems: 'center',
         textAlign: 'center',
         justifyContent: 'center',
         '&:hover': {
-            backgroundColor: colors.success,
+            backgroundColor: colors.primary,
+            boxShadow: '0 0px 16px rgba(255, 255, 255, .4)',
+        },
+    },
+    connectButton: {
+        backgroundColor: colors.secondary,
+        color: colors.banner,
+        borderRadius: '32px',
+        /* marginTop: '16px', */
+        margin: '8px',
+        alignItems: 'center',
+        textAlign: 'center',
+        justifyContent: 'center',
+        '&:hover': {
+            backgroundColor: colors.primary,
+            boxShadow: '0 0px 16px rgba(255, 255, 255, .4)',
         },
     },
     header: {
@@ -161,7 +220,7 @@ const styles = theme => ({
         flexDirection: 'row',
         minHeight: '90%',
         minHeight: '90vh',
-        width: '100%',
+        /* width: '100%', */
         margin: '8px',
     },
 
@@ -218,8 +277,119 @@ const styles = theme => ({
         flexDirection: 'column',
         margin: '16px',
     },
+    selectButton: {
+        backgroundColor: colors.secondary,
+        color: colors.banner,
+        borderRadius: '32px',
+        margin: '8px',
+        alignItems: 'center',
+        textAlign: 'center',
+        justifyContent: 'center',
+        '&:hover': {
+            backgroundColor: colors.banner,
+            boxShadow: '0 0px 16px rgba(255, 255, 255, .4)',
+            color: colors.primary,
+        },
+        borderStyle: 'solid',
+        borderColor: colors.primary,
+        borderWidth: '1px',
+    },
+    selectedButton: {
+        backgroundColor: colors.banner,
+        color: colors.primary,
+        borderRadius: '32px',
+        margin: '8px',
+        alignItems: 'center',
+        textAlign: 'center',
+        justifyContent: 'center',
+        '&:hover': {
+            backgroundColor: colors.primary,
+            boxShadow: '0 0px 16px rgba(255, 255, 255, .4)',
+            color: colors.banner,
+        },
+        borderStyle: 'solid',
+        borderColor: colors.primary,
+        borderWidth: '1px',
+    },
+    selectChain: {
+        display: 'flex',
+        flexDirection: 'column',
+        backgroundColor: colors.background,
+        width: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: colors.primary,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    selectChainContainer: {
+        display: 'flex',
+        flexDirection: 'row',
+        backgroundColor: colors.background,
+        width: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: colors.primary,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
+    selectProduct: {
+        display: 'flex',
+        flexDirecton: 'column',
+        color: colors.primary,
+        '&:hover' : {
+            backgroundColor: colors.headerBanner
+        },
+        borderRadius: '0px',
+        width: '100%',
+        height: '8%',
+    },
+
+    selectProductFill: {
+        display: 'flex',
+        flexDirecton: 'column',
+        color: colors.primary,
+        borderRadius: '0px',
+        width: '100%',
+        height: '70%',
+        cursor: 'select',
+        borderBlockEndStyle: 'solid',
+        borderColor: colors.primary,
+    },
+
+    homeButton: {
+        color: colors.primary,
+        borderRadius: '0px',
+        width: '100%',
+        height: '8.25%',
+        borderBlockEndStyle: 'solid',
+        borderColor: colors.primary,
+    },
 
 });
+
+
+const useStyles = makeStyles(theme => ({
+  root: {
+    display: 'flex',
+    '& > * + *': {
+      marginLeft: theme.spacing(2),
+    },
+  },
+}));
+
+function CircularIndeterminate() {
+    const classes = useStyles();
+
+    return (
+        <div className={classes.root}>
+            <CircularProgress />
+        </div>
+    );
+}
+
+
 
 class PrimeV3 extends Component {
     constructor(props) {
@@ -289,6 +459,7 @@ class PrimeV3 extends Component {
         this.getOptions = this.getOptions.bind(this);
         this.unlockPair = this.unlockPair.bind(this);
         this.mintTestTokens = this.mintTestTokens.bind(this);
+        this.handleSelectChain = this.handleSelectChain.bind(this);
     }
 
     componentDidMount = async () => {
@@ -1023,6 +1194,7 @@ class PrimeV3 extends Component {
                 Erc20.abi,
                 networkId && properties['wax'],
             );
+
             let waxSymbol = await waxInstance.methods.symbol().call();
 
             let tokenId = activePrimes[i];
@@ -1044,10 +1216,46 @@ class PrimeV3 extends Component {
 
             primeRows.push(data)
             console.log({primeRows})
+        };
+
+        for(var i = 0; i < userOwnedPrimes.length; i++) {
+            let properties = await this.getPrimeProperties(userOwnedPrimes[i]);
+            let yakInstance = new web3.eth.Contract(
+                Erc20.abi,
+                networkId && properties['yak'],
+            );
+            let yakSymbol = await yakInstance.methods.symbol().call();
+
+            let waxInstance = new web3.eth.Contract(
+                Erc20.abi,
+                networkId && properties['wax'],
+            );
+            
+            let waxSymbol = await waxInstance.methods.symbol().call();
+
+            let tokenId = userOwnedPrimes[i];
+            let xis = await web3.utils.fromWei(properties['xis']);
+            let zed = await web3.utils.fromWei(properties['zed']);
+            let pow = properties['pow'];
+            let data = createData(
+                tokenId,
+                xis,
+                yakSymbol,
+                zed,
+                waxSymbol,
+                pow,
+                properties['gem'],
+                position[`${tokenId}`]
+            );
+
+            primeRows.push(data)
         }
+
+
         this.setState({
             primeRows: primeRows,
         },);
+        
         return primeRows;
     };
 
@@ -1913,6 +2121,7 @@ class PrimeV3 extends Component {
         console.log({positionRows})
         this.setState({
             positionRows: positionRows,
+            loadingPositions: false,
         },);
     };
 
@@ -2065,6 +2274,7 @@ class PrimeV3 extends Component {
         this.setState({
             putColumn: putColumn,
             callColumn: callColumn,
+            loadingChain: false,
         });
 
         await this.getPositions();
@@ -2228,13 +2438,36 @@ class PrimeV3 extends Component {
                         console.log('MATCHING TOKEN AVAILABLE FOR PURCHASE', {bid}, 'ask:', sellOrders[tokenIds[i]], tokenIds[i])
                         
                         try {
+                            let txNumber = 1;
+                            this.setState({
+                                pendingTx: true,
+                                txNumber: 1,
+                                txAmount: 1,
+                            });
+                            console.log('Pending')
+
                             buyOrderResult = await _exchange.methods.buyOrder(
                                 tokenIds[i],
                                 bid
                             ).send({from: account, value: bid})
+                            
+                            if(buyOrderResult) {
+                                console.log('Result returned, not pending')
+                                this.setState({
+                                    pendingTx: false,
+                                    txNumber: undefined,
+                                    txAmount: undefined,
+                                });
+                            }
                             break;
                         } catch (error) {
                             console.log({error})
+                            console.log('Result returned, not pending')
+                            this.setState({
+                                pendingTx: false,
+                                txNumber: undefined,
+                                txAmount: undefined,
+                            });
                         }
                         
                     }
@@ -2345,15 +2578,100 @@ class PrimeV3 extends Component {
         await this.getOptions('0x1bae37c4');
     };
 
+    handleSelectChain = (selected, isPair) => {
+        if(isPair) {
+            this.setState({
+                selectedPair: selected,
+            });
+        } else {
+            this.setState({
+                selectedExpiration: selected,
+            });
+        }
+
+        const optionGlossary = this.state.optionGlossary;
+        let selectedPair = this.state.selectedPair;
+        let selectedExpiration = this.state.selectedExpiration;
+        
+        /* if(typeof this.state.loadedChain != 'undefined' && this.state.loadedChain) {
+            return;
+        } */
+
+        if(selectedPair && !isPair) {
+            let option = optionGlossary[selectedPair][selected];
+            this.setState({
+                loadingChain: true,
+            });
+            this.getOptions(option);
+        } else if(selectedExpiration && isPair) {
+            let option = optionGlossary[selected][selectedExpiration];
+            this.setState({
+                loadingChain: true,
+            });
+            this.getOptions(option);
+        } else {
+            return;
+        }
+
+        const date = new Date(selected * 1000);
+        selected = date.toDateString();
+        console.log(`GOT SELECTED CHAIN FOR ${selectedPair} expiring ${selected}`);
+    };
+
     render () {
         const { classes } = this.props;
         
         let optionChainName = 'tETH / DAI';
+        let pair = (this.state.selectedPair) ? this.state.selectedPair : '';
+        let expiration = this.state.selectedExpiration ? this.state.selectedExpiration : undefined;
+        if(expiration) {
+            const date = new Date(expiration * 1000);
+            expiration = date.toDateString();
+        }
         
         return(
             <>
             <div className={classes.root} key='root'>
 
+            {/* FLEX DIRECTION COLUMN - SIDE PANEL */}
+            <Box className={classes.sideColumn}>
+                <IconButton className={classes.homeButton}>
+                    <HomeIcon />
+                </IconButton>
+                
+                {/* <Tooltip title={'Dashboard'}>
+                    <IconButton className={classes.selectProduct}>
+                        <DashboardIcon />
+                    </IconButton>
+                </Tooltip> */}
+                
+                <Tooltip title={'Primitive'}>
+                    <IconButton className={classes.selectProduct}>
+                        <DetailsIcon />
+                    </IconButton>
+                </Tooltip>
+
+                <Tooltip title={'Derivitive'}>
+                    <IconButton className={classes.selectProduct}>
+                        <FunctionsIcon />
+                    </IconButton>
+                </Tooltip>
+                
+                <Box className={classes.selectProductFill}>
+                </Box>
+                
+                
+                <IconButton className={classes.selectProduct}>
+                    <GitHubIcon />
+                </IconButton>
+                <IconButton className={classes.selectProduct}>
+                    <TwitterIcon />
+                </IconButton>
+                
+
+            </Box>
+
+            <Box style={{display: 'flex', flexDirection: 'column', width: '100%', }}>
                 <Header
                     className={classes.header}
                     address={(this.state.account) ? this.state.account : ''}
@@ -2366,9 +2684,9 @@ class PrimeV3 extends Component {
                 />
 
                 {/* FLEX DIRECTION IS ROW FOR CONTENTS */}
-                <Card className={classes.body} key='body'>
+                <Box className={classes.body} key='body'>
 
-                    {/* LEFT 25% PORTION OF SCREEN */}
+                    {/* LEFT 25% PORTION OF SCREEN - OPEN POSITION*/}
                     <Card className={classes.openPosition} key='open'>
 
                         <Button 
@@ -2388,31 +2706,66 @@ class PrimeV3 extends Component {
                         <OpenPosition
                             optionSelection={this.state.optionSelection}
                             handleOrder={this.handleOrder}
+                            pendingTx={this.state.pendingTx}
+                            txAmount={this.state.txAmount}
+                            txNumber={this.state.txNumber}
                         />
 
                     </Card>
 
                     {/* FLEX DIRECTION IS COLUMN - HOLDS CHAIN AND POSITIONS */}
-                    <Card className={classes.core} key='core'>
+                    <Box className={classes.core} key='core'>
                         
+                        {/* FLEX DIRECTION ROW */}
+                        <Box className={classes.selectChainContainer} key='selectChain'>
+
+                            {/* FLEX DIRECTION COLUMN */}
+                            <Box className={classes.selectChain} key='selectChain'>
+                                <Typography className={classes.coreHeaderTypography}>Select Pair & Expiration</Typography>
+                                
+                                {/* FLEX DIRECTION ROW */}
+                                <Box className={classes.selectChainContainer} key='selectChain'>
+                                    <Button 
+                                        className={
+                                            (this.state.selectedPair) ? classes.selectedButton : classes.selectButton
+                                        } 
+                                        onClick={
+                                            (this.state.selectedPair) 
+                                                ? () => this.setState({ selectedPair: undefined}) 
+                                                    : () => this.handleSelectChain('TETHDAI', true)
+                                                }
+                                    >
+                                        TETH/DAI
+                                    </Button>
+                                    <Button 
+                                        className={
+                                            (this.state.selectedExpiration) ? classes.selectedButton : classes.selectButton
+                                        } 
+                                        onClick={
+                                            (this.state.selectedExpiration) 
+                                                ? () => this.setState({ selectedExpiration: undefined}) 
+                                                    : () => this.handleSelectChain('1600473585', false)
+                                                }
+                                    >
+                                        Fri Sep 18
+                                    </Button>
+                                </Box>
+
+                                
+                            </Box>
+                            
+                        </Box>
+
                         {/* FLEX DIRECTION COLUMN */}
                         <Card className={classes.chain} key='chain'>
                             {/* CORE HEADER - FLEX DIRECTION ROW */}
                             <Box className={classes.coreHeader}>
                                 <Typography className={classes.coreHeaderTypography}>CALLS</Typography>
-                                <Typography className={classes.coreHeaderTypography}>OPTION CHAIN FOR {optionChainName}</Typography>
+                                <Typography className={classes.coreHeaderTypography}>OPTION CHAIN FOR {pair} {expiration} </Typography>
                                 <Typography className={classes.coreHeaderTypography}>PUTS</Typography>
                             </Box>
 
-                            <Box className={classes.coreHeader}>
-                                <Button 
-                                    className={classes.navButton} 
-                                    onClick={() => this.getOptions('0x1bae37c4')}
-                                >
-                                    TETH/DAI expiring Fri Sep 18
-                                </Button>
-                            </Box> 
-
+                            
                             <OptionsChainTableV2
                                 title={''}
                                 optionCallRows={this.state.callOptions}
@@ -2423,6 +2776,8 @@ class PrimeV3 extends Component {
                                 putColumn={this.state.putColumn}
                                 handleOptionSelect={this.handleOptionSelect}
                             />
+
+                            {(!this.state.loadingChain) ? <></> : <LinearIndeterminate />}
 
                         </Card>
 
@@ -2435,14 +2790,15 @@ class PrimeV3 extends Component {
                                 title={''}
                                 positionRows={this.state.positionRows}
                             />
+                            {(!this.state.loadingPositions) ? <></> : <LinearIndeterminate />}
 
                         </Card>
 
-                    </Card>
+                    </Box>
 
-                </Card>
+                </Box>
 
-                <Box className={classes.footer}>
+                {/* <Box className={classes.footer}>
                     <Typography variant="h1" align="center" gutterBottom style={{ }}>
                         <div>
                             <LinkM href="https://github.com/Alexangelj/DFCP" underline='none'>
@@ -2461,8 +2817,9 @@ class PrimeV3 extends Component {
                       {new Date().getFullYear()}
                       {'.'}
                     </Typography>
-                </Box>
+                </Box> */}
                  
+            </Box>
             </div>    
             </>
         );

@@ -13,6 +13,7 @@
     "classnames": "^2.2.6",
     "dotenv": "^8.2.0",
     "dotenv-webpack": "^1.7.0",
+    "fortmatic": "^2.0.5",
     "react": "^16.13.0",
     "react-beautiful-dnd": "^13.0.0",
     "react-chartjs-2": "^2.9.0",
