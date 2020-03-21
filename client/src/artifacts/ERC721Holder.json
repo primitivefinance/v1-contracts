@@ -47,14 +47,14 @@
     "absolutePath": "@openzeppelin/contracts/token/ERC721/ERC721Holder.sol",
     "exportedSymbols": {
       "ERC721Holder": [
-        3672
+        3695
       ]
     },
-    "id": 3673,
+    "id": 3696,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 3649,
+        "id": 3672,
         "literals": [
           "solidity",
           "^",
@@ -67,10 +67,10 @@
       {
         "absolutePath": "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol",
         "file": "./IERC721Receiver.sol",
-        "id": 3650,
+        "id": 3673,
         "nodeType": "ImportDirective",
-        "scope": 3673,
-        "sourceUnit": 4033,
+        "scope": 3696,
+        "sourceUnit": 4056,
         "src": "25:31:17",
         "symbolAliases": [],
         "unitAlias": ""
@@ -82,41 +82,41 @@
             "arguments": null,
             "baseName": {
               "contractScope": null,
-              "id": 3651,
+              "id": 3674,
               "name": "IERC721Receiver",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 4032,
+              "referencedDeclaration": 4055,
               "src": "83:15:17",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_IERC721Receiver_$4032",
+                "typeIdentifier": "t_contract$_IERC721Receiver_$4055",
                 "typeString": "contract IERC721Receiver"
               }
             },
-            "id": 3652,
+            "id": 3675,
             "nodeType": "InheritanceSpecifier",
             "src": "83:15:17"
           }
         ],
         "contractDependencies": [
-          4032
+          4055
         ],
         "contractKind": "contract",
         "documentation": null,
         "fullyImplemented": true,
-        "id": 3672,
+        "id": 3695,
         "linearizedBaseContracts": [
-          3672,
-          4032
+          3695,
+          4055
         ],
         "name": "ERC721Holder",
         "nodeType": "ContractDefinition",
         "nodes": [
           {
             "baseFunctions": [
-              4031
+              4054
             ],
             "body": {
-              "id": 3670,
+              "id": 3693,
               "nodeType": "Block",
               "src": "213:54:17",
               "statements": [
@@ -127,32 +127,32 @@
                       "argumentTypes": null,
                       "expression": {
                         "argumentTypes": null,
-                        "id": 3666,
+                        "id": 3689,
                         "name": "this",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
                         "referencedDeclaration": -28,
                         "src": "230:4:17",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_contract$_ERC721Holder_$3672",
+                          "typeIdentifier": "t_contract$_ERC721Holder_$3695",
                           "typeString": "contract ERC721Holder"
                         }
                       },
-                      "id": 3667,
+                      "id": 3690,
                       "isConstant": false,
                       "isLValue": false,
                       "isPure": false,
                       "lValueRequested": false,
                       "memberName": "onERC721Received",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 3671,
+                      "referencedDeclaration": 3694,
                       "src": "230:21:17",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_external_nonpayable$_t_address_$_t_address_$_t_uint256_$_t_bytes_memory_ptr_$returns$_t_bytes4_$",
                         "typeString": "function (address,address,uint256,bytes memory) external returns (bytes4)"
                       }
                     },
-                    "id": 3668,
+                    "id": 3691,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -166,8 +166,8 @@
                       "typeString": "bytes4"
                     }
                   },
-                  "functionReturnParameters": 3665,
-                  "id": 3669,
+                  "functionReturnParameters": 3688,
+                  "id": 3692,
                   "nodeType": "Return",
                   "src": "223:37:17"
                 }
@@ -175,29 +175,29 @@
             },
             "documentation": null,
             "functionSelector": "150b7a02",
-            "id": 3671,
+            "id": 3694,
             "implemented": true,
             "kind": "function",
             "modifiers": [],
             "name": "onERC721Received",
             "nodeType": "FunctionDefinition",
             "overrides": {
-              "id": 3662,
+              "id": 3685,
               "nodeType": "OverrideSpecifier",
               "overrides": [],
               "src": "187:8:17"
             },
             "parameters": {
-              "id": 3661,
+              "id": 3684,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3654,
+                  "id": 3677,
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3671,
+                  "scope": 3694,
                   "src": "131:7:17",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -206,7 +206,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3653,
+                    "id": 3676,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "131:7:17",
@@ -221,11 +221,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 3656,
+                  "id": 3679,
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3671,
+                  "scope": 3694,
                   "src": "140:7:17",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -234,7 +234,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3655,
+                    "id": 3678,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "140:7:17",
@@ -249,11 +249,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 3658,
+                  "id": 3681,
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3671,
+                  "scope": 3694,
                   "src": "149:7:17",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -262,7 +262,7 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 3657,
+                    "id": 3680,
                     "name": "uint256",
                     "nodeType": "ElementaryTypeName",
                     "src": "149:7:17",
@@ -276,11 +276,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 3660,
+                  "id": 3683,
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3671,
+                  "scope": 3694,
                   "src": "158:12:17",
                   "stateVariable": false,
                   "storageLocation": "memory",
@@ -289,7 +289,7 @@
                     "typeString": "bytes"
                   },
                   "typeName": {
-                    "id": 3659,
+                    "id": 3682,
                     "name": "bytes",
                     "nodeType": "ElementaryTypeName",
                     "src": "158:5:17",
@@ -305,16 +305,16 @@
               "src": "130:41:17"
             },
             "returnParameters": {
-              "id": 3665,
+              "id": 3688,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3664,
+                  "id": 3687,
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3671,
+                  "scope": 3694,
                   "src": "205:6:17",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -323,7 +323,7 @@
                     "typeString": "bytes4"
                   },
                   "typeName": {
-                    "id": 3663,
+                    "id": 3686,
                     "name": "bytes4",
                     "nodeType": "ElementaryTypeName",
                     "src": "205:6:17",
@@ -338,14 +338,14 @@
               ],
               "src": "204:8:17"
             },
-            "scope": 3672,
+            "scope": 3695,
             "src": "105:162:17",
             "stateMutability": "nonpayable",
             "virtual": true,
             "visibility": "public"
           }
         ],
-        "scope": 3673,
+        "scope": 3696,
         "src": "58:211:17"
       }
     ],
@@ -355,14 +355,14 @@
     "absolutePath": "@openzeppelin/contracts/token/ERC721/ERC721Holder.sol",
     "exportedSymbols": {
       "ERC721Holder": [
-        3672
+        3695
       ]
     },
-    "id": 3673,
+    "id": 3696,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 3649,
+        "id": 3672,
         "literals": [
           "solidity",
           "^",
@@ -375,10 +375,10 @@
       {
         "absolutePath": "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol",
         "file": "./IERC721Receiver.sol",
-        "id": 3650,
+        "id": 3673,
         "nodeType": "ImportDirective",
-        "scope": 3673,
-        "sourceUnit": 4033,
+        "scope": 3696,
+        "sourceUnit": 4056,
         "src": "25:31:17",
         "symbolAliases": [],
         "unitAlias": ""
@@ -390,41 +390,41 @@
             "arguments": null,
             "baseName": {
               "contractScope": null,
-              "id": 3651,
+              "id": 3674,
               "name": "IERC721Receiver",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 4032,
+              "referencedDeclaration": 4055,
               "src": "83:15:17",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_IERC721Receiver_$4032",
+                "typeIdentifier": "t_contract$_IERC721Receiver_$4055",
                 "typeString": "contract IERC721Receiver"
               }
             },
-            "id": 3652,
+            "id": 3675,
             "nodeType": "InheritanceSpecifier",
             "src": "83:15:17"
           }
         ],
         "contractDependencies": [
-          4032
+          4055
         ],
         "contractKind": "contract",
         "documentation": null,
         "fullyImplemented": true,
-        "id": 3672,
+        "id": 3695,
         "linearizedBaseContracts": [
-          3672,
-          4032
+          3695,
+          4055
         ],
         "name": "ERC721Holder",
         "nodeType": "ContractDefinition",
         "nodes": [
           {
             "baseFunctions": [
-              4031
+              4054
             ],
             "body": {
-              "id": 3670,
+              "id": 3693,
               "nodeType": "Block",
               "src": "213:54:17",
               "statements": [
@@ -435,32 +435,32 @@
                       "argumentTypes": null,
                       "expression": {
                         "argumentTypes": null,
-                        "id": 3666,
+                        "id": 3689,
                         "name": "this",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
                         "referencedDeclaration": -28,
                         "src": "230:4:17",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_contract$_ERC721Holder_$3672",
+                          "typeIdentifier": "t_contract$_ERC721Holder_$3695",
                           "typeString": "contract ERC721Holder"
                         }
                       },
-                      "id": 3667,
+                      "id": 3690,
                       "isConstant": false,
                       "isLValue": false,
                       "isPure": false,
                       "lValueRequested": false,
                       "memberName": "onERC721Received",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 3671,
+                      "referencedDeclaration": 3694,
                       "src": "230:21:17",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_external_nonpayable$_t_address_$_t_address_$_t_uint256_$_t_bytes_memory_ptr_$returns$_t_bytes4_$",
                         "typeString": "function (address,address,uint256,bytes memory) external returns (bytes4)"
                       }
                     },
-                    "id": 3668,
+                    "id": 3691,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -474,8 +474,8 @@
                       "typeString": "bytes4"
                     }
                   },
-                  "functionReturnParameters": 3665,
-                  "id": 3669,
+                  "functionReturnParameters": 3688,
+                  "id": 3692,
                   "nodeType": "Return",
                   "src": "223:37:17"
                 }
@@ -483,29 +483,29 @@
             },
             "documentation": null,
             "functionSelector": "150b7a02",
-            "id": 3671,
+            "id": 3694,
             "implemented": true,
             "kind": "function",
             "modifiers": [],
             "name": "onERC721Received",
             "nodeType": "FunctionDefinition",
             "overrides": {
-              "id": 3662,
+              "id": 3685,
               "nodeType": "OverrideSpecifier",
               "overrides": [],
               "src": "187:8:17"
             },
             "parameters": {
-              "id": 3661,
+              "id": 3684,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3654,
+                  "id": 3677,
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3671,
+                  "scope": 3694,
                   "src": "131:7:17",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -514,7 +514,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3653,
+                    "id": 3676,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "131:7:17",
@@ -529,11 +529,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 3656,
+                  "id": 3679,
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3671,
+                  "scope": 3694,
                   "src": "140:7:17",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -542,7 +542,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3655,
+                    "id": 3678,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "140:7:17",
@@ -557,11 +557,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 3658,
+                  "id": 3681,
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3671,
+                  "scope": 3694,
                   "src": "149:7:17",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -570,7 +570,7 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 3657,
+                    "id": 3680,
                     "name": "uint256",
                     "nodeType": "ElementaryTypeName",
                     "src": "149:7:17",
@@ -584,11 +584,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 3660,
+                  "id": 3683,
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3671,
+                  "scope": 3694,
                   "src": "158:12:17",
                   "stateVariable": false,
                   "storageLocation": "memory",
@@ -597,7 +597,7 @@
                     "typeString": "bytes"
                   },
                   "typeName": {
-                    "id": 3659,
+                    "id": 3682,
                     "name": "bytes",
                     "nodeType": "ElementaryTypeName",
                     "src": "158:5:17",
@@ -613,16 +613,16 @@
               "src": "130:41:17"
             },
             "returnParameters": {
-              "id": 3665,
+              "id": 3688,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3664,
+                  "id": 3687,
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3671,
+                  "scope": 3694,
                   "src": "205:6:17",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -631,7 +631,7 @@
                     "typeString": "bytes4"
                   },
                   "typeName": {
-                    "id": 3663,
+                    "id": 3686,
                     "name": "bytes4",
                     "nodeType": "ElementaryTypeName",
                     "src": "205:6:17",
@@ -646,14 +646,14 @@
               ],
               "src": "204:8:17"
             },
-            "scope": 3672,
+            "scope": 3695,
             "src": "105:162:17",
             "stateMutability": "nonpayable",
             "virtual": true,
             "visibility": "public"
           }
         ],
-        "scope": 3673,
+        "scope": 3696,
         "src": "58:211:17"
       }
     ],
@@ -665,7 +665,7 @@
   },
   "networks": {},
   "schemaVersion": "3.0.23",
-  "updatedAt": "2020-03-19T22:29:08.476Z",
+  "updatedAt": "2020-03-21T02:19:53.300Z",
   "devdoc": {
     "methods": {}
   },

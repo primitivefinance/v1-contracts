@@ -8,7 +8,6 @@ pragma solidity ^0.6.0;
 
  library Instruments {
      struct Actors {
-        address actor;
         uint[] mintedTokens;
         uint[] deactivatedTokens;
     }
@@ -31,5 +30,19 @@ pragma solidity ^0.6.0;
         address wax;
         uint256 pow;
         address gem;
+    }
+
+     /** 
+     * @dev A Prime has these properties.
+     * @param ace `msg.sender` of the createPrime function.
+     * @param xis Quantity of collateral asset token.
+     * @param yak Address of collateral asset token.
+     * @param zed Purchase price of collateral, denominated in quantity of token z.
+     * @param wax Address of purchase price asset token.
+     * @param pow UNIX timestamp of valid time period.
+     * @param gem Address of payment receiver of token z.
+     */
+    struct Chain {
+        bytes4 chain;
     }
  }

@@ -398,7 +398,7 @@
         "id": 2,
         "nodeType": "ImportDirective",
         "scope": 642,
-        "sourceUnit": 1971,
+        "sourceUnit": 1994,
         "src": "242:51:0",
         "symbolAliases": [],
         "unitAlias": ""
@@ -409,7 +409,7 @@
         "id": 3,
         "nodeType": "ImportDirective",
         "scope": 642,
-        "sourceUnit": 3673,
+        "sourceUnit": 3696,
         "src": "295:63:0",
         "symbolAliases": [],
         "unitAlias": ""
@@ -420,7 +420,7 @@
         "id": 4,
         "nodeType": "ImportDirective",
         "scope": 642,
-        "sourceUnit": 4141,
+        "sourceUnit": 4164,
         "src": "360:59:0",
         "symbolAliases": [],
         "unitAlias": ""
@@ -1099,10 +1099,10 @@
               "id": 57,
               "name": "ERC721Holder",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 3672,
+              "referencedDeclaration": 3695,
               "src": "972:12:0",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_ERC721Holder_$3672",
+                "typeIdentifier": "t_contract$_ERC721Holder_$3695",
                 "typeString": "contract ERC721Holder"
               }
             },
@@ -1117,10 +1117,10 @@
               "id": 59,
               "name": "ReentrancyGuard",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 4140,
+              "referencedDeclaration": 4163,
               "src": "986:15:0",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_ReentrancyGuard_$4140",
+                "typeIdentifier": "t_contract$_ReentrancyGuard_$4163",
                 "typeString": "contract ReentrancyGuard"
               }
             },
@@ -1130,9 +1130,9 @@
           }
         ],
         "contractDependencies": [
-          3672,
-          4032,
-          4140
+          3695,
+          4055,
+          4163
         ],
         "contractKind": "contract",
         "documentation": null,
@@ -1140,9 +1140,9 @@
         "id": 641,
         "linearizedBaseContracts": [
           641,
-          4140,
-          3672,
-          4032
+          4163,
+          3695,
+          4055
         ],
         "name": "Exchange",
         "nodeType": "ContractDefinition",
@@ -1154,10 +1154,10 @@
               "id": 61,
               "name": "SafeMath",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 1970,
+              "referencedDeclaration": 1993,
               "src": "1015:8:0",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_SafeMath_$1970",
+                "typeIdentifier": "t_contract$_SafeMath_$1993",
                 "typeString": "library SafeMath"
               }
             },
@@ -4017,7 +4017,7 @@
                   "name": "nonReentrant",
                   "nodeType": "Identifier",
                   "overloadedDeclarations": [],
-                  "referencedDeclaration": 4139,
+                  "referencedDeclaration": 4162,
                   "src": "2382:12:0",
                   "typeDescriptions": {
                     "typeIdentifier": "t_modifier$__$",
@@ -5531,7 +5531,7 @@
                   "name": "nonReentrant",
                   "nodeType": "Identifier",
                   "overloadedDeclarations": [],
-                  "referencedDeclaration": 4139,
+                  "referencedDeclaration": 4162,
                   "src": "3530:12:0",
                   "typeDescriptions": {
                     "typeIdentifier": "t_modifier$__$",
@@ -6073,7 +6073,7 @@
                       "lValueRequested": false,
                       "memberName": "sub",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 1826,
+                      "referencedDeclaration": 1849,
                       "src": "5072:13:0",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_pure$_t_uint256_$_t_uint256_$returns$_t_uint256_$bound_to$_t_uint256_$",
@@ -9082,7 +9082,7 @@
         "id": 2,
         "nodeType": "ImportDirective",
         "scope": 642,
-        "sourceUnit": 1971,
+        "sourceUnit": 1994,
         "src": "242:51:0",
         "symbolAliases": [],
         "unitAlias": ""
@@ -9093,7 +9093,7 @@
         "id": 3,
         "nodeType": "ImportDirective",
         "scope": 642,
-        "sourceUnit": 3673,
+        "sourceUnit": 3696,
         "src": "295:63:0",
         "symbolAliases": [],
         "unitAlias": ""
@@ -9104,7 +9104,7 @@
         "id": 4,
         "nodeType": "ImportDirective",
         "scope": 642,
-        "sourceUnit": 4141,
+        "sourceUnit": 4164,
         "src": "360:59:0",
         "symbolAliases": [],
         "unitAlias": ""
@@ -9783,10 +9783,10 @@
               "id": 57,
               "name": "ERC721Holder",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 3672,
+              "referencedDeclaration": 3695,
               "src": "972:12:0",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_ERC721Holder_$3672",
+                "typeIdentifier": "t_contract$_ERC721Holder_$3695",
                 "typeString": "contract ERC721Holder"
               }
             },
@@ -9801,10 +9801,10 @@
               "id": 59,
               "name": "ReentrancyGuard",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 4140,
+              "referencedDeclaration": 4163,
               "src": "986:15:0",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_ReentrancyGuard_$4140",
+                "typeIdentifier": "t_contract$_ReentrancyGuard_$4163",
                 "typeString": "contract ReentrancyGuard"
               }
             },
@@ -9814,9 +9814,9 @@
           }
         ],
         "contractDependencies": [
-          3672,
-          4032,
-          4140
+          3695,
+          4055,
+          4163
         ],
         "contractKind": "contract",
         "documentation": null,
@@ -9824,9 +9824,9 @@
         "id": 641,
         "linearizedBaseContracts": [
           641,
-          4140,
-          3672,
-          4032
+          4163,
+          3695,
+          4055
         ],
         "name": "Exchange",
         "nodeType": "ContractDefinition",
@@ -9838,10 +9838,10 @@
               "id": 61,
               "name": "SafeMath",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 1970,
+              "referencedDeclaration": 1993,
               "src": "1015:8:0",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_SafeMath_$1970",
+                "typeIdentifier": "t_contract$_SafeMath_$1993",
                 "typeString": "library SafeMath"
               }
             },
@@ -12701,7 +12701,7 @@
                   "name": "nonReentrant",
                   "nodeType": "Identifier",
                   "overloadedDeclarations": [],
-                  "referencedDeclaration": 4139,
+                  "referencedDeclaration": 4162,
                   "src": "2382:12:0",
                   "typeDescriptions": {
                     "typeIdentifier": "t_modifier$__$",
@@ -14215,7 +14215,7 @@
                   "name": "nonReentrant",
                   "nodeType": "Identifier",
                   "overloadedDeclarations": [],
-                  "referencedDeclaration": 4139,
+                  "referencedDeclaration": 4162,
                   "src": "3530:12:0",
                   "typeDescriptions": {
                     "typeIdentifier": "t_modifier$__$",
@@ -14757,7 +14757,7 @@
                       "lValueRequested": false,
                       "memberName": "sub",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 1826,
+                      "referencedDeclaration": 1849,
                       "src": "5072:13:0",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_pure$_t_uint256_$_t_uint256_$returns$_t_uint256_$bound_to$_t_uint256_$",
@@ -17863,8 +17863,8 @@
         }
       },
       "links": {},
-      "address": "0x64d05955664D2741367A05FF58b33968C68690a2",
-      "transactionHash": "0x4da3a6faea3cbaf59ca71183f7071316faf483cf12f74151ff4cbd61146fa0b7"
+      "address": "0x923040978509A39C8BBe26bDbE18BB926Dc14B31",
+      "transactionHash": "0x9f84a668ba39ae883757829c90ef708f242bce6a564e7bfdb1f51073d78790dd"
     },
     "5777": {
       "events": {},
@@ -17874,7 +17874,7 @@
     }
   },
   "schemaVersion": "3.0.23",
-  "updatedAt": "2020-03-19T22:30:00.930Z",
+  "updatedAt": "2020-03-21T02:23:08.839Z",
   "networkType": "ethereum",
   "devdoc": {
     "methods": {}

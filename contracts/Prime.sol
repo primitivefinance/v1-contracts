@@ -93,11 +93,6 @@ abstract contract IPrime {
         uint256 _timestamp
     );
 
-    event Debug(
-        uint256 _return,
-        bool _success
-    );
-
 
     function createPrime(uint256 _xis, address _yak, uint256 _zed, address _wax, uint256 _pow, address _gem) external virtual returns (bool);
     function exercise(uint256 _tokenId) external virtual returns (bool);
@@ -113,25 +108,26 @@ contract Prime is IPrime, ERC721Full, ReentrancyGuard {
     uint256 constant INCREMENT = 1;
     uint256 public nonce;
 
-    // Map NFT IDs to Prime Struct
-    mapping(uint256 => Instruments.Primes) public _primes;
-
     // Maps a user's withdrawable asset balance
     mapping(address => mapping(address => uint256)) private _bank;
 
+    // Map NFT IDs to Prime Struct
+    mapping(uint256 => Instruments.Primes) public _primes;
+
     // Maps user addresses to Actor accounts
-    mapping(address => Instruments.Actors) public _actors;
+    mapping(address => Instruments.Actors) private _actors;
+
+    // Maps token Ids to hash of collateral/strike/expiration
+    mapping(uint256 => Instruments.Chain) public _chains;
 
 
     constructor () public
         ERC721Full(
             "Prime Derivative",
-            "PD"
+            "PRIME"
         ) {}
     
-
     /* CORE FUNCTIONS */
-
 
     /** 
      * @dev `msg.sender` Deposits asset x, mints new Slate.
@@ -160,7 +156,7 @@ contract Prime is IPrime, ERC721Full, ReentrancyGuard {
         ERC20 yak = ERC20(_yak);
         require(
             yak.balanceOf(msg.sender) >= _xis, 
-            'Cannot send amount > bal'
+            'bal < amt'
         );
 
         // EFFECTS
@@ -175,7 +171,15 @@ contract Prime is IPrime, ERC721Full, ReentrancyGuard {
             _gem
         );
 
-        _actors[msg.sender].actor = msg.sender;
+        bytes4 chain = bytes4(
+            keccak256(abi.encodePacked(_yak))) 
+            ^ bytes4(keccak256(abi.encodePacked(_wax))) 
+            ^ bytes4(keccak256(abi.encodePacked(_pow))
+        );
+        _chains[nonce] = Instruments.Chain(
+            chain
+        );
+
         _actors[msg.sender].mintedTokens.push(nonce);
 
         _bank[msg.sender][_yak] = _bank[msg.sender][_yak].add(_xis);
@@ -213,16 +217,10 @@ contract Prime is IPrime, ERC721Full, ReentrancyGuard {
         returns (bool) 
     {
         // CHECKS
-        uint256 bal = balanceOf(msg.sender);
-        require(
-            bal >= 1, 
-            'Cannot send amount > bal'
-        );
-
         address own = ownerOf(_tokenId);
         require(
             own == msg.sender, 
-            'Owner is not sender'
+            'Owner not sender'
         );
 
         // Get Prime
@@ -231,12 +229,12 @@ contract Prime is IPrime, ERC721Full, ReentrancyGuard {
 
         require(
             _wax.balanceOf(msg.sender) >= _prime.zed, 
-            'Bal cannot be < payment amount'
+            'Bal < amt'
         );
         
         require(
             _prime.pow >= block.timestamp, 
-            'Expired Prime'
+            'Expired'
         );
 
         // EFFECTS
@@ -293,13 +291,8 @@ contract Prime is IPrime, ERC721Full, ReentrancyGuard {
     {
         // CHECKS
         require(
-            balanceOf(msg.sender) >= 1, 
-            'Cannot send Prime amount > bal'
-        );
-
-        require(
             ownerOf(_burnId) == msg.sender, 
-            'Owner of Prime is not sender'
+            'Owner not sender'
         );
 
 
@@ -313,17 +306,17 @@ contract Prime is IPrime, ERC721Full, ReentrancyGuard {
         bool burn = _primeCompare(_collateralId, _burnId);
         require(
             burn,
-            'Prime Properties do not match'
+            'Props !='
         );
 
         require(
             _bank[msg.sender][_burnPrime.yak] > 0, 
-            'User has no collateral to claim'
+            'No collateral'
         );
 
         require(
             _burnPrime.pow >= block.timestamp, 
-            'Expired Prime'
+            'Expired'
         );
 
         // EFFECTS
@@ -438,7 +431,7 @@ contract Prime is IPrime, ERC721Full, ReentrancyGuard {
         if(hashCollateral == hashBurn) {
             return true;
         } else {
-            revert('Prime Properties do not match');
+            revert('Props !=');
         }
     }
 
@@ -483,15 +476,25 @@ contract Prime is IPrime, ERC721Full, ReentrancyGuard {
      * @dev Public view function to Actor properties
      */
     function getActor(address _user) external view returns (
-        address actor,
         uint[] memory mintedTokens,
         uint[] memory deactivatedTokens
         ) {
             Instruments.Actors memory _actor = _actors[_user];
             return (
-                _actor.actor,
                 _actor.mintedTokens,
                 _actor.deactivatedTokens
             );
+    }
+
+    /** 
+     * @dev Public view function to Rank
+     */
+    function getChain(uint256 _tokenId) external view returns (
+        bytes4 chain
+    ) {
+        Instruments.Chain memory _chain = _chains[_tokenId];
+        return (
+            _chain.chain
+        );
     }
 }

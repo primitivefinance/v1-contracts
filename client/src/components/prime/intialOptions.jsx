@@ -32,6 +32,7 @@ const INITIAL_OPTIONS = {
         'pair': null,
         'expiration': null,
         'properties': {},
+        'orders': {},
         'cAsset': '',
         'sAsset': '',
         'tokenIds': [],
@@ -44,7 +45,7 @@ const INITIAL_OPTIONS = {
                 'call': [
                     {
                         index: 0,
-                        bid: '10',
+                        bid: '-',
                         ask: '10',
                         qty: '5',
                         strike: '100',
@@ -55,7 +56,7 @@ const INITIAL_OPTIONS = {
                     },
                     {
                         index: 1,
-                        bid: '5',
+                        bid: '-',
                         ask: '5',
                         qty: '5',
                         strike: '150',
@@ -66,7 +67,7 @@ const INITIAL_OPTIONS = {
                     },
                     {
                         index: 2,
-                        bid: '3',
+                        bid: '-',
                         ask: '3',
                         qty: '5',
                         strike: '200',
@@ -79,7 +80,7 @@ const INITIAL_OPTIONS = {
                 'put': [
                     {
                         index: 0,
-                        bid: '10',
+                        bid: '-',
                         ask: '10',
                         qty: '5',
                         strike: '1',
@@ -90,7 +91,7 @@ const INITIAL_OPTIONS = {
                     },
                     {
                         index: 1,
-                        bid: '5',
+                        bid: '-',
                         ask: '5',
                         qty: '5',
                         strike: '1',
@@ -101,7 +102,7 @@ const INITIAL_OPTIONS = {
                     },
                     {
                         index: 2,
-                        bid: '3',
+                        bid: '-',
                         ask: '3',
                         qty: '5',
                         strike: '1',
@@ -114,6 +115,82 @@ const INITIAL_OPTIONS = {
             },
         },
     },
+
+    optionV2: {
+        '0x844271b7': { // TETH/DAI/1600473585
+            'call': [
+                {
+                    index: 0,
+                    bid: '-',
+                    ask: '10',
+                    qty: '5',
+                    strike: '100',
+                    strikeUnits: 'DAI',
+                    collateral: '1',
+                    collateralUnits: 'tETH',
+                    expiration: '1600473585',
+                },
+                {
+                    index: 1,
+                    bid: '-',
+                    ask: '5',
+                    qty: '5',
+                    strike: '150',
+                    strikeUnits: 'DAI',
+                    collateral: '1',
+                    collateralUnits: 'tETH',
+                    expiration: '1600473585',
+                },
+                {
+                    index: 2,
+                    bid: '-',
+                    ask: '3',
+                    qty: '5',
+                    strike: '200',
+                    strikeUnits: 'DAI',
+                    collateral: '1',
+                    collateralUnits: 'tETH',
+                    expiration: '1600473585',
+                },
+            ],
+            'put': [
+                {
+                    index: 0,
+                    bid: '-',
+                    ask: '10',
+                    qty: '5',
+                    strike: '1',
+                    strikeUnits: 'tETH',
+                    collateral: '100',
+                    collateralUnits: 'DAI',
+                    expiration: '1600473585',
+                },
+                {
+                    index: 1,
+                    bid: '-',
+                    ask: '5',
+                    qty: '5',
+                    strike: '1',
+                    strikeUnits: 'tETH',
+                    collateral: '150',
+                    collateralUnits: 'DAI',
+                    expiration: '1600473585',
+                },
+                {
+                    index: 2,
+                    bid: '-',
+                    ask: '3',
+                    qty: '5',
+                    strike: '1',
+                    strikeUnits: 'tETH',
+                    collateral: '200',
+                    collateralUnits: 'DAI',
+                    expiration: '1600473585',
+                },
+            ],
+        }
+    },
+    
     assets: {
         'assetIds' : ['asset-dai', 'asset-tUSD', 'asset-tETH',],
         'asset-dai': {

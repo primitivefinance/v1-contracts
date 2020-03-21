@@ -77,10 +77,47 @@ class OptionsChainTableV2 extends Component {
         const pair = callColumn['pair'];
         const expiration = callColumn['expiration'];
 
-        /* const optionCallRows = (this.props.optionCallRows) ? (this.props.optionCallRows) : [];
-        const optionPutRows = (this.props.optionPutRows) ? (this.props.optionPutRows) : [];
-        let callMatches = this.props.callMatches;
-        let putMatches = this.props.putMatches; */
+        let ask = 0;
+        let minAsks = {
+            'call': {},
+            'put': {},
+        };
+
+        /* FOR EACH OPTION IN THE INITIAL STATE, GET MATCHING TOKENS AND ORDERS */
+        for(var i = 0; i < putColumn['options'].length; i++) {
+            let orders = putOrders['sell'];
+            let matches = putMatches[i];
+            ask = 0;
+            /* FOR EACH OBJECT, GET THE ASK, THEN KEEP THE LOWEST ASK*/
+            for(var x = 0; x < matches.length; x++) {
+                let objAsk = orders[matches[x]];
+                if(ask == 0) {
+                    ask = objAsk;
+                } else if (objAsk < ask && objAsk !== 0) {
+                    ask = objAsk;
+                };
+            }
+            minAsks['put'][i] = ask;
+            /* console.log('PUT ASKS', {putMatches},  orders, {ask, i}) */
+        }
+
+        for(var i = 0; i < callColumn['options'].length; i++) {
+            let orders = callOrders['sell'];
+            let matches = callMatches[i];
+            ask = 0;
+            /* FOR EACH OBJECT, GET THE ASK, THEN KEEP THE LOWEST ASK*/
+            for(var x = 0; x < matches.length; x++) {
+                let objAsk = orders[matches[x]];
+                if(ask == 0) {
+                    ask = objAsk;
+                } else if (objAsk < ask && objAsk !== 0) {
+                    ask = objAsk;
+                };
+            }
+            minAsks['call'][i] = ask;
+            console.log('CALL ASKS', {callMatches}, callMatches[i][0], callOrders['sell'], {ask, i})
+        }
+
         
         return (
             <>
@@ -114,13 +151,24 @@ class OptionsChainTableV2 extends Component {
                                             onClick={
                                                 () => {
                                                     this.props.handleOptionSelect(
-                                                        'call', pair, expiration, callOrders, option, callMatches[option.index],
+                                                        'call', 
+                                                        pair, 
+                                                        expiration, 
+                                                        callOrders, 
+                                                        option, 
+                                                        callMatches[option.index],
                                                     )
                                                 }
                                             }
                                         >
                                             <TableCell align='center' variant={'h1'}>{option.bid}</TableCell>
-                                            <TableCell align='center' variant={'h1'}>{option.ask}</TableCell>
+                                            <TableCell align='center' variant={'h1'}>
+                                                {
+                                                    (minAsks['call'][option.index]) 
+                                                        ? (minAsks['call'][option.index] / 10**18 + ' ETH')
+                                                            : '-'
+                                                } 
+                                            </TableCell>
                                             <TableCell align='center' variant={'h1'}>{callMatches[option.index].length}</TableCell>
                                             <TableCell align='center' variant={'h1'}>{option.strike} {option.strikeUnits}</TableCell>
                                         </TableRow>
@@ -161,13 +209,24 @@ class OptionsChainTableV2 extends Component {
                                             onClick={
                                                 () => {
                                                     this.props.handleOptionSelect(
-                                                        'put', pair, expiration, callOrders, option, putMatches[option.index],
+                                                        'put', 
+                                                        pair, 
+                                                        expiration, 
+                                                        putOrders, 
+                                                        option, 
+                                                        putMatches[option.index],
                                                     )
                                                 }
                                             }
                                         >
                                             <TableCell align='center' variant={'h1'}>{option.bid}</TableCell>
-                                            <TableCell align='center' variant={'h1'}>{option.ask}</TableCell>
+                                            <TableCell align='center' variant={'h1'}>
+                                                {
+                                                    (minAsks['put'][option.index])
+                                                    ? (minAsks['put'][option.index] / 10**18 + ' ETH')
+                                                            : '-'
+                                                } 
+                                            </TableCell>
                                             <TableCell align='center' variant={'h1'}>{putMatches[option.index].length}</TableCell>
                                             <TableCell align='center' variant={'h1'}>{option.strike} {option.strikeUnits}</TableCell>
                                         </TableRow>

@@ -259,4 +259,26 @@ contract('Exchange', accounts => {
 
     });
 
+    it('gets rank', async () => {
+        async function mintPrime(address) {
+            let xis, yak, zed, wax, pow, gem;
+            xis = collateral;
+            yak = _tETH.address;
+            zed = payment;
+            wax = _tUSD.address;
+            pow = '1600473585';
+            gem = _exchange.address;
+
+            /* TOKEN MINTED TO ADDRESS */
+            let mint = await _prime.createPrime(xis, yak, zed, wax, pow, gem, {from: address});
+            let tokenId = mint.logs[0].args._tokenId;
+            return tokenId;
+        }
+
+        let aliceToken1 = await mintPrime(Alice);
+
+        let chain = await _prime.getChain(aliceToken1);
+        console.log({chain})
+    });
+
 })
