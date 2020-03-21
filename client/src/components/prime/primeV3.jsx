@@ -287,6 +287,8 @@ class PrimeV3 extends Component {
         this.handleOrder = this.handleOrder.bind(this);
 
         this.getOptions = this.getOptions.bind(this);
+        this.unlockPair = this.unlockPair.bind(this);
+        this.mintTestTokens = this.mintTestTokens.bind(this);
     }
 
     componentDidMount = async () => {
@@ -940,7 +942,6 @@ class PrimeV3 extends Component {
             }
         });
         console.timeEnd('getPrimeProperties');
-        console.log({result});
         return result;
     };
 
@@ -997,7 +998,7 @@ class PrimeV3 extends Component {
         let userOwnedPrimes = [];
         let position = {};
 
-        /* for(var i = 1; i <= nonce; i++) {
+        for(var i = 1; i <= nonce; i++) {
             if((await this.getOwnerOfPrime(i)) === account) {
                 userOwnedPrimes.push(i);
                 position[`${i}`] = true;
@@ -1008,8 +1009,7 @@ class PrimeV3 extends Component {
                     userOwnedPrimes.push(i);
                 }
             }
-        }; */
-
+        };
 
         for(var i = 0; i < activePrimes.length; i++) {
             let properties = await this.getPrimeProperties(activePrimes[i]);
@@ -1673,6 +1673,68 @@ class PrimeV3 extends Component {
         return optionRows;
     };
 
+    getExchangePositions = async () => {
+        const web3 = this.state.web3;
+        const account = this.state.account;
+        const networkId = this.state.networkId;
+        const primeInstance = await this.getContractInstance(PrimeContract);
+        const deployedNetwork = await Exchange.networks[this.state.networkId];
+        const exchangeInstance = new web3.eth.Contract(
+            Exchange.abi,
+            deployedNetwork && deployedNetwork.address,
+        );
+
+        let nonce = await primeInstance.methods.nonce().call();
+
+        function createData(tokenId, xis, yakSymbol, zed, waxSymbol, pow, gem, position) {
+            return { tokenId, xis, yakSymbol, zed, waxSymbol, pow, gem, position };
+        };
+
+        let primeRows = [];
+        let activePrimes = await this.getActivePrimes();
+        let userOwnedPrimes = [];
+        let position = {};
+
+        for(var i = 0; i < activePrimes.length; i++) {
+            let properties = await this.getPrimeProperties(activePrimes[i]);
+            let yakInstance = new web3.eth.Contract(
+                Erc20.abi,
+                networkId && properties['yak'],
+            );
+            let yakSymbol = await yakInstance.methods.symbol().call();
+
+            let waxInstance = new web3.eth.Contract(
+                Erc20.abi,
+                networkId && properties['wax'],
+            );
+            let waxSymbol = await waxInstance.methods.symbol().call();
+
+            let tokenId = activePrimes[i];
+            let xis = await web3.utils.fromWei(properties['xis']);
+            let zed = await web3.utils.fromWei(properties['zed']);
+            /* const date = new Date(properties['pow'] * 1000);
+            let pow = (date.toDateString()); */
+            let pow = properties['pow'];
+            let data = createData(
+                tokenId,
+                xis,
+                yakSymbol,
+                zed,
+                waxSymbol,
+                pow,
+                properties['gem'],
+                position[`${tokenId}`]
+            );
+
+            primeRows.push(data)
+            console.log({primeRows})
+        }
+        this.setState({
+            primeRows: primeRows,
+        },);
+        return primeRows;
+    };
+
     /* POSITION */
     getPositions = async () => {
         const web3 = this.state.web3;
@@ -1687,10 +1749,10 @@ class PrimeV3 extends Component {
 
         let nonce = await primeInstance.methods.nonce().call();
 
-        let tokenId, longOrShort, name, netProfit, costBasis, premium, expiration;
+        let tokenId, isLong, name, netProfit, costBasis, premium, expiration;
         let cValue, pValue;
-        function createData(tokenId, longOrShort, name, netProfit, costBasis, premium, expiration) {
-            return { tokenId, longOrShort, name, netProfit, costBasis, premium, expiration };
+        function createData(tokenId, isLong, name, netProfit, costBasis, premium, expiration) {
+            return { tokenId, isLong, name, netProfit, costBasis, premium, expiration };
         };
 
 
@@ -1730,23 +1792,20 @@ class PrimeV3 extends Component {
             
             pValue = ratio * row.zed;
             tokenId = row.tokenId;
-            longOrShort = row.position;
+            isLong = row.position;
             name = `${row.xis} ${row.yakSymbol} / ${row.zed} ${row.waxSymbol}`;
-            if(longOrShort) {
+            if(isLong) {
                 netProfit = cValue - pValue;
             } else {
                 netProfit = pValue - cValue;
             }
-            /* switch(longOrShort) {
-                case true:
-                    netProfit = cValue - pValue;
-                    break;
-                case false:
-                    netProfit = pValue - cValue;
-                    break;
-            } */
 
-            costBasis = '10';
+            if(isLong) {
+                costBasis = '1';
+            } else {
+                costBasis = '0';
+            }
+            
             premium = '20';
 
             async function getPremium(state) {
@@ -1761,7 +1820,7 @@ class PrimeV3 extends Component {
                 let expiry = row.pow;
                 let truePair = oPair;
                 let actualAsk = 0;
-                if(!longOrShort) {
+                if(!isLong) {
                     type = 'put';
                 }
 
@@ -1807,9 +1866,9 @@ class PrimeV3 extends Component {
 
             if(premium > 0) {
                 netProfit = 
-                (longOrShort)
-                ? (premium - costBasis) ? (`+ ${(premium - costBasis)}`) : (`- ${(premium - costBasis)}`)
-                    : (premium - costBasis) ? (`- ${(premium - costBasis)}`) : (`+ ${(premium - costBasis)}`);
+                (isLong)
+                ? (premium - costBasis) ? (`+ ${(premium - costBasis)}`) : (`${(premium - costBasis)}`)
+                    : (premium - costBasis) ? (`${(premium - costBasis)}`) : (`+ ${(premium - costBasis)}`);
             } else {
                 netProfit = 0;
             }
@@ -1823,7 +1882,7 @@ class PrimeV3 extends Component {
 
             let data = createData(
                 tokenId, 
-                longOrShort, 
+                isLong, 
                 name, 
                 netProfit, 
                 costBasis, 
@@ -1838,7 +1897,7 @@ class PrimeV3 extends Component {
                 const match = positionRows.filter(
                     row => {
                         return (
-                            data.longOrShort === row.longOrShort 
+                            data.isLong === row.isLong 
                             && data.expiration === row.expiration
                             && data.name === row.name
                         );
@@ -1878,9 +1937,8 @@ class PrimeV3 extends Component {
      * optionSelection CONTAINS INFO FOR SELECTED OPTION
     */
 
-    getOptions = async (collateralSymbol, strikeSymbol, expiration) => {
-        console.log(`Getting Options chain for ${collateralSymbol} / ${strikeSymbol} Pairs expiring ${expiration}`)
-        let pair = `${collateralSymbol}-${strikeSymbol}`;
+    getOptions = async (hash) => {
+        console.log(`Getting Options chain for ${hash}`)
 
         const web3 = this.state.web3;
         let primeInstance = await this.getContractInstance (PrimeContract);
@@ -1890,20 +1948,21 @@ class PrimeV3 extends Component {
             deployedNetwork && deployedNetwork.address,
         );
 
-        let chain = await primeInstance.methods.getChain(1).call();
-        console.log({chain})
-        console.log({primeInstance})
-
-
         let nonce = await primeInstance.methods.nonce().call();
+        console.log({nonce})
+        for(var i = 1; i <= nonce; i++) {
+            let _chain = await primeInstance.methods.getChain(i).call();
+            console.log({i, _chain})
+        }
         const networkId = this.state.networkId;
         const context = TOKENS_CONTEXT[networkId];
 
-        let callOptions = (this.state.optionV2[pair]) ? this.state.optionV2[pair][expiration]['call'] : [];
+        let callOptions = (this.state.optionV2[hash]) ? this.state.optionV2[hash]['call'] : [];
         let callMatches = await compareOptionsArray(callOptions);
         let callOrders = await getOrders(callMatches);
+        let expiration = '1600473585';
         let callColumn = {
-            'pair': pair,
+            'chain': hash,
             'expiration': expiration,
             'options': callOptions,
             'matches': callMatches,
@@ -1911,11 +1970,11 @@ class PrimeV3 extends Component {
 
         };
 
-        let putOptions = (this.state.optionV2[pair]) ? this.state.optionV2[pair][expiration]['put'] : [];
+        let putOptions = (this.state.optionV2[hash]) ? this.state.optionV2[hash]['put'] : [];
         let putMatches = await compareOptionsArray(putOptions);
         let putOrders = await getOrders(putMatches);
         let putColumn = {
-            'pair': pair,
+            'chain': hash,
             'expiration': expiration,
             'options': putOptions,
             'matches': putMatches,
@@ -1933,7 +1992,7 @@ class PrimeV3 extends Component {
                 let sAmt = option.strike;
                 let matches = [];
             
-                matches = await getMatches(cAmt, cAddress, sAmt, sAddress, expiration);
+                matches = await getMatches(cAmt, sAmt);
     
                 /* COMBINE ALL MATCHING TOKEN IDS WITH THE CALLOPTION AT i */
                 arrayMatches[i] = matches;
@@ -1943,41 +2002,29 @@ class PrimeV3 extends Component {
         };
 
         /* COMPARE PROPERTIES WITH ALL TOKENS */
-        async function getMatches(cAmt, cAddress, sAmt, sAddress, expiration) {
+        async function getMatches(cAmt, sAmt) {
             let matches = [];
             /* FOR EACH TOKEN IN THE NONCE, COMPARE and PUSH TOKENIDs MATCHING */
-            for(var x = 1; x < nonce; x++) {
+            for(var x = 1; x <= nonce; x++) {
+                let chain = await primeInstance.methods.getChain(x).call();
                 let prime = await primeInstance.methods.getPrime(x).call();
-    
-                let pow = prime['pow'];
-                if(pow != expiration) {
-                    continue;
+                
+                if(chain === hash) {
+                    let xis = await web3.utils.fromWei(prime['xis']);
+                    if((xis != cAmt)) {
+                        continue;
+                    }
+                
+                    let zed = await web3.utils.fromWei(prime['zed']);
+                
+                    if(
+                        xis === cAmt
+                        && zed === sAmt
+                    ) {
+                        matches.push(x)
+                    }
                 }
-    
-                let yak = prime['yak'];
-                let wax = prime['wax'];
-                if((yak != cAddress) || (wax != sAddress)) {
-                    continue;
-                }
-    
-                let xis = await web3.utils.fromWei(prime['xis']);
-                if((xis != cAmt)) {
-                    continue;
-                }
-    
-                let zed = await web3.utils.fromWei(prime['zed']);
-    
-                if(
-                    yak === cAddress
-                    && xis === cAmt
-                    && wax === sAddress
-                    && zed === sAmt
-                    && pow === expiration
-                ) {
-                    matches.push(x)
-                } /* else{
-                    console.log('no match', {cAddress, cAddressPrime, sAddress, sAddressPrime, cAmount, cAmt, sAmount, sAmt, pExpiration, expiration})
-                } */
+
             }
             return matches;
         };
@@ -2030,7 +2077,6 @@ class PrimeV3 extends Component {
         function mockToken( ace, xis, yak, zed, wax, pow, gem, ) {
             return { ace, xis, yak, zed, wax, pow, gem,}
         }
-        console.log({option})
 
         const web3 = this.state.web3;
         
@@ -2069,6 +2115,50 @@ class PrimeV3 extends Component {
 
         console.log({tokenIds});
         console.log(this.state.optionSelection)
+    };
+
+    unlockPair = async (symbol1, symbol2) => {
+        const web3 = this.state.web3;
+        const account = this.state.account;
+        const networkId = this.state.networkId;
+        const _symbol1 = await this.getInstance(symbol1);
+        const _symbol2 = await this.getInstance(symbol2);
+        const prime = await this.getContractInstance(PrimeContract);
+        const primeAddress = prime._address;
+        const amount = await web3.utils.toWei('1000000');
+
+        await _symbol1.methods.approve(
+            primeAddress,
+            amount
+        ).send({from: account});
+
+        await _symbol2.methods.approve(
+            primeAddress,
+            amount
+        ).send({from: account});
+
+        console.log(`You unlocked pair: ${symbol1} / ${symbol2}`);
+    };
+
+    mintTestTokens = async (symbol1, symbol2) => {
+        const web3 = this.state.web3;
+        const account = this.state.account;
+        const networkId = this.state.networkId;
+        const _symbol1 = await this.getInstance(symbol1);
+        const _symbol2 = await this.getInstance(symbol2);
+        const amount = await web3.utils.toWei('1000');
+
+        await _symbol1.methods.mint(
+            account,
+            amount
+        ).send({from: account});
+
+        await _symbol2.methods.mint(
+            account,
+            amount
+        ).send({from: account});
+
+        console.log(`You minted 1000 tokens each of pair: ${symbol1} / ${symbol2}`);
     };
 
     handleOrder = async (
@@ -2252,7 +2342,7 @@ class PrimeV3 extends Component {
             }
         }
 
-        await this.getOptions('0x844271b7');
+        await this.getOptions('0x1bae37c4');
     };
 
     render () {
@@ -2281,6 +2371,20 @@ class PrimeV3 extends Component {
                     {/* LEFT 25% PORTION OF SCREEN */}
                     <Card className={classes.openPosition} key='open'>
 
+                        <Button 
+                            className={classes.navButton} 
+                            onClick={() => this.unlockPair('tETH', 'DAI')}
+                        >
+                            Unlock TETH/DAI Pair
+                        </Button>
+
+                        <Button 
+                            className={classes.navButton} 
+                            onClick={() => this.mintTestTokens('tETH', 'DAI')}
+                        >
+                            Mint Test Tokens
+                        </Button>
+
                         <OpenPosition
                             optionSelection={this.state.optionSelection}
                             handleOrder={this.handleOrder}
@@ -2303,7 +2407,7 @@ class PrimeV3 extends Component {
                             <Box className={classes.coreHeader}>
                                 <Button 
                                     className={classes.navButton} 
-                                    onClick={() => this.getOptions('0x844271b7')}
+                                    onClick={() => this.getOptions('0x1bae37c4')}
                                 >
                                     TETH/DAI expiring Fri Sep 18
                                 </Button>

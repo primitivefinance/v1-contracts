@@ -74,8 +74,8 @@ class OptionsChainTableV2 extends Component {
         const callOrders = callColumn['orders'];
         const putOrders = putColumn['orders'];
 
-        const pair = callColumn['pair'];
-        const expiration = callColumn['expiration'];
+        const chain = callColumn['chain'];
+        const expiration = (callColumn['options'][0]) ? callColumn['options'][0].expiration : '';
 
         let ask = 0;
         let minAsks = {
@@ -115,7 +115,7 @@ class OptionsChainTableV2 extends Component {
                 };
             }
             minAsks['call'][i] = ask;
-            console.log('CALL ASKS', {callMatches}, callMatches[i][0], callOrders['sell'], {ask, i})
+            /* console.log('CALL ASKS', {callMatches}, callMatches[i][0], callOrders['sell'], {ask, i}) */
         }
 
         
@@ -134,6 +134,7 @@ class OptionsChainTableV2 extends Component {
                                 {/* HEAD */}
                                 <TableHead>
                                     <TableRow>
+                                        <TableCell align='center' variant={'h1'}>Underlying</TableCell>
                                         <TableCell align='center' variant={'h1'}>Bid</TableCell>
                                         <TableCell align='center' variant={'h1'}>Ask</TableCell>
                                         <TableCell align='center' variant={'h1'}>Qty</TableCell>
@@ -152,7 +153,7 @@ class OptionsChainTableV2 extends Component {
                                                 () => {
                                                     this.props.handleOptionSelect(
                                                         'call', 
-                                                        pair, 
+                                                        chain, 
                                                         expiration, 
                                                         callOrders, 
                                                         option, 
@@ -161,6 +162,7 @@ class OptionsChainTableV2 extends Component {
                                                 }
                                             }
                                         >
+                                            <TableCell align='center' variant={'h1'}>{option.collateral} {option.collateralUnits}</TableCell>
                                             <TableCell align='center' variant={'h1'}>{option.bid}</TableCell>
                                             <TableCell align='center' variant={'h1'}>
                                                 {
@@ -192,6 +194,7 @@ class OptionsChainTableV2 extends Component {
                                 {/* HEAD */}
                                 <TableHead>
                                     <TableRow>
+                                        <TableCell align='center' variant={'h1'}>Underlying</TableCell>
                                         <TableCell align='center' variant={'h1'}>Bid</TableCell>
                                         <TableCell align='center' variant={'h1'}>Ask</TableCell>
                                         <TableCell align='center' variant={'h1'}>Qty</TableCell>
@@ -210,7 +213,7 @@ class OptionsChainTableV2 extends Component {
                                                 () => {
                                                     this.props.handleOptionSelect(
                                                         'put', 
-                                                        pair, 
+                                                        chain, 
                                                         expiration, 
                                                         putOrders, 
                                                         option, 
@@ -219,6 +222,7 @@ class OptionsChainTableV2 extends Component {
                                                 }
                                             }
                                         >
+                                            <TableCell align='center' variant={'h1'}>{option.collateral} {option.collateralUnits}</TableCell>
                                             <TableCell align='center' variant={'h1'}>{option.bid}</TableCell>
                                             <TableCell align='center' variant={'h1'}>
                                                 {

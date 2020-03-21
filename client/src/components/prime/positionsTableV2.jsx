@@ -88,7 +88,7 @@ class PositionsTableV2 extends Component {
                                 
                                 {/* BODY */}
                                 <TableBody>
-                                    {positionRows.slice(1, 1 * 20 + 20).map(row => (
+                                    {positionRows.map(row => (
                                         <TableRow key={row.name}>
                                             <TableCell align='center' variant={'h1'}>{row.tokenId}</TableCell>
                                             <TableCell align='center' variant={'h1'}>{(row.longOrShort) ? 'Long' : 'Short'}</TableCell>

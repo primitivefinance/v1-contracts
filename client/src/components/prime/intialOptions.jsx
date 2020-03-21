@@ -117,7 +117,7 @@ const INITIAL_OPTIONS = {
     },
 
     optionV2: {
-        '0x844271b7': { // TETH/DAI/1600473585
+        '0x1bae37c4': { // TETH/DAI/1600473585
             'call': [
                 {
                     index: 0,
@@ -190,7 +190,7 @@ const INITIAL_OPTIONS = {
             ],
         }
     },
-    
+
     assets: {
         'assetIds' : ['asset-dai', 'asset-tUSD', 'asset-tETH',],
         'asset-dai': {
