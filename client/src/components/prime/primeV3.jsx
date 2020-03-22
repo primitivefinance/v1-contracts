@@ -55,6 +55,7 @@ import Dfcplogo2 from '../../primitivewhite2p.png';
 import Tooltip from '@material-ui/core/Tooltip';
 import FunctionsIcon from '@material-ui/icons/Functions';
 import HomeIcon from '@material-ui/icons/Home';
+import TradingViewWidget, { Themes } from 'react-tradingview-widget';
 
 
 const providerOptions = {
@@ -105,8 +106,6 @@ const styles = theme => ({
     sideColumn: {
         display: 'flex',
         width: '5%',
-        /* justifyContent: 'center', */
-        /* alignItems: 'center', */
         flexDirection: 'column',
         backgroundColor: colors.sidePanel,
         [theme.breakpoints.up('sm')]: {
@@ -118,7 +117,7 @@ const styles = theme => ({
     chainContainer: {
         display: 'flex',
         minWidth: '30%',
-        minHeigth: '30%',
+        minHeight: '30%',
         justifyContent: 'center',
         alignItems: 'center',
         flexDirection: 'column',
@@ -130,7 +129,7 @@ const styles = theme => ({
     },
     chainHeader: {
         display: 'flex',
-        height: '10%',
+        height: '10vh',
         width: '100%',
         flexDirection: 'row',
         alignItems: 'center',
@@ -237,7 +236,7 @@ const styles = theme => ({
         flexDirection: 'column',
         backgroundColor: colors.background,
         width: '75%',
-        /* minHeight: '150vh', */
+        /* minHeight: '100vh', */
         margin: '8px',
     },
 
@@ -245,7 +244,7 @@ const styles = theme => ({
         display: 'flex',
         flexDirection: 'row',
         width: '100%',
-        backgroundColor: colors.banner ,
+        backgroundColor: colors.bannerTitle ,
         alignItems: 'center',
         justifyContent: 'center',
         padding: '8px',
@@ -256,12 +255,23 @@ const styles = theme => ({
         textAlign: 'center',
     },
 
+    chart: {
+        display: 'flex',
+        flexDirection: 'column',
+        backgroundColor: colors.banner,
+        height: '40vh',
+        marginBottom: '8px',
+        padding: '4px',
+        minHeight: '50%',
+    },
+
     chain: {
         display: 'flex',
         flexDirection: 'column',
         backgroundColor: colors.banner,
-        /* height: '60%', */
-        marginBottom: '8px',
+        height: '100%',
+        marginTop: '8px',
+        
     },
 
     positions: {
@@ -270,6 +280,78 @@ const styles = theme => ({
         backgroundColor: colors.banner,
         /* minHeight: '40%', */
         marginTop: '8px',
+        height: '100%',
+    },
+
+    interface: {
+        display: 'flex',
+        flexDirection: 'column',
+        backgroundColor: colors.banner,
+        /* minHeight: '40%', */
+        marginTop: '8px',
+        height: '100%',
+    },
+
+    interfaceButton: {
+        backgroundColor: colors.secondary,
+        color: colors.banner,
+        borderRadius: '32px',
+        marginTop: '16px',
+        alignItems: 'center',
+        textAlign: 'center',
+        justifyContent: 'center',
+        '&:hover': {
+            backgroundColor: colors.primary,
+            boxShadow: '0 0px 16px rgba(255, 255, 255, .4)',
+        },
+    },
+
+    rowButtonL: {
+        backgroundColor: colors.primaryButton,
+        color: colors.primary,
+        '&:hover' : {
+            backgroundColor: colors.primaryButton,
+            color: colors.primary,
+            boxShadow: '0 0px 4px rgba(255, 255, 255, .4)',
+        },
+        fontWeight: '600',
+        width: '25%',
+        borderRadius: '4px',
+        margin:'4px',
+    },
+    
+    
+    rowButtonS: {
+        backgroundColor: colors.banner,
+        '&:hover' : {
+            backgroundColor: colors.banner,
+            color: colors.primary,
+            boxShadow: '0 0px 4px rgba(255, 255, 255, .4)',
+        },
+        width: '25%',
+        borderRadius: '4px',
+        margin:'4px',
+        color: colors.primary,
+        fontWeight: '600',
+    },
+
+    rowContainer2: {
+        display: 'flex',
+        flexDirection: 'row',
+        backgroundColor: colors.banner,
+        borderRadius: '4px',
+        width: '35%',
+        justifyContent: 'center',
+    },
+
+    coreHeaderInterface: {
+        display: 'flex',
+        flexDirection: 'row',
+        width: '100%',
+        backgroundColor: colors.banner ,
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '8px',
     },
 
     footer: {
@@ -343,7 +425,7 @@ const styles = theme => ({
         },
         borderRadius: '0px',
         width: '100%',
-        height: '8%',
+        height: '10vh',
     },
 
     selectProductFill: {
@@ -362,7 +444,7 @@ const styles = theme => ({
         color: colors.primary,
         borderRadius: '0px',
         width: '100%',
-        height: '8.25%',
+        height: '10vh',
         borderBlockEndStyle: 'solid',
         borderColor: colors.primary,
     },
@@ -460,6 +542,7 @@ class PrimeV3 extends Component {
         this.unlockPair = this.unlockPair.bind(this);
         this.mintTestTokens = this.mintTestTokens.bind(this);
         this.handleSelectChain = this.handleSelectChain.bind(this);
+
     }
 
     componentDidMount = async () => {
@@ -2635,9 +2718,11 @@ class PrimeV3 extends Component {
 
             {/* FLEX DIRECTION COLUMN - SIDE PANEL */}
             <Box className={classes.sideColumn}>
-                <IconButton className={classes.homeButton}>
-                    <HomeIcon />
-                </IconButton>
+                <Tooltip title={'Home'}>
+                    <IconButton className={classes.homeButton}>
+                        <HomeIcon />
+                    </IconButton>
+                </Tooltip>
                 
                 {/* <Tooltip title={'Dashboard'}>
                     <IconButton className={classes.selectProduct}>
@@ -2671,7 +2756,7 @@ class PrimeV3 extends Component {
 
             </Box>
 
-            <Box style={{display: 'flex', flexDirection: 'column', width: '100%', }}>
+            <Box style={{display: 'flex', flexDirection: 'column', width: '100%', minHeight: '100vh',}}>
                 <Header
                     className={classes.header}
                     address={(this.state.account) ? this.state.account : ''}
@@ -2716,6 +2801,14 @@ class PrimeV3 extends Component {
                     {/* FLEX DIRECTION IS COLUMN - HOLDS CHAIN AND POSITIONS */}
                     <Box className={classes.core} key='core'>
                         
+                        <Card className={classes.chart} key='chart'>
+                            <TradingViewWidget 
+                                symbol="BITFINEX:ETHUSD"
+                                theme={Themes.DARK} 
+                                autosize
+                            />
+                        </Card>
+
                         {/* FLEX DIRECTION ROW */}
                         <Box className={classes.selectChainContainer} key='selectChain'>
 
@@ -2756,68 +2849,99 @@ class PrimeV3 extends Component {
                             
                         </Box>
 
-                        {/* FLEX DIRECTION COLUMN */}
-                        <Card className={classes.chain} key='chain'>
-                            {/* CORE HEADER - FLEX DIRECTION ROW */}
-                            <Box className={classes.coreHeader}>
-                                <Typography className={classes.coreHeaderTypography}>CALLS</Typography>
-                                <Typography className={classes.coreHeaderTypography}>OPTION CHAIN FOR {pair} {expiration} </Typography>
-                                <Typography className={classes.coreHeaderTypography}>PUTS</Typography>
-                            </Box>
 
-                            
-                            <OptionsChainTableV2
-                                title={''}
-                                optionCallRows={this.state.callOptions}
-                                optionPutRows={this.state.putOptions}
-                                callMatches={this.state.callMatches}
-                                putMatches={this.state.putMatches}
-                                callColumn={this.state.callColumn}
-                                putColumn={this.state.putColumn}
-                                handleOptionSelect={this.handleOptionSelect}
-                            />
+                        {/* FLEX DIRECTION COLUMN */}                       
+                        {(this.state.onOptionsChain)
+                            ?   
+                                <Card className={classes.interface} key='chain'>
+                                {/* CORE HEADER - FLEX DIRECTION ROW */}
+                                <Box className={classes.coreHeaderInterface}>
+                                    {/* <Typography className={classes.coreHeaderTypography}>CALL</Typography>
+                                    <Typography className={classes.coreHeaderTypography}>OPTION CHAIN FOR {pair} {expiration} </Typography>
+                                    <Typography className={classes.coreHeaderTypography}>PUT</Typography> */}
+                                    <Box className={classes.rowContainer2}>
+                                    <Button 
+                                        className={(!this.state.onOptionsChain) ? classes.rowButtonL : classes.rowButtonS} 
+                                        onClick={
+                                                () => this.setState({ 
+                                                    onOptionsChain: !this.state.onOptionsChain
+                                                })
+                                            }
+                                    > 
+                                        Positions 
+                                    </Button>
+                                    <Button 
+                                        className={(this.state.onOptionsChain) ? classes.rowButtonL : classes.rowButtonS} 
+                                        onClick={
+                                                () => this.setState({ 
+                                                    onOptionsChain: !this.state.onOptionsChain
+                                                })
+                                            }
+                                    > 
+                                        Options 
+                                    </Button>
+                                    </Box>
+                                </Box>
+    
+                                
+                                <OptionsChainTableV2
+                                    title={''}
+                                    optionCallRows={this.state.callOptions}
+                                    optionPutRows={this.state.putOptions}
+                                    callMatches={this.state.callMatches}
+                                    putMatches={this.state.putMatches}
+                                    callColumn={this.state.callColumn}
+                                    putColumn={this.state.putColumn}
+                                    handleOptionSelect={this.handleOptionSelect}
+                                />
+    
+                                {(!this.state.loadingChain) ? <></> : <LinearIndeterminate />}
+    
+                                </Card>
+    
+                                :
+                                   
+                                    <Card className={classes.interface} key='positions'>
+                                    <Box className={classes.coreHeaderInterface}>
+                                        {/* <Typography className={classes.coreHeaderTypography}>Positions for {ellipseAddress(this.state.account)}</Typography> */}
+                                        <Box className={classes.rowContainer2}>
+                                            <Button 
+                                                className={(!this.state.onOptionsChain) ? classes.rowButtonL : classes.rowButtonS} 
+                                                onClick={
+                                                        () => this.setState({ 
+                                                            onOptionsChain: !this.state.onOptionsChain
+                                                        })
+                                                    }
+                                            > 
+                                                Positions 
+                                            </Button>
+                                            <Button 
+                                                className={(this.state.onOptionsChain) ? classes.rowButtonL : classes.rowButtonS} 
+                                                onClick={
+                                                        () => this.setState({ 
+                                                            onOptionsChain: !this.state.onOptionsChain
+                                                        })
+                                                    }
+                                            > 
+                                                Options 
+                                            </Button>
+                                    </Box>
+                                    </Box> 
+                                    <PositionsTableV2
+                                        title={''}
+                                        positionRows={this.state.positionRows}
+                                        account={ellipseAddress(this.state.account)}
+                                    />
+                                    {(!this.state.loadingPositions) ? <></> : <LinearIndeterminate />}
 
-                            {(!this.state.loadingChain) ? <></> : <LinearIndeterminate />}
-
-                        </Card>
-
-                        {/* FLEX DIRECTION COLUMN */}
-                        <Card className={classes.positions} key='positions'>
-                            <Box className={classes.coreHeader}>
-                                <Typography className={classes.coreHeaderTypography}>Positions for {ellipseAddress(this.state.account)}</Typography>
-                            </Box> 
-                            <PositionsTableV2
-                                title={''}
-                                positionRows={this.state.positionRows}
-                            />
-                            {(!this.state.loadingPositions) ? <></> : <LinearIndeterminate />}
-
-                        </Card>
+                                </Card>
+                        }
+                        
+                        
 
                     </Box>
 
                 </Box>
-
-                {/* <Box className={classes.footer}>
-                    <Typography variant="h1" align="center" gutterBottom style={{ }}>
-                        <div>
-                            <LinkM href="https://github.com/Alexangelj/DFCP" underline='none'>
-                                <GitHubIcon />
-                            </LinkM>
-                            <LinkM href="https://github.com/Alexangelj/DFCP" underline='none'>
-                                <TwitterIcon />
-                            </LinkM>
-                        </div>
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary" align="center">
-                      {'Copyright © '}
-                      <Link color="inherit" href="/prime" underline='none'>
-                        Decentralized Financial Crafting Protocol
-                      </Link>{' '}
-                      {new Date().getFullYear()}
-                      {'.'}
-                    </Typography>
-                </Box> */}
                  
             </Box>
             </div>    

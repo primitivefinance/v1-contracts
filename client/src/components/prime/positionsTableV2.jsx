@@ -11,6 +11,7 @@ import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Paper from '@material-ui/core/Paper';
 import Grid from '@material-ui/core/Grid';
+import Box from '@material-ui/core/Box';
 import AddressPop from './addressPop';
 
 
@@ -49,6 +50,21 @@ const styles = theme => ({
             backgroundColor: colors.primary,
         },
     },
+
+    coreHeader: {
+        display: 'flex',
+        flexDirection: 'row',
+        width: '100%',
+        backgroundColor: colors.bannerTitle ,
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '8px',
+    },
+
+    coreHeaderTypography: {
+        width: '33.33%',
+        textAlign: 'center',
+    },
     
 });
 
@@ -64,6 +80,9 @@ class PositionsTableV2 extends Component {
 
         return (
             <>
+                <Box className={classes.coreHeader}>
+                    <Typography className={classes.coreHeaderTypography}>Positions for {this.props.account}</Typography>
+                </Box>
             {/* PRIME INVENTORY CONTAINER */}
                 <Grid item>
                     <Card className={classes.primeInventory}>

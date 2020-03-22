@@ -51,6 +51,21 @@ const styles = theme => ({
             backgroundColor: colors.primary,
         },
     },
+
+    coreHeader: {
+        display: 'flex',
+        flexDirection: 'row',
+        width: '100%',
+        backgroundColor: colors.bannerTitle ,
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '8px',
+    },
+
+    coreHeaderTypography: {
+        width: '33.33%',
+        textAlign: 'center',
+    },
     
 });
 
@@ -122,14 +137,21 @@ class OptionsChainTableV2 extends Component {
         return (
             <>
                 {/* PRIME INVENTORY CONTAINER */}
+                <Box className={classes.coreHeader}>
+                    <Typography className={classes.coreHeaderTypography}>CALL</Typography>
+                    <Typography className={classes.coreHeaderTypography}>OPTION CHAIN FOR {/* {pair} {expiration} */} </Typography>
+                    <Typography className={classes.coreHeaderTypography}>PUT</Typography>
+                </Box>
                 <Box style={{display: 'flex', flexDirection: 'row'}}>
+
+                    
 
                     {/* CALL OPTION COLUMN */}
                     <Box className={classes.primeInventory}>
 
                         {/* CALL TABLE */}
                         <TableContainer component={Paper}>
-                            <Table className={classes.primeTable}>
+                            <Table className={classes.primeTable} stickyHeader size='small'>
 
                                 {/* HEAD */}
                                 <TableHead>
@@ -189,7 +211,7 @@ class OptionsChainTableV2 extends Component {
 
                         {/* PUT TABLE */}
                         <TableContainer component={Paper}>
-                            <Table className={classes.primeTable}>
+                            <Table className={classes.primeTable} stickyHeader size='small'>
 
                                 {/* HEAD */}
                                 <TableHead>

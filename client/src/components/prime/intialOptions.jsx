@@ -12,6 +12,7 @@ const INITIAL_OPTIONS = {
     loadingChain: true,
     loadingPositions: true,
     pendingTx: false,
+    onOptionsChain: false,
     callColumn: {
         'pair': null,
         'expiration': null,

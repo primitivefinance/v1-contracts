@@ -24,23 +24,26 @@ export const colors = {
     neonGreen: '#69f0ae',
     slateGrey: '#102027',
     darkPurple: '#2A1B3D',
-    primary: '#fff',
-    secondary: '#F0F0F0',
-    banner: '#282d3d',
-    /* banner: '#2d2b72', */
     highlight: '#fff',
     success: '#98FB98',
     button: '#A239CA',
-    background: '#121a2d',
     darkGrey: '#1c1d23',
     darkBlue: '#070a0e',
-    leafGreen: '#338736',
     lightSuccess: '#ccffca',
     lightBanner: '#333a4f',
     primeBlue: '#cbe8ff',
-    headerBanner: '#2d2b72',
     red: '#e23d48',
-    sidePanel: '#130e42',
+
+    primary: '#fff',
+    secondary: '#F0F0F0',
+    background: '#141c26',
+    banner: '#18222d',
+    headerBanner: '#262e3b',
+    sidePanel: '#2d2b72',
+    leafGreen: '#338736',
+    primaryButton: '#2d2b72',
+
+    bannerTitle: '#262e3b',
 }
 
 
@@ -267,6 +270,11 @@ const mainTheme = {
             },  
             colorPrimary: {
                 backgroundColor: colors.primeBlue,
+            },
+        },
+        MuiTableCell: {
+            root: {
+                borderBottom: '0px',
             },
         },
     },

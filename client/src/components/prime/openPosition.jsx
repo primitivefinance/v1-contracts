@@ -55,7 +55,7 @@ const styles = theme => ({
     container: {
         display: 'flex',
         flexDirection: 'column',
-        margin: '48px',
+        margin: '36px',
         padding: '16px',
         borderRadius: '4px',
     },
@@ -124,10 +124,10 @@ const styles = theme => ({
     },
 
     rowButtonL: {
-        backgroundColor: colors.leafGreen,
+        backgroundColor: colors.primaryButton,
         color: colors.primary,
         '&:hover' : {
-            backgroundColor: colors.leafGreen,
+            backgroundColor: colors.primaryButton,
             color: colors.primary,
             boxShadow: '0 0px 16px rgba(255, 255, 255, .4)',
         },
@@ -148,7 +148,7 @@ const styles = theme => ({
     },
 
     rowButtonSubmit: {
-        backgroundColor: colors.leafGreen,
+        backgroundColor: colors.primaryButton,
         color: colors.primary,
         '&:hover' : {
             backgroundColor: colors.success,
@@ -435,6 +435,14 @@ class OpenPosition extends Component {
 
                                 {/* SELECTED PRIME DETAILS */}
                                 <Box className={classes.rowContainer1}>
+
+                                    {/* FLEX DIRECTION ROW */}
+                                    <Box className={classes.selectedRow1}>
+                                        <Typography variant={'h1'} className={classes.containerTitle} >
+                                            Selected PRIME
+                                        </Typography>
+                                    </Box>
+
                                     {/* FLEX DIRECTION ROW */}
                                     <Box className={classes.selectedRow1}>
                                         <Typography variant={'h2'} className={classes.rowItem1H}>
@@ -509,6 +517,50 @@ class OpenPosition extends Component {
                                                 </Typography>
                                             </Box>
 
+                                                    <Box className={classes.selectedRow1}>
+                                                        <Typography variant={'h1'} className={classes.rowItem2H} style={{marginTop: '16px',}} >
+                                                            Purchase PRIME NFT
+                                                        </Typography>
+                                                    </Box>
+                                                    
+
+                                                    {/* FLEX DIRECTION ROW */}
+                                                    <Box className={classes.selectedRow1}>
+                                                        <Typography variant={'h2'} className={classes.rowItem3H}>
+                                                            Multiplier
+                                                        </Typography>
+                                                        <Typography variant={'h2'} className={classes.rowItem3H}>
+                                                            Collateral
+                                                        </Typography>
+                                                
+                                                        <Typography variant={'h2'} className={classes.rowItem3H}>
+                                                            Strike
+                                                        </Typography>
+                                                
+                                                        <Typography variant={'h2'} className={classes.rowItem3H}>
+                                                            Expiration
+                                                        </Typography>
+                                                    </Box>
+
+                                                    {/* FLEX DIRECTION ROW */}
+                                                    <Box className={classes.selectedRow1}>
+                                                        <Typography variant={'h2'} className={classes.rowItem2}>
+                                                            {multiplier}x
+                                                        </Typography>
+
+                                                        <Typography variant={'h2'} className={classes.rowItem2}>
+                                                            {cAmount * this.state.sellMultiplier / 10**18} {cAsset}
+                                                        </Typography>
+
+                                                        <Typography variant={'h2'} className={classes.rowItem2}>
+                                                            {sAmount * this.state.sellMultiplier / 10**18} {sAsset}
+                                                        </Typography>
+
+                                                        <Typography variant={'h2'} className={classes.rowItem2}>
+                                                            {expirationDate}
+                                                        </Typography>
+                                                    </Box>
+
                                             <Box className={classes.selectedRow1}>
                                                 <Typography variant={'h1'} className={classes.rowItem2H} >
                                                     Subtotal
@@ -526,7 +578,7 @@ class OpenPosition extends Component {
                                                     Credited:
                                                 </Typography>
                                                 <Typography variant={'h2'} className={classes.rowItem1}>
-                                                    A {this.state.buyMultiplier}x Multiplied {'Prime'}
+                                                    {'Prime'}
                                                 </Typography>
                                             </Box>
                                                     
