@@ -90,7 +90,7 @@ class OptionsChainTableV2 extends Component {
         const putOrders = putColumn['orders'];
 
         const chain = callColumn['chain'];
-        const expiration = (callColumn['options'][0]) ? callColumn['options'][0].expiration : '';
+        let expiration = (callColumn['options'][0]) ? callColumn['options'][0].expiration : '';
 
         let ask = 0;
         let minAsks = {
@@ -133,13 +133,20 @@ class OptionsChainTableV2 extends Component {
             /* console.log('CALL ASKS', {callMatches}, callMatches[i][0], callOrders['sell'], {ask, i}) */
         }
 
+        let pair = (this.props.selectedPair) ? this.props.selectedPair : '';
+        /* let expiration = this.props.selectedExpiration ? this.props.selectedExpiration : undefined; */
+        let date;
+        if(expiration) {
+            date = new Date(expiration * 1000);
+            expiration = date.toDateString();
+        }
         
         return (
             <>
                 {/* PRIME INVENTORY CONTAINER */}
                 <Box className={classes.coreHeader}>
                     <Typography className={classes.coreHeaderTypography}>CALL</Typography>
-                    <Typography className={classes.coreHeaderTypography}>OPTION CHAIN FOR {/* {pair} {expiration} */} </Typography>
+                    <Typography className={classes.coreHeaderTypography}>OPTION CHAIN FOR {this.props.pair} {(new Date(this.props.expiration * 1000)).toDateString()} </Typography>
                     <Typography className={classes.coreHeaderTypography}>PUT</Typography>
                 </Box>
                 <Box style={{display: 'flex', flexDirection: 'row'}}>

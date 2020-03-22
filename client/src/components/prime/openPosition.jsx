@@ -55,8 +55,8 @@ const styles = theme => ({
     container: {
         display: 'flex',
         flexDirection: 'column',
-        margin: '36px',
-        padding: '16px',
+        margin: '16px',
+        /* padding: '16px', */
         borderRadius: '4px',
     },
 
@@ -75,6 +75,14 @@ const styles = theme => ({
 
     },
 
+    selectedRowH: {
+        marginTop: '16px',
+        display: 'flex',
+        flexDirection: 'row',
+        justifyContent: 'center',
+
+    },
+
     selectedRow1: {
         marginTop: '16px',
         display: 'flex',
@@ -85,7 +93,9 @@ const styles = theme => ({
     rowItem1H: {
         width: '33%',
         /* textAlign: 'center', */
-        fontWeight: '600'
+        fontWeight: '600',
+        fontSize: '11px',
+        textAlign: 'center',
     },
 
     rowItem2H: {
@@ -95,24 +105,27 @@ const styles = theme => ({
     },
 
     rowItem3H: {
-        /* width: '25%', */
-        /* textAlign: 'center', */
-        width: '25%',
+        width: '33.33%',
         marginLeft: '4px',
         fontWeight: '600',
-        lettingSpacing: '0px',
-        fontSize: '11px',
+        fontSize: '9px',
     },
 
     rowItem1: {
         width: '33%',
-        /* textAlign: 'center', */
+        textAlign: 'center',
+    },
+
+    rowItemB: {
+        width: '33%',
+        fontSize: '9px',
     },
 
     rowItem2: {
-        width: '25%',
+        width: '33.33%',
         marginLeft: '4px',
         /* textAlign: 'center', */
+        
     },
 
     rowContainer2: {
@@ -437,38 +450,38 @@ class OpenPosition extends Component {
                                 <Box className={classes.rowContainer1}>
 
                                     {/* FLEX DIRECTION ROW */}
-                                    <Box className={classes.selectedRow1}>
+                                    <Box className={classes.selectedRowH}>
                                         <Typography variant={'h1'} className={classes.containerTitle} >
                                             Selected PRIME
                                         </Typography>
                                     </Box>
 
                                     {/* FLEX DIRECTION ROW */}
-                                    <Box className={classes.selectedRow1}>
-                                        <Typography variant={'h2'} className={classes.rowItem1H}>
+                                    <Box className={classes.selectedRowH}>
+                                        <Typography variant={'h3'} className={classes.rowItem1H}>
                                             Collateral
                                         </Typography>
 
-                                        <Typography variant={'h2'} className={classes.rowItem1H}>
+                                        <Typography variant={'h3'} className={classes.rowItem1H}>
                                             Strike
                                         </Typography>
 
-                                        <Typography variant={'h2'} className={classes.rowItem1H}>
+                                        <Typography variant={'h3'} className={classes.rowItem1H}>
                                             Expiration
                                         </Typography>
                                     </Box>
 
                                     {/* FLEX DIRECTION ROW */}
-                                    <Box className={classes.selectedRow1}>
-                                        <Typography variant={'h2'} className={classes.rowItem1}>
+                                    <Box className={classes.selectedRowH}>
+                                        <Typography variant={'h3'} className={classes.rowItem1}>
                                             {cAmount / 10**18} {cAsset}
                                         </Typography>
 
-                                        <Typography variant={'h2'} className={classes.rowItem1}>
+                                        <Typography variant={'h3'} className={classes.rowItem1}>
                                             {sAmount / 10**18} {sAsset}
                                         </Typography>
 
-                                        <Typography variant={'h2'} className={classes.rowItem1}>
+                                        <Typography variant={'h3'} className={classes.rowItem1}>
                                             {expirationDate}
                                         </Typography>
                                     </Box>
@@ -479,7 +492,7 @@ class OpenPosition extends Component {
                                     ?   <Box className={classes.rowContainer1}>
                                             {/* FLEX DIRECTION ROW */}
                                             <Box className={classes.selectedRow1}>
-                                                <Typography variant={'h1'} className={classes.rowItem1H} >
+                                                <Typography variant={'h1'} className={classes.rowItem2H} >
                                                     BID
                                                 </Typography>
                                             </Box>
@@ -499,7 +512,7 @@ class OpenPosition extends Component {
 
                                             {/* FLEX DIRECTION ROW */}
                                             <Box className={classes.selectedRow1}>
-                                                <Typography variant={'h1'} className={classes.rowItem1H} >
+                                                <Typography variant={'h1'} className={classes.rowItem2H} >
                                                     Multiplier
                                                 </Typography>
                                             </Box>
@@ -519,46 +532,46 @@ class OpenPosition extends Component {
 
                                                     <Box className={classes.selectedRow1}>
                                                         <Typography variant={'h1'} className={classes.rowItem2H} style={{marginTop: '16px',}} >
-                                                            Purchase PRIME NFT
+                                                            Purchase PRIME
                                                         </Typography>
                                                     </Box>
                                                     
 
                                                     {/* FLEX DIRECTION ROW */}
                                                     <Box className={classes.selectedRow1}>
-                                                        <Typography variant={'h2'} className={classes.rowItem3H}>
+                                                        <Typography variant={'h3'} className={classes.rowItem3H}>
                                                             Multiplier
                                                         </Typography>
-                                                        <Typography variant={'h2'} className={classes.rowItem3H}>
+                                                        <Typography variant={'h3'} className={classes.rowItem3H}>
                                                             Collateral
                                                         </Typography>
                                                 
-                                                        <Typography variant={'h2'} className={classes.rowItem3H}>
+                                                        <Typography variant={'h3'} className={classes.rowItem3H}>
                                                             Strike
                                                         </Typography>
                                                 
-                                                        <Typography variant={'h2'} className={classes.rowItem3H}>
+                                                        {/* <Typography variant={'h3'} className={classes.rowItem3H}>
                                                             Expiration
-                                                        </Typography>
+                                                        </Typography> */}
                                                     </Box>
 
                                                     {/* FLEX DIRECTION ROW */}
                                                     <Box className={classes.selectedRow1}>
-                                                        <Typography variant={'h2'} className={classes.rowItem2}>
+                                                        <Typography variant={'h3'} className={classes.rowItem2}>
                                                             {multiplier}x
                                                         </Typography>
 
-                                                        <Typography variant={'h2'} className={classes.rowItem2}>
+                                                        <Typography variant={'h3'} className={classes.rowItem2}>
                                                             {cAmount * this.state.sellMultiplier / 10**18} {cAsset}
                                                         </Typography>
 
-                                                        <Typography variant={'h2'} className={classes.rowItem2}>
+                                                        <Typography variant={'h3'} className={classes.rowItem2}>
                                                             {sAmount * this.state.sellMultiplier / 10**18} {sAsset}
                                                         </Typography>
 
-                                                        <Typography variant={'h2'} className={classes.rowItem2}>
+                                                        {/* <Typography variant={'h3'} className={classes.rowItem2}>
                                                             {expirationDate}
-                                                        </Typography>
+                                                        </Typography> */}
                                                     </Box>
 
                                             <Box className={classes.selectedRow1}>
@@ -568,16 +581,16 @@ class OpenPosition extends Component {
                                             </Box>
                                             {/* FLEX DIRECTION ROW */}
                                             <Box className={classes.selectedRow1}>
-                                                <Typography variant={'h2'} className={classes.rowItem1}>
+                                                <Typography variant={'h2'} className={classes.rowItemB}>
                                                     Cost:
                                                 </Typography>
-                                                <Typography variant={'h2'} className={classes.rowItem1}>
+                                                <Typography variant={'h2'} className={classes.rowItemB}>
                                                     {this.state.bid} {'ETH'}
                                                 </Typography>
-                                                <Typography variant={'h2'} className={classes.rowItem1}>
+                                                <Typography variant={'h2'} className={classes.rowItemB}>
                                                     Credited:
                                                 </Typography>
-                                                <Typography variant={'h2'} className={classes.rowItem1}>
+                                                <Typography variant={'h2'} className={classes.rowItemB}>
                                                     {'Prime'}
                                                 </Typography>
                                             </Box>
@@ -588,7 +601,7 @@ class OpenPosition extends Component {
 
                                                 {/* FLEX DIRECTION ROW */}
                                                 <Box className={classes.selectedRow1}>
-                                                    <Typography variant={'h1'} className={classes.rowItem1H} >
+                                                    <Typography variant={'h1'} className={classes.rowItem2H} >
                                                         ASK
                                                     </Typography>
                                                 </Box>
@@ -608,7 +621,7 @@ class OpenPosition extends Component {
 
                                                 {/* FLEX DIRECTION ROW */}
                                                 <Box className={classes.selectedRow1}>
-                                                    <Typography variant={'h1'} className={classes.rowItem1H} >
+                                                    <Typography variant={'h1'} className={classes.rowItem2H} >
                                                         Multiplier
                                                     </Typography>
                                                 </Box>
@@ -622,12 +635,11 @@ class OpenPosition extends Component {
                                                       name='sellMultiplier'
                                                     />
                                                     <Typography variant={'h3'} style={{ fontWeight: '600', letterSpacing: '1px', width: '25%', textAlign: 'center', margin: '4px', padding: '4px', alignItems: 'center', justifyContent: 'center', display: 'flex', backgroundColor: colors.lightBanner, borderRadius: '4px'}}>
-                                                        {(this.state.sellMultiplier * cAmount) / 10**18} {cAsset}
+                                                        {/* {(this.state.sellMultiplier * cAmount) / 10**18}  */}{cAsset}
                                                     </Typography>
                                                 </Box>
 
-                                                {/* FLEX DIRECTION COLUMN */}
-                                                <Box className={classes.rowContainer1}>
+
 
                                                     {/* <Box className={classes.selectedRow1}>
                                                         <Typography variant={'h2'} className={classes.rowItem2H} >
@@ -637,46 +649,46 @@ class OpenPosition extends Component {
 
                                                     <Box className={classes.selectedRow1}>
                                                         <Typography variant={'h1'} className={classes.rowItem2H} style={{marginTop: '16px',}} >
-                                                            Mint Prime Option NFT
+                                                            Sell Prime
                                                         </Typography>
                                                     </Box>
                                                     
 
                                                     {/* FLEX DIRECTION ROW */}
                                                     <Box className={classes.selectedRow1}>
-                                                        <Typography variant={'h2'} className={classes.rowItem3H}>
+                                                        <Typography variant={'h3'} className={classes.rowItem3H}>
                                                             Multiplier
                                                         </Typography>
-                                                        <Typography variant={'h2'} className={classes.rowItem3H}>
+                                                        <Typography variant={'h3'} className={classes.rowItem3H}>
                                                             Collateral
                                                         </Typography>
                                                 
-                                                        <Typography variant={'h2'} className={classes.rowItem3H}>
+                                                        <Typography variant={'h3'} className={classes.rowItem3H}>
                                                             Strike
                                                         </Typography>
                                                 
-                                                        <Typography variant={'h2'} className={classes.rowItem3H}>
+                                                        {/* <Typography variant={'h3'} className={classes.rowItem3H}>
                                                             Expiration
-                                                        </Typography>
+                                                        </Typography> */}
                                                     </Box>
 
                                                     {/* FLEX DIRECTION ROW */}
                                                     <Box className={classes.selectedRow1}>
-                                                        <Typography variant={'h2'} className={classes.rowItem2}>
+                                                        <Typography variant={'h3'} className={classes.rowItem2}>
                                                             {multiplier}x
                                                         </Typography>
 
-                                                        <Typography variant={'h2'} className={classes.rowItem2}>
+                                                        <Typography variant={'h3'} className={classes.rowItem2}>
                                                             {cAmount * this.state.sellMultiplier / 10**18} {cAsset}
                                                         </Typography>
 
-                                                        <Typography variant={'h2'} className={classes.rowItem2}>
+                                                        <Typography variant={'h3'} className={classes.rowItem2}>
                                                             {sAmount * this.state.sellMultiplier / 10**18} {sAsset}
                                                         </Typography>
 
-                                                        <Typography variant={'h2'} className={classes.rowItem2}>
+                                                        {/* <Typography variant={'h3'} className={classes.rowItem2}>
                                                             {expirationDate}
-                                                        </Typography>
+                                                        </Typography> */}
                                                     </Box>
 
                                                     <Box className={classes.selectedRow1}>
@@ -687,24 +699,24 @@ class OpenPosition extends Component {
 
                                                     {/* FLEX DIRECTION ROW */}
                                                     <Box className={classes.selectedRow1}>
-                                                        <Typography variant={'h2'} className={classes.rowItem1}>
+                                                        <Typography variant={'h2'} className={classes.rowItemB}>
                                                             Deposit:
                                                         </Typography>
 
-                                                        <Typography variant={'h2'} className={classes.rowItem1}>
-                                                            {cAmount * this.state.sellMultiplier / 10**18} {cAsset}
+                                                        <Typography variant={'h2'} className={classes.rowItemB}>
+                                                            {(this.state.sellMultiplier) ? cAmount * this.state.sellMultiplier / 10**18 : ''} {cAsset}
                                                         </Typography>
 
-                                                        <Typography variant={'h2'} className={classes.rowItem1}>
+                                                        <Typography variant={'h2'} className={classes.rowItemB}>
                                                             Credited:
                                                         </Typography>
 
-                                                        <Typography variant={'h2'} className={classes.rowItem1}>
+                                                        <Typography variant={'h2'} className={classes.rowItemB}>
                                                             {this.state.ask} {'ETH'}
                                                         </Typography>
                                                     </Box>
 
-                                                </Box>
+                                                
 
 
                                             </Box>
@@ -722,7 +734,7 @@ class OpenPosition extends Component {
                                                     this.state.ask, 
                                                     this.state.sellMultiplier, 
                                                     pair,
-                                                    expiration,
+                                                    properties.pow,
                                                     cAmount, 
                                                     cAsset, 
                                                     sAmount, 
@@ -731,11 +743,11 @@ class OpenPosition extends Component {
                                             }
                                         }
                                     >
-                                        {(this.props.pendingTx) ? <CircularProgress size='1.5rem'/> : (this.state.buy) ? 'Open Buy Order' :  'Open Sell Order'}
+                                        {(this.props.pendingTx) ? <CircularProgress size='1.5rem'/> : (this.state.buy) ? 'Buy Order' :  'Sell Order'}
                                     </Button>
 
                                     <Typography variant={'h2'} className={classes.txTracker}>
-                                        {(this.props.pendingTx) ? `Tx ${this.props.txNumber} of ${this.props.txAmount}` : 'Tx Number'}   
+                                        {(this.props.pendingTx) ? `Tx ${this.props.txNumber} of ${this.props.txAmount}` : ''}   
                                     </Typography>
                                 </Box>
                                 </>

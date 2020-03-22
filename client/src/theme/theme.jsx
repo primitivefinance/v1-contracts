@@ -30,7 +30,7 @@ export const colors = {
     darkGrey: '#1c1d23',
     darkBlue: '#070a0e',
     lightSuccess: '#ccffca',
-    lightBanner: '#333a4f',
+    
     primeBlue: '#cbe8ff',
     red: '#e23d48',
 
@@ -39,11 +39,15 @@ export const colors = {
     background: '#141c26',
     banner: '#18222d',
     headerBanner: '#262e3b',
+    lightBanner: '#333a4f',
     sidePanel: '#2d2b72',
     leafGreen: '#338736',
     primaryButton: '#2d2b72',
-
+    primaryButtonLight: '#3c3899',
+    primaryButtonDark: '#191728',
     bannerTitle: '#262e3b',
+    bannerLight: '#353f51',
+    purple: '#e461f8',
 }
 
 

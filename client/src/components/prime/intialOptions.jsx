@@ -13,6 +13,7 @@ const INITIAL_OPTIONS = {
     loadingPositions: true,
     pendingTx: false,
     onOptionsChain: false,
+    chartSymbol: 'BITFINEX:ETHUSD',
     callColumn: {
         'pair': null,
         'expiration': null,
@@ -198,6 +199,7 @@ const INITIAL_OPTIONS = {
     optionGlossary: {
         'TETHDAI' : {
             '1600473585' : '0x1bae37c4',
+            'chartSymbol': 'COINBASE:ETHDAI'
         },
     },
     assets: {

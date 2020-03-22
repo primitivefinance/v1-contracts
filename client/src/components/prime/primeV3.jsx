@@ -56,7 +56,8 @@ import Tooltip from '@material-ui/core/Tooltip';
 import FunctionsIcon from '@material-ui/icons/Functions';
 import HomeIcon from '@material-ui/icons/Home';
 import TradingViewWidget, { Themes } from 'react-tradingview-widget';
-
+import ViewListIcon from '@material-ui/icons/ViewList';
+import CheckIcon from '@material-ui/icons/Check';
 
 const providerOptions = {
     fortmatic: {
@@ -227,7 +228,7 @@ const styles = theme => ({
         display: 'flex',
         flexDirection: 'column',
         backgroundColor: colors.banner,
-        width: '25%',
+        width: '15%',
         margin: '8px',
     },
 
@@ -235,7 +236,7 @@ const styles = theme => ({
         display: 'flex',
         flexDirection: 'column',
         backgroundColor: colors.background,
-        width: '75%',
+        width: '85%',
         /* minHeight: '100vh', */
         margin: '8px',
     },
@@ -307,32 +308,42 @@ const styles = theme => ({
     },
 
     rowButtonL: {
-        backgroundColor: colors.primaryButton,
+        backgroundColor: colors.banner,
         color: colors.primary,
         '&:hover' : {
-            backgroundColor: colors.primaryButton,
+            backgroundColor: colors.banner,
             color: colors.primary,
-            boxShadow: '0 0px 4px rgba(255, 255, 255, .4)',
+            boxShadow: '0 0px 1px rgba(255, 255, 255, .4)',
         },
         fontWeight: '600',
         width: '25%',
         borderRadius: '4px',
         margin:'4px',
+        /* borderStyle: 'solid',
+        borderColor: colors.primaryButton,
+        borderWidth: '2px',
+        borderInlineWidth: 'medium',
+        borderEndWidth: 'medium', */
     },
     
     
     rowButtonS: {
         backgroundColor: colors.banner,
+        color: colors.purple,
         '&:hover' : {
             backgroundColor: colors.banner,
-            color: colors.primary,
-            boxShadow: '0 0px 4px rgba(255, 255, 255, .4)',
+            color: colors.purple,
+            boxShadow: '0 0px 1px rgba(255, 255, 255, .4)',
         },
         width: '25%',
         borderRadius: '4px',
         margin:'4px',
-        color: colors.primary,
         fontWeight: '600',
+        /* borderStyle: 'solid',
+        borderColor: colors.primaryButton,
+        borderWidth: '2px',
+        borderInlineWidth: 'medium',
+        borderEndWidth: 'medium', */
     },
 
     rowContainer2: {
@@ -340,7 +351,7 @@ const styles = theme => ({
         flexDirection: 'row',
         backgroundColor: colors.banner,
         borderRadius: '4px',
-        width: '35%',
+        width: '50%',
         justifyContent: 'center',
     },
 
@@ -2607,20 +2618,47 @@ class PrimeV3 extends Component {
             if(matchingPrimes.length > 0) {
                 let tokenId = matchingPrimes[0];
                 /* SELL PRIME TO EXCHANGE FOR ASK PRICE */
+                this.setState({
+                    pendingTx: true,
+                    txNumber: 1,
+                    txAmount: 2,
+                });
                 await primeInstance.methods.approve(_exchange._address, tokenId).send({from: account});
                 try {
+                    this.setState({
+                        txNumber: 2,
+                    });
                     sellOrderResult = await _exchange.methods.sellOrder(
                         tokenId,
                         ask,
-                    ).send({from: account})
+                    ).send({from: account});
+
+                    if(sellOrderResult) {
+                        console.log('Result returned, not pending')
+                        this.setState({
+                            pendingTx: false,
+                            txNumber: undefined,
+                            txAmount: undefined,
+                        });
+                    }
                 } catch (error) {
                     console.log({error})
+                    this.setState({
+                        pendingTx: false,
+                        txNumber: undefined,
+                        txAmount: undefined,
+                    });
                 }
 
                 console.log('SELLING OWNED PRIMED', {tokenId, sellOrderResult})
             } else {
                 /* MINT PRIME */
                 try {
+                    this.setState({
+                        pendingTx: true,
+                        txNumber: 1,
+                        txAmount: 3,
+                    });
                     mintedPrime = await this.createPrime(
                         collateralSym,
                         strikeSym,
@@ -2629,8 +2667,20 @@ class PrimeV3 extends Component {
                         collateralAmount,
                         strikeAmount
                     );
+                    if(mintedPrime) {
+                        console.log('Result returned, not pending')
+                        this.setState({
+                            pendingTx: true,
+                            txNumber: 2,
+                        });
+                    }
                 } catch(error) {
                     console.log({error})
+                    this.setState({
+                        pendingTx: false,
+                        txNumber: undefined,
+                        txAmount: undefined,
+                    });
                 }
                 console.trace({
                     collateralSym,
@@ -2643,15 +2693,29 @@ class PrimeV3 extends Component {
     
                 let tokenId = mintedPrime.events['PrimeMinted'].returnValues['_tokenId'];
     
+                
                 /* SELL PRIME TO EXCHANGE FOR ASK PRICE */
                 await primeInstance.methods.approve(_exchange._address, tokenId).send({from: account});
+                this.setState({
+                    txNumber: 3,
+                });
                 try {
                     sellOrderResult = await _exchange.methods.sellOrder(
                         tokenId,
                         ask,
-                    ).send({from: account})
+                    ).send({from: account});
+                    this.setState({
+                        pendingTx: false,
+                        txNumber: undefined,
+                        txAmount: undefined,
+                    });
                 } catch (error) {
                     console.log({error})
+                    this.setState({
+                        pendingTx: false,
+                        txNumber: undefined,
+                        txAmount: undefined,
+                    });
                 }
     
                 console.log('SELLING NEWLY MINTED PRIME', {tokenId, sellOrderResult})
@@ -2663,8 +2727,10 @@ class PrimeV3 extends Component {
 
     handleSelectChain = (selected, isPair) => {
         if(isPair) {
+            let symbol = (this.state.optionGlossary[selected]) ? this.state.optionGlossary[selected]['chartSymbol'] : this.state.chartSymbol;
             this.setState({
                 selectedPair: selected,
+                chartSymbol: symbol,
             });
         } else {
             this.setState({
@@ -2682,14 +2748,18 @@ class PrimeV3 extends Component {
 
         if(selectedPair && !isPair) {
             let option = optionGlossary[selectedPair][selected];
+            let symbol = optionGlossary[selectedPair]['chartSymbol'];
             this.setState({
                 loadingChain: true,
+                chartSymbol: symbol,
             });
             this.getOptions(option);
         } else if(selectedExpiration && isPair) {
             let option = optionGlossary[selected][selectedExpiration];
+            let symbol = optionGlossary[selectedPair]['chartSymbol'];
             this.setState({
                 loadingChain: true,
+                chartSymbol: symbol,
             });
             this.getOptions(option);
         } else {
@@ -2719,7 +2789,12 @@ class PrimeV3 extends Component {
             {/* FLEX DIRECTION COLUMN - SIDE PANEL */}
             <Box className={classes.sideColumn}>
                 <Tooltip title={'Home'}>
-                    <IconButton className={classes.homeButton}>
+                    <IconButton 
+                        className={classes.homeButton} 
+                        onClick={() => this.setState({ 
+                            onOptionsChain: false,
+                        })}
+                    >
                         <HomeIcon />
                     </IconButton>
                 </Tooltip>
@@ -2729,16 +2804,32 @@ class PrimeV3 extends Component {
                         <DashboardIcon />
                     </IconButton>
                 </Tooltip> */}
+                <Tooltip title={'Positions'}>
+                    <IconButton 
+                        className={classes.selectProduct}
+                        onClick={() => this.setState({ 
+                            onOptionsChain: false,
+                        })}
+                    >
+                        <ViewListIcon />
+                    </IconButton>
+                </Tooltip>
                 
-                <Tooltip title={'Primitive'}>
-                    <IconButton className={classes.selectProduct}>
-                        <DetailsIcon />
+
+                <Tooltip title={'Derivatives'}>
+                    <IconButton 
+                        className={classes.selectProduct}
+                        onClick={() => this.setState({ 
+                            onOptionsChain: true,
+                        })}
+                    >
+                        <FunctionsIcon />
                     </IconButton>
                 </Tooltip>
 
-                <Tooltip title={'Derivitive'}>
-                    <IconButton className={classes.selectProduct}>
-                        <FunctionsIcon />
+                <Tooltip title={'Primitive'}>
+                    <IconButton className={classes.selectProduct} disabled>
+                        <DetailsIcon />
                     </IconButton>
                 </Tooltip>
                 
@@ -2757,6 +2848,7 @@ class PrimeV3 extends Component {
             </Box>
 
             <Box style={{display: 'flex', flexDirection: 'column', width: '100%', minHeight: '100vh',}}>
+
                 <Header
                     className={classes.header}
                     address={(this.state.account) ? this.state.account : ''}
@@ -2801,26 +2893,27 @@ class PrimeV3 extends Component {
                     {/* FLEX DIRECTION IS COLUMN - HOLDS CHAIN AND POSITIONS */}
                     <Box className={classes.core} key='core'>
                         
+                        {/* CHART */}
                         <Card className={classes.chart} key='chart'>
                             <TradingViewWidget 
-                                symbol="BITFINEX:ETHUSD"
+                                symbol={this.state.chartSymbol}
                                 theme={Themes.DARK} 
                                 autosize
                             />
                         </Card>
 
-                        {/* FLEX DIRECTION ROW */}
-                        <Box className={classes.selectChainContainer} key='selectChain'>
 
-                            {/* FLEX DIRECTION COLUMN */}
-                            <Box className={classes.selectChain} key='selectChain'>
-                                <Typography className={classes.coreHeaderTypography}>Select Pair & Expiration</Typography>
-                                
-                                {/* FLEX DIRECTION ROW */}
-                                <Box className={classes.selectChainContainer} key='selectChain'>
+                        {/* FLEX DIRECTION COLUMN - INTERFACE FOR POSITIONS/DERIVITIVES/PRIMITIVES*/}                       
+                        {(this.state.onOptionsChain)
+                            ?   
+                                <Card className={classes.interface} key='chain'>
+
+                                {/* CORE HEADER - FLEX DIRECTION ROW - SELECT CHAIN*/}
+                                <Box className={classes.coreHeaderInterface}>
+                                    <Box className={classes.rowContainer2}>
                                     <Button 
                                         className={
-                                            (this.state.selectedPair) ? classes.selectedButton : classes.selectButton
+                                            (this.state.selectedPair) ? classes.rowButtonS : classes.rowButtonL
                                         } 
                                         onClick={
                                             (this.state.selectedPair) 
@@ -2829,10 +2922,11 @@ class PrimeV3 extends Component {
                                                 }
                                     >
                                         TETH/DAI
+                                        {(this.state.selectedPair) ? <CheckIcon /> : <CheckIcon style={{color: colors.banner}}/>}
                                     </Button>
                                     <Button 
                                         className={
-                                            (this.state.selectedExpiration) ? classes.selectedButton : classes.selectButton
+                                            (this.state.selectedExpiration) ? classes.rowButtonS : classes.rowButtonL
                                         } 
                                         onClick={
                                             (this.state.selectedExpiration) 
@@ -2840,46 +2934,10 @@ class PrimeV3 extends Component {
                                                     : () => this.handleSelectChain('1600473585', false)
                                                 }
                                     >
-                                        Fri Sep 18
+                                        Fri Sep 18 
+                                        {(this.state.selectedExpiration) ? <CheckIcon /> : <CheckIcon style={{color: colors.banner}}/>}
                                     </Button>
-                                </Box>
-
-                                
-                            </Box>
-                            
-                        </Box>
-
-
-                        {/* FLEX DIRECTION COLUMN */}                       
-                        {(this.state.onOptionsChain)
-                            ?   
-                                <Card className={classes.interface} key='chain'>
-                                {/* CORE HEADER - FLEX DIRECTION ROW */}
-                                <Box className={classes.coreHeaderInterface}>
-                                    {/* <Typography className={classes.coreHeaderTypography}>CALL</Typography>
-                                    <Typography className={classes.coreHeaderTypography}>OPTION CHAIN FOR {pair} {expiration} </Typography>
-                                    <Typography className={classes.coreHeaderTypography}>PUT</Typography> */}
-                                    <Box className={classes.rowContainer2}>
-                                    <Button 
-                                        className={(!this.state.onOptionsChain) ? classes.rowButtonL : classes.rowButtonS} 
-                                        onClick={
-                                                () => this.setState({ 
-                                                    onOptionsChain: !this.state.onOptionsChain
-                                                })
-                                            }
-                                    > 
-                                        Positions 
-                                    </Button>
-                                    <Button 
-                                        className={(this.state.onOptionsChain) ? classes.rowButtonL : classes.rowButtonS} 
-                                        onClick={
-                                                () => this.setState({ 
-                                                    onOptionsChain: !this.state.onOptionsChain
-                                                })
-                                            }
-                                    > 
-                                        Options 
-                                    </Button>
+                                    
                                     </Box>
                                 </Box>
     
@@ -2893,6 +2951,8 @@ class PrimeV3 extends Component {
                                     callColumn={this.state.callColumn}
                                     putColumn={this.state.putColumn}
                                     handleOptionSelect={this.handleOptionSelect}
+                                    pair={this.state.selectedPair}
+                                    expiration={this.state.selectedExpiration}
                                 />
     
                                 {(!this.state.loadingChain) ? <></> : <LinearIndeterminate />}
@@ -2902,31 +2962,11 @@ class PrimeV3 extends Component {
                                 :
                                    
                                     <Card className={classes.interface} key='positions'>
+
                                     <Box className={classes.coreHeaderInterface}>
                                         {/* <Typography className={classes.coreHeaderTypography}>Positions for {ellipseAddress(this.state.account)}</Typography> */}
-                                        <Box className={classes.rowContainer2}>
-                                            <Button 
-                                                className={(!this.state.onOptionsChain) ? classes.rowButtonL : classes.rowButtonS} 
-                                                onClick={
-                                                        () => this.setState({ 
-                                                            onOptionsChain: !this.state.onOptionsChain
-                                                        })
-                                                    }
-                                            > 
-                                                Positions 
-                                            </Button>
-                                            <Button 
-                                                className={(this.state.onOptionsChain) ? classes.rowButtonL : classes.rowButtonS} 
-                                                onClick={
-                                                        () => this.setState({ 
-                                                            onOptionsChain: !this.state.onOptionsChain
-                                                        })
-                                                    }
-                                            > 
-                                                Options 
-                                            </Button>
                                     </Box>
-                                    </Box> 
+
                                     <PositionsTableV2
                                         title={''}
                                         positionRows={this.state.positionRows}
