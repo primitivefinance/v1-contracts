@@ -12,14 +12,14 @@
     "absolutePath": "/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/Instruments.sol",
     "exportedSymbols": {
       "Instruments": [
-        1083
+        1094
       ]
     },
-    "id": 1084,
+    "id": 1095,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 1057,
+        "id": 1068,
         "literals": [
           "solidity",
           "^",
@@ -36,24 +36,24 @@
         "contractKind": "library",
         "documentation": " @title DFCP's Instruments\n@author Decentralized Financial Crafting Protocol",
         "fullyImplemented": true,
-        "id": 1083,
+        "id": 1094,
         "linearizedBaseContracts": [
-          1083
+          1094
         ],
         "name": "Instruments",
         "nodeType": "ContractDefinition",
         "nodes": [
           {
             "canonicalName": "Instruments.Actors",
-            "id": 1064,
+            "id": 1075,
             "members": [
               {
                 "constant": false,
-                "id": 1060,
+                "id": 1071,
                 "name": "mintedTokens",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 1064,
+                "scope": 1075,
                 "src": "181:19:1",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -63,7 +63,7 @@
                 },
                 "typeName": {
                   "baseType": {
-                    "id": 1058,
+                    "id": 1069,
                     "name": "uint",
                     "nodeType": "ElementaryTypeName",
                     "src": "181:4:1",
@@ -72,7 +72,7 @@
                       "typeString": "uint256"
                     }
                   },
-                  "id": 1059,
+                  "id": 1070,
                   "length": null,
                   "nodeType": "ArrayTypeName",
                   "src": "181:6:1",
@@ -86,11 +86,11 @@
               },
               {
                 "constant": false,
-                "id": 1063,
+                "id": 1074,
                 "name": "deactivatedTokens",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 1064,
+                "scope": 1075,
                 "src": "211:24:1",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -100,7 +100,7 @@
                 },
                 "typeName": {
                   "baseType": {
-                    "id": 1061,
+                    "id": 1072,
                     "name": "uint",
                     "nodeType": "ElementaryTypeName",
                     "src": "211:4:1",
@@ -109,7 +109,7 @@
                       "typeString": "uint256"
                     }
                   },
-                  "id": 1062,
+                  "id": 1073,
                   "length": null,
                   "nodeType": "ArrayTypeName",
                   "src": "211:6:1",
@@ -124,21 +124,21 @@
             ],
             "name": "Actors",
             "nodeType": "StructDefinition",
-            "scope": 1083,
+            "scope": 1094,
             "src": "156:87:1",
             "visibility": "public"
           },
           {
             "canonicalName": "Instruments.Primes",
-            "id": 1079,
+            "id": 1090,
             "members": [
               {
                 "constant": false,
-                "id": 1066,
+                "id": 1077,
                 "name": "ace",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 1079,
+                "scope": 1090,
                 "src": "767:11:1",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -147,7 +147,7 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 1065,
+                  "id": 1076,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
                   "src": "767:7:1",
@@ -162,11 +162,11 @@
               },
               {
                 "constant": false,
-                "id": 1068,
+                "id": 1079,
                 "name": "xis",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 1079,
+                "scope": 1090,
                 "src": "789:11:1",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -175,7 +175,7 @@
                   "typeString": "uint256"
                 },
                 "typeName": {
-                  "id": 1067,
+                  "id": 1078,
                   "name": "uint256",
                   "nodeType": "ElementaryTypeName",
                   "src": "789:7:1",
@@ -189,11 +189,11 @@
               },
               {
                 "constant": false,
-                "id": 1070,
+                "id": 1081,
                 "name": "yak",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 1079,
+                "scope": 1090,
                 "src": "811:11:1",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -202,7 +202,7 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 1069,
+                  "id": 1080,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
                   "src": "811:7:1",
@@ -217,11 +217,11 @@
               },
               {
                 "constant": false,
-                "id": 1072,
+                "id": 1083,
                 "name": "zed",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 1079,
+                "scope": 1090,
                 "src": "833:11:1",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -230,7 +230,7 @@
                   "typeString": "uint256"
                 },
                 "typeName": {
-                  "id": 1071,
+                  "id": 1082,
                   "name": "uint256",
                   "nodeType": "ElementaryTypeName",
                   "src": "833:7:1",
@@ -244,11 +244,11 @@
               },
               {
                 "constant": false,
-                "id": 1074,
+                "id": 1085,
                 "name": "wax",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 1079,
+                "scope": 1090,
                 "src": "855:11:1",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -257,7 +257,7 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 1073,
+                  "id": 1084,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
                   "src": "855:7:1",
@@ -272,11 +272,11 @@
               },
               {
                 "constant": false,
-                "id": 1076,
+                "id": 1087,
                 "name": "pow",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 1079,
+                "scope": 1090,
                 "src": "877:11:1",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -285,7 +285,7 @@
                   "typeString": "uint256"
                 },
                 "typeName": {
-                  "id": 1075,
+                  "id": 1086,
                   "name": "uint256",
                   "nodeType": "ElementaryTypeName",
                   "src": "877:7:1",
@@ -299,11 +299,11 @@
               },
               {
                 "constant": false,
-                "id": 1078,
+                "id": 1089,
                 "name": "gem",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 1079,
+                "scope": 1090,
                 "src": "899:11:1",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -312,7 +312,7 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 1077,
+                  "id": 1088,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
                   "src": "899:7:1",
@@ -328,21 +328,21 @@
             ],
             "name": "Primes",
             "nodeType": "StructDefinition",
-            "scope": 1083,
+            "scope": 1094,
             "src": "742:176:1",
             "visibility": "public"
           },
           {
             "canonicalName": "Instruments.Chain",
-            "id": 1082,
+            "id": 1093,
             "members": [
               {
                 "constant": false,
-                "id": 1081,
+                "id": 1092,
                 "name": "chain",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 1082,
+                "scope": 1093,
                 "src": "1441:12:1",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -351,7 +351,7 @@
                   "typeString": "bytes4"
                 },
                 "typeName": {
-                  "id": 1080,
+                  "id": 1091,
                   "name": "bytes4",
                   "nodeType": "ElementaryTypeName",
                   "src": "1441:6:1",
@@ -366,12 +366,12 @@
             ],
             "name": "Chain",
             "nodeType": "StructDefinition",
-            "scope": 1083,
+            "scope": 1094,
             "src": "1417:44:1",
             "visibility": "public"
           }
         ],
-        "scope": 1084,
+        "scope": 1095,
         "src": "128:1337:1"
       }
     ],
@@ -381,14 +381,14 @@
     "absolutePath": "/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/Instruments.sol",
     "exportedSymbols": {
       "Instruments": [
-        1083
+        1094
       ]
     },
-    "id": 1084,
+    "id": 1095,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 1057,
+        "id": 1068,
         "literals": [
           "solidity",
           "^",
@@ -405,24 +405,24 @@
         "contractKind": "library",
         "documentation": " @title DFCP's Instruments\n@author Decentralized Financial Crafting Protocol",
         "fullyImplemented": true,
-        "id": 1083,
+        "id": 1094,
         "linearizedBaseContracts": [
-          1083
+          1094
         ],
         "name": "Instruments",
         "nodeType": "ContractDefinition",
         "nodes": [
           {
             "canonicalName": "Instruments.Actors",
-            "id": 1064,
+            "id": 1075,
             "members": [
               {
                 "constant": false,
-                "id": 1060,
+                "id": 1071,
                 "name": "mintedTokens",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 1064,
+                "scope": 1075,
                 "src": "181:19:1",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -432,7 +432,7 @@
                 },
                 "typeName": {
                   "baseType": {
-                    "id": 1058,
+                    "id": 1069,
                     "name": "uint",
                     "nodeType": "ElementaryTypeName",
                     "src": "181:4:1",
@@ -441,7 +441,7 @@
                       "typeString": "uint256"
                     }
                   },
-                  "id": 1059,
+                  "id": 1070,
                   "length": null,
                   "nodeType": "ArrayTypeName",
                   "src": "181:6:1",
@@ -455,11 +455,11 @@
               },
               {
                 "constant": false,
-                "id": 1063,
+                "id": 1074,
                 "name": "deactivatedTokens",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 1064,
+                "scope": 1075,
                 "src": "211:24:1",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -469,7 +469,7 @@
                 },
                 "typeName": {
                   "baseType": {
-                    "id": 1061,
+                    "id": 1072,
                     "name": "uint",
                     "nodeType": "ElementaryTypeName",
                     "src": "211:4:1",
@@ -478,7 +478,7 @@
                       "typeString": "uint256"
                     }
                   },
-                  "id": 1062,
+                  "id": 1073,
                   "length": null,
                   "nodeType": "ArrayTypeName",
                   "src": "211:6:1",
@@ -493,21 +493,21 @@
             ],
             "name": "Actors",
             "nodeType": "StructDefinition",
-            "scope": 1083,
+            "scope": 1094,
             "src": "156:87:1",
             "visibility": "public"
           },
           {
             "canonicalName": "Instruments.Primes",
-            "id": 1079,
+            "id": 1090,
             "members": [
               {
                 "constant": false,
-                "id": 1066,
+                "id": 1077,
                 "name": "ace",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 1079,
+                "scope": 1090,
                 "src": "767:11:1",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -516,7 +516,7 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 1065,
+                  "id": 1076,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
                   "src": "767:7:1",
@@ -531,11 +531,11 @@
               },
               {
                 "constant": false,
-                "id": 1068,
+                "id": 1079,
                 "name": "xis",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 1079,
+                "scope": 1090,
                 "src": "789:11:1",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -544,7 +544,7 @@
                   "typeString": "uint256"
                 },
                 "typeName": {
-                  "id": 1067,
+                  "id": 1078,
                   "name": "uint256",
                   "nodeType": "ElementaryTypeName",
                   "src": "789:7:1",
@@ -558,11 +558,11 @@
               },
               {
                 "constant": false,
-                "id": 1070,
+                "id": 1081,
                 "name": "yak",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 1079,
+                "scope": 1090,
                 "src": "811:11:1",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -571,7 +571,7 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 1069,
+                  "id": 1080,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
                   "src": "811:7:1",
@@ -586,11 +586,11 @@
               },
               {
                 "constant": false,
-                "id": 1072,
+                "id": 1083,
                 "name": "zed",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 1079,
+                "scope": 1090,
                 "src": "833:11:1",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -599,7 +599,7 @@
                   "typeString": "uint256"
                 },
                 "typeName": {
-                  "id": 1071,
+                  "id": 1082,
                   "name": "uint256",
                   "nodeType": "ElementaryTypeName",
                   "src": "833:7:1",
@@ -613,11 +613,11 @@
               },
               {
                 "constant": false,
-                "id": 1074,
+                "id": 1085,
                 "name": "wax",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 1079,
+                "scope": 1090,
                 "src": "855:11:1",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -626,7 +626,7 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 1073,
+                  "id": 1084,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
                   "src": "855:7:1",
@@ -641,11 +641,11 @@
               },
               {
                 "constant": false,
-                "id": 1076,
+                "id": 1087,
                 "name": "pow",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 1079,
+                "scope": 1090,
                 "src": "877:11:1",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -654,7 +654,7 @@
                   "typeString": "uint256"
                 },
                 "typeName": {
-                  "id": 1075,
+                  "id": 1086,
                   "name": "uint256",
                   "nodeType": "ElementaryTypeName",
                   "src": "877:7:1",
@@ -668,11 +668,11 @@
               },
               {
                 "constant": false,
-                "id": 1078,
+                "id": 1089,
                 "name": "gem",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 1079,
+                "scope": 1090,
                 "src": "899:11:1",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -681,7 +681,7 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 1077,
+                  "id": 1088,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
                   "src": "899:7:1",
@@ -697,21 +697,21 @@
             ],
             "name": "Primes",
             "nodeType": "StructDefinition",
-            "scope": 1083,
+            "scope": 1094,
             "src": "742:176:1",
             "visibility": "public"
           },
           {
             "canonicalName": "Instruments.Chain",
-            "id": 1082,
+            "id": 1093,
             "members": [
               {
                 "constant": false,
-                "id": 1081,
+                "id": 1092,
                 "name": "chain",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 1082,
+                "scope": 1093,
                 "src": "1441:12:1",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -720,7 +720,7 @@
                   "typeString": "bytes4"
                 },
                 "typeName": {
-                  "id": 1080,
+                  "id": 1091,
                   "name": "bytes4",
                   "nodeType": "ElementaryTypeName",
                   "src": "1441:6:1",
@@ -735,12 +735,12 @@
             ],
             "name": "Chain",
             "nodeType": "StructDefinition",
-            "scope": 1083,
+            "scope": 1094,
             "src": "1417:44:1",
             "visibility": "public"
           }
         ],
-        "scope": 1084,
+        "scope": 1095,
         "src": "128:1337:1"
       }
     ],
@@ -752,7 +752,7 @@
   },
   "networks": {},
   "schemaVersion": "3.0.23",
-  "updatedAt": "2020-03-23T04:18:59.752Z",
+  "updatedAt": "2020-03-23T18:58:21.732Z",
   "devdoc": {
     "author": "Decentralized Financial Crafting Protocol",
     "methods": {},

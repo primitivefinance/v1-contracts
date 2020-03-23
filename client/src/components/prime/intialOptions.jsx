@@ -122,9 +122,15 @@ const INITIAL_OPTIONS = {
 
     optionGlossary: {
         'TETHDAI' : {
-            '1600473585' : '0x1bae37c4',
+            '1600473585' : 1, /* CORRESPONDS TO NONCE OF OPTION FROM OPTIONS.SOL, NONCE 1 IS THE FIRST DEPLOYED OPTION */
             'chartSymbol': 'COINBASE:ETHDAI'
         },
+    },
+
+    deployedOptions: {
+        1: {
+
+        }
     },
 
     primeTokens: {

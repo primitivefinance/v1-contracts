@@ -34,8 +34,6 @@ abstract contract IPrime {
     function getChain(uint256 _tokenId) external view virtual returns (bytes4 chain);
 }
 
-
-
 contract Exchange is ERC721Holder, ReentrancyGuard {
     using SafeMath for uint256;
 
@@ -141,6 +139,11 @@ contract Exchange is ERC721Holder, ReentrancyGuard {
         if(_buy.bidPrice >= _askPrice && _askPrice > 0) {
             fillOrder(false, _tokenId, _buy.bidPrice, _askPrice, _buy.buyer, msg.sender);
         } else {
+            _sellOrders[_tokenId] = SellOrders(
+                msg.sender,
+                _askPrice,
+                _tokenId
+            );
             _prime.safeTransferFrom(msg.sender, address(this), _tokenId);
         }
         
