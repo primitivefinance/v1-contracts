@@ -12,7 +12,6 @@ import TableRow from '@material-ui/core/TableRow';
 import Paper from '@material-ui/core/Paper';
 import Grid from '@material-ui/core/Grid';
 import Box from '@material-ui/core/Box';
-import AddressPop from './addressPop';
 
 
 const styles = theme => ({

@@ -1,28 +1,14 @@
 import React, { Component } from "react";
 import { withRouter } from "react-router-dom";
 import { withStyles } from '@material-ui/core/styles';
-import {
-    Card,
-    Typography,
-    Grid,
-    Box
-} from '@material-ui/core';
 import { colors } from "../../theme/theme";
-import GraphicEqIcon from '@material-ui/icons/GraphicEq';
-import BarChartIcon from '@material-ui/icons/BarChart';
 import loading from './830.svg';
-import Web3 from 'web3';
-
-import Button from '@material-ui/core/Button';
-import Switch from '@material-ui/core/Switch';
-import Paper from '@material-ui/core/Paper';
+import Card from '@material-ui/core/Card';
+import Typography from '@material-ui/core/Typography';
+import Grid from '@material-ui/core/Grid';
 import Fade from '@material-ui/core/Fade';
-import Zoom from '@material-ui/core/Zoom';
 import Link from '@material-ui/core/Link';
-/* import Link from 'react-router-dom/Link'; */
-import Page from '../prime/page';
-import getWeb3 from '../getWeb3';
-import SvgIcon from '@material-ui/core/SvgIcon';
+import Page from './page';
 import DFCP from './dfcplogo.svg'
 
 

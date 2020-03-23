@@ -11,10 +11,7 @@ import {
 
 import mainTheme from './theme'
 import Home from './components/home';
-import Prime from './components/prime/prime';
-import PrimeV2 from './components/prime/primeV2';
 import PrimeV3 from './components/prime/primeV3';
-import Inventory from './components/prime/inventory';
 
 import {
   CSSTransition,
@@ -46,9 +43,8 @@ class App extends Component {
                       render={() => (
                         <>
                           <Route exact path='/' component={Home}/>
-                          <Route path='/home' component={Home}/>
-                          <Route path='/prime' component={PrimeV3}/>
-                          <Route path='/inventory/:address' component={Inventory}/>
+                          <Route exact path='/home' component={Home}/>
+                          <Route exact path='/prime' component={PrimeV3}/>
                         </>
                       )}
                     >
