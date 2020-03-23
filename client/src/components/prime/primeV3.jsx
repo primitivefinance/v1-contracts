@@ -1,63 +1,42 @@
 import React, { Component, PureComponent } from 'react';
-import { DragDropContext } from 'react-beautiful-dnd';
-import { withRouter } from "react-router-dom";
+import { Web3ReactProvider, getWeb3ReactContext } from '@web3-react/core';
+import { InjectedConnector } from '@web3-react/injected-connector';
 import { withStyles } from '@material-ui/core/styles';
 import { colors } from '../../theme/theme';
 import Box from '@material-ui/core/Box';
 import Card from '@material-ui/core/Card';
-import CardHeader from '@material-ui/core/CardHeader';
 import Typography from '@material-ui/core/Typography';
 import Button from '@material-ui/core/Button';
-import LinkM from '@material-ui/core/Link';
 import GitHubIcon from '@material-ui/icons/GitHub';
 import TwitterIcon from '@material-ui/icons/Twitter';
-import Paper from '@material-ui/core/Paper';
-import Slide from '@material-ui/core/Slide';
-import Fade from '@material-ui/core/Fade';
-import Link from '@material-ui/core/Link';
-
-import Web3 from 'web3';
-import HorizontalNonLinearStepper from './stepper';
-import Board from './board';
-import Column from './column';
-import OrderForm from './orderForm';
-import NavButton from './navButton';
-import Footer from './footer';
-
-import INITIAL_CONTEXT from './constants';
-import TOKENS_CONTEXT from './tokenAddresses';
-import PrimeContract from '../../artifacts/Prime.json';
-
-import MintForm from './mintForm';
-import INITIAL_OPTIONS from './intialOptions';
-import ApproveForm from './approveForm';
-import InventoryV2 from './inventoryV2';
-import Erc20 from '../../artifacts/tUSD.json';
-import Exchange from '../../artifacts/Exchange.json';
-import { Web3ReactProvider, getWeb3ReactContext } from '@web3-react/core';
-import { InjectedConnector } from '@web3-react/injected-connector';
-import Web3Modal from 'web3modal';
-import Header from './header';
-
-import OptionsChainTable from './optionsChainTable';
-import OptionsChainTableV2 from './optionsChainTableV2';
-import PositionsTableV2 from './positionsTableV2';
-import OpenPosition from './openPosition';
-import LinearProgress from '@material-ui/core/LinearProgress';
 import LinearIndeterminate from './linearIndeterminate';
 import { makeStyles } from '@material-ui/core/styles';
 import CircularProgress from '@material-ui/core/CircularProgress';
-import Fortmatic from "fortmatic";
 import DashboardIcon from '@material-ui/icons/Dashboard';
 import IconButton from '@material-ui/core/IconButton';
 import DetailsIcon from '@material-ui/icons/Details';
-import Dfcplogo2 from '../../primitivewhite2p.png';
 import Tooltip from '@material-ui/core/Tooltip';
 import FunctionsIcon from '@material-ui/icons/Functions';
 import HomeIcon from '@material-ui/icons/Home';
-import TradingViewWidget, { Themes } from 'react-tradingview-widget';
 import ViewListIcon from '@material-ui/icons/ViewList';
 import CheckIcon from '@material-ui/icons/Check';
+
+import Web3 from 'web3';
+import TOKENS_CONTEXT from './tokenAddresses';
+import PrimeContract from '../../artifacts/Prime.json';
+import INITIAL_OPTIONS from './intialOptions';
+import Erc20 from '../../artifacts/tUSD.json';
+import Exchange from '../../artifacts/Exchange.json';
+
+import TradingViewWidget, { Themes } from 'react-tradingview-widget';
+import Web3Modal from 'web3modal';
+import Header from './header';
+import OptionsChainTableV2 from './optionsChainTableV2';
+import PositionsTableV2 from './positionsTableV2';
+import OpenPosition from './openPosition';
+import Fortmatic from "fortmatic";
+
+
 
 const providerOptions = {
     fortmatic: {
@@ -260,10 +239,9 @@ const styles = theme => ({
         display: 'flex',
         flexDirection: 'column',
         backgroundColor: colors.banner,
-        height: '40vh',
         marginBottom: '8px',
         padding: '4px',
-        minHeight: '50%',
+        minHeight: '50vh',
     },
 
     chain: {
@@ -463,27 +441,6 @@ const styles = theme => ({
 });
 
 
-const useStyles = makeStyles(theme => ({
-  root: {
-    display: 'flex',
-    '& > * + *': {
-      marginLeft: theme.spacing(2),
-    },
-  },
-}));
-
-function CircularIndeterminate() {
-    const classes = useStyles();
-
-    return (
-        <div className={classes.root}>
-            <CircularProgress />
-        </div>
-    );
-}
-
-
-
 class PrimeV3 extends Component {
     constructor(props) {
         super(props);
@@ -495,22 +452,9 @@ class PrimeV3 extends Component {
         });
 
         /* CORE */
-        this.getWeb3 = this.getWeb3.bind(this);
         this.getAccount = this.getAccount.bind(this);
         this.getNetwork = this.getNetwork.bind(this);
         this.resetApp = this.resetApp.bind(this);
-
-        /* SELECTIONS */
-        this.handleSelect = this.handleSelect.bind(this);
-        this.handleSelectAmounts = this.handleSelectAmounts.bind(this);
-        this.handleSubmit = this.handleSubmit.bind(this);
-        this.selectAmounts = this.selectAmounts.bind(this);
-
-        /* NAVIGATION */
-        this.checkValid = this.checkValid.bind(this);
-        this.goForward = this.goForward.bind(this);
-        this.goBackward = this.goBackward.bind(this);
-        this.goToDashboard = this.goToDashboard.bind(this);
         
         /* HELPER WEB3 FUNCTIONS */
         this.handleApprove = this.handleApprove.bind(this);
@@ -527,13 +471,10 @@ class PrimeV3 extends Component {
         this.primeClose = this.primeClose.bind(this);
 
         /* GET DATA */
-        this.getCurrentPrimeOutput = this.getCurrentPrimeOutput.bind(this);
-        this.getBalanceOfPrime = this.getBalanceOfPrime.bind(this);
         this.getOwnerOfPrime = this.getOwnerOfPrime.bind(this);
         this.getPrimeProperties = this.getPrimeProperties.bind(this);
         this.getPastEvents = this.getPastEvents.bind(this);
         this.getPrimeInventory = this.getPrimeInventory.bind(this);
-        this.getBalanceOfErc20 = this.getBalanceOfErc20.bind(this);
         this.getWalletData = this.getWalletData.bind(this);
         this.getProfitData = this.getProfitData.bind(this);
         this.getBankData = this.getBankData.bind(this);
@@ -543,7 +484,6 @@ class PrimeV3 extends Component {
         this.getActivePrimes = this.getActivePrimes.bind(this);
 
         this.onConnect = this.onConnect.bind(this);
-        this.getOptionChain = this.getOptionChain.bind(this);
         this.getPositions = this.getPositions.bind(this);
         this.getUsdToEth = this.getUsdToEth.bind(this);
         this.handleOptionSelect = this.handleOptionSelect.bind(this);
@@ -553,6 +493,9 @@ class PrimeV3 extends Component {
         this.unlockPair = this.unlockPair.bind(this);
         this.mintTestTokens = this.mintTestTokens.bind(this);
         this.handleSelectChain = this.handleSelectChain.bind(this);
+        this.getContractConstant = this.getContractConstant.bind(this);
+        this.callContractFunction = this.callContractFunction.bind(this);
+        this.getPendingTx = this.getPendingTx.bind(this);
 
     }
 
@@ -563,11 +506,6 @@ class PrimeV3 extends Component {
     };
 
     /* WEB3 FUNCTIONS */
-    getWeb3 = async () => {
-        const provider = await this.web3Modal.connect();
-        const web3 = new Web3(provider)
-        return web3;
-    };
 
     resetApp = async () => {
         const { web3 } = this.state;
@@ -602,19 +540,15 @@ class PrimeV3 extends Component {
             networkId: networkId,
             account: address,
         });
-        /* await this.getBalanceOfPrime();
+        /* 
         await this.getPastEvents('PrimeMinted');
         await this.getPrimeInventory();
         await this.getWalletInventory();
         await this.getBankInventory();
         await this.getProfitData();
-        await this.getActivePrimes(); */
-        /* await this.getPrimeInventory(); */
-        /* await this.getOptionChain('call', '1', 'tETH', 'DAI', '1600473585');
-        await this.getOptionChain('put', '1', 'DAI', 'tETH', '1600473585'); */
-        /* await this.getPositions(); */
+        await this.getActivePrimes(); 
+        await this.getPositions(); */
         await this.getOptions();
-        await this.getPositions();
         console.log({web3, provider, address,  chainId, networkId})
     };
 
@@ -624,7 +558,6 @@ class PrimeV3 extends Component {
         if(web3) {
             let accounts = await web3.eth.getAccounts();
             let account = accounts[0];
-            /* console.trace({account}) */
             this.setState({
                 account: account,
             })
@@ -646,7 +579,6 @@ class PrimeV3 extends Component {
     };
 
     getContractInstance = async (Contract) => {
-        console.time('getContractInstance');
         let contractName = Contract.contractName;
         if(
             this.state.instances
@@ -669,13 +601,9 @@ class PrimeV3 extends Component {
             deployedNetwork && deployedNetwork.address,
         );
 
-        const name = await instance.methods.name().call();
-
-        /* console.trace({instance}) */
         let instanceArray = (this.state.instances) ? Array.from(this.state.instances) : [];
         let newArray = [
             {
-                name: name,
                 instance: instance,
                 address: deployedNetwork.address
             }
@@ -687,7 +615,6 @@ class PrimeV3 extends Component {
                 [contractName]: newArray,
             }
         });
-        console.timeEnd('getContractInstance');
         return instance;
     };
 
@@ -918,441 +845,6 @@ class PrimeV3 extends Component {
 
     /* COMPONENT FUNCTIONS */
 
-    handleSelect = (value, name) => {
-        console.log('select value', value, name);
-        this.setState({
-            selection: {
-                ...this.state.selection,
-                [name]: value,
-            }
-        }, () => this.checkValid());
-
-        
-    };
-
-    checkValid = () => {
-        let selection = (this.state.selection) ? this.state.selection : '';
-        let valid = false;
-        if(
-            typeof selection['collateral'] !== 'undefined' 
-            && typeof selection['payment'] !== 'undefined' 
-            && typeof selection['expiration'] !== 'undefined' 
-        ) {
-            console.log(
-                'VALID', 
-                selection['collateral'],
-                selection['payment'],
-                selection['expiration']
-            );
-            valid = true;
-            
-        } else {
-            valid = false;
-        }
-
-        this.setState({
-            valid: valid,
-        });
-        return valid;
-    };
-
-    selectAmounts = () => {
-        if(this.state.valid) {
-            this.setState({
-                selectAmounts: !this.state.selectAmounts
-            });
-        }
-        
-    };
-
-    handleSubmit = async () => {
-        console.time('handleSubmit');
-        await this.getCurrentPrimeOutput();
-        /* GET BOARD STATE AND LOAD INTO PAYLOAD FOR ETHEREUM TX */
-        const account = await this.getAccount();
-        let payloadArray = [];
-        let addressReceiver = account;
-        let _collateral = this.state.selection['collateral'];
-        let _payment = this.state.selection['payment'];
-        let _expiration = this.state.selection['expiration'];
-        
-
-        /* GET QUANTITY OF ASSETS */
-        let collateralAmount = (this.state.collateralAmount) ? (this.state.collateralAmount) : undefined;
-        let paymentAmount = (this.state.paymentAmount) ? (this.state.paymentAmount) : undefined;
-        if(
-            typeof collateralAmount === 'undefined'
-            || typeof paymentAmount === 'undefined'
-        ) {
-            console.log({collateralAmount, paymentAmount}, 'COLLAT OR PAYMENT QTY UNDEFINED')
-            return;
-        }
-        console.log({collateralAmount, paymentAmount})
-
-        /* PASS PARAMETERS TO CONTRACT FUNCTION AND SEND TRANSACTION */
-        try {
-            await this.createPrime(
-                _collateral,
-                _payment,
-                addressReceiver,
-                _expiration,
-                collateralAmount,
-                paymentAmount
-            );
-        } catch(error) {
-            console.log({error})
-        }
-
-        console.trace({
-            payloadArray, 
-            _collateral, 
-            _payment, 
-            addressReceiver, 
-            _expiration, 
-            collateralAmount,
-            paymentAmount 
-        });
-        console.timeEnd('handleSubmit');
-    };
-
-    handleSelectAmounts = (name, amount) => {
-        let collateralAmount = (this.state.collateralAmount) ? this.state.collateralAmount : 0;
-        let paymentAmount = (this.state.paymentAmount) ? this.state.paymentAmount : 0;
-        console.log({amount})
-        switch(name) {
-            case 'collateral':
-                collateralAmount = amount;
-                break;
-            case 'payment':
-                paymentAmount = amount;
-                break;  
-        };
-
-        this.setState({
-            collateralAmount: collateralAmount,
-            paymentAmount: paymentAmount,
-        }, () => {this.checkValid(); this.getCurrentPrimeOutput();})
-        console.log('HANDLE ASSET AMOUNT', {collateralAmount, paymentAmount})
-    };
-
-    getCurrentPrimeOutput = async () => {
-        const web3 = this.state.web3;
-        let primeInstance = await this.getContractInstance(PrimeContract);
-        let xis, yakSymbol, zed, waxSymbol, pow;
-
-        function createData( xis, yakSymbol, zed, waxSymbol, pow) {
-            return { xis, yakSymbol, zed, waxSymbol, pow };
-        };
-
-        let primeOutput = [];
-        
-        let collateral = (this.state.collateralAmount) ? this.state.collateralAmount : 0;
-        let payment = (this.state.paymentAmount) ? this.state.paymentAmount : 0;
-        let expiration = (this.state.selection) ? (this.state.selection['expiration']) ? (this.state.selection['expiration']) : '' : '';
-        let collateralSym = (this.state.selection) ? (this.state.selection['collateral']) ? (this.state.selection['collateral']) : '' : '';
-        let paymentSym = (this.state.selection) ? (this.state.selection['payment']) ? (this.state.selection['payment']) : '' : '';
-        
-        if(isNaN(payment)) {
-            payment = 'INVALID';
-        }
-
-        if(isNaN(collateral)) {
-            collateral = 'INVALID';
-        }
-
-        xis = collateral;
-        yakSymbol = collateralSym;
-        zed = payment;
-        waxSymbol = paymentSym;
-        pow = expiration;
-        const date = new Date(pow * 1000);
-        pow = (date.toDateString());
-        let data = createData(
-            xis,
-            yakSymbol,
-            zed,
-            waxSymbol,
-            pow,
-        );
-
-        primeOutput.push(data)
-        console.log({primeOutput})
-        this.setState({
-            primeOutput: primeOutput,
-        })
-        return primeOutput;
-    };
-
-    goForward = async () => {
-        let goForward;
-        let maxSteps = 2;
-        if(this.state.valid) {
-            let allowance = await this.getAllowance(this.state.selection['collateral']);
-            console.log({allowance})
-            if(allowance > 0) {
-                goForward = this.state.step + 2;
-            } else {
-                goForward = this.state.step + 1;
-            }
-            if(goForward > maxSteps) {
-                goForward = maxSteps;
-            }
-            this.setState({
-                step: goForward,
-            },);
-        }
-        console.log({goForward})
-    };
-
-    goBackward = () => {
-        let goBackward;
-        if(this.state.valid) {
-            if(this.state.allowances[this.state.selection['collateral']] > 0) {
-                goBackward = this.state.step - 2;
-            } else {
-                goBackward = this.state.step - 1;
-            }
-            if(goBackward < 0) {
-                goBackward = 0;
-            }
-            this.setState({
-                step: goBackward,
-            });
-        }
-        console.log({goBackward})
-    };
-
-    getBalanceOfPrime = async () => {
-        console.time('getBalanceOfPrime')
-        // GET WEB3 AND ACCOUNT
-        const web3 = this.state.web3;
-
-        // GET INJECTED ACCOUNT
-        const account = await this.getAccount();
-
-        // GET PRIME CONTRACT
-        let primeInstance = await this.getContractInstance(PrimeContract);
-
-        let result = await primeInstance.methods.balanceOf(
-            account
-        ).call();
-        this.setState({
-            primeBalance: result,
-        });
-        console.timeEnd('getBalanceOfPrime');
-        return result;
-    };
-
-    getBalanceOfErc20 = async () => {
-        console.time('getBalanceOfErc20')
-        // GET WEB3 AND ACCOUNT
-        const web3 = this.state.web3;
-
-        // GET INJECTED ACCOUNT
-        const account = await this.getAccount();
-
-        // GET PRIME CONTRACT
-        let ercInstance = await this.getContractInstance(Erc20);
-
-        let result = await ercInstance.methods.balanceOf(
-            account
-        ).call();
-        this.setState({
-            ercBalance: result,
-        });
-        console.timeEnd('getBalanceOfErc20');
-        return result;
-    };
-
-    getOwnerOfPrime = async (tokenId) => {
-        console.time('getOwnerOfPrime')
-        // GET WEB3 AND ACCOUNT
-        const web3 = this.state.web3;
-
-        // GET INJECTED ACCOUNT
-        const account = this.state.account;
-
-        // GET PRIME CONTRACT
-        let primeInstance = await this.getContractInstance(PrimeContract);
-
-        let result = await primeInstance.methods.ownerOf(
-            tokenId
-        ).call();
-        this.setState({
-            ownerOf: {
-                [tokenId]: result,
-            }
-        });
-        console.timeEnd('getOwnerOfPrime');
-        return result;
-    };
-
-    getPrimeProperties = async (tokenId) => {
-        console.time('getPrimeProperties')
-        // GET WEB3 AND ACCOUNT
-        const web3 = this.state.web3;
-
-        // GET INJECTED ACCOUNT
-        const account = await this.getAccount();
-
-        // GET PRIME CONTRACT
-        let primeInstance = await this.getContractInstance(PrimeContract);
-
-        let result = await primeInstance.methods.getPrime(
-            tokenId
-        ).call();
-        this.setState({
-            primeTokens: {
-                [tokenId]: result
-            }
-        });
-        console.timeEnd('getPrimeProperties');
-        return result;
-    };
-
-    getPastEvents = async (event) => {
-        // GET PRIME CONTRACT
-        let primeInstance = await this.getContractInstance(PrimeContract);
-        const account = await this.getAccount();
-        let result = await primeInstance.getPastEvents(event, {
-            filter: {_user: account},
-            fromBlock: 0,
-            toBlock: 'latest',
-        });
-        let returnValues = [];
-        for(var i = 0; i < result.length; i++){
-            returnValues.push(result[i].returnValues);
-        }
-        
-        let userMintedPrimes = [];
-        for(var i = 0; i < result.length; i++){
-            userMintedPrimes.push(result[i].returnValues['_tokenId']);
-        }
-
-        this.setState({
-            pastEvents: {
-                [event]: result,
-            },
-            returnValues: {
-                [event]: returnValues,
-            },
-            userMintedPrimes: {
-                [account] : userMintedPrimes,
-            }
-        });
-        /* console.log(result);
-        console.log({returnValues})
-        console.log({userMintedPrimes}) */
-        return result;
-    };
-
-    getPrimeInventory = async () => {
-        const web3 = this.state.web3;
-        const account = this.state.account;
-        const networkId = await this.getNetwork();
-        let primeInstance = await this.getContractInstance(PrimeContract);
-
-        let nonce = await primeInstance.methods.nonce().call();
-
-        function createData(tokenId, xis, yakSymbol, zed, waxSymbol, pow, gem, position) {
-            return { tokenId, xis, yakSymbol, zed, waxSymbol, pow, gem, position };
-        };
-
-        let primeRows = [];
-        let activePrimes = await this.getActivePrimes();
-        let userOwnedPrimes = [];
-        let position = {};
-
-        for(var i = 1; i <= nonce; i++) {
-            if((await this.getOwnerOfPrime(i)) === account) {
-                userOwnedPrimes.push(i);
-                position[`${i}`] = true;
-            } else {
-                console.log('Does not own: ', i)
-                if(activePrimes.indexOf(`${i}`) !== -1) {
-                    position[`${i}`] = false;
-                    userOwnedPrimes.push(i);
-                }
-            }
-        };
-
-        for(var i = 0; i < activePrimes.length; i++) {
-            let properties = await this.getPrimeProperties(activePrimes[i]);
-            let yakInstance = new web3.eth.Contract(
-                Erc20.abi,
-                networkId && properties['yak'],
-            );
-            let yakSymbol = await yakInstance.methods.symbol().call();
-
-            let waxInstance = new web3.eth.Contract(
-                Erc20.abi,
-                networkId && properties['wax'],
-            );
-
-            let waxSymbol = await waxInstance.methods.symbol().call();
-
-            let tokenId = activePrimes[i];
-            let xis = await web3.utils.fromWei(properties['xis']);
-            let zed = await web3.utils.fromWei(properties['zed']);
-            /* const date = new Date(properties['pow'] * 1000);
-            let pow = (date.toDateString()); */
-            let pow = properties['pow'];
-            let data = createData(
-                tokenId,
-                xis,
-                yakSymbol,
-                zed,
-                waxSymbol,
-                pow,
-                properties['gem'],
-                position[`${tokenId}`]
-            );
-
-            primeRows.push(data)
-            console.log({primeRows})
-        };
-
-        for(var i = 0; i < userOwnedPrimes.length; i++) {
-            let properties = await this.getPrimeProperties(userOwnedPrimes[i]);
-            let yakInstance = new web3.eth.Contract(
-                Erc20.abi,
-                networkId && properties['yak'],
-            );
-            let yakSymbol = await yakInstance.methods.symbol().call();
-
-            let waxInstance = new web3.eth.Contract(
-                Erc20.abi,
-                networkId && properties['wax'],
-            );
-            
-            let waxSymbol = await waxInstance.methods.symbol().call();
-
-            let tokenId = userOwnedPrimes[i];
-            let xis = await web3.utils.fromWei(properties['xis']);
-            let zed = await web3.utils.fromWei(properties['zed']);
-            let pow = properties['pow'];
-            let data = createData(
-                tokenId,
-                xis,
-                yakSymbol,
-                zed,
-                waxSymbol,
-                pow,
-                properties['gem'],
-                position[`${tokenId}`]
-            );
-
-            primeRows.push(data)
-        }
-
-
-        this.setState({
-            primeRows: primeRows,
-        },);
-        
-        return primeRows;
-    };
-
     getWalletData = async (instance, account) => {
         const web3 = this.state.web3;
         let _prime = await this.getContractInstance(PrimeContract);
@@ -1576,19 +1068,7 @@ class PrimeV3 extends Component {
         return deactivatedPrimes;
     };
 
-    getActivePrimes = async () => {
-        let minted = await this.getMintedPrimes();
-        let inactive = await this.getDeactivatedPrimes();
-        /* let ownedPrimes = await this.getPrimeInventory(); */
-
-        let activePrimes = minted.filter(val => !inactive.includes(val));
-        /* activePrimes = ownedPrimes.filter(val => !activePrimes.includes(val)); */
-        console.log({activePrimes})
-        this.setState({
-            activePrimes: activePrimes
-        });
-        return activePrimes;
-    };
+    
 
     handleMint = async (symbol) => {
         console.log('MINT: ', symbol)
@@ -1830,12 +1310,6 @@ class PrimeV3 extends Component {
         },)
     };
 
-    goToDashboard = () => {
-        this.setState({
-            onDashboard: !this.state.onDashboard,
-        });
-    };
-
     getUsdToEth = async () => {
         const networkId = await this.getNetwork();
         const web3 = this.state.web3;
@@ -1867,113 +1341,45 @@ class PrimeV3 extends Component {
         return usdToEth;
     }
 
-    /* OPTION CHAIN */
-    getOptionChain = async (type, collateralAmount, collateralType, strikeType, expiration) => {
-        console.log('GET OPTION CHAIN FOR', type)
+    getContractConstant = async (constant, instance, ...args) => {
+        console.time('getContractConstant')
         const web3 = this.state.web3;
-        const account = await this.getAccount();
-        const networkId = await this.getNetwork();
-        let primeInstance = await this.getContractInstance(PrimeContract);
-        let nonce = await primeInstance.methods.nonce().call();
-
-        let bid, ask, qty, strike, strikeUnits;
-        let collateral, collateralUnits, collateralSym, strikeSym;
-        function createData( tokenId, collateral, collateralUnits, bid, ask, qty, strike, strikeUnits ) {
-            return { tokenId, collateral, collateralUnits, bid, ask, qty, strike, strikeUnits };
-        };
-
-        /* THE OPTIONS AVAILABLE - TOKEN IDS */
-        let activeOptions = await this.getActivePrimes();
-
-        /* OPTION DATA GOES HERE */
-        let optionRows = [];
-        
-
-        /*  GET INSTANCES */
-        let collateralInstance = await this.getInstance(collateralType);
-        let strikeInstance = await this.getInstance(strikeType);
-        console.log('GOT INSTANCES', {collateralType, strikeType})
-
-        bid = '10';
-        ask = '15';
-        qty = '5';
-        strike = '100';
-        strikeUnits = strikeType;
-
-        
-        
-
-
-        /* FOR EACH AVAILABLE OPTION - GET THE OPTION DATA AND PUSH INTO ARRAY */
-        for(var i = 0; i < activeOptions.length; i++) {
-            let tokenId = activeOptions[i];
-            let properties = await primeInstance.methods.getPrime(
-                tokenId
-            ).call();
-
-            
-            
-            collateralInstance = new web3.eth.Contract(
-                Erc20.abi,
-                networkId && properties.yak,
-            );
-            collateralSym = await collateralInstance.methods.symbol().call();
-
-            strikeInstance = new web3.eth.Contract(
-                Erc20.abi,
-                networkId && properties.wax,
-            );
-            strikeSym = await strikeInstance.methods.symbol().call();
-            strikeUnits = strikeSym;
-            collateral = await web3.utils.fromWei(properties.xis);
-            strike = await web3.utils.fromWei(properties.zed);
-            let underlyingMatch;
-            let expirationMatch = (properties.pow && expiration);
-            switch(type) {
-                case 'call':
-                    underlyingMatch = (collateral === collateralAmount)
-                    break;
-                case 'put':
-                    underlyingMatch = (strike === collateralAmount)
-                    break;
-            };
-
-            if(
-                collateralType === collateralSym 
-                && strikeType === strikeSym 
-                && underlyingMatch
-                && expirationMatch
-            ) {
-                
-                console.log({tokenId, collateralType, collateralSym, collateral, strikeType, strikeSym,  strike})
-                
-                collateralUnits = collateralType;
-                let data = createData(
-                    tokenId,
-                    collateral,
-                    collateralUnits,
-                    bid,
-                    ask,
-                    qty,
-                    strike,
-                    strikeUnits
-                );
-                
-                optionRows.push(data)
-            }
-        };
-
-        optionRows.sort((a, b) => parseFloat(a.strike) - parseFloat(b.strike));
-        this.setState({
-            optionRows: {
-                ...this.state.optionRows,
-                [type]: optionRows,
-            }
-        },);
-
-        console.log({optionRows})
-        return optionRows;
+        const account = this.state.account;
+        const networkId = this.state.networkId;
+        let val = await instance.methods[constant](...args).call();
+        /* console.log({constant, instance, val}) */
+        console.timeEnd('getContractConstant')
+        return val;
     };
+
+    getPendingTx = (isPending, ...args) => {
+        if(!isPending) {
+            this.setState({
+                pendingTx: false,
+                txNumber: undefined,
+                txAmount: undefined,
+            });
+        }
+
+        this.setState({
+            pendingTx: isPending,
+            txNumber: args[0],
+            txAmount: args[1],
+        });
+        return isPending;
+    }
+
+    callContractFunction = async (instance, func, from, value, ...args) => {
+        const web3 = this.state.web3;
+        const account = this.state.account;
+        const networkId = this.state.networkId;
+        
+        let result = await instance.methods[func](...args).send({from: from, value: value})
+        console.log({result})
+        return result;
+    };
+
+    /* OPTION CHAIN */
 
     getExchangePositions = async () => {
         const web3 = this.state.web3;
@@ -2038,6 +1444,226 @@ class PrimeV3 extends Component {
     };
 
     /* POSITION */
+    getPastEvents = async (instance, event) => {
+        // GET PRIME CONTRACT
+        const account = this.state.account;
+        let result = await instance.getPastEvents(event, {
+            /* filter: {_tokenId: tokenId}, */
+            fromBlock: 0,
+            toBlock: 'latest',
+        });
+        let returnValues = [];
+        for(var i = 0; i < result.length; i++){
+            returnValues.push(result[i].returnValues);
+        }
+        this.setState({
+            pastEvents: {
+                [event]: result,
+            },
+            returnValues: {
+                [event]: returnValues,
+            },
+        });
+        return returnValues;
+    };
+
+    getActivePrimes = async () => {
+        let minted = await this.getMintedPrimes();
+        let inactive = await this.getDeactivatedPrimes();
+        /* let ownedPrimes = await this.getPrimeInventory(); */
+
+        let activePrimes = minted.filter(val => !inactive.includes(val));
+        /* activePrimes = ownedPrimes.filter(val => !activePrimes.includes(val)); */
+        console.log({activePrimes})
+        this.setState({
+            activePrimes: activePrimes
+        });
+        return activePrimes;
+    };
+
+    getOwnerOfPrime = async (tokenId) => {
+        console.time('getOwnerOfPrime')
+        const web3 = this.state.web3;
+        const account = this.state.account;
+        let result;
+
+        if(this.state.ownerOf[tokenId]) {
+            console.timeEnd('getOwnerOfPrime');
+            return this.state.ownerOf[tokenId];
+        } else {
+            const primeInstance = await this.getContractInstance(PrimeContract);
+            result = await this.getContractConstant(
+                'ownerOf', primeInstance,
+                tokenId
+            );
+            this.setState({
+                ownerOf: {
+                    [tokenId]: result,
+                }
+            });
+        }
+        console.timeEnd('getOwnerOfPrime');
+        return result;
+    };
+
+    getPrimeProperties = async (tokenId) => {
+        console.time('getPrimeProperties')
+        const web3 = this.state.web3;
+        const account = this.state.account;
+        let result;
+
+        if(this.state.primeTokens[tokenId]) {
+            console.timeEnd('getPrimeProperties');
+            return this.state.primeTokens[tokenId];
+        } else {
+            const primeInstance = await this.getContractInstance(PrimeContract);
+            result = await this.getContractConstant(
+                'getPrime', primeInstance,
+                tokenId
+            );
+            this.setState({
+                primeTokens: {
+                    [tokenId]: result
+                }
+            });
+        }
+        console.timeEnd('getPrimeProperties');
+        return result;
+    };
+
+    getPrimeInventory = async () => {
+        const web3 = this.state.web3;
+        const account = this.state.account;
+        const networkId = this.state.networkId;
+        const primeInstance = await this.getContractInstance(PrimeContract);
+        const exchangeInstance = await this.getContractInstance(Exchange);
+
+        let nonce = await primeInstance.methods.nonce().call();
+
+        function createData(tokenId, xis, yakSymbol, zed, waxSymbol, pow, gem, position) {
+            return { tokenId, xis, yakSymbol, zed, waxSymbol, pow, gem, position };
+        };
+
+        /* 
+            NEED TO GET ALL THE TOKENS THE USER IS EFFECTIVELY IN CONTROL OF
+            ACTIVE PRIMES ARE ALL MINTED PRIMES
+            DEACTIVE PRIMES ARE ALL DESTROYED PRIMES
+            DOES NOT INCLUDE PRIMES PURCHASED FROM EXCHANGE OR OTHERS
+            OWNEROF WOULD CHECK IF THEY OWN THE PRIME
+
+            COULD CHECK EVENT HISTORY FOR PURCHASES?
+            AS THE AMNOUNT OF TOKENS GOES UP, ITS UNFEASIBLE TO CHECK
+            EVERY SINGLE TOKENS OWNER AND COMPARE...
+
+            COULD CHECK BUY ORDERS AND THEN CHECK OWNERSHIP...
+            IT WOULDNT SHOW PRIMES FROM 3RD PARTIES. COULD ADD 
+            AN IMPORT FUNCTION TO HANDLE THAT..
+
+        */
+
+        let primeRows = [];
+        let activePrimes = await this.getActivePrimes(); /* UNION OF MINTED AND ! DEACTIVATED PRIME */
+        let userOwnedPrimes = [];
+        let position = {};
+        let userTokens = [];
+
+        /* GET LONG POSITIONS BY CHECKING BUY ORDER EVENTS */
+        let buyOrders = await this.getPastEvents(exchangeInstance, 'BuyOrder');
+        for(var i = 0; i < buyOrders.length; i++) {
+            let tokenId = buyOrders[i]._tokenId;
+            let owner = await this.getOwnerOfPrime(tokenId);
+            if(owner === account) {
+                userOwnedPrimes.push(tokenId)
+            }
+        }
+
+        let buyOrdersUnfilled = await this.getPastEvents(exchangeInstance, 'FillOrderUnfilled');
+        for(var i = 0; i < buyOrdersUnfilled.length; i++) {
+            let tokenId = buyOrdersUnfilled[i]._tokenId;
+            let owner = await this.getOwnerOfPrime(tokenId);
+            if(owner === account) {
+                userOwnedPrimes.push(tokenId)
+            }
+        }
+
+        /* STORE THE LONG POSITION TOKENS */
+        for(var i = 0; i < userOwnedPrimes.length; i++) {
+            position[`${userOwnedPrimes[i]}`] = true;
+        };
+
+        /* ADD SHORT AND LONG POSITIONS TO USERTOKENS ARRAY */
+        for(var i = 0; i < activePrimes.length; i++) {
+            userTokens.push(activePrimes[i]);
+            /* console.log('pushing active prime to user token', activePrimes[i]) */
+        }
+
+        for(var i = 0; i < userOwnedPrimes.length; i++) {
+            userTokens.push(userOwnedPrimes[i]);
+            /* console.log('pushing user owned prime to user token', userOwnedPrimes[i]) */
+        }
+
+        /* FILTER DUPLICATES OUT */
+        userTokens = [...new Set(userTokens)];
+ 
+        /* CHECK USERTOKENS AGAINST CURRENT STATE OF PRIME ROWS */
+        let update = false;
+        if(this.state.primeRows) {
+            for(var i = 0; i < (this.state.primeRows).length; i++) {
+                if(userTokens.indexOf(this.state.primeRows[i].tokenId) == -1) {
+                    update = true;
+                }
+            }
+        }
+
+        /* CREATE DATA OBJECT FOR EACH TOKENID */
+        if(typeof this.state.primeRows === 'undefined' || update) {
+            for(var i = 0; i < userTokens.length; i++) {
+                let properties = await this.getPrimeProperties(userTokens[i]);
+                let yakInstance = new web3.eth.Contract(
+                    Erc20.abi,
+                    networkId && properties['yak'],
+                );
+                let yakSymbol = await this.getContractConstant(
+                    'symbol', yakInstance
+                );
+    
+                let waxInstance = new web3.eth.Contract(
+                    Erc20.abi,
+                    networkId && properties['wax'],
+                );
+                
+                let waxSymbol = await this.getContractConstant(
+                    'symbol', waxInstance
+                );
+    
+                let tokenId = userTokens[i];
+                let xis = await web3.utils.fromWei(properties['xis']);
+                let zed = await web3.utils.fromWei(properties['zed']);
+                let pow = properties['pow'];
+                let data = createData(
+                    tokenId,
+                    xis,
+                    yakSymbol,
+                    zed,
+                    waxSymbol,
+                    pow,
+                    properties['gem'],
+                    position[`${tokenId}`]
+                );
+    
+                primeRows.push(data)
+            }
+    
+            this.setState({
+                primeRows: primeRows
+            });
+        } else {
+            primeRows = this.state.primeRows
+        }
+        
+        return primeRows;
+    };
+
     getPositions = async () => {
         const web3 = this.state.web3;
         const account = await this.getAccount();
@@ -2048,8 +1674,6 @@ class PrimeV3 extends Component {
             Exchange.abi,
             deployedNetwork && deployedNetwork.address,
         );
-
-        let nonce = await primeInstance.methods.nonce().call();
 
         let tokenId, isLong, name, netProfit, costBasis, premium, expiration;
         let cValue, pValue;
@@ -2195,7 +1819,7 @@ class PrimeV3 extends Component {
             positionRows.push(data)
 
             /* CHECK FOR DUPLICATES AND INCREMENT QTY */
-            for(var i = 0; i < positionRows.length; i++) {
+            /* for(var i = 0; i < positionRows.length; i++) {
                 const match = positionRows.filter(
                     row => {
                         return (
@@ -2205,11 +1829,7 @@ class PrimeV3 extends Component {
                         );
                     }
                 );
-
-                /* if(match.length > 1) {
-                    console.log({match});
-                } */
-            }
+            } */
             
         }
         console.log({positionRows})
@@ -2260,30 +1880,72 @@ class PrimeV3 extends Component {
         const networkId = this.state.networkId;
         const context = TOKENS_CONTEXT[networkId];
 
+        let minAsks = {
+            'call': {},
+            'put': {},
+        };
+
+        function compareNumbers(a, b) {
+            return a - b;
+        }
+
         let callOptions = (this.state.optionV2[hash]) ? this.state.optionV2[hash]['call'] : [];
         let callMatches = await compareOptionsArray(callOptions);
         let callOrders = await getOrders(callMatches);
         let expiration = '1600473585';
+
+        for(var i = 0; i < callOptions.length; i++) {
+            let callAsks = [];
+            let orders = callOrders['sell'];
+            let matches = callMatches[i];
+            /* FOR EACH OBJECT, GET THE ASK */
+            for(var x = 0; x < matches.length; x++) {
+                let objAsk = orders[matches[x]];
+                callAsks.push(objAsk);
+            }
+            
+            let min = (callAsks.sort(compareNumbers))[0];
+            minAsks['call'][i] = min;
+        }
+
         let callColumn = {
             'chain': hash,
             'expiration': expiration,
             'options': callOptions,
             'matches': callMatches,
             'orders': callOrders,
+            'minAsks': minAsks['call'],
 
         };
 
         let putOptions = (this.state.optionV2[hash]) ? this.state.optionV2[hash]['put'] : [];
         let putMatches = await compareOptionsArray(putOptions);
         let putOrders = await getOrders(putMatches);
+
+        for(var i = 0; i < putOptions.length; i++) {
+            let putAsks = [];
+            let orders = putOrders['sell'];
+            let matches = putMatches[i];
+            /* FOR EACH OBJECT, GET THE ASK */
+            for(var x = 0; x < matches.length; x++) {
+                let objAsk = orders[matches[x]];
+                putAsks.push(objAsk);
+            }
+            
+            let min = (putAsks.sort(compareNumbers))[0];
+            minAsks['put'][i] = min;
+        }
+
         let putColumn = {
             'chain': hash,
             'expiration': expiration,
             'options': putOptions,
             'matches': putMatches,
             'orders': putOrders,
+            'minAsks': minAsks['put'],
         };
 
+        
         /* COMPARE AN INTIAL STATE OPTION WITH A REAL TOKEN */
         async function compareOptionsArray(array) {
             let arrayMatches = {};
@@ -2351,7 +2013,7 @@ class PrimeV3 extends Component {
 
                     let sellOrder = await exchangeInstance.methods.getSellOrder(obj[i][x]).call();
                     if(sellOrder.tokenId > 0) {
-                        console.log('MATCHED SELL ORDER', sellOrder.tokenId)
+                        console.log('MATCHED SELL ORDER', sellOrder.tokenId, sellOrder.askPrice)
                         let askPrice = sellOrder.askPrice;
                         orders['sell'][obj[i][x]] = askPrice;
                     }
@@ -2375,7 +2037,7 @@ class PrimeV3 extends Component {
     
     };
 
-    handleOptionSelect = async (type, pair, expiration, orders, option, tokenIds,) => {
+    handleOptionSelect = async (type, chain, expiration, orders, option, tokenIds,) => {
         /* TYPE IS CALL OR PUT */
         /* IF HAS NO MATCHING TOKEN IDS - NEED TO MOCK A NEW TOKEN TO MINT */
         function mockToken( ace, xis, yak, zed, wax, pow, gem, ) {
@@ -2407,7 +2069,7 @@ class PrimeV3 extends Component {
         this.setState({
             optionSelection: {
                 'type': type,
-                'pair': pair,
+                'chain': chain,
                 'expiration': expiration,
                 'properties': properties,
                 'orders': orders,
@@ -2471,7 +2133,7 @@ class PrimeV3 extends Component {
         buyMultiplier,
         ask,
         sellMultiplier,
-        pair,
+        chain,
         expiration,
         collateralAmount, 
         collateralSym, 
@@ -2484,7 +2146,7 @@ class PrimeV3 extends Component {
             buyMultiplier,
             ask,
             sellMultiplier,
-            pair,
+            chain,
             expiration,
             collateralAmount, 
             collateralSym, 
@@ -2496,12 +2158,16 @@ class PrimeV3 extends Component {
         const web3 = this.state.web3;
         const account = this.state.account;
         const networkId = this.state.networkId;
-        const deployedNetwork = await Exchange.networks[this.state.networkId];
-        const _exchange = new web3.eth.Contract(
-            Exchange.abi,
-            deployedNetwork && deployedNetwork.address,
-        );
+        const exchangeInstance = await this.getContractInstance(Exchange);
         const primeInstance = await this.getContractInstance(PrimeContract)
+        const collateralInstance = await this.getInstance(collateralSym);
+        const strikeInstance = await this.getInstance(strikeSym);
+
+        /* GET ALLOWANCES FOR ERC-20 TOKENS */
+        const collateralAllowance = await this.getContractConstant(
+            'allowance', collateralInstance,
+            account, primeInstance._address,
+        );
 
         let nonce = await primeInstance.methods.nonce().call();
         let buyOrderResult, sellOrderResult;
@@ -2523,7 +2189,7 @@ class PrimeV3 extends Component {
             bid = await web3.utils.toWei((bid).toString());
 
             /* IF THERES AN OPTION ON MARKET, BUY IT */
-            console.log('BUY ORDER TRUE', this.state.optionSelection);
+            console.log('BUY ORDER TRUE', this.state.optionSelection, tokenIds.length);
             if(tokenIds.length > 0) {
 
                 /* FOR ALL MATCHING TOKENS, CHECK ACTIVE SELL ORDERS ON EXCHANGE */
@@ -2531,45 +2197,67 @@ class PrimeV3 extends Component {
                     if(typeof sellOrders[tokenIds[i]] !== 'undefined') {
                         console.log('MATCHING TOKEN AVAILABLE FOR PURCHASE', {bid}, 'ask:', sellOrders[tokenIds[i]], tokenIds[i])
                         
+                        /* SUBMIT TX */
                         try {
-                            let txNumber = 1;
-                            this.setState({
-                                pendingTx: true,
-                                txNumber: 1,
-                                txAmount: 1,
-                            });
-                            console.log('Pending')
 
-                            buyOrderResult = await _exchange.methods.buyOrder(
-                                tokenIds[i],
-                                bid
-                            ).send({from: account, value: bid})
-                            
+                            await this.getPendingTx(true, 1, 1);
+                            let buyOrderResult = await this.callContractFunction(
+                                exchangeInstance, 'buyOrder', 
+                                account, bid,
+                                tokenIds[i], bid
+                            );
+                            console.log({buyOrderResult})
                             if(buyOrderResult) {
-                                console.log('Result returned, not pending')
-                                this.setState({
-                                    pendingTx: false,
-                                    txNumber: undefined,
-                                    txAmount: undefined,
-                                });
+                                await this.getPendingTx(false);
+                                return;
                             }
-                            break;
+
                         } catch (error) {
                             console.log({error})
-                            console.log('Result returned, not pending')
-                            this.setState({
-                                pendingTx: false,
-                                txNumber: undefined,
-                                txAmount: undefined,
-                            });
+                            await this.getPendingTx(false)
                         }
-                        
                     }
                 }
-            } else {
-                console.log('NO BUYABLE OPTIONS - PENDING ORDER');
-                /* SUBMIT ORDER FUNCTION FOR EXCHANGE */
+            } 
+            
+            console.log('NO BUYABLE OPTIONS - PENDING ORDER');
+            /* SUBMIT ORDER FUNCTION FOR EXCHANGE */
+            await this.getPendingTx(true, 1, 1);
+            try { 
+                console.log(
+                    bid,
+                    chain,
+                    collateralAmount,
+                    collateralInstance._address,
+                    strikeAmount,
+                    strikeInstance._address,
+                    expiration
+                );
+                let buyUnfilledOrder = await exchangeInstance.methods.buyOrderUnfilled(
+                    bid,
+                    chain,
+                    collateralAmount,
+                    collateralInstance._address,
+                    strikeAmount,
+                    strikeInstance._address,
+                    expiration
+                ).send({from: account, value: bid})
+
+                /* let buyUnfilledOrder = await this.callContractFunction(
+                    exchangeInstance, 'buyOrderUnfilled',
+                    account, bid,
+                    chain,
+                    collateralAmount,
+                    collateralInstance._address,
+                    strikeAmount,
+                    strikeInstance._address,
+                    expiration
+                ); */
+            } catch(error) {
+                await this.getPendingTx(false);
             }
+
+            
         } else {
             ask = await web3.utils.toWei((ask).toString());
 
@@ -2589,76 +2277,77 @@ class PrimeV3 extends Component {
             let matchingPrimes = [];
             for(var i = 0; i < userOwnedPrimes.length; i++) {
                 let tokenId = userOwnedPrimes[i];
-                let properties = await primeInstance.methods.getPrime(tokenId).call();
-                if(
-                    expiration === properties.pow
-                    && account === properties.gem
-                ) {
-                    let cAddress = TOKENS_CONTEXT[networkId][collateralSym].address;
-                    let sAddress = TOKENS_CONTEXT[networkId][strikeSym].address;
+                let primeChain = await this.getContractConstant(
+                    'getChain', primeInstance,
+                    tokenId
+                );
+                if(primeChain === chain) {
+                    let properties = await this.getContractConstant(
+                        'getPrime', primeInstance,
+                        tokenId
+                    );
 
                     if(
-                        cAddress === properties.yak
-                        && sAddress === properties.wax
+                        collateralAmount === properties.xis
+                        && strikeAmount === properties.zed
                     ) {
-                        let cAmt = await web3.utils.toWei((collateralAmount).toString());
-                        let sAmt = await web3.utils.toWei((strikeAmount).toString());
-
-                        if(
-                            cAmt === properties.xis
-                            && sAmt === properties.zed
-                        ) {
-                            console.log('USER OWNS MATCHING PRIME', {tokenId})
-                            matchingPrimes.push(tokenId);
-                        }
+                        console.log('USER OWNS MATCHING PRIME', {tokenId})
+                        matchingPrimes.push(tokenId);
                     }
                 }
             }
 
             if(matchingPrimes.length > 0) {
-                let tokenId = matchingPrimes[0];
-                /* SELL PRIME TO EXCHANGE FOR ASK PRICE */
-                this.setState({
-                    pendingTx: true,
-                    txNumber: 1,
-                    txAmount: 2,
-                });
-                await primeInstance.methods.approve(_exchange._address, tokenId).send({from: account});
-                try {
-                    this.setState({
-                        txNumber: 2,
-                    });
-                    sellOrderResult = await _exchange.methods.sellOrder(
-                        tokenId,
-                        ask,
-                    ).send({from: account});
 
-                    if(sellOrderResult) {
-                        console.log('Result returned, not pending')
-                        this.setState({
-                            pendingTx: false,
-                            txNumber: undefined,
-                            txAmount: undefined,
-                        });
+                let tokenId = matchingPrimes[0];
+
+                /* SELL PRIME TO EXCHANGE FOR ASK PRICE */
+                await this.getPendingTx(true, 1, 2);
+                try {
+                    await this.callContractFunction(
+                        primeInstance, 'approve',
+                        account, 0,
+                        exchangeInstance._address, tokenId
+                    );
+
+                    await this.getPendingTx(true, 2, 2);
+
+                    try {
+                        await this.callContractFunction(
+                            exchangeInstance, 'sellOrder',
+                            account, 0,
+                            tokenId, ask
+                        );
+                        await this.getPendingTx(false);
+
+                    } catch (error) {
+                        await this.getPendingTx(false);
                     }
                 } catch (error) {
-                    console.log({error})
-                    this.setState({
-                        pendingTx: false,
-                        txNumber: undefined,
-                        txAmount: undefined,
-                    });
+                    await this.getPendingTx(false);
                 }
 
                 console.log('SELLING OWNED PRIMED', {tokenId, sellOrderResult})
             } else {
+
+                let tokenId;
+
+                /* UNLOCK COLLATERAL ASSET IF LOCKED */
+                if(collateralAllowance < collateralAmount) {
+                    let approveAmt = await web3.utils.toWei('10000000');
+                    console.log('UNLOCKING COLLATERAL ASSET', {collateralSym})
+                    await this.getPendingTx(true, 1, 1);
+                    try {
+                        await this.handleApprove(collateralInstance, primeInstance._address, approveAmt, account);
+                        await this.getPendingTx(false);
+                    } catch (error) {
+                        await this.getPendingTx(false);
+                    }
+                }
+
                 /* MINT PRIME */
+                await this.getPendingTx(true, 1, 3);
                 try {
-                    this.setState({
-                        pendingTx: true,
-                        txNumber: 1,
-                        txAmount: 3,
-                    });
                     mintedPrime = await this.createPrime(
                         collateralSym,
                         strikeSym,
@@ -2667,21 +2356,39 @@ class PrimeV3 extends Component {
                         collateralAmount,
                         strikeAmount
                     );
-                    if(mintedPrime) {
-                        console.log('Result returned, not pending')
-                        this.setState({
-                            pendingTx: true,
-                            txNumber: 2,
-                        });
+
+                    tokenId = mintedPrime.events['PrimeMinted'].returnValues['_tokenId'];
+    
+                    /* SELL PRIME TO EXCHANGE FOR ASK PRICE */
+                    await this.getPendingTx(true, 2, 3);
+                    try {
+                        await this.callContractFunction(
+                            primeInstance, 'approve',
+                            account, 0,
+                            exchangeInstance._address, tokenId
+                        );
+
+                        await this.getPendingTx(true, 3, 3);
+
+                        try {
+                            let sellOrderResult = await this.callContractFunction(
+                                exchangeInstance, 'sellOrder',
+                                account, 0,
+                                tokenId, ask
+                            );
+                            await this.getPendingTx(false);
+                            console.log(sellOrderResult);
+                        } catch (error) {
+                            await this.getPendingTx(false);
+                        }
+                    } catch (error) {
+                        await this.getPendingTx(false);
                     }
-                } catch(error) {
-                    console.log({error})
-                    this.setState({
-                        pendingTx: false,
-                        txNumber: undefined,
-                        txAmount: undefined,
-                    });
+                    
+                } catch (error) {
+                    await this.getPendingTx(false);
                 }
+
                 console.trace({
                     collateralSym,
                     strikeSym,
@@ -2690,34 +2397,7 @@ class PrimeV3 extends Component {
                     collateralAmount,
                     strikeAmount
                 });
-    
-                let tokenId = mintedPrime.events['PrimeMinted'].returnValues['_tokenId'];
-    
-                
-                /* SELL PRIME TO EXCHANGE FOR ASK PRICE */
-                await primeInstance.methods.approve(_exchange._address, tokenId).send({from: account});
-                this.setState({
-                    txNumber: 3,
-                });
-                try {
-                    sellOrderResult = await _exchange.methods.sellOrder(
-                        tokenId,
-                        ask,
-                    ).send({from: account});
-                    this.setState({
-                        pendingTx: false,
-                        txNumber: undefined,
-                        txAmount: undefined,
-                    });
-                } catch (error) {
-                    console.log({error})
-                    this.setState({
-                        pendingTx: false,
-                        txNumber: undefined,
-                        txAmount: undefined,
-                    });
-                }
-    
+
                 console.log('SELLING NEWLY MINTED PRIME', {tokenId, sellOrderResult})
             }
         }
@@ -2741,10 +2421,6 @@ class PrimeV3 extends Component {
         const optionGlossary = this.state.optionGlossary;
         let selectedPair = this.state.selectedPair;
         let selectedExpiration = this.state.selectedExpiration;
-        
-        /* if(typeof this.state.loadedChain != 'undefined' && this.state.loadedChain) {
-            return;
-        } */
 
         if(selectedPair && !isPair) {
             let option = optionGlossary[selectedPair][selected];
@@ -2756,7 +2432,7 @@ class PrimeV3 extends Component {
             this.getOptions(option);
         } else if(selectedExpiration && isPair) {
             let option = optionGlossary[selected][selectedExpiration];
-            let symbol = optionGlossary[selectedPair]['chartSymbol'];
+            let symbol = optionGlossary[selected]['chartSymbol'];
             this.setState({
                 loadingChain: true,
                 chartSymbol: symbol,
@@ -2799,11 +2475,6 @@ class PrimeV3 extends Component {
                     </IconButton>
                 </Tooltip>
                 
-                {/* <Tooltip title={'Dashboard'}>
-                    <IconButton className={classes.selectProduct}>
-                        <DashboardIcon />
-                    </IconButton>
-                </Tooltip> */}
                 <Tooltip title={'Positions'}>
                     <IconButton 
                         className={classes.selectProduct}

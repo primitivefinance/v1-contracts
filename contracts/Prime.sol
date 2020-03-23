@@ -400,7 +400,7 @@ contract Prime is IPrime, ERC721Full, ReentrancyGuard {
         uint256 _collateralId,
         uint256 _burnId
     ) 
-        internal 
+        public 
         view 
         returns
         (bool burn)

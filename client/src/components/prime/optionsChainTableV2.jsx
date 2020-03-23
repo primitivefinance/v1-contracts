@@ -88,53 +88,12 @@ class OptionsChainTableV2 extends Component {
         const putMatches = putColumn['matches'];
         const callOrders = callColumn['orders'];
         const putOrders = putColumn['orders'];
+        const minAsksCall = callColumn['minAsks'];
+        const minAsksPut = putColumn['minAsks'];
 
         const chain = callColumn['chain'];
         let expiration = (callColumn['options'][0]) ? callColumn['options'][0].expiration : '';
 
-        let ask = 0;
-        let minAsks = {
-            'call': {},
-            'put': {},
-        };
-
-        /* FOR EACH OPTION IN THE INITIAL STATE, GET MATCHING TOKENS AND ORDERS */
-        for(var i = 0; i < putColumn['options'].length; i++) {
-            let orders = putOrders['sell'];
-            let matches = putMatches[i];
-            ask = 0;
-            /* FOR EACH OBJECT, GET THE ASK, THEN KEEP THE LOWEST ASK*/
-            for(var x = 0; x < matches.length; x++) {
-                let objAsk = orders[matches[x]];
-                if(ask == 0) {
-                    ask = objAsk;
-                } else if (objAsk < ask && objAsk !== 0) {
-                    ask = objAsk;
-                };
-            }
-            minAsks['put'][i] = ask;
-            /* console.log('PUT ASKS', {putMatches},  orders, {ask, i}) */
-        }
-
-        for(var i = 0; i < callColumn['options'].length; i++) {
-            let orders = callOrders['sell'];
-            let matches = callMatches[i];
-            ask = 0;
-            /* FOR EACH OBJECT, GET THE ASK, THEN KEEP THE LOWEST ASK*/
-            for(var x = 0; x < matches.length; x++) {
-                let objAsk = orders[matches[x]];
-                if(ask == 0) {
-                    ask = objAsk;
-                } else if (objAsk < ask && objAsk !== 0) {
-                    ask = objAsk;
-                };
-            }
-            minAsks['call'][i] = ask;
-            /* console.log('CALL ASKS', {callMatches}, callMatches[i][0], callOrders['sell'], {ask, i}) */
-        }
-
-        let pair = (this.props.selectedPair) ? this.props.selectedPair : '';
-        /* let expiration = this.props.selectedExpiration ? this.props.selectedExpiration : undefined; */
         let date;
         if(expiration) {
             date = new Date(expiration * 1000);
@@ -195,8 +154,8 @@ class OptionsChainTableV2 extends Component {
                                             <TableCell align='center' variant={'h1'}>{option.bid}</TableCell>
                                             <TableCell align='center' variant={'h1'}>
                                                 {
-                                                    (minAsks['call'][option.index]) 
-                                                        ? (minAsks['call'][option.index] / 10**18 + ' ETH')
+                                                    (minAsksCall[option.index] && minAsksCall[option.index] !== NaN) 
+                                                        ? (minAsksCall[option.index] / 10**18 + ' ETH')
                                                             : '-'
                                                 } 
                                             </TableCell>
@@ -255,8 +214,8 @@ class OptionsChainTableV2 extends Component {
                                             <TableCell align='center' variant={'h1'}>{option.bid}</TableCell>
                                             <TableCell align='center' variant={'h1'}>
                                                 {
-                                                    (minAsks['put'][option.index])
-                                                    ? (minAsks['put'][option.index] / 10**18 + ' ETH')
+                                                    (minAsksPut[option.index] && minAsksPut[option.index] !== NaN)
+                                                    ? (minAsksPut[option.index] / 10**18 + ' ETH')
                                                             : '-'
                                                 } 
                                             </TableCell>

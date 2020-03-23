@@ -309,7 +309,7 @@ class OpenPosition extends Component {
          *
          *  optionSelection: {
                 'type': type,
-                'pair': pair,
+                'chain': chain,
                 'expiration': expiration,
                 'properties': {
                     ace, 
@@ -330,7 +330,7 @@ class OpenPosition extends Component {
 
         let cAmount, cAsset, sAmount, sAsset, expirationDate, cAmt, type, multiplier, tokenIds;
         const option = this.props.optionSelection;
-        const pair = option['pair'];
+        const chain = option['chain'];
         const expiration = option['expiration'];
         const properties = option['properties'];
 
@@ -733,7 +733,7 @@ class OpenPosition extends Component {
                                                     this.state.buyMultiplier,
                                                     this.state.ask, 
                                                     this.state.sellMultiplier, 
-                                                    pair,
+                                                    chain,
                                                     properties.pow,
                                                     cAmount, 
                                                     cAsset, 

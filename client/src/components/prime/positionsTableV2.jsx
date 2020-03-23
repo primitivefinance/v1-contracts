@@ -89,7 +89,7 @@ class PositionsTableV2 extends Component {
 
                         {/* PRIME TABLE */}
                         <TableContainer component={Paper}>
-                            <Table className={classes.primeTable}>
+                            <Table hover className={classes.primeTable} size='small'>
 
                                 {/* HEAD */}
                                 <TableHead>
@@ -110,7 +110,7 @@ class PositionsTableV2 extends Component {
                                     {positionRows.map(row => (
                                         <TableRow key={row.name}>
                                             <TableCell align='center' variant={'h1'}>{row.tokenId}</TableCell>
-                                            <TableCell align='center' variant={'h1'}>{(row.longOrShort) ? 'Long' : 'Short'}</TableCell>
+                                            <TableCell align='center' variant={'h1'}>{(row.isLong) ? 'Long' : 'Short'}</TableCell>
                                             <TableCell align='center' variant={'h1'}>{row.name}</TableCell>
                                             <TableCell align='center' variant={'h1'}>{row.netProfit + ' ETH'}</TableCell>
                                             <TableCell align='center' variant={'h1'}>{row.costBasis + ' ETH'}</TableCell>

@@ -119,7 +119,7 @@ contract('Exchange', accounts => {
 
         /* TOKEN MINTED TO ALICE */
         let mint = await _prime.createPrime(xis, yak, zed, wax, pow, gem);
-        let tokenId = mint.logs[0].args._tokenId;
+        let tokenId = await _prime.nonce();
         console.log((tokenId).toString());
         let buyer = Bob;
         let seller = Alice;
@@ -167,7 +167,7 @@ contract('Exchange', accounts => {
 
             /* TOKEN MINTED TO ADDRESS */
             let mint = await _prime.createPrime(xis, yak, zed, wax, pow, gem, {from: address});
-            let tokenId = mint.logs[0].args._tokenId;
+            let tokenId = await _prime.nonce();
             return tokenId;
         }
 
@@ -215,8 +215,8 @@ contract('Exchange', accounts => {
         let aliceBuyToken = await buyOrder(Alice, aliceBid, bobToken1);
         let aliceSellToken = await sellOrder(Alice, aliceAsk, aliceToken1);
 
-        console.log((aliceBuyToken.logs[1].args._filledPrice / 10**18).toString())
-        console.log((aliceSellToken.logs[0].args._filledPrice / 10**18).toString())
+        /* console.log((aliceBuyToken.logs[1].args._filledPrice / 10**18).toString())
+        console.log((aliceSellToken.logs[0].args._filledPrice / 10**18).toString()) */
 
         aliceBal = await web3.utils.fromWei(await web3.eth.getBalance(Alice)) - aliceBal;
         bobBal =  await web3.utils.fromWei(await web3.eth.getBalance(Bob)) - bobBal;
@@ -238,7 +238,7 @@ contract('Exchange', accounts => {
 
             /* TOKEN MINTED TO ADDRESS */
             let mint = await _prime.createPrime(xis, yak, zed, wax, pow, gem, {from: address});
-            let tokenId = mint.logs[0].args._tokenId;
+            let tokenId = await _prime.nonce();
             return tokenId;
         }
 
@@ -254,8 +254,8 @@ contract('Exchange', accounts => {
 
         let aliceToken1 = await mintPrime(Alice);
         let aliceSellToken = await sellOrder(Alice, 4, aliceToken1);
-        let close = await _exchange.closeOrder(aliceToken1);
-        console.log(close.logs)
+        /* let close = await _exchange.closeOrder(aliceToken1);
+        console.log(close.logs) */
 
     });
 
@@ -271,7 +271,7 @@ contract('Exchange', accounts => {
 
             /* TOKEN MINTED TO ADDRESS */
             let mint = await _prime.createPrime(xis, yak, zed, wax, pow, gem, {from: address});
-            let tokenId = mint.logs[0].args._tokenId;
+            let tokenId = await _prime.nonce();
             return tokenId;
         }
 
@@ -279,6 +279,58 @@ contract('Exchange', accounts => {
 
         let chain = await _prime.getChain(aliceToken1);
         console.log({chain})
+    });
+
+    it('fill unfilled buy order', async () => {
+        async function mintPrime(address) {
+            let xis, yak, zed, wax, pow, gem;
+            xis = collateral;
+            yak = _tETH.address;
+            zed = payment;
+            wax = _tUSD.address;
+            pow = '1600473585';
+            gem = _exchange.address;
+
+            /* TOKEN MINTED TO ADDRESS */
+            let mint = await _prime.createPrime(xis, yak, zed, wax, pow, gem, {from: address});
+            let tokenId = await _prime.nonce();
+            return tokenId;
+        }
+        let xis, yak, zed, wax, pow, gem;
+        xis = collateral;
+        yak = _tETH.address;
+        zed = payment;
+        wax = _tUSD.address;
+        pow = '1600473585';
+        gem = _exchange.address;
+
+        let aliceToken1 = await mintPrime(Alice);
+        let aliceToken2 = await mintPrime(Alice);
+        let chain = await _prime.getChain(aliceToken1);
+        ask = 0.25;
+        let bid = await web3.utils.toWei((ask).toString());
+        let unfilled = await _exchange.buyOrderUnfilled(bid, chain, xis, yak, zed, wax, pow, {from: Bob, value: bid});
+        console.log((unfilled.logs[0].args._bidPrice).toString())
+        let bidPrice = (unfilled.logs[0].args._bidPrice).toString()
+        
+        async function sellOrder(address, ask, tokenId) {
+            let askPrice = await web3.utils.toWei((ask).toString()); // 0.5 eth
+            console.log({askPrice})
+            assert.strictEqual(bidPrice, askPrice, 'BID NOT EQUAL ASK');
+            
+            /* ADDRESS APPROVES EXCHANGE TO SELL TOKEN */
+            await _prime.approve(_exchange.address, tokenId, {from: address});
+
+            /* ADDRESS SUBMITS BUY ORDER FOR TOKEN */
+            let sellOrder = await _exchange.sellOrder(tokenId, askPrice, {from: address});
+            return sellOrder;
+        }
+
+        let sell = await sellOrder(Alice, ask, aliceToken1)
+        let bobOwns = await _prime.ownerOf(aliceToken1, {from: Bob});
+        console.log({bobOwns, Bob})
+        console.log(sell)
+        
     });
 
 })

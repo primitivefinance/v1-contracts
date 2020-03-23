@@ -11,6 +11,7 @@ pragma solidity ^0.6.2;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721Holder.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "./Instruments.sol";
 
 
 
@@ -20,6 +21,17 @@ abstract contract IPrime {
     function exercise(uint256 _tokenId) external virtual returns (bool);
     function close(uint256 _collateralId, uint256 _burnId) external virtual returns (bool);
     function withdraw(uint256 _amount, address _asset) public virtual returns (bool);
+    function getPrime(uint256 _tokenId) external view virtual returns(
+            address ace,
+            uint256 xis,
+            address yak,
+            uint256 zed,
+            address wax,
+            uint256 pow,
+            address gem
+        );
+    function _primeCompare(uint256 _collateralId, uint256 _burnId) public view virtual returns (bool burn);
+    function getChain(uint256 _tokenId) external view virtual returns (bytes4 chain);
 }
 
 
@@ -31,6 +43,8 @@ contract Exchange is ERC721Holder, ReentrancyGuard {
 
     event SellOrder(address _seller, uint256 _askPrice, uint256 _tokenId, bool _filled);
     event BuyOrder(address _buyer, uint256 _bidPrice, uint256 _tokenId, bool _filled);
+    event BuyOrderUnfilled(address _buyer, uint256 _bidPrice, uint256 _nonce);
+    event FillOrderUnfilled(address _seller, uint256 _tokenId);
     event FillOrder(address _seller, address _buyer, uint256 _filledPrice, uint256 _tokenId);
     event CloseOrder(address _user, uint256 _tokenId, bool _buyOrder);
 
@@ -46,11 +60,27 @@ contract Exchange is ERC721Holder, ReentrancyGuard {
         uint256 tokenId;
     }
 
+    struct BuyOrdersUnfilled {
+        address payable buyer;
+        uint256 bidPrice;
+        bytes4 chain;
+        uint256 xis;
+        address yak;
+        uint256 zed;
+        address wax;
+        uint256 pow;
+    }
+
     /* Maps tokenIds to sell orders */
     mapping(uint256 => SellOrders) public _sellOrders;
 
     /* Maps tokenIds to buy orders */
     mapping(uint256 => BuyOrders) public _buyOrders;
+
+     /* Maps hash of assets/expiration to nonce to buy orders */
+    mapping(bytes4 => mapping(uint256 => BuyOrdersUnfilled)) public _buyOrdersUnfilled;
+
+    mapping(bytes4 => uint256) public _unfilledNonce;
 
 
     constructor(address primeAddress) public {
@@ -63,6 +93,17 @@ contract Exchange is ERC721Holder, ReentrancyGuard {
         _sellOrders[0] = SellOrders(
             address(0),
             0,
+            0
+        );
+
+        _buyOrdersUnfilled[0][0] = BuyOrdersUnfilled(
+            address(0),
+            0,
+            0,
+            0,
+            address(0),
+            0,
+            address(0),
             0
         );
     }
@@ -79,36 +120,31 @@ contract Exchange is ERC721Holder, ReentrancyGuard {
         nonReentrant
         returns (bool) 
     {
-        bool filled = false;
-        bool buyOrder = false;
+        IPrime _prime = IPrime(_primeAddress);
 
         /* CHECKS */
         require(_tokenId > 0, 'Token ID must exist');
         require(_askPrice > 0, 'Ask Price cannot be 0');
 
+        /* CHECKS UNFILLED ORDERS BY COMPARING TOKEN WITH BUY ORDER */
+        uint256 fillable = checkUnfilledOrders(_tokenId);
+        if(fillable > 0) {
+            emit FillOrderUnfilled(msg.sender, _tokenId);
+            return fillUnfilled(_tokenId, fillable, _askPrice, msg.sender);
+        }
+
         /* EFFECTS */
         BuyOrders memory _buy = _buyOrders[_tokenId];
-        if(_buy.bidPrice >= _askPrice && _askPrice > 0) {
-            filled = true;
-        } else {
-            _sellOrders[_tokenId] = SellOrders(
-                msg.sender,
-                _askPrice,
-                _tokenId
-            );
-
-        }   
+        
         
         /* INTERACTIONS */
-        IPrime _prime = IPrime(_primeAddress);
-        
-        if(filled) {
-            fillOrder(buyOrder, _tokenId, _buy.bidPrice, _askPrice, _buy.buyer, msg.sender);
+        if(_buy.bidPrice >= _askPrice && _askPrice > 0) {
+            fillOrder(false, _tokenId, _buy.bidPrice, _askPrice, _buy.buyer, msg.sender);
         } else {
             _prime.safeTransferFrom(msg.sender, address(this), _tokenId);
         }
         
-        emit SellOrder(msg.sender, _askPrice, _tokenId, filled);
+        emit SellOrder(msg.sender, _askPrice, _tokenId, true);
         return true;
     }
 
@@ -150,6 +186,129 @@ contract Exchange is ERC721Holder, ReentrancyGuard {
             fillOrder(buyOrder, _tokenId, _bidPrice, _sell.askPrice, msg.sender, _sell.seller);
         }
 
+        return true;
+    }
+
+    function checkUnfilledOrders(uint256 _tokenId) public returns (uint256) {
+        IPrime _prime = IPrime(_primeAddress);
+        bytes4 _chain = _prime.getChain(_tokenId);
+        address ace;
+        uint256 xis;
+        address yak;
+        uint256 zed;
+        address wax;
+        uint256 pow;
+        address gem;
+        (ace, xis, yak, zed, wax, pow, gem) = _prime.getPrime(_tokenId);
+        
+        bytes32 primeHash = keccak256(
+            abi.encodePacked(
+                    xis,
+                    yak,
+                    zed,
+                    wax,
+                    pow
+                )
+            );
+         
+        for(uint i = 1; i <= _unfilledNonce[_chain]; i++) {
+            BuyOrdersUnfilled memory _buyObj = _buyOrdersUnfilled[_chain][i];
+            bytes32 buyHash = keccak256(
+                abi.encodePacked(
+                    _buyObj.xis,
+                    _buyObj.yak,
+                    _buyObj.zed,
+                    _buyObj.wax,
+                    _buyObj.pow
+                )
+            );
+
+            if(primeHash == buyHash) {
+                return i;
+            }
+        }
+
+        return 0;
+    }
+
+    function fillUnfilled(
+        uint256 _tokenId, 
+        uint256 _buyOrderNonce, 
+        uint256 _askPrice, 
+        address payable _seller
+    ) 
+        internal 
+        returns (bool) 
+    {
+        /* CHECKS */
+        IPrime _prime = IPrime(_primeAddress);
+        bytes4 _chain = _prime.getChain(_tokenId);
+        BuyOrdersUnfilled memory _buy = _buyOrdersUnfilled[_chain][_buyOrderNonce];
+        require(_buy.bidPrice >= _askPrice, 'Bid < ask');
+
+        
+        
+
+        /* EFFECTS */
+        closeUnfilledBuyOrder(_chain, _buyOrderNonce);
+
+        uint256 _remainder = _buy.bidPrice.sub(_askPrice);
+
+        require(_remainder >= 0, 'Remainder < 0');
+
+        /* INTERACTIONS */
+
+        /* 
+         * IF ITS BUY ORDER - PRIME IS OWNED BY EXCHANGE
+         * IF ITS SELL ORDER - PRIME IS OWNED BY SELLER
+         * IF ITS A SELL ORDER WITH A MATCHED BUY ORDER
+         * TRANSFER OF PRIME IS DIRECTLY P2P
+         */
+        _prime.safeTransferFrom(_seller, _buy.buyer, _tokenId);
+        
+        _seller.send(_askPrice);
+
+        if(_remainder > 0) {
+            _buy.buyer.send(_remainder);
+        }
+        return true;
+    }
+    
+    function buyOrderUnfilled(
+        uint256 _bidPrice,
+        bytes4 _chain,
+        uint256 _xis,
+        address _yak,
+        uint256 _zed,
+        address _wax,
+        uint256 _pow
+    )
+        external
+        payable
+        nonReentrant
+        returns (bool)
+    {
+        /* CHECKS */
+        require(_bidPrice > 0, 'Ask Price cannot be 0');
+        require(msg.value == _bidPrice, 'Value should = bidPrice');
+
+        /* EFFECTS */
+        uint256 nonce = (_unfilledNonce[_chain]).add(1);
+        _unfilledNonce[_chain] = nonce;
+        _buyOrdersUnfilled[_chain][nonce] = BuyOrdersUnfilled(
+            msg.sender,
+            _bidPrice,
+            _chain,
+            _xis,
+            _yak,
+            _zed,
+            _wax,
+            _pow
+        );
+
+        /* INTERACTIONS */
+        emit BuyOrderUnfilled(msg.sender, _bidPrice, _unfilledNonce[_chain]);
+        
         return true;
     }
 
@@ -205,6 +364,11 @@ contract Exchange is ERC721Holder, ReentrancyGuard {
     function closeBuyOrder(uint256 _tokenId) internal {
         /* CLEARS BUY ORDER */
         _buyOrders[_tokenId] = _buyOrders[0];
+    }
+
+    function closeUnfilledBuyOrder(bytes4 _chain, uint256 _buyOrderNonce) internal {
+        /* CLEARS BUY ORDER */
+        _buyOrdersUnfilled[_chain][_buyOrderNonce] = _buyOrdersUnfilled[0][0];
     }
 
     function closeSellOrder(uint256 _tokenId) internal {

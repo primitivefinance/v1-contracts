@@ -34,7 +34,7 @@ const INITIAL_OPTIONS = {
     },
     optionSelection: {
         'type': null,
-        'pair': null,
+        'chain': null,
         'expiration': null,
         'properties': {},
         'orders': {},
@@ -202,6 +202,15 @@ const INITIAL_OPTIONS = {
             'chartSymbol': 'COINBASE:ETHDAI'
         },
     },
+
+    primeTokens: {
+
+    },
+
+    ownerOf: {
+
+    },
+
     assets: {
         'assetIds' : ['asset-dai', 'asset-tUSD', 'asset-tETH',],
         'asset-dai': {
