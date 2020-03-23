@@ -1734,62 +1734,6 @@ class PrimeV3 extends Component {
             
             premium = '20';
 
-            async function getPremium(state) {
-                const initialOption = state.option;
-                let oPair = `${row.yakSymbol}-${row.waxSymbol}`;
-                let rPair = `${row.waxSymbol}-${row.yakSymbol}`;
-                let pair = initialOption[oPair];
-                let reversePair = initialOption[rPair];
-                let isInitialOption = false;
-                let isValidExpiration = false;
-                let type = 'call';
-                let expiry = row.pow;
-                let truePair = oPair;
-                let actualAsk = 0;
-                if(!isLong) {
-                    type = 'put';
-                }
-
-                if(pair) {
-                    isInitialOption = true;
-                } else if (reversePair) {
-                    isInitialOption = true;
-                    truePair = rPair;
-                }
-
-                if(isInitialOption){
-                    let expiration = initialOption[truePair][expiry];
-                    if(expiration) {
-                        isValidExpiration = true;
-                    }
-                }
-
-                if(isValidExpiration && isInitialOption) {
-                    const option = initialOption[truePair][expiry][type];
-                    let _column, _orders, _matches;
-                    if(type == 'call') {
-                        _column = state.callColumn;
-                        _orders = state.callColumn['orders'];
-                        _matches = state.callColumn['matches'];
-                    } else {
-                        _column = state.putColumn;
-                        _orders = state.putColumn['orders'];
-                        _matches = state.putColumn['matches'];
-                    }
-                    
-                    actualAsk = _orders['sell'][tokenId];
-                    if(typeof actualAsk == 'undefined') {
-                        actualAsk = 0;
-                    }
-                    /* console.log('POSITION MIN ASKS', {minAsks, actualAsk}) */
-                    return (actualAsk / 10**18);
-                }
-
-                return actualAsk;
-            }
-
-            premium = await getPremium(this.state);
-
             if(premium > 0) {
                 netProfit = 
                 (isLong)
