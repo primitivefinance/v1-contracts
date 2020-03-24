@@ -1,7 +1,7 @@
 {
-  "name": "Decentralized Financial Crafting Protocol",
+  "name": "Primitive",
   "version": "0.1.0",
-  "description": "Decentralized Financial Crafting Protocol - DFCP",
+  "description": "On-chain options protocol",
   "main": "truffle-config.js",
   "directories": {
     "test": "test"
@@ -11,14 +11,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Alexangelj/carbon.git"
+    "url": "git+https://github.com/Alexangelj/primitive.git"
   },
   "author": "Karbon",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Alexangelj/carbon/issues"
+    "url": "https://github.com/Alexangelj/primitive/issues"
   },
-  "homepage": "https://github.com/Alexangelj/carbon#readme",
+  "homepage": "https://github.com/Alexangelj/primitive#readme",
   "dependencies": {
     "@truffle/hdwallet-provider": "^1.0.32",
     "dotenv": "^8.2.0",

@@ -1,71 +1,90 @@
-# Decentralized Financial Crafting Protocol
-## Financial Crafting
-## Financial Smart Contract - Create ERC20 Token Purchase Agreements.
-Party **A** agrees to sell token **X** for token **Z** within time period **P**.
-Party **A** uses `Prime.sol` to mint a Prime, a Non-Fungible option token.
+# Primitive
 
-## What is it?
-- Party A agrees to sell **1 wEth for 250 DAI until May**.
-- Party A agrees to sell **1 MKR for 2 wEth until April**.
+![](https://img.shields.io/github/stars/primitivefinance/primitive-v1?style=social)
+![](https://img.shields.io/twitter/follow/PrimitiveFi?style=social)
+![](https://img.shields.io/discord/168831573876015105?style=social)
 
-## How does it work?
-- Party A **deposits** token as collateral.
-- Party A gets a newly **minted** NFT to represent the agreement parameters.
-- Party A can **trade**, give, or sell the NFT.
-- Counterparty B can purchase the NFT from Party A. Then they can **burn** the NFT and **buy the collateral** of Party A, for the price specified by the NFT.
+Primitive is an on-chain options protocol. 
 
-## Why use this?    
-- **Ex.** Party A agrees to sell **1 wEth for 250 DAI until May**. If wEth is worth more than 250 DAI at any point until May, it would be profitable to burn the NFT and purchase the collateral for 250 DAI. This is the same thing as: Counterparty has the right to buy 250 DAI for 1 wEth until April.
-- **Ex.** Party A agrees to sell **1 MKR for 2 wEth until April**. If the collateral asset, MKR, drops to a value that is less than 2 wEth, it would be profitableto burn the NFT and purchase the collateral. This is the same thing as: Counterparty has the right to buy 2 wEth for 1 MKR until April.
-- With the NFT, you can sell or buy assets for a price that can be more or less than market value.
-- Because of this 'optionality' the NFT has its own value. An NFT could have addtional value if the underlying agreement is profitable when exercised.
+It is a powered by the Prime, an ERC-721 digital option. 
+Prime owners can use the Prime to swap assets at a predefined exchange rate, but only for a fixed
+period of time. 
+
+These Primes have their own value derived by the value of the underlying assets. The holder **can** buy or pseudo-sell the *collateralized asset* for an amount of *strike asset*. The protocol has the ability to support any ERC-20 token.
+
+Buyers pay for the Prime in exchange for the rights granted by it. Sellers provide the collateralized asset and allow the collateral to be purchaseable at the buyer's discrection. They earn the premiums paid by buyers. For a seller to close a position, (i.e. withdraw their collateral) they would need to buy back a matching Prime for the market premium it trades at.
+
+# DApp
+[Primitive.finance](https://www.primitive.finance)
+
+# **Use Cases**
+### Leverage
+Primes give the user the ability to hold a leveraged position at a lower cost than outright owning the assets. Its made possible because purchasing a Prime option is cheaper than purchasing the assets used to collateralize it. This is a *capital efficient* instrument because the user can control a large position without putting 100% of the capital upfront. 
+
+### Shorting
+It also enables holders to short assets by purchasing Primes with a strike price lower than the market rate. This is a hedging instrument that can reduce the risk exposure to any ERC-20 token supported by the protocol. 
+
+### Upfront Interest
+Users who write the Primes, collateralize and sell them, earn the premiums upfront. Earning this premium upfront saves the time-value-of-money it would have generated if it was a periodic interest payment. Premiums are kept by the sellers. 
+
+### Returns on any ERC-20
+Another key use case is the ability to earn a return on an ERC-20 token that may not have many ways to earn a return. For example, sBTC (synth bitcoin), is an ERC-20 with currently no platforms that provide interest on deposits. A user with sBTC can collateralize and sell a Prime and therefore earn a premium by selling the option.
+
+# What makes Primes Unique?
+
+### Interchange - Ability
+These are are use-cases of options derivatives, an established financial instrument. 
+
+Primes are unique because they can enable **any** established token standard to have its own derivatives market, dependent on the liquidity provided by Prime writers. Not only ERC-20s, but the ERC-721s too! Since Primes are ERC-721 tokens, they could be used as the assets in other Primes, creating a **second-order derivative**.
+
+Tokens like sBTC can have users generate their own returns, as long as there is demand.
+
+# Fees
+Primes are a two-sided instrument that need both buyers and sellers. A healthy amount of suppliers, (perhaps more sellers than buyers), makes the premiums of Primes competitive. This leads to a more accurate equillibrium price and also less slippage for traders. Therefore, to jumpstart liquidity in Primitive's market the seller incentive will need to be attractive.
+
+A 30 basis point fee, 0.30%, from buy orders flows directly into a pool of funds which is output to sellers. This way, sellers will not only earn the premium on their written Primes, but also 0.25% of the system's orders when a sell order is filled. The remaining 0.05% is kept in the pool of funds, but is timelocked. Those funds earn interest and become withdrawable by sellers after an epoch of Primes expire.
+
+# System Architecture
+![](https://user-images.githubusercontent.com/38409137/77393589-9014fc00-6d5a-11ea-804b-87d24ca3614e.png)
+
+`Prime.sol` is the ERC-721 contract which the system surrounds. When a new Prime is minted, it is given the properties defined by the `Instruments.sol` library contract and arguments supplied by the user. 
 
 
-# Spec
-## What is a financial instrument?
-- Monetary contract between parties; asset/liability.
-- Cash instruments determined by market, derivative instruments derive value from characteristics.
+For a Prime to be minted, the collateral amount given as an argument must also be deposited into the `Prime.sol` contract. The contract defines functionality beyond the base ERC-721 contract.
 
-## DFCP Overview:
-- Instrument Controller
-    - Agreement/obligation
-        - Asset Class
-            - Cash -> loan, bond, security
-            - Derivative
-                - Prime
-                    - Properties
-                        - Collateral Asset
-                        - Payment Asset
-                        - Expiration Date
+### `Prime.sol`
+- `exercise` swaps the collateral asset with the strike asset if the Prime is not expired. 
+- `close` will burn a matching Prime, allowing withdraw of assets which were deposited as collateral.
+- `withdraw` allows sellers to withdraw strike assets from exercised Primes from the `Prime.sol` contract.
 
-## What is a valuable characteristic?
-* Optionality
-    - The value of additional optional investment opportunities available only after having made an initial investment.
+`Exchange.sol` is a contract that enables trading of Primes. It is the DEX for Primes.
 
-## Hurdles:
-* Price oracles - pricing of assets relative to other assets is difficult
-* Interchangeability - Instrument needs fluiditiy and simplicity that could be beyond scope of possiblility right now.
-* Liquidity - Derivatives are less liquid than the securities market they underly. DeFi already has limited liquidity, 
-    so this would be even less liquidity for other financial instruments.
-* 'House of Cards' - The collateral in the system could decline by an amount that triggers collapse of stability in some assets.
-* Basically, how do you collateralize with an asset that will always worth paying down debt for?
+- `buyOrder` Buy a Prime that is currently listed for sale on the DEX
+- `buyOrderUnfilled` Offer a bid for a token with properties defined by the user.
+- `sellOrder` Mints then lists a Prime for sale on the DEX.
 
-## Solutions:
-* Price Oracles - Rather than track prices relatively, rational actors are incentivized to capture arbritrage value. If an exchange rate between assets of a Prime is better than the market rate, it would be exercised by the rational actor.
-* Interchangeability - We introduce a system of simplistic financial instruments deployed with the use of factory contracts and a hierarchy of 'stacks'.
-* Liquidity - Initial liquidity can be jumpstarted by creation instruments derived from the most liquid assets.
-* 'House of Cards' - Solution being explored.
+`Options.sol` defines each option chain. When the `Options.sol` contract is deployed it defines the initial 'option chains' supported by the `Exchange.sol`. 
 
-## Overview:
-- Instrument Controller
-    - Instrument Registry
-    - Asset Registry
-    - Pair Registry
-        - Asset Factory
-        - Pair Factory
-        - Token Factory
-            - Asset
-                - Paired with asset ?
-                - Expiration
-                - ...characteristics
-                    - ERC-20 Token or new standardized contract?
+When a user selects an expiration date and a pair of assets on the frontend interface, the `Options.sol` contract will define the available purchaseable/writable Prime options. 
+
+There is the function `addOptionChain` in `Options.sol`, which is only callable by the owner. This will allow additional option chains to be added to the exchange easily. This data could easily be handled off-chain, but by defining the available options on-chain it allows future decentralization.
+
+`Proxy.sol` will be a contract that bundles transactions. Currently, the `sellOrder` function will:
+- mint
+- approve transfer to dex
+- sell order to list prime
+
+These three transactions leads to an uncomfortable wait time for the user. `Proxy.sol` has permission from the `Prime.sol` contract to mint a prime on behalf of the user and then immediatly list it on the DEX for sale. This reduces the three transactions into one. Much better.
+
+A future iteration of `Proxy.sol` will be able to bundle NFTs. This would allow multiples of Primes to be sold with ease. Currently, singleton Primes are minted and will be scaled from their `baseRatio` using a multiplier. This means, a Prime with a lot of collateral will have to be one large option contract. 
+
+`Proxy.sol` will be able to batch mint and trade Primes so that one large order is 100x Small Primes rather than 1x Big Prime. It provides more liquidity to have 10x 1 ETH / 100 DAI Primes than 1x 10 ETH / 1000 DAI Prime. More user can purchase the smaller ones.
+
+# Etherscan Addresses
+*To be added...*
+
+# Documentation
+*To be added...*
+
+# Contributing
+*To be added...*
