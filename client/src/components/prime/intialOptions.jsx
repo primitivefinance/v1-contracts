@@ -8,7 +8,6 @@ const INITIAL_OPTIONS = {
     chainId: null,
     networkId: null,
     result: null,
-    account: '',
     loadingChain: true,
     loadingPositions: true,
     pendingTx: false,

@@ -13,7 +13,6 @@ import Paper from '@material-ui/core/Paper';
 import Grid from '@material-ui/core/Grid';
 import Box from '@material-ui/core/Box';
 
-
 const styles = theme => ({
     primeTable: {
         color: colors.primary,
@@ -67,7 +66,6 @@ const styles = theme => ({
     
 });
 
-
 class PositionsTableV2 extends Component {
     constructor(props) {
         super(props);
@@ -82,7 +80,8 @@ class PositionsTableV2 extends Component {
                 <Box className={classes.coreHeader}>
                     <Typography className={classes.coreHeaderTypography}>Positions for {this.props.account}</Typography>
                 </Box>
-            {/* PRIME INVENTORY CONTAINER */}
+
+                {/* PRIME POSITIONS CONTAINER */}
                 <Grid item>
                     <Card className={classes.primeInventory}>
 

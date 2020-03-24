@@ -1,10 +1,9 @@
 import React, { Component } from 'react';
-import { Line, Bar } from 'react-chartjs-2';
+import { Bar } from 'react-chartjs-2';
 import { withStyles } from '@material-ui/core/styles';
 import { colors } from '../../theme/theme';
 import Typography from '@material-ui/core/Typography';
 import Card from '@material-ui/core/Card';
-import theme from '../../theme';
 
 const styles = theme => ({
     chart: {

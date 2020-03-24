@@ -1,6 +1,4 @@
-import React, { Component, PureComponent } from 'react';
-import { Web3ReactProvider, getWeb3ReactContext } from '@web3-react/core';
-import { InjectedConnector } from '@web3-react/injected-connector';
+import React, { Component } from 'react';
 import { withStyles } from '@material-ui/core/styles';
 import { colors } from '../../theme/theme';
 import Box from '@material-ui/core/Box';
@@ -16,30 +14,30 @@ import FunctionsIcon from '@material-ui/icons/Functions';
 import HomeIcon from '@material-ui/icons/Home';
 import ViewListIcon from '@material-ui/icons/ViewList';
 import CheckIcon from '@material-ui/icons/Check';
-
+import TradingViewWidget, { Themes } from 'react-tradingview-widget';
+import Web3Modal from 'web3modal';
 import Web3 from 'web3';
-import TOKENS_CONTEXT from './tokenAddresses';
+
+/* ARTIFACTS */
 import PrimeContract from '../../artifacts/Prime.json';
-import INITIAL_OPTIONS from './intialOptions';
 import Erc20 from '../../artifacts/tUSD.json';
 import Exchange from '../../artifacts/Exchange.json';
 import Options from '../../artifacts/Options.json';
 
-import TradingViewWidget, { Themes } from 'react-tradingview-widget';
-import Web3Modal from 'web3modal';
-
+/* COMPONENTS */
+import TOKENS_CONTEXT from './tokenAddresses';
+import INITIAL_OPTIONS from './intialOptions';
 import Header from './header';
 import OptionsChainTableV3 from './optionsChainTableV3';
 import PositionsTableV2 from './positionsTableV2';
 import OpenPosition from './openPosition';
 import Fortmatic from "fortmatic";
 
-
 const providerOptions = {
     fortmatic: {
-        package: Fortmatic, // required
+        package: Fortmatic, 
         options: {
-          key: "FORTMATIC_KEY" // required
+          key: "FORTMATIC_KEY"
         }
       }
 };
@@ -72,7 +70,6 @@ const styles = theme => ({
         width: '100%',
         minHeight: '100vh',
         justifyContent: 'center',
-        /* alignItems: 'center', */
         flexDirection: 'row', /* CHANGED THIS TO ROW FOR THE SIDE PANEL */
         backgroundColor: colors.background,
         [theme.breakpoints.up('sm')]: {
@@ -112,12 +109,6 @@ const styles = theme => ({
         alignItems: 'center',
         textAlign: 'center',
         color: colors.primary,
-        /* borderTop: '0px',
-        borderRight: '0px',
-        borderLeft: '0px',
-        borderStyle: 'solid',
-        borderBottomWidth: '0.1px',
-        borderColor: colors.primary, */
         backgroundColor: colors.headerBanner,
     },
     chainHeaderTypography1: {
@@ -437,7 +428,6 @@ const styles = theme => ({
 
 });
 
-
 class PrimeV3 extends Component {
     constructor(props) {
         super(props);
@@ -539,15 +529,7 @@ class PrimeV3 extends Component {
             networkId: networkId,
             account: address,
         });
-        /* 
-        await this.getPastEvents('PrimeMinted');
-        await this.getPrimeInventory();
-        await this.getWalletInventory();
-        await this.getBankInventory();
-        await this.getProfitData();
-        await this.getActivePrimes(); 
-        await this.getPositions(); */
-        /* await this.getOptionsV2(2); */
+
         await this.getPositions();
         console.log({web3, provider, address,  chainId, networkId})
     };
@@ -1785,25 +1767,7 @@ class PrimeV3 extends Component {
     };
 
 
-    /* 
-     * FLOW:
-     * USER SELECTS OPTION PAIR
-     * USER SELECTS EXPIRATION DATE
-     * GET OPTIONS FUNCTION GETS INITIAL OPTION DATA
-     * AND RETURNS THE OPTIONS AND THEIR MATCHING TOKENS
-     * USER SELECTS OPTION
-     * IF THERE IS A MATCHING TOKEN ID, IT WILL POPULATE
-     * ORDER FORM WITH ITS PROPERTIES
-     * IF NO MATCHING TOKEN, IT WILL CREATE A MOCK TOKEN
-     * AND POPULATE THE ORDER FORM WITH THE MOCK PROPERTIES
-     * THIS.STATE.OPTIONSELECT RETURNS THE SELECTED OPTION
-     * PROPERTIES.
-     * USER THEN SUBMITS ORDER WITH POPULATED VALUES
-     * 
-     * KEY STATE VALUES
-     * call/put Column CONTAINS ALL INFO FOR OPTION CHAIN
-     * optionSelection CONTAINS INFO FOR SELECTED OPTION
-    */
+
 
     getOptions = async (hash) => {
         console.log(`Getting Options chain for ${hash}`)
@@ -2551,19 +2515,6 @@ class PrimeV3 extends Component {
 
                 let tokenId;
 
-                /* UNLOCK COLLATERAL ASSET IF LOCKED */
-                /* if(collateralAllowance < collateralAmount) {
-                    let approveAmt = await web3.utils.toWei('10000000');
-                    console.log('UNLOCKING COLLATERAL ASSET', {collateralSym})
-                    await this.getPendingTx(true, 1, 1);
-                    try {
-                        await this.handleApprove(collateralInstance, primeInstance._address, approveAmt, account);
-                        await this.getPendingTx(false);
-                    } catch (error) {
-                        await this.getPendingTx(false);
-                    }
-                } */
-
                 /* MINT PRIME */
                 await this.getPendingTx(true, 1, 3);
                 try {
@@ -2648,7 +2599,6 @@ class PrimeV3 extends Component {
                 loadingChain: true,
                 chartSymbol: symbol,
             });
-            /* this.getOptions(option); */
             this.getOptionsV2(option);
         } else if(selectedExpiration && isPair) {
             let option = optionGlossary[selected][selectedExpiration];
@@ -2657,7 +2607,6 @@ class PrimeV3 extends Component {
                 loadingChain: true,
                 chartSymbol: symbol,
             });
-            /* this.getOptions(option); */
             this.getOptionsV2(option);
         } else {
             return;
@@ -2764,8 +2713,8 @@ class PrimeV3 extends Component {
             <>
             <div className={classes.root} key='root'>
 
-            {/* FLEX DIRECTION COLUMN - SIDE PANEL */}
-            <Box className={classes.sideColumn}>
+                {/* FLEX DIRECTION COLUMN - SIDE PANEL */}
+                <Box className={classes.sideColumn}>
                 <Tooltip title={'Home'}>
                     <IconButton 
                         className={classes.homeButton} 
@@ -2820,31 +2769,25 @@ class PrimeV3 extends Component {
 
             </Box>
 
-            <Box style={{display: 'flex', flexDirection: 'column', width: '100%', minHeight: '100vh',}}>
+                {/* FLEX DIRECTION COLUMN - CORE PANEL */}
+                <Box style={{display: 'flex', flexDirection: 'column', width: '100%', minHeight: '100vh',}}>
 
-                <Header
-                    className={classes.header}
-                    address={(this.state.account) ? this.state.account : ''}
-                    chainId={this.state.chainId}
-                    classes={classes}
-                    account={(this.state.account) ? this.state.account : ''}
-                    onConnect={this.onConnect}
-                    connected={this.state.connected}
-                    resetApp={this.resetApp}
-                />
+                    <Header
+                        className={classes.header}
+                        address={(this.state.account) ? this.state.account : ''}
+                        chainId={this.state.chainId}
+                        classes={classes}
+                        account={(this.state.account) ? this.state.account : ''}
+                        onConnect={this.onConnect}
+                        connected={this.state.connected}
+                        resetApp={this.resetApp}
+                    />
 
-                {/* FLEX DIRECTION IS ROW FOR CONTENTS */}
-                <Box className={classes.body} key='body'>
+                    {/* FLEX DIRECTION IS ROW FOR CONTENTS */}
+                    <Box className={classes.body} key='body'>
 
-                    {/* LEFT 25% PORTION OF SCREEN - OPEN POSITION*/}
-                    <Card className={classes.openPosition} key='open'>
-
-                        {/* <Button 
-                            className={classes.navButton} 
-                            onClick={() => this.createOptionsChain()}
-                        >
-                            Create Initial Options Chain
-                        </Button> */}
+                        {/* LEFT 25% PORTION OF SCREEN - OPEN POSITION*/}
+                        <Card className={classes.openPosition} key='open'>
 
                         <Button 
                             className={classes.navButton} 
@@ -2870,8 +2813,8 @@ class PrimeV3 extends Component {
 
                     </Card>
 
-                    {/* FLEX DIRECTION IS COLUMN - HOLDS CHAIN AND POSITIONS */}
-                    <Box className={classes.core} key='core'>
+                        {/* FLEX DIRECTION IS COLUMN - HOLDS CHAIN AND POSITIONS */}
+                        <Box className={classes.core} key='core'>
                         
                         {/* CHART */}
                         <Card className={classes.chart} key='chart'>
@@ -2881,7 +2824,6 @@ class PrimeV3 extends Component {
                                 autosize
                             />
                         </Card>
-
 
                         {/* FLEX DIRECTION COLUMN - INTERFACE FOR POSITIONS/DERIVITIVES/PRIMITIVES*/}                       
                         {(this.state.onOptionsChain)
@@ -2921,7 +2863,6 @@ class PrimeV3 extends Component {
                                     </Box>
                                 </Box>
     
-                                
                                 <OptionsChainTableV3
                                     title={''}
                                     optionCallRows={this.state.callOptions}
@@ -2944,7 +2885,6 @@ class PrimeV3 extends Component {
                                     <Card className={classes.interface} key='positions'>
 
                                     <Box className={classes.coreHeaderInterface}>
-                                        {/* <Typography className={classes.coreHeaderTypography}>Positions for {ellipseAddress(this.state.account)}</Typography> */}
                                     </Box>
 
                                     <PositionsTableV2
@@ -2959,9 +2899,9 @@ class PrimeV3 extends Component {
                         
                     </Box>
 
+                    </Box>
+                        
                 </Box>
-                 
-            </Box>
             </div>    
             </>
         );

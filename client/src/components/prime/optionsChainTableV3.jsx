@@ -11,7 +11,6 @@ import TableRow from '@material-ui/core/TableRow';
 import Paper from '@material-ui/core/Paper';
 import Box from '@material-ui/core/Box';
 
-
 const styles = theme => ({
     primeTable: {
         color: colors.primary,
@@ -66,9 +65,6 @@ const styles = theme => ({
     
 });
 
-
-
-
 class OptionsChainTableV2 extends Component {
     constructor(props) {
         super(props);
@@ -98,15 +94,15 @@ class OptionsChainTableV2 extends Component {
         
         return (
             <>
-                {/* PRIME INVENTORY CONTAINER */}
+                
                 <Box className={classes.coreHeader}>
                     <Typography className={classes.coreHeaderTypography}>CALL</Typography>
                     <Typography className={classes.coreHeaderTypography}>OPTION CHAIN FOR {this.props.pair} {(new Date(this.props.expiration * 1000)).toDateString()} </Typography>
                     <Typography className={classes.coreHeaderTypography}>PUT</Typography>
                 </Box>
-                <Box style={{display: 'flex', flexDirection: 'row'}}>
 
-                    
+                {/* PRIME OPTIONS CHAIN CONTAINER */}
+                <Box style={{display: 'flex', flexDirection: 'row'}}>
 
                     {/* CALL OPTION COLUMN */}
                     <Box className={classes.primeInventory}>
@@ -163,8 +159,6 @@ class OptionsChainTableV2 extends Component {
                                 
                             </Table>
                         </TableContainer>
-
-                        
 
                     </Box>
 

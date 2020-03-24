@@ -1,4 +1,3 @@
-import React from 'react';
 import tUSD from '../../artifacts/tUSD.json';
 import tETH from '../../artifacts/tETH.json';
 
@@ -7,7 +6,6 @@ const SYMBOL = 'symbol';
 const DECIMALS = 'decimals';
 const ADDRESS = 'address';
 const ABI = 'abi';
-
 
 
 const TOKENS_CONTEXT = {

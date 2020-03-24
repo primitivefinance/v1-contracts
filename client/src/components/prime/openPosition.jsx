@@ -5,7 +5,6 @@ import Typography from '@material-ui/core/Typography';
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
 import Box from '@material-ui/core/Box';
-import { makeStyles } from '@material-ui/core/styles';
 import CircularProgress from '@material-ui/core/CircularProgress';
 
 const styles = theme => ({
@@ -201,51 +200,6 @@ const styles = theme => ({
     },
 });
 
-const useStyles = makeStyles(theme => ({
-    root: {
-      display: 'flex',
-      '& > * + *': {
-        marginLeft: theme.spacing(2),
-      },
-    },
-  }));
-
-/* SEPARATE */
-function MultilineTextFields(props) {
-    const { classes } = props;
-    const [value, setValue] = React.useState();
-  
-    const handleChange = event => {
-        setValue(event.target.value);
-        let value = event.target.value;
-        props.handleSelectAmount(props.name, value)
-    };
-
-    const handleSubmit = () => {
-        props.handleSubmit();
-    };
-    return (
-      <form className={classes.amountForm} noValidate autoComplete="off" onSubmit={(e) => e.preventDefault()}>
-          <TextField
-            placeholder={'Amount'}
-            value={props.amount}
-            onChange={handleChange}
-          />
-    </form>
-    );
-};
-
-function CircularIndeterminate() {
-    const classes = useStyles();
-
-    return (
-        <div className={classes.root}>
-            <CircularProgress />
-        </div>
-    );
-};
-
-
 class OpenPosition extends Component {
     constructor(props) {
         super(props);
@@ -345,20 +299,6 @@ class OpenPosition extends Component {
         if(isNaN(cAmt) && typeof cAmt !== 'undefined') {
             cAmt = 'INVALID';
         }
-
-        /* function switchType(type) {
-            if(type) {
-                if(long) {
-                    return;
-                }
-                this.setState({long: true})
-            } else {
-                if(!long) {
-                    return;
-                }
-                this.setState({long: false})
-            }
-        } */
 
         if(this.state.newPosition) {
             /* IF THE POSITION SWITCHES TYPE (LONG/SHORT) - SWITCH COLLATERAL AND STRIKE */
