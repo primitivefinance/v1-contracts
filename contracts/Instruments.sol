@@ -1,12 +1,12 @@
 pragma solidity ^0.6.0;
 
 /** 
- *  @title DFCP's Instruments
- * @author Decentralized Financial Crafting Protocol
+ *  @title Primitive's Instruments
+ * @author Primitive Finance
  */
 
 
- library Instruments {
+library Instruments {
      struct Actors {
         uint[] mintedTokens;
         uint[] deactivatedTokens;
@@ -34,15 +34,10 @@ pragma solidity ^0.6.0;
 
      /** 
      * @dev A Prime has these properties.
-     * @param ace `msg.sender` of the createPrime function.
-     * @param xis Quantity of collateral asset token.
-     * @param yak Address of collateral asset token.
-     * @param zed Purchase price of collateral, denominated in quantity of token z.
-     * @param wax Address of purchase price asset token.
-     * @param pow UNIX timestamp of valid time period.
-     * @param gem Address of payment receiver of token z.
+     * @param chain Keccak256 hash of collateral
+     *  asset address, strike asset address, and  expiration date.
      */
     struct Chain {
         bytes4 chain;
     }
- }
+}

@@ -173,7 +173,7 @@ contract('Prime', accounts => {
 
         await truffleAssert.reverts(
             _prime.close(_collateralID, _burnId),
-            "Prime Properties do not match"
+            "Props !="
         );
     });
 
@@ -192,8 +192,8 @@ contract('Prime', accounts => {
         );
     });
 
-    it('asserts owner is correctly initialized', async () => {
-        assert.strictEqual(await _prime.owner(), Alice, 'Owner is not msg.sender');
+    it('only pausable by owner', async () => {
+        await _prime.killSwitch({from: Bob});
     });
 
 
