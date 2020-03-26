@@ -33,6 +33,7 @@ library Instruments {
         uint256 pow;
         address gem;
         bytes4 chain;
+        bytes4 fullChain;
     }
 }
 
@@ -1145,7 +1146,7 @@ abstract contract IPrime {
     function withdraw(uint256 _amount, address _asset) public virtual returns (bool);
 }
 
-contract Prime is IPrime, ERC721Metadata, ReentrancyGuard, Pausable {
+contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
     using SafeMath for uint256;
 
     uint256 constant INCREMENT = 1;
@@ -1178,18 +1179,6 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard, Pausable {
         _pool = IPool(poolAddress);
     }
 
-    /* KILL SWITCH */
-    function killSwitch() external {
-        require(msg.sender == _owner, 'not owner');
-        _pause();
-    }
-
-    /* REVIVE */
-    function unpause() external whenPaused {
-        require(msg.sender == _owner, 'not owner');
-        _unpause();
-    }
-
     /* CORE FUNCTIONS */
 
     /** 
@@ -1212,7 +1201,6 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard, Pausable {
     ) 
         external 
         override
-        whenNotPaused
         returns (uint256 _tokenId) 
     {
 
@@ -1234,6 +1222,12 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard, Pausable {
             ^ bytes4(keccak256(abi.encodePacked(_pow))
         );
 
+        bytes4 fullChain = (
+            chain 
+            ^ bytes4(keccak256(abi.encodePacked(_xis))) 
+            ^ bytes4(keccak256(abi.encodePacked(_zed)))
+        );
+
         _primes[nonce] = Instruments.Primes(
             msg.sender, 
             _xis,
@@ -1242,7 +1236,8 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard, Pausable {
             _wax, 
             _pow, 
             _gem,
-            chain
+            chain,
+            fullChain
         );
 
         _liabilities[msg.sender][_yak] = _liabilities[msg.sender][_yak].add(_xis);
@@ -1280,7 +1275,6 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard, Pausable {
     ) 
         external 
         override
-        whenNotPaused
         nonReentrant
         returns (bool) 
     {
@@ -1294,11 +1288,13 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard, Pausable {
         /* Get Prime */
         Instruments.Primes memory _prime = _primes[_tokenId];
         ERC20 _wax = ERC20(_prime.wax);
-
-        require(
-            _wax.balanceOf(msg.sender) >= _prime.zed, 
-            'Bal < amt'
-        );
+        if(msg.sender != _poolAddress) {
+            require(
+                _wax.balanceOf(msg.sender) >= _prime.zed, 
+                'Bal < amt'
+            );
+        }
+        
         
         require(
             _prime.pow >= block.timestamp, 
@@ -1355,7 +1351,6 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard, Pausable {
     ) 
         external 
         override
-        whenNotPaused
         nonReentrant
         returns (bool) 
     {
@@ -1443,7 +1438,7 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard, Pausable {
         );
 
         if(_asset == _poolAddress) {
-            IPool _pool = IPool(_poolAddress);
+            
             return _pool.withdrawExercisedEth(msg.sender, _amount);
         }
 

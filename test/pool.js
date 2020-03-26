@@ -58,7 +58,8 @@ contract('Exchange', accounts => {
         strikeAddress,
         premium,
         value,
-        activeTokenId
+        activeTokenId,
+        nonce
         ;
 
     async function getGas(func, name) {
@@ -128,8 +129,9 @@ contract('Exchange', accounts => {
     
 
     it('should be able to withdraw funds', async () => {
+        nonce = 0;
         /* +1 */
-        let withdraw = await _pool.withdrawLpFunds(value);
+        let withdraw = await _pool.withdrawLpFunds(value, Alice);
         /* -1 */
         await getPoolBalances(_pool);
         /* = 1 */
@@ -144,6 +146,7 @@ contract('Exchange', accounts => {
             expiration,
             {from: Bob, value: premium}
         )
+        nonce = nonce + 1;
         /* +1 Liability */
         await getPoolBalances(_pool);
         /* = 1 pool, 1 liability, 0 assets */
@@ -161,7 +164,7 @@ contract('Exchange', accounts => {
         /* +1 */
         let withdrawAmt = await web3.utils.toWei('3');
         /* -3, +1 loss */
-        await _pool.withdrawLpFunds(withdrawAmt);
+        await _pool.withdrawLpFunds(withdrawAmt, Alice);
         await getPoolBalances(_pool);
         /* -2, pool = 0 */
     });
@@ -175,7 +178,7 @@ contract('Exchange', accounts => {
         let lp2 = await _pool.deposit(depositAmt, {from: Bob, value: depositAmt});
         console.log('Deposit 5')
         await getPoolBalances(_pool);
-        let lp1Withdraw = await _pool.withdrawLpFunds(withdrawAmt);
+        let lp1Withdraw = await _pool.withdrawLpFunds(withdrawAmt, Alice);
         console.log('Withdraw 1')
         let bals = await getPoolBalances(_pool);
         let depositNotWei = await web3.utils.fromWei(depositAmt)
@@ -196,13 +199,20 @@ contract('Exchange', accounts => {
             expiration,
             {from: Bob, value: premium}
         )
+        nonce = nonce + 1;
         let withdrawAmt = await web3.utils.toWei('5');
         console.log('Liable + 5')
         await getPoolBalances(_pool);
         console.log('Withdraw 5')
-        let lp2Withdraw = await _pool.withdrawLpFunds(withdrawAmt, {from: Bob});
+        let lp2Withdraw = await _pool.withdrawLpFunds(withdrawAmt, Bob, {from: Bob});
         let bals = await getPoolBalances(_pool);
         let withdrawableAmount = ('')
+    });
+
+    it('LP closes their position by paying liability', async () => {
+        let lpDeposit = await web3.utils.toWei('2');
+        await _pool.closePosition(lpDeposit, {value: lpDeposit});
+        let bals = await getPoolBalances(_pool);
     });
 
 })

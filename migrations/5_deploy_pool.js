@@ -13,6 +13,10 @@ module.exports = async (deployer, accounts) => {
     );
 
     let pool = await Pool.deployed();
+    /* Sets pool address */
     await prime.setPoolAddress(pool.address);
+
+    /* Allows all tokens to be transferred to pool without approval */
+    await prime.setApprovalForAll(pool.address, true);
 
 };

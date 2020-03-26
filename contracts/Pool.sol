@@ -702,10 +702,15 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
 
     /* Ether Revenue */
     uint256 public _revenue;
-    
 
     /* Ether balance of user */
     mapping(address => uint256) public _collateral;
+
+    /* Array of token Ids owned by Pool */
+    uint[] public _ownedTokens;
+
+    /* Token ID of the largest collateral token */
+    uint256 public _largestToken;
 
     /* For testing */
     uint256 public constant _premium = 10**17;
@@ -858,19 +863,23 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
     }
 
     /**
-     * @dev users withdraw ether rather than have it directly sent to them
+     * @dev users withdraw up to the total amount of assets they deposited less liabilities
+     * @notice for a user to withdraw all funds, they need to purchase the debt (close position)
      * @param _amount value of ether to withdraw
      */
     function withdrawLpFunds(
-        uint256 _amount
+        uint256 _amount,
+        address _user
     ) 
-        external 
+        public 
         nonReentrant 
         returns (bool)
     {
 
         /* CHECKS */
-        uint256 userEthBal = _collateral[msg.sender];
+        require(msg.sender == _user || msg.sender == address(this), 'Caller is not user or pool');
+
+        uint256 userEthBal = _collateral[_user];
         require(userEthBal >= _amount, 'Bal < amt');
 
         /* EFFECTS */
@@ -893,7 +902,7 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
         /* UPDATE SYSTEM BALANCES */
 
         /* Subtract the ether from user's assets */
-        _collateral[msg.sender] = _collateral[msg.sender].sub(userAssets);
+        _collateral[_user] = _collateral[_user].sub(userAssets);
 
         /* Subtract net assets withdrawn from pool */
         _pool = _pool.sub(proceeds);
@@ -906,9 +915,50 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
 
 
         /* INTERACTIONS */
-        (bool success, ) = msg.sender.call.value(proceeds.add(dividend))("");
+        (bool success, ) = _user.call.value(proceeds.add(dividend))("");
         require(success, "Transfer failed.");
         return success;
+    }
+
+    /**
+     * @dev buy debt, withdraw capital
+     * @notice user must purchase option and sell to pool, i.e. burn liability (Prime Token)
+     */
+    function closePosition(uint256 _amount) external payable returns (bool) {
+        /* CHECKS */
+        uint256 userEthBal = _collateral[msg.sender];
+        require(userEthBal >= _amount, 'Eth Bal < amt');
+        require(msg.value == _amount, 'Value < amt');
+
+        /* EFFECTS */
+        
+        /* Calculate Liability of user */
+        uint256 liable = _liability.mul(userEthBal).div(_totalDeposit);
+        /* Calculate User's Earnings (Proportional Revenue) */
+        uint256 dividend = _revenue.mul(userEthBal).div(_totalDeposit);
+        /* Calculate remaining funds after liabilities paid and dividends received */
+        uint256 remainingFunds = _amount.add(dividend).sub(liable);
+
+        /* UPDATE SYSTEM BALANCES */
+
+        /* Subtract the ether from user's assets */
+        _collateral[msg.sender] = _collateral[msg.sender].sub(userEthBal);
+
+        /* Subtract net assets withdrawn from pool */
+        _pool = _pool.sub(remainingFunds);
+
+        /* Subtract the revenue withdrawn */
+        _revenue = _revenue.sub(dividend);
+
+        /* Subtract the net assets from total deposits */
+        _totalDeposit = _totalDeposit.sub(userEthBal);
+
+
+        /* INTERACTIONS */
+        (bool success, ) = msg.sender.call.value(remainingFunds)("");
+        require(success, "Transfer failed.");
+        return success;
+
     }
 
     /**

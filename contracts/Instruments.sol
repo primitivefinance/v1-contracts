@@ -26,5 +26,6 @@ library Instruments {
         uint256 pow;
         address gem;
         bytes4 chain;
+        bytes4 fullChain;
     }
 }
