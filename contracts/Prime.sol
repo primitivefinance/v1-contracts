@@ -14,11 +14,6 @@ pragma solidity ^0.6.0;
  * @author Primitive Finance
 */
 library Instruments {
-     struct Actors {
-        uint[] mintedTokens;
-        uint[] deactivatedTokens;
-    }
-
      /** 
      * @dev A Prime has these properties.
      * @param ace `msg.sender` of the createPrime function.
@@ -1068,6 +1063,8 @@ abstract contract ERC20 {
 
 abstract contract IPool {
     function withdrawExercisedEth(address payable _receiver, uint256 _amount) external virtual returns (bool);
+    function clearLiability(uint256 liability, address strike, uint256 short) external virtual returns (bool);
+    function exercise(uint256 _long, uint256 _short, address _strike) external payable virtual returns (bool);
 }
 
 abstract contract IPrime {
@@ -1142,7 +1139,7 @@ abstract contract IPrime {
     );
 
 
-    function createPrime(uint256 _xis, address _yak, uint256 _zed, address _wax, uint256 _pow, address _gem) external virtual returns (bool);
+    function createPrime(uint256 _xis, address _yak, uint256 _zed, address _wax, uint256 _pow, address _gem) external virtual returns (uint256 _tokenId);
     function exercise(uint256 _tokenId) external virtual returns (bool);
     function close(uint256 _collateralId, uint256 _burnId) external virtual returns (bool);
     function withdraw(uint256 _amount, address _asset) public virtual returns (bool);
@@ -1155,6 +1152,7 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard, Pausable {
     uint256 public nonce;
     address private _owner;
     address public _poolAddress;
+    IPool public _pool;
 
     /* Maps a user's withdrawable asset balance */
     mapping(address => mapping(address => uint256)) private _assets;
@@ -1171,10 +1169,13 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard, Pausable {
             _owner = msg.sender;
         }
     
+    receive() external payable {}
+
     /* SET*/
     function setPoolAddress(address poolAddress) external {
         require(msg.sender == _owner, 'not owner');
         _poolAddress = poolAddress;
+        _pool = IPool(poolAddress);
     }
 
     /* KILL SWITCH */
@@ -1193,80 +1194,13 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard, Pausable {
 
     /** 
      * @dev `msg.sender` Deposits asset x, mints new Slate.
-     * @param _tokenReceiver token is minted to this address.
-     * @param _xis Amount of wei to lock from the pool
-     * @param _yak Address pool
-     * @param _zed Amount of payment asset.
-     * @param _wax Payment asset address.
-     * @param _pow Expiry timestamp.
-     * @return _tokenId nonce of token minted.
-     */
-    function mintFromPool(
-        address _tokenReceiver,
-        uint256 _xis,
-        address _yak,
-        uint256 _zed,
-        address _wax,
-        uint256 _pow
-    ) 
-        external 
-        whenNotPaused
-        returns (uint256 _tokenId) 
-    {
-
-        /* CHECKS */
-        require(msg.sender == _poolAddress, 'Not pool');
-
-        /* EFFECTS */
-        nonce = nonce.add(INCREMENT);
-
-        bytes4 chain = bytes4(
-            keccak256(abi.encodePacked(_yak))) 
-            ^ bytes4(keccak256(abi.encodePacked(_wax))) 
-            ^ bytes4(keccak256(abi.encodePacked(_pow))
-        );
-
-        _primes[nonce] = Instruments.Primes(
-            msg.sender, 
-            _xis,
-            _yak, 
-            _zed, 
-            _wax, 
-            _pow, 
-            msg.sender,
-            chain
-        );
-
-        /* Set collateral amount the pool is liable for */
-        _assets[msg.sender][_yak] = _assets[msg.sender][_yak].add(_xis);
-
-        /* INTERACTIONS */
-        emit PrimeMinted(
-            _tokenReceiver, 
-            _xis,
-            _yak,
-            _zed,
-            _wax,
-            nonce, 
-            block.timestamp
-        );
-
-        _safeMint(
-            _tokenReceiver,
-            nonce
-        );
-        return nonce;
-    }
-
-    /** 
-     * @dev `msg.sender` Deposits asset x, mints new Slate.
      * @param _xis Amount of collateral to deposit.
      * @param _yak Address of collateral asset.
      * @param _zed Amount of payment asset.
      * @param _wax Payment asset address.
      * @param _pow Expiry timestamp.
      * @param _gem Receiver address.
-     * @return bool Success.
+     * @return _tokenId nonce of token minted
      */
     function createPrime(
         uint256 _xis,
@@ -1279,16 +1213,18 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard, Pausable {
         external 
         override
         whenNotPaused
-        returns (bool) 
+        returns (uint256 _tokenId) 
     {
 
         /* CHECKS */
         ERC20 yak = ERC20(_yak);
-        require(
-            yak.balanceOf(msg.sender) >= _xis, 
-            'bal < amt'
-        );
-
+        if(msg.sender != _poolAddress) {
+            require(
+                yak.balanceOf(msg.sender) >= _xis, 
+                'bal < amt'
+            );
+        }
+        
         /* EFFECTS */
         nonce = nonce.add(INCREMENT);
 
@@ -1327,7 +1263,11 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard, Pausable {
             nonce
         );
 
-        return yak.transferFrom(msg.sender, address(this), _xis);
+        if(msg.sender != _poolAddress) {
+            yak.transferFrom(msg.sender, address(this), _xis);
+            return nonce;
+        }
+        return nonce;
     }
 
     /** 
@@ -1367,67 +1307,13 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard, Pausable {
 
         /* EFFECTS */
 
-        /* Check if its a Prime minted from the Pool */
-        if(_prime.yak == _poolAddress) {
-            /* Original Minter has their collateral balance debited. */
-            _liabilities[_prime.ace][_prime.yak] = _liabilities[_prime.ace][_prime.yak].sub(_prime.xis);
-            /* Exercisor has their collateral balance credited. */
-            _assets[msg.sender][_prime.yak] = _assets[msg.sender][_prime.yak].add(_prime.xis);
-        } else {
-            /* Original Minter has their collateral balance debited. */
-            _liabilities[_prime.ace][_prime.yak] = _liabilities[_prime.ace][_prime.yak].sub(_prime.xis);
-            /* Payment receiver has their payment balance credited. */
-            _assets[_prime.gem][_prime.wax] = _assets[_prime.gem][_prime.wax].add(_prime.zed);
-            /* Exercisor has their collateral balance credited. */
-            _assets[msg.sender][_prime.yak] = _assets[msg.sender][_prime.yak].add(_prime.xis);
-        }
-        
-        /* INTERACTIONS */
-        emit PrimeExercised(
-            msg.sender,
-            _prime.xis,
-            _prime.yak,
-            _prime.zed,
-            _prime.wax,
-            _tokenId, 
-            block.timestamp
-        );
-        
-        _burn(_tokenId);
-
-        if(_prime.yak == _poolAddress) {
-            return _wax.transferFrom(msg.sender, _poolAddress, _prime.zed);
-        } else {
-            return _wax.transferFrom(msg.sender, address(this), _prime.zed);
-        }
-        
-    }
-
-    /** 
-     * @dev `msg.sender` Exercises right to purchase collateral.
-     * @param _tokenId ID of Prime.
-     * @return bool Success.
-     */
-    function exerciseFromPool(
-        uint256 _tokenId
-    ) 
-        internal 
-        whenNotPaused
-        nonReentrant
-        returns (bool) 
-    {
-        /* CHECKS */
-
-        /* Get Prime */
-        Instruments.Primes memory _prime = _primes[_tokenId];
-
-        /* EFFECTS */
-
         /* Original Minter has their collateral balance debited. */
         _liabilities[_prime.ace][_prime.yak] = _liabilities[_prime.ace][_prime.yak].sub(_prime.xis);
+        /* Payment receiver has their payment balance credited. */
+        _assets[_prime.gem][_prime.wax] = _assets[_prime.gem][_prime.wax].add(_prime.zed);
         /* Exercisor has their collateral balance credited. */
         _assets[msg.sender][_prime.yak] = _assets[msg.sender][_prime.yak].add(_prime.xis);
-
+        
         /* INTERACTIONS */
         emit PrimeExercised(
             msg.sender,
@@ -1440,8 +1326,12 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard, Pausable {
         );
         
         _burn(_tokenId);
-        ERC20 _wax = ERC20(_prime.wax);
-        return _wax.transferFrom(msg.sender, _poolAddress, _prime.zed);
+        if(_prime.gem == _poolAddress) {
+            _wax.transferFrom(msg.sender, address(this), _prime.zed);
+            return _pool.exercise(_prime.xis, _prime.zed, _prime.wax);
+        }
+
+        return _wax.transferFrom(msg.sender, address(this), _prime.zed);
     }
 
     /** 
@@ -1530,7 +1420,6 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard, Pausable {
     ) 
         public 
         override
-        nonReentrant
         returns (bool) 
     {
         /* CHECKS */
@@ -1638,9 +1527,7 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard, Pausable {
     /** 
      * @dev Public view function to get the Bank's balance of a User
      */
-    function getAssetBalance(address _user, address _asset) public view returns (
-        uint256
-        ) {
+    function getAssetBalance(address _user, address _asset) public view returns (uint256) {
             return _assets[_user][_asset];
     }
 

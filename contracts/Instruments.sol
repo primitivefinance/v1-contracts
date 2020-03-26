@@ -7,11 +7,6 @@ pragma solidity ^0.6.0;
 
 
 library Instruments {
-     struct Actors {
-        uint[] mintedTokens;
-        uint[] deactivatedTokens;
-    }
-
      /** 
      * @dev A Prime has these properties.
      * @param ace `msg.sender` of the createPrime function.

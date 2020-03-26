@@ -12,11 +12,6 @@ pragma solidity ^0.6.0;
  * @author Primitive Finance
  */
 library Instruments {
-     struct Actors {
-        uint[] mintedTokens;
-        uint[] deactivatedTokens;
-    }
-
      /** 
      * @dev A Prime has these properties.
      * @param ace `msg.sender` of the createPrime function.
@@ -35,15 +30,6 @@ library Instruments {
         address wax;
         uint256 pow;
         address gem;
-    }
-
-     /** 
-     * @dev A Prime has these properties.
-     * @param chain Keccak256 hash of collateral
-     *  asset address, strike asset address, and  expiration date.
-     */
-    struct Chain {
-        bytes4 chain;
     }
 }
 
@@ -614,6 +600,12 @@ abstract contract IERC721Receiver {
     public virtual returns (bytes4);
 }
 
+contract ERC721Holder is IERC721Receiver {
+    function onERC721Received(address, address, uint256, bytes memory) public virtual override returns (bytes4) {
+        return this.onERC721Received.selector;
+    }
+}
+
 abstract contract ERC20 {
     function balanceOf(address _owner) virtual external returns(uint256);
     function transferFrom(address sender, address recipient, uint256 amount) public virtual returns (bool);
@@ -621,18 +613,11 @@ abstract contract ERC20 {
 }
 
 abstract contract IPrime {
-    function createPrime(uint256 _xis, address _yak, uint256 _zed, address _wax, uint256 _pow, address _gem) external virtual returns (bool);
+    function createPrime(uint256 _xis, address _yak, uint256 _zed, address _wax, uint256 _pow, address _gem) external virtual returns (uint256 _tokenId);
     function exercise(uint256 _tokenId) external virtual returns (bool);
     function close(uint256 _collateralId, uint256 _burnId) external virtual returns (bool);
     function withdraw(uint256 _amount, address _asset) public virtual returns (bool);
-    function mintFromPool(
-        address _ace,
-        uint256 _xis,
-        address _yak,
-        uint256 _zed,
-        address _wax,
-        uint256 _pow
-    ) external virtual returns (uint256 _tokenId);
+    function safeTransferFrom(address from, address to, uint256 tokenId) external virtual;
 }
 
 abstract contract UniswapFactoryInterface {
@@ -697,12 +682,14 @@ abstract contract UniswapExchangeInterface {
 }
 
 
-contract Pool is Ownable, Pausable, ReentrancyGuard {
+contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
     using SafeMath for uint256;
 
     /* Address of Prime ERC-721 */
     address public _primeAddress;
     address public _uniswapFactory;
+
+    IPrime public _prime;
 
     /* Ether balance in pool */
     uint256 public _pool;
@@ -723,6 +710,7 @@ contract Pool is Ownable, Pausable, ReentrancyGuard {
 
     constructor(address primeAddress, address uniswapFactory) public {
         _primeAddress = primeAddress;
+        _prime = IPrime(primeAddress);
         _uniswapFactory = uniswapFactory;
     }
 
@@ -762,7 +750,7 @@ contract Pool is Ownable, Pausable, ReentrancyGuard {
      * @param _expiration timestamp of series expiration
      * @return bool whether or not the Prime is minted
      */
-    function buyPrimeFromPool(
+    function mintPrimeFromPool(
         uint256 _long,
         uint256 _short,
         address _strike,
@@ -790,7 +778,7 @@ contract Pool is Ownable, Pausable, ReentrancyGuard {
         _liability = _liability.add(_long);
 
         /* Check if enough capital to fill position */
-        require(_availableEth > _long, 'amt > pool funds');
+        require(_availableEth >= _long, 'amt > pool funds');
 
         _revenue = _revenue.add(_totalCost);
         /* INTERACTIONS */
@@ -798,24 +786,29 @@ contract Pool is Ownable, Pausable, ReentrancyGuard {
         /* Trusted Contract */
         IPrime _prime = IPrime(_primeAddress);
 
-        uint256 nonce = _prime.mintFromPool(
-                msg.sender,
+        uint256 nonce = _prime.createPrime(
                 _long,
                 address(this),
                 _short,
                 _strike,
-                _expiration
+                _expiration,
+                address(this)
             );
+        _prime.safeTransferFrom(address(this), msg.sender, nonce);
+        uint256 remainder = msg.value.sub(_totalCost);
+        if(remainder != 0) {
+            (bool success, ) = msg.sender.call.value(remainder)("");
+            require(success, "Transfer failed.");
+            return success;
+        }
 
         return true;
     }
 
-    function exerciseSwap(
+    function exercise(
         uint256 _long,
-        address _collateral,
         uint256 _short,
-        address _strike,
-        uint256 _expiration
+        address _strike
     )
         external
         payable
@@ -825,26 +818,13 @@ contract Pool is Ownable, Pausable, ReentrancyGuard {
         /* CHECKS */
         
         /* EFFECTS */
+        _pool = _pool.sub(_long);
 
         /* INTERACTIONS */
-        /* Trusted Contract */
-        IPrime _prime = IPrime(_primeAddress);
 
-        /* Swap tokens to desired token */
-        UniswapFactoryInterface _factory = UniswapFactoryInterface(_uniswapFactory);
-        UniswapExchangeInterface _uniswap = UniswapExchangeInterface(
-            _factory.getExchange(_collateral)
-        );
-        
-        uint256 deadline = block.timestamp + 1000;
-
-        /* Swap eth from pool into collateral asset */
-        _uniswap.ethToTokenSwapInput(
-            _uniswap.getEthToTokenOutputPrice(_long),
-            deadline
-        );
-        
-        return true;
+        (bool success, ) = msg.sender.call.value(_long)("");
+        require(success, "Transfer failed");
+        return clearLiability(_long, _short, _strike);
     }
 
     /**
@@ -902,13 +882,23 @@ contract Pool is Ownable, Pausable, ReentrancyGuard {
             dividend = 0;
         }
 
-        _pool = _pool.sub(_amount);
+        uint256 proceeds = _amount.mul(userEthBal).div(_pool);
+        _pool = _pool.sub(proceeds);
         _revenue = _revenue.sub(dividend);
 
         /* INTERACTIONS */
-        (bool success, ) = msg.sender.call.value(_amount.add(dividend))("");
+        (bool success, ) = msg.sender.call.value(proceeds.add(dividend))("");
         require(success, "Transfer failed.");
         return success;
+    }
+
+    /**
+     * @dev reduces liability and gets strike assets from exercised Prime
+     */
+    function clearLiability(uint256 liability, uint256 short, address strike) internal returns (bool) {
+        _liability = _liability.sub(liability);
+        return _prime.withdraw(short, strike);
+        
     }
 }
 

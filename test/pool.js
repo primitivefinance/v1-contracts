@@ -52,7 +52,13 @@ contract('Exchange', accounts => {
         _burnId,
         _collateralID,
         _exchange,
-        primeAddress
+        primeAddress,
+        expiration,
+        collateralPoolAddress,
+        strikeAddress,
+        premium,
+        value,
+        activeTokenId
         ;
 
     async function getGas(func, name) {
@@ -71,6 +77,14 @@ contract('Exchange', accounts => {
         console.log(`${name} has a balance of ${bal} ${units}.`);
     }
 
+    async function getPoolBalances(poolInstance) {
+        let pool = await web3.utils.fromWei(await poolInstance._pool());
+        let liability = await web3.utils.fromWei(await poolInstance._liability());
+        let lpFunds = await web3.utils.fromWei(await poolInstance._collateral(Alice));
+        let etherBal =  await web3.utils.fromWei((await web3.eth.getBalance(poolInstance.address)).toString());
+        let revenue = await web3.utils.fromWei(await poolInstance._revenue());
+        console.log({pool, liability, lpFunds, etherBal, revenue})
+    }
 
     beforeEach(async () => {
 
@@ -81,8 +95,11 @@ contract('Exchange', accounts => {
         _pool = await Pool.deployed();
         collateral = await web3.utils.toWei('1');
         payment = await web3.utils.toWei('10');
+        collateralPoolAddress = _pool.address;
+        strikeAddress = _tUSD.address;
         primeAddress = await _exchange.getPrimeAddress();
-
+        expiration = '1587607322';
+        premium = (13*10**16).toString();
         
         
         
@@ -96,33 +113,43 @@ contract('Exchange', accounts => {
         await _tETH.mint(Bob, payment);
         await _tUSD.mint(Bob, payment);
 
-        await _prime.setPoolAddress(_pool.address);
-        let pool = await web3.utils.fromWei(await _pool._pool());
-        let liability = await web3.utils.fromWei(await _pool.liability());
-        let lpFunds = await web3.utils.fromWei(await _pool._collateral(Alice));
-        console.log({pool, liability, lpFunds})
+        /* await _prime.setPoolAddress(_pool.address); */
+        let _LP = Alice;
+        value = await web3.utils.toWei('1');
+        let deposit = await _pool.deposit(value, {from: _LP, value: value});
+        
+        await getPoolBalances(_pool);
 
 
     });
     
 
-    it('Become an LP then withdraw funds', async () => {
-        let _LP = Alice;
-        let value = await web3.utils.toWei('1');
-        let deposit = await _pool.deposit(value, {from: _LP, value: value});
-        let pool = await web3.utils.fromWei(await _pool._pool());
-        let liability = await web3.utils.fromWei(await _pool.liability());
-        let lpFunds = await web3.utils.fromWei(await _pool._collateral(Alice));
-        console.log({pool, liability, lpFunds})
+    it('should be able to withdraw funds', async () => {
         let withdraw = await _pool.withdrawLpFunds(value);
+        await getPoolBalances(_pool);
     });
 
-    it('Buy Prime from Pool', async () => {
+    it('can Mint Prime from Pool', async () => {
 
+        await _pool.mintPrimeFromPool(
+            collateral,
+            payment,
+            strikeAddress,
+            expiration,
+            {from: Bob, value: premium}
+        )
+        await getPoolBalances(_pool);
     });
 
-    it('Exercise Pool Prime', async () => {
+    it('can Exercise Pool Prime', async () => {
+        await _prime.exercise(1, {from: Bob});
+        await getPoolBalances(_pool);
+    });
 
+    it('can withdraw dividends', async () => {
+        let withdrawAmt = await web3.utils.toWei('3');
+        await _pool.withdrawLpFunds(withdrawAmt);
+        await getPoolBalances(_pool);
     });
 
 })
