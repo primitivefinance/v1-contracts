@@ -691,6 +691,9 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
 
     IPrime public _prime;
 
+    /* Total accumulated ether in pool */
+    uint256 public _totalDeposit;
+
     /* Ether balance in pool */
     uint256 public _pool;
 
@@ -704,7 +707,7 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
     /* Ether balance of user */
     mapping(address => uint256) public _collateral;
 
-    /* For texting */
+    /* For testing */
     uint256 public constant _premium = 10**17;
     uint256 public constant _feeDenomination = 3000;
 
@@ -734,7 +737,7 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
 
         /* Track user's liquidity contribution */
         _collateral[msg.sender] = _collateral[msg.sender].add(msg.value);
-
+        _totalDeposit = _totalDeposit.add(msg.value);
         _pool = _pool.add(msg.value);
 
         /* INTERACTIONS */
@@ -872,19 +875,35 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
 
         /* EFFECTS */
         
-        /* Subtract the ether from user's balance */
-        _collateral[msg.sender] = _collateral[msg.sender].sub(_amount);
+        /* Calculate Liability of user */
+        uint256 liable = _liability.mul(userEthBal).div(_totalDeposit);
 
-        uint256 dividend;
-        if(_revenue > 0) {
-            dividend = _amount.mul(_revenue).div(_pool);
-        } else {
-            dividend = 0;
-        }
+        /* Calculate Net Assets */
+        uint256 userAssets = userEthBal.sub(liable);
 
-        uint256 proceeds = _amount.mul(userEthBal).div(_pool);
+        /* Calculate available Net Pool Assets */
+        uint256 poolAssets = _pool.sub(_liability);
+
+        /* Calculate User's Portion of Withdrawable Net Assets */
+        uint256 proceeds = poolAssets.mul(userEthBal).div(_totalDeposit);
+
+        /* Calculate User's Earnings (Proportional Revenue) */
+        uint256 dividend = _revenue.mul(userEthBal).div(_totalDeposit);
+
+        /* UPDATE SYSTEM BALANCES */
+
+        /* Subtract the ether from user's assets */
+        _collateral[msg.sender] = _collateral[msg.sender].sub(userAssets);
+
+        /* Subtract net assets withdrawn from pool */
         _pool = _pool.sub(proceeds);
+
+        /* Subtract the revenue withdrawn */
         _revenue = _revenue.sub(dividend);
+
+        /* Subtract the net assets from total deposits */
+        _totalDeposit = _totalDeposit.sub(userAssets);
+
 
         /* INTERACTIONS */
         (bool success, ) = msg.sender.call.value(proceeds.add(dividend))("");

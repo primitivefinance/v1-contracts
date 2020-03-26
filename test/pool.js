@@ -80,10 +80,13 @@ contract('Exchange', accounts => {
     async function getPoolBalances(poolInstance) {
         let pool = await web3.utils.fromWei(await poolInstance._pool());
         let liability = await web3.utils.fromWei(await poolInstance._liability());
-        let lpFunds = await web3.utils.fromWei(await poolInstance._collateral(Alice));
+        let lp1Funds = await web3.utils.fromWei(await poolInstance._collateral(Alice));
+        let lp2Funds = await web3.utils.fromWei(await poolInstance._collateral(Bob));
         let etherBal =  await web3.utils.fromWei((await web3.eth.getBalance(poolInstance.address)).toString());
         let revenue = await web3.utils.fromWei(await poolInstance._revenue());
-        console.log({pool, liability, lpFunds, etherBal, revenue})
+        let totalDeposit = await web3.utils.fromWei(await poolInstance._totalDeposit());
+        console.log({pool, liability, lp1Funds, lp2Funds, etherBal, revenue, totalDeposit})
+        return ({pool, liability, lp1Funds, lp2Funds, etherBal, revenue, totalDeposit});
     }
 
     beforeEach(async () => {
@@ -125,12 +128,15 @@ contract('Exchange', accounts => {
     
 
     it('should be able to withdraw funds', async () => {
+        /* +1 */
         let withdraw = await _pool.withdrawLpFunds(value);
+        /* -1 */
         await getPoolBalances(_pool);
+        /* = 1 */
     });
 
     it('can Mint Prime from Pool', async () => {
-
+        /* +1 */
         await _pool.mintPrimeFromPool(
             collateral,
             payment,
@@ -138,18 +144,65 @@ contract('Exchange', accounts => {
             expiration,
             {from: Bob, value: premium}
         )
+        /* +1 Liability */
         await getPoolBalances(_pool);
+        /* = 1 pool, 1 liability, 0 assets */
     });
 
     it('can Exercise Pool Prime', async () => {
+        /* +1 */
         await _prime.exercise(1, {from: Bob});
+        /* -1, -1 liability */
         await getPoolBalances(_pool);
+        /* = 1 pool, 1 assets, 0 liability */
     });
 
     it('can withdraw dividends', async () => {
+        /* +1 */
         let withdrawAmt = await web3.utils.toWei('3');
+        /* -3, +1 loss */
         await _pool.withdrawLpFunds(withdrawAmt);
         await getPoolBalances(_pool);
+        /* -2, pool = 0 */
+    });
+
+    it('can add another LP', async () => {
+        /* +1 */
+        let depositAmt = await web3.utils.toWei('5');
+        /* +5 */
+        let withdrawAmt = await web3.utils.toWei('1');
+        /* -1 */
+        let lp2 = await _pool.deposit(depositAmt, {from: Bob, value: depositAmt});
+        console.log('Deposit 5')
+        await getPoolBalances(_pool);
+        let lp1Withdraw = await _pool.withdrawLpFunds(withdrawAmt);
+        console.log('Withdraw 1')
+        let bals = await getPoolBalances(_pool);
+        let depositNotWei = await web3.utils.fromWei(depositAmt)
+        assert.strictEqual(bals.pool, depositNotWei, 'Pool should have Lp2 deposit');
+        assert.strictEqual(bals.etherBal, depositNotWei, 'Pools eth balance should be deposit');
+        assert.strictEqual(bals.totalDeposit, depositNotWei, 'Total deposit should be deposit');
+        /* pool = 5 */
+    });
+
+    it('adds liability then withdraws', async () => {
+        let pool = await web3.utils.toWei('6');
+        let lp2Deposit = await web3.utils.toWei('6');
+        let liable = await web3.utils.toWei('5');
+        await _pool.mintPrimeFromPool(
+            liable,
+            payment,
+            strikeAddress,
+            expiration,
+            {from: Bob, value: premium}
+        )
+        let withdrawAmt = await web3.utils.toWei('5');
+        console.log('Liable + 5')
+        await getPoolBalances(_pool);
+        console.log('Withdraw 5')
+        let lp2Withdraw = await _pool.withdrawLpFunds(withdrawAmt, {from: Bob});
+        let bals = await getPoolBalances(_pool);
+        let withdrawableAmount = ('')
     });
 
 })
