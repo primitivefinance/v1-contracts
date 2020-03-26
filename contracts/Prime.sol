@@ -8,150 +8,36 @@ pragma solidity ^0.6.0;
  * @author  Primitive
  */
 
-/**
- * @dev Contract module that helps prevent reentrant calls to a function.
- *
- * Inheriting from `ReentrancyGuard` will make the {nonReentrant} modifier
- * available, which can be applied to functions to make sure there are no nested
- * (reentrant) calls to them.
- *
- * Note that because there is a single `nonReentrant` guard, functions marked as
- * `nonReentrant` may not call one another. This can be worked around by making
- * those functions `private`, and then adding `external` `nonReentrant` entry
- * points to them.
- *
- * TIP: If you would like to learn more about reentrancy and alternative ways
- * to protect against it, check out our blog post
- * https://blog.openzeppelin.com/reentrancy-after-istanbul/[Reentrancy After Istanbul].
- */
-contract ReentrancyGuard {
-    bool private _notEntered;
 
-    constructor () internal {
-        // Storing an initial non-zero value makes deployment a bit more
-        // expensive, but in exchange the refund on every call to nonReentrant
-        // will be lower in amount. Since refunds are capped to a percetange of
-        // the total transaction's gas, it is best to keep them low in cases
-        // like this one, to increase the likelihood of the full refund coming
-        // into effect.
-        _notEntered = true;
+/** 
+ *  @title Primitive's Instruments
+ * @author Primitive Finance
+*/
+library Instruments {
+     struct Actors {
+        uint[] mintedTokens;
+        uint[] deactivatedTokens;
     }
 
-    /**
-     * @dev Prevents a contract from calling itself, directly or indirectly.
-     * Calling a `nonReentrant` function from another `nonReentrant`
-     * function is not supported. It is possible to prevent this from happening
-     * by making the `nonReentrant` function external, and make it call a
-     * `private` function that does the actual work.
+     /** 
+     * @dev A Prime has these properties.
+     * @param ace `msg.sender` of the createPrime function.
+     * @param xis Quantity of collateral asset token.
+     * @param yak Address of collateral asset token.
+     * @param zed Purchase price of collateral, denominated in quantity of token z.
+     * @param wax Address of purchase price asset token.
+     * @param pow UNIX timestamp of valid time period.
+     * @param gem Address of payment receiver of token z.
      */
-    modifier nonReentrant() {
-        // On the first call to nonReentrant, _notEntered will be true
-        require(_notEntered, "ReentrancyGuard: reentrant call");
-
-        // Any calls to nonReentrant after this point will fail
-        _notEntered = false;
-
-        _;
-
-        // By storing the original value once again, a refund is triggered (see
-        // https://eips.ethereum.org/EIPS/eip-2200)
-        _notEntered = true;
-    }
-}
-
-/*
- * @dev Provides information about the current execution context, including the
- * sender of the transaction and its data. While these are generally available
- * via msg.sender and msg.data, they should not be accessed in such a direct
- * manner, since when dealing with GSN meta-transactions the account sending and
- * paying for execution may not be the actual sender (as far as an application
- * is concerned).
- *
- * This contract is only required for intermediate, library-like contracts.
- */
-contract Context {
-    // Empty internal constructor, to prevent people from mistakenly deploying
-    // an instance of this contract, which should be used via inheritance.
-    constructor () internal { }
-
-    function _msgSender() internal view virtual returns (address payable) {
-        return msg.sender;
-    }
-
-    function _msgData() internal view virtual returns (bytes memory) {
-        this; // silence state mutability warning without generating bytecode - see https://github.com/ethereum/solidity/issues/2691
-        return msg.data;
-    }
-}
-
-/**
- * @dev Contract module which provides a basic access control mechanism, where
- * there is an account (an owner) that can be granted exclusive access to
- * specific functions.
- *
- * By default, the owner account will be the one that deploys the contract. This
- * can later be changed with {transferOwnership}.
- *
- * This module is used through inheritance. It will make available the modifier
- * `onlyOwner`, which can be applied to your functions to restrict their use to
- * the owner.
- */
-contract Ownable is Context {
-    address private _owner;
-
-    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
-
-    /**
-     * @dev Initializes the contract setting the deployer as the initial owner.
-     */
-    constructor () internal {
-        address msgSender = _msgSender();
-        _owner = msgSender;
-        emit OwnershipTransferred(address(0), msgSender);
-    }
-
-    /**
-     * @dev Returns the address of the current owner.
-     */
-    function owner() public view returns (address) {
-        return _owner;
-    }
-
-    /**
-     * @dev Throws if called by any account other than the owner.
-     */
-    modifier onlyOwner() {
-        require(_owner == _msgSender(), "Ownable: caller is not the owner");
-        _;
-    }
-
-    /**
-     * @dev Leaves the contract without owner. It will not be possible to call
-     * `onlyOwner` functions anymore. Can only be called by the current owner.
-     *
-     * NOTE: Renouncing ownership will leave the contract without an owner,
-     * thereby removing any functionality that is only available to the owner.
-     */
-    function renounceOwnership() public virtual onlyOwner {
-        emit OwnershipTransferred(_owner, address(0));
-        _owner = address(0);
-    }
-
-    /**
-     * @dev Transfers ownership of the contract to a new account (`newOwner`).
-     * Can only be called by the current owner.
-     */
-    function transferOwnership(address newOwner) public virtual onlyOwner {
-        _transferOwnership(newOwner);
-    }
-
-    /**
-     * @dev Transfers ownership of the contract to a new account (`newOwner`).
-     */
-    function _transferOwnership(address newOwner) internal virtual {
-        require(newOwner != address(0), "Ownable: new owner is the zero address");
-        emit OwnershipTransferred(_owner, newOwner);
-        _owner = newOwner;
+    struct Primes {
+        address ace;
+        uint256 xis;
+        address yak;
+        uint256 zed;
+        address wax;
+        uint256 pow;
+        address gem;
+        bytes4 chain;
     }
 }
 
@@ -304,46 +190,6 @@ library SafeMath {
     }
 }
 
-/** 
- *  @title Primitive's Instruments
- * @author Primitive Finance
-*/
-library Instruments {
-     struct Actors {
-        uint[] mintedTokens;
-        uint[] deactivatedTokens;
-    }
-
-     /** 
-     * @dev A Prime has these properties.
-     * @param ace `msg.sender` of the createPrime function.
-     * @param xis Quantity of collateral asset token.
-     * @param yak Address of collateral asset token.
-     * @param zed Purchase price of collateral, denominated in quantity of token z.
-     * @param wax Address of purchase price asset token.
-     * @param pow UNIX timestamp of valid time period.
-     * @param gem Address of payment receiver of token z.
-     */
-    struct Primes {
-        address ace;
-        uint256 xis;
-        address yak;
-        uint256 zed;
-        address wax;
-        uint256 pow;
-        address gem;
-    }
-
-     /** 
-     * @dev A Prime has these properties.
-     * @param chain Keccak256 hash of collateral
-     *  asset address, strike asset address, and  expiration date.
-     */
-    struct Chain {
-        bytes4 chain;
-    }
-}
-
 /**
  * @dev Collection of functions related to the address type
  */
@@ -433,6 +279,152 @@ library Counters {
 
     function decrement(Counter storage counter) internal {
         counter._value = counter._value.sub(1);
+    }
+}
+
+/**
+ * @dev Contract module that helps prevent reentrant calls to a function.
+ *
+ * Inheriting from `ReentrancyGuard` will make the {nonReentrant} modifier
+ * available, which can be applied to functions to make sure there are no nested
+ * (reentrant) calls to them.
+ *
+ * Note that because there is a single `nonReentrant` guard, functions marked as
+ * `nonReentrant` may not call one another. This can be worked around by making
+ * those functions `private`, and then adding `external` `nonReentrant` entry
+ * points to them.
+ *
+ * TIP: If you would like to learn more about reentrancy and alternative ways
+ * to protect against it, check out our blog post
+ * https://blog.openzeppelin.com/reentrancy-after-istanbul/[Reentrancy After Istanbul].
+ */
+contract ReentrancyGuard {
+    bool private _notEntered;
+
+    constructor () internal {
+        // Storing an initial non-zero value makes deployment a bit more
+        // expensive, but in exchange the refund on every call to nonReentrant
+        // will be lower in amount. Since refunds are capped to a percetange of
+        // the total transaction's gas, it is best to keep them low in cases
+        // like this one, to increase the likelihood of the full refund coming
+        // into effect.
+        _notEntered = true;
+    }
+
+    /**
+     * @dev Prevents a contract from calling itself, directly or indirectly.
+     * Calling a `nonReentrant` function from another `nonReentrant`
+     * function is not supported. It is possible to prevent this from happening
+     * by making the `nonReentrant` function external, and make it call a
+     * `private` function that does the actual work.
+     */
+    modifier nonReentrant() {
+        // On the first call to nonReentrant, _notEntered will be true
+        require(_notEntered, "ReentrancyGuard: reentrant call");
+
+        // Any calls to nonReentrant after this point will fail
+        _notEntered = false;
+
+        _;
+
+        // By storing the original value once again, a refund is triggered (see
+        // https://eips.ethereum.org/EIPS/eip-2200)
+        _notEntered = true;
+    }
+}
+
+/*
+ * @dev Provides information about the current execution context, including the
+ * sender of the transaction and its data. While these are generally available
+ * via msg.sender and msg.data, they should not be accessed in such a direct
+ * manner, since when dealing with GSN meta-transactions the account sending and
+ * paying for execution may not be the actual sender (as far as an application
+ * is concerned).
+ *
+ * This contract is only required for intermediate, library-like contracts.
+ */
+contract Context {
+    // Empty internal constructor, to prevent people from mistakenly deploying
+    // an instance of this contract, which should be used via inheritance.
+    constructor () internal { }
+
+    function _msgSender() internal view virtual returns (address payable) {
+        return msg.sender;
+    }
+
+    function _msgData() internal view virtual returns (bytes memory) {
+        this; // silence state mutability warning without generating bytecode - see https://github.com/ethereum/solidity/issues/2691
+        return msg.data;
+    }
+}
+
+/**
+ * @dev Contract module which allows children to implement an emergency stop
+ * mechanism that can be triggered by an authorized account.
+ *
+ * This module is used through inheritance. It will make available the
+ * modifiers `whenNotPaused` and `whenPaused`, which can be applied to
+ * the functions of your contract. Note that they will not be pausable by
+ * simply including this module, only once the modifiers are put in place.
+ */
+contract Pausable is Context {
+    /**
+     * @dev Emitted when the pause is triggered by a pauser (`account`).
+     */
+    event Paused(address account);
+
+    /**
+     * @dev Emitted when the pause is lifted by a pauser (`account`).
+     */
+    event Unpaused(address account);
+
+    bool private _paused;
+
+    /**
+     * @dev Initializes the contract in unpaused state. Assigns the Pauser role
+     * to the deployer.
+     */
+    constructor () internal {
+        _paused = false;
+    }
+
+    /**
+     * @dev Returns true if the contract is paused, and false otherwise.
+     */
+    function paused() public view returns (bool) {
+        return _paused;
+    }
+
+    /**
+     * @dev Modifier to make a function callable only when the contract is not paused.
+     */
+    modifier whenNotPaused() {
+        require(!_paused, "Pausable: paused");
+        _;
+    }
+
+    /**
+     * @dev Modifier to make a function callable only when the contract is paused.
+     */
+    modifier whenPaused() {
+        require(_paused, "Pausable: not paused");
+        _;
+    }
+
+    /**
+     * @dev Called by a pauser to pause, triggers stopped state.
+     */
+    function _pause() internal virtual whenNotPaused {
+        _paused = true;
+        emit Paused(_msgSender());
+    }
+
+    /**
+     * @dev Called by a pauser to unpause, returns to normal state.
+     */
+    function _unpause() internal virtual whenPaused {
+        _paused = false;
+        emit Unpaused(_msgSender());
     }
 }
 
@@ -944,186 +936,6 @@ contract ERC721 is Context, ERC165, IERC721 {
 }
 
 /**
- * @title ERC-721 Non-Fungible Token Standard, optional enumeration extension
- * @dev See https://eips.ethereum.org/EIPS/eip-721
- */
-interface IERC721Enumerable is IERC721 {
-    function totalSupply() external view returns (uint256);
-    function tokenOfOwnerByIndex(address owner, uint256 index) external view returns (uint256 tokenId);
-
-    function tokenByIndex(uint256 index) external view returns (uint256);
-}
-
-/**
- * @title ERC-721 Non-Fungible Token with optional enumeration extension logic
- * @dev See https://eips.ethereum.org/EIPS/eip-721
- */
-contract ERC721Enumerable is Context, ERC165, ERC721, IERC721Enumerable {
-    // Mapping from owner to list of owned token IDs
-    mapping(address => uint256[]) private _ownedTokens;
-
-    // Mapping from token ID to index of the owner tokens list
-    mapping(uint256 => uint256) private _ownedTokensIndex;
-
-    // Array with all token ids, used for enumeration
-    uint256[] private _allTokens;
-
-    // Mapping from token id to position in the allTokens array
-    mapping(uint256 => uint256) private _allTokensIndex;
-
-    /*
-     *     bytes4(keccak256('totalSupply()')) == 0x18160ddd
-     *     bytes4(keccak256('tokenOfOwnerByIndex(address,uint256)')) == 0x2f745c59
-     *     bytes4(keccak256('tokenByIndex(uint256)')) == 0x4f6ccce7
-     *
-     *     => 0x18160ddd ^ 0x2f745c59 ^ 0x4f6ccce7 == 0x780e9d63
-     */
-    bytes4 private constant _INTERFACE_ID_ERC721_ENUMERABLE = 0x780e9d63;
-
-    /**
-     * @dev Constructor function.
-     */
-    constructor () public {
-        // register the supported interface to conform to ERC721Enumerable via ERC165
-        _registerInterface(_INTERFACE_ID_ERC721_ENUMERABLE);
-    }
-
-    /**
-     * @dev Gets the token ID at a given index of the tokens list of the requested owner.
-     * @param owner address owning the tokens list to be accessed
-     * @param index uint256 representing the index to be accessed of the requested tokens list
-     * @return uint256 token ID at the given index of the tokens list owned by the requested address
-     */
-    function tokenOfOwnerByIndex(address owner, uint256 index) public view override returns (uint256) {
-        require(index < balanceOf(owner), "ERC721Enumerable: owner index out of bounds");
-        return _ownedTokens[owner][index];
-    }
-
-    /**
-     * @dev Gets the total amount of tokens stored by the contract.
-     * @return uint256 representing the total amount of tokens
-     */
-    function totalSupply() public view override returns (uint256) {
-        return _allTokens.length;
-    }
-
-    /**
-     * @dev Gets the token ID at a given index of all the tokens in this contract
-     * Reverts if the index is greater or equal to the total number of tokens.
-     * @param index uint256 representing the index to be accessed of the tokens list
-     * @return uint256 token ID at the given index of the tokens list
-     */
-    function tokenByIndex(uint256 index) public view override returns (uint256) {
-        require(index < totalSupply(), "ERC721Enumerable: global index out of bounds");
-        return _allTokens[index];
-    }
-
-    function _beforeTokenTransfer(address from, address to, uint256 tokenId) internal virtual override {
-        super._beforeTokenTransfer(from, to, tokenId);
-
-        if (from == address(0)) {
-            // When minting
-            _addTokenToOwnerEnumeration(to, tokenId);
-            _addTokenToAllTokensEnumeration(tokenId);
-        } else if (to == address(0)) {
-            // When burning
-            _removeTokenFromOwnerEnumeration(from, tokenId);
-            // Since tokenId will be deleted, we can clear its slot in _ownedTokensIndex to trigger a gas refund
-            _ownedTokensIndex[tokenId] = 0;
-
-            _removeTokenFromAllTokensEnumeration(tokenId);
-        } else {
-            _removeTokenFromOwnerEnumeration(from, tokenId);
-            _addTokenToOwnerEnumeration(to, tokenId);
-        }
-    }
-
-    /**
-     * @dev Gets the list of token IDs of the requested owner.
-     * @param owner address owning the tokens
-     * @return uint256[] List of token IDs owned by the requested address
-     */
-    function _tokensOfOwner(address owner) internal view returns (uint256[] storage) {
-        return _ownedTokens[owner];
-    }
-
-    /**
-     * @dev Private function to add a token to this extension's ownership-tracking data structures.
-     * @param to address representing the new owner of the given token ID
-     * @param tokenId uint256 ID of the token to be added to the tokens list of the given address
-     */
-    function _addTokenToOwnerEnumeration(address to, uint256 tokenId) private {
-        _ownedTokensIndex[tokenId] = _ownedTokens[to].length;
-        _ownedTokens[to].push(tokenId);
-    }
-
-    /**
-     * @dev Private function to add a token to this extension's token tracking data structures.
-     * @param tokenId uint256 ID of the token to be added to the tokens list
-     */
-    function _addTokenToAllTokensEnumeration(uint256 tokenId) private {
-        _allTokensIndex[tokenId] = _allTokens.length;
-        _allTokens.push(tokenId);
-    }
-
-    /**
-     * @dev Private function to remove a token from this extension's ownership-tracking data structures. Note that
-     * while the token is not assigned a new owner, the `_ownedTokensIndex` mapping is _not_ updated: this allows for
-     * gas optimizations e.g. when performing a transfer operation (avoiding double writes).
-     * This has O(1) time complexity, but alters the order of the _ownedTokens array.
-     * @param from address representing the previous owner of the given token ID
-     * @param tokenId uint256 ID of the token to be removed from the tokens list of the given address
-     */
-    function _removeTokenFromOwnerEnumeration(address from, uint256 tokenId) private {
-        // To prevent a gap in from's tokens array, we store the last token in the index of the token to delete, and
-        // then delete the last slot (swap and pop).
-
-        uint256 lastTokenIndex = _ownedTokens[from].length.sub(1);
-        uint256 tokenIndex = _ownedTokensIndex[tokenId];
-
-        // When the token to delete is the last token, the swap operation is unnecessary
-        if (tokenIndex != lastTokenIndex) {
-            uint256 lastTokenId = _ownedTokens[from][lastTokenIndex];
-
-            _ownedTokens[from][tokenIndex] = lastTokenId; // Move the last token to the slot of the to-delete token
-            _ownedTokensIndex[lastTokenId] = tokenIndex; // Update the moved token's index
-        }
-
-        // Deletes the contents at the last position of the array
-        _ownedTokens[from].pop();
-
-        // Note that _ownedTokensIndex[tokenId] hasn't been cleared: it still points to the old slot (now occupied by
-        // lastTokenId, or just over the end of the array if the token was the last one).
-    }
-
-    /**
-     * @dev Private function to remove a token from this extension's token tracking data structures.
-     * This has O(1) time complexity, but alters the order of the _allTokens array.
-     * @param tokenId uint256 ID of the token to be removed from the tokens list
-     */
-    function _removeTokenFromAllTokensEnumeration(uint256 tokenId) private {
-        // To prevent a gap in the tokens array, we store the last token in the index of the token to delete, and
-        // then delete the last slot (swap and pop).
-
-        uint256 lastTokenIndex = _allTokens.length.sub(1);
-        uint256 tokenIndex = _allTokensIndex[tokenId];
-
-        // When the token to delete is the last token, the swap operation is unnecessary. However, since this occurs so
-        // rarely (when the last minted token is burnt) that we still do the swap here to avoid the gas cost of adding
-        // an 'if' statement (like in _removeTokenFromOwnerEnumeration)
-        uint256 lastTokenId = _allTokens[lastTokenIndex];
-
-        _allTokens[tokenIndex] = lastTokenId; // Move the last token to the slot of the to-delete token
-        _allTokensIndex[lastTokenId] = tokenIndex; // Update the moved token's index
-
-        // Delete the contents at the last position of the array
-        _allTokens.pop();
-
-        _allTokensIndex[tokenId] = 0;
-    }
-}
-
-/**
  * @title ERC-721 Non-Fungible Token Standard, optional metadata extension
  * @dev See https://eips.ethereum.org/EIPS/eip-721
  */
@@ -1248,100 +1060,14 @@ contract ERC721Metadata is Context, ERC165, ERC721, IERC721Metadata {
     }
 }
 
-/**
- * @title Full ERC721 Token
- * @dev This implementation includes all the required and some optional functionality of the ERC721 standard
- * Moreover, it includes approve all functionality using operator terminology.
- *
- * See https://eips.ethereum.org/EIPS/eip-721
- */
-contract ERC721Full is ERC721Enumerable, ERC721Metadata {
-    constructor (string memory name, string memory symbol) public ERC721Metadata(name, symbol) { }
-
-    function _beforeTokenTransfer(address from, address to, uint256 tokenId)
-        virtual
-        override(ERC721Enumerable, ERC721Metadata)
-        internal
-    {
-        super._beforeTokenTransfer(from, to, tokenId);
-    }
-}
-
-/**
- * @dev Contract module which allows children to implement an emergency stop
- * mechanism that can be triggered by an authorized account.
- *
- * This module is used through inheritance. It will make available the
- * modifiers `whenNotPaused` and `whenPaused`, which can be applied to
- * the functions of your contract. Note that they will not be pausable by
- * simply including this module, only once the modifiers are put in place.
- */
-contract Pausable is Context {
-    /**
-     * @dev Emitted when the pause is triggered by a pauser (`account`).
-     */
-    event Paused(address account);
-
-    /**
-     * @dev Emitted when the pause is lifted by a pauser (`account`).
-     */
-    event Unpaused(address account);
-
-    bool private _paused;
-
-    /**
-     * @dev Initializes the contract in unpaused state. Assigns the Pauser role
-     * to the deployer.
-     */
-    constructor () internal {
-        _paused = false;
-    }
-
-    /**
-     * @dev Returns true if the contract is paused, and false otherwise.
-     */
-    function paused() public view returns (bool) {
-        return _paused;
-    }
-
-    /**
-     * @dev Modifier to make a function callable only when the contract is not paused.
-     */
-    modifier whenNotPaused() {
-        require(!_paused, "Pausable: paused");
-        _;
-    }
-
-    /**
-     * @dev Modifier to make a function callable only when the contract is paused.
-     */
-    modifier whenPaused() {
-        require(_paused, "Pausable: not paused");
-        _;
-    }
-
-    /**
-     * @dev Called by a pauser to pause, triggers stopped state.
-     */
-    function _pause() internal virtual whenNotPaused {
-        _paused = true;
-        emit Paused(_msgSender());
-    }
-
-    /**
-     * @dev Called by a pauser to unpause, returns to normal state.
-     */
-    function _unpause() internal virtual whenPaused {
-        _paused = false;
-        emit Unpaused(_msgSender());
-    }
-}
-
-
 abstract contract ERC20 {
     function balanceOf(address _owner) virtual external returns(uint256);
     function transferFrom(address sender, address recipient, uint256 amount) public virtual returns (bool);
     function transfer(address recipient, uint256 amount) public virtual returns (bool);
+}
+
+abstract contract IPool {
+    function withdrawExercisedEth(address payable _receiver, uint256 _amount) external virtual returns (bool);
 }
 
 abstract contract IPrime {
@@ -1422,42 +1148,115 @@ abstract contract IPrime {
     function withdraw(uint256 _amount, address _asset) public virtual returns (bool);
 }
 
-contract Prime is IPrime, ERC721Full, ReentrancyGuard, Pausable {
+contract Prime is IPrime, ERC721Metadata, ReentrancyGuard, Pausable {
     using SafeMath for uint256;
 
-    string constant URI = '';
     uint256 constant INCREMENT = 1;
     uint256 public nonce;
     address private _owner;
+    address public _poolAddress;
 
     /* Maps a user's withdrawable asset balance */
-    mapping(address => mapping(address => uint256)) private _bank;
+    mapping(address => mapping(address => uint256)) private _assets;
+    mapping(address => mapping(address => uint256)) private _liabilities;
 
     /* Map NFT IDs to Prime Struct */
     mapping(uint256 => Instruments.Primes) public _primes;
 
-    /* Maps user addresses to Actor accounts */
-    mapping(address => Instruments.Actors) private _actors;
-
-    /* Maps token Ids to hash of collateral/strike/expiration */
-    mapping(uint256 => Instruments.Chain) public _chains;
-
-
     constructor () public
-        ERC721Full(
+        ERC721Metadata(
             "Prime Derivative",
             "PRIME"
         ) {
             _owner = msg.sender;
         }
     
+    /* SET*/
+    function setPoolAddress(address poolAddress) external {
+        require(msg.sender == _owner, 'not owner');
+        _poolAddress = poolAddress;
+    }
+
     /* KILL SWITCH */
     function killSwitch() external {
-        require(msg.sender == _owner, 'Not owner');
+        require(msg.sender == _owner, 'not owner');
         _pause();
     }
 
+    /* REVIVE */
+    function unpause() external whenPaused {
+        require(msg.sender == _owner, 'not owner');
+        _unpause();
+    }
+
     /* CORE FUNCTIONS */
+
+    /** 
+     * @dev `msg.sender` Deposits asset x, mints new Slate.
+     * @param _tokenReceiver token is minted to this address.
+     * @param _xis Amount of wei to lock from the pool
+     * @param _yak Address pool
+     * @param _zed Amount of payment asset.
+     * @param _wax Payment asset address.
+     * @param _pow Expiry timestamp.
+     * @return _tokenId nonce of token minted.
+     */
+    function mintFromPool(
+        address _tokenReceiver,
+        uint256 _xis,
+        address _yak,
+        uint256 _zed,
+        address _wax,
+        uint256 _pow
+    ) 
+        external 
+        whenNotPaused
+        returns (uint256 _tokenId) 
+    {
+
+        /* CHECKS */
+        require(msg.sender == _poolAddress, 'Not pool');
+
+        /* EFFECTS */
+        nonce = nonce.add(INCREMENT);
+
+        bytes4 chain = bytes4(
+            keccak256(abi.encodePacked(_yak))) 
+            ^ bytes4(keccak256(abi.encodePacked(_wax))) 
+            ^ bytes4(keccak256(abi.encodePacked(_pow))
+        );
+
+        _primes[nonce] = Instruments.Primes(
+            msg.sender, 
+            _xis,
+            _yak, 
+            _zed, 
+            _wax, 
+            _pow, 
+            msg.sender,
+            chain
+        );
+
+        /* Set collateral amount the pool is liable for */
+        _assets[msg.sender][_yak] = _assets[msg.sender][_yak].add(_xis);
+
+        /* INTERACTIONS */
+        emit PrimeMinted(
+            _tokenReceiver, 
+            _xis,
+            _yak,
+            _zed,
+            _wax,
+            nonce, 
+            block.timestamp
+        );
+
+        _safeMint(
+            _tokenReceiver,
+            nonce
+        );
+        return nonce;
+    }
 
     /** 
      * @dev `msg.sender` Deposits asset x, mints new Slate.
@@ -1491,7 +1290,14 @@ contract Prime is IPrime, ERC721Full, ReentrancyGuard, Pausable {
         );
 
         /* EFFECTS */
-        _incrementNonce();
+        nonce = nonce.add(INCREMENT);
+
+        bytes4 chain = bytes4(
+            keccak256(abi.encodePacked(_yak))) 
+            ^ bytes4(keccak256(abi.encodePacked(_wax))) 
+            ^ bytes4(keccak256(abi.encodePacked(_pow))
+        );
+
         _primes[nonce] = Instruments.Primes(
             msg.sender, 
             _xis,
@@ -1499,21 +1305,11 @@ contract Prime is IPrime, ERC721Full, ReentrancyGuard, Pausable {
             _zed, 
             _wax, 
             _pow, 
-            _gem
-        );
-
-        bytes4 chain = bytes4(
-            keccak256(abi.encodePacked(_yak))) 
-            ^ bytes4(keccak256(abi.encodePacked(_wax))) 
-            ^ bytes4(keccak256(abi.encodePacked(_pow))
-        );
-        _chains[nonce] = Instruments.Chain(
+            _gem,
             chain
         );
 
-        _actors[msg.sender].mintedTokens.push(nonce);
-
-        _bank[msg.sender][_yak] = _bank[msg.sender][_yak].add(_xis);
+        _liabilities[msg.sender][_yak] = _liabilities[msg.sender][_yak].add(_xis);
 
         /* INTERACTIONS */
         emit PrimeMinted(
@@ -1571,19 +1367,22 @@ contract Prime is IPrime, ERC721Full, ReentrancyGuard, Pausable {
 
         /* EFFECTS */
 
-        _actors[msg.sender].deactivatedTokens.push(_tokenId);
-
-        /* Original Minter has their collateral balance debited. */
-        _bank[_prime.ace][_prime.yak] = _bank[_prime.ace][_prime.yak].sub(_prime.xis);
-        /* Payment receiver has their payment balance credited. */
-        _bank[_prime.gem][_prime.wax] = _bank[_prime.gem][_prime.wax].add(_prime.zed);
-        /* Exercisor has their collateral balance credited. */
-        _bank[msg.sender][_prime.yak] = _bank[msg.sender][_prime.yak].add(_prime.xis);
-
+        /* Check if its a Prime minted from the Pool */
+        if(_prime.yak == _poolAddress) {
+            /* Original Minter has their collateral balance debited. */
+            _liabilities[_prime.ace][_prime.yak] = _liabilities[_prime.ace][_prime.yak].sub(_prime.xis);
+            /* Exercisor has their collateral balance credited. */
+            _assets[msg.sender][_prime.yak] = _assets[msg.sender][_prime.yak].add(_prime.xis);
+        } else {
+            /* Original Minter has their collateral balance debited. */
+            _liabilities[_prime.ace][_prime.yak] = _liabilities[_prime.ace][_prime.yak].sub(_prime.xis);
+            /* Payment receiver has their payment balance credited. */
+            _assets[_prime.gem][_prime.wax] = _assets[_prime.gem][_prime.wax].add(_prime.zed);
+            /* Exercisor has their collateral balance credited. */
+            _assets[msg.sender][_prime.yak] = _assets[msg.sender][_prime.yak].add(_prime.xis);
+        }
+        
         /* INTERACTIONS */
-
-        _burn(_tokenId);
-
         emit PrimeExercised(
             msg.sender,
             _prime.xis,
@@ -1594,7 +1393,55 @@ contract Prime is IPrime, ERC721Full, ReentrancyGuard, Pausable {
             block.timestamp
         );
         
-        return _wax.transferFrom(msg.sender, address(this), _prime.zed);
+        _burn(_tokenId);
+
+        if(_prime.yak == _poolAddress) {
+            return _wax.transferFrom(msg.sender, _poolAddress, _prime.zed);
+        } else {
+            return _wax.transferFrom(msg.sender, address(this), _prime.zed);
+        }
+        
+    }
+
+    /** 
+     * @dev `msg.sender` Exercises right to purchase collateral.
+     * @param _tokenId ID of Prime.
+     * @return bool Success.
+     */
+    function exerciseFromPool(
+        uint256 _tokenId
+    ) 
+        internal 
+        whenNotPaused
+        nonReentrant
+        returns (bool) 
+    {
+        /* CHECKS */
+
+        /* Get Prime */
+        Instruments.Primes memory _prime = _primes[_tokenId];
+
+        /* EFFECTS */
+
+        /* Original Minter has their collateral balance debited. */
+        _liabilities[_prime.ace][_prime.yak] = _liabilities[_prime.ace][_prime.yak].sub(_prime.xis);
+        /* Exercisor has their collateral balance credited. */
+        _assets[msg.sender][_prime.yak] = _assets[msg.sender][_prime.yak].add(_prime.xis);
+
+        /* INTERACTIONS */
+        emit PrimeExercised(
+            msg.sender,
+            _prime.xis,
+            _prime.yak,
+            _prime.zed,
+            _prime.wax,
+            _tokenId, 
+            block.timestamp
+        );
+        
+        _burn(_tokenId);
+        ERC20 _wax = ERC20(_prime.wax);
+        return _wax.transferFrom(msg.sender, _poolAddress, _prime.zed);
     }
 
     /** 
@@ -1643,7 +1490,7 @@ contract Prime is IPrime, ERC721Full, ReentrancyGuard, Pausable {
         );
 
         require(
-            _bank[msg.sender][_burnPrime.yak] > 0, 
+            _assets[msg.sender][_burnPrime.yak] > 0, 
             'No collateral'
         );
 
@@ -1654,10 +1501,8 @@ contract Prime is IPrime, ERC721Full, ReentrancyGuard, Pausable {
 
         /* EFFECTS */
 
-        _actors[msg.sender].deactivatedTokens.push(_burnId);
-
         /* Minter's collateral is debited. */
-        _bank[msg.sender][_burnPrime.yak] = _bank[msg.sender][_burnPrime.yak].sub(_burnPrime.xis);
+        _assets[msg.sender][_burnPrime.yak] = _assets[msg.sender][_burnPrime.yak].sub(_burnPrime.xis);
 
         /* INTERACTIONS */
         emit PrimeClosed(
@@ -1689,16 +1534,16 @@ contract Prime is IPrime, ERC721Full, ReentrancyGuard, Pausable {
         returns (bool) 
     {
         /* CHECKS */
-        uint256 bank = _bank[msg.sender][_asset];
+        uint256 assetBal = _assets[msg.sender][_asset];
         require(
-            bank >= _amount, 
+            assetBal >= _amount, 
             'Bal < amt'
         );
 
         /* EFFECTS */
 
         /* User's account is debited */
-        _bank[msg.sender][_asset] = bank.sub(_amount);
+        _assets[msg.sender][_asset] = assetBal.sub(_amount);
 
         /* INTERACTIONS  */
         emit Withdrawal(
@@ -1707,6 +1552,11 @@ contract Prime is IPrime, ERC721Full, ReentrancyGuard, Pausable {
             _asset,
             block.timestamp
         );
+
+        if(_asset == _poolAddress) {
+            IPool _pool = IPool(_poolAddress);
+            return _pool.withdrawExercisedEth(msg.sender, _amount);
+        }
 
         ERC20 erc20 = ERC20(_asset);
         return erc20.transfer(msg.sender, _amount);
@@ -1717,19 +1567,10 @@ contract Prime is IPrime, ERC721Full, ReentrancyGuard, Pausable {
 
 
     /** 
-     * @dev Utility to update tokenId Nonce.
-     * @return uint256 nonce.
-     */
-    function _incrementNonce() internal returns (uint256) {
-        nonce = nonce.add(INCREMENT);
-        return nonce;
-    }
-
-    /** 
      * @dev Utility to compare hashes of Prime properties.
      * @param _collateralId id of token that is having its collateral withdraw
      * @param _burnId id of token that is being burned
-     * @return burn bool of whether Instruments.Primes match.
+     * @return bool of whether Instruments.Primes match.
     */
     function _primeCompare(
         uint256 _collateralId,
@@ -1738,7 +1579,7 @@ contract Prime is IPrime, ERC721Full, ReentrancyGuard, Pausable {
         public 
         view 
         returns
-        (bool burn)
+        (bool)
     {
         Instruments.Primes memory _collateralPrime = _primes[_collateralId];
         Instruments.Primes memory _burnPrime = _primes[_burnId];
@@ -1763,11 +1604,7 @@ contract Prime is IPrime, ERC721Full, ReentrancyGuard, Pausable {
             )
         );
 
-        if(hashCollateral == hashBurn) {
-            return true;
-        } else {
-            revert('Props !=');
-        }
+        require(hashCollateral == hashBurn, 'Props !=');
     }
 
 
@@ -1801,36 +1638,10 @@ contract Prime is IPrime, ERC721Full, ReentrancyGuard, Pausable {
     /** 
      * @dev Public view function to get the Bank's balance of a User
      */
-    function getBalance(address _user, address _asset) public view returns (
+    function getAssetBalance(address _user, address _asset) public view returns (
         uint256
         ) {
-            return _bank[_user][_asset];
-    }
-
-    /** 
-     * @dev Public view function to Actor properties
-     */
-    function getActor(address _user) external view returns (
-        uint[] memory mintedTokens,
-        uint[] memory deactivatedTokens
-        ) {
-            Instruments.Actors memory _actor = _actors[_user];
-            return (
-                _actor.mintedTokens,
-                _actor.deactivatedTokens
-            );
-    }
-
-    /** 
-     * @dev Public view function to get chain hash
-     */
-    function getChain(uint256 _tokenId) external view returns (
-        bytes4 chain
-    ) {
-        Instruments.Chain memory _chain = _chains[_tokenId];
-        return (
-            _chain.chain
-        );
+            return _assets[_user][_asset];
     }
 
     function isTokenExpired(uint256 _tokenId) public view returns(bool) {

@@ -476,6 +476,7 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
     event FillUnfilledBuyOrder(address _seller, uint256 _tokenId);
     event FillOrder(address _seller, address _buyer, uint256 _filledPrice, uint256 _tokenId);
     event CloseOrder(address _user, uint256 _tokenId, bool _buyOrder);
+    event CloseUnfilledBuyOrder(address _user, bytes4 _chain, uint256 _buyOrderNonce);
 
     struct SellOrders {
         address payable seller;
@@ -545,8 +546,14 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
         );
     }
 
+    /* KILL SWITCH */
     function killSwitch() external onlyOwner {
         _pause();
+    }
+
+    /* REVIVE */
+    function unpause() external onlyOwner {
+        _unpause();
     }
 
     function getPrimeAddress() public view returns (address) {
@@ -790,7 +797,7 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
         uint256 _buyOrderNonce,
         bytes4 _chain
     ) 
-        internal
+        private
         nonReentrant
         returns (bool) 
     {
@@ -894,7 +901,7 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
         uint256 _totalPrice,
         address payable _buyer, 
         address payable _seller
-    ) internal returns (bool) {
+    ) private returns (bool) {
         
         /* CHECKS */
         require(_bidPrice >= _totalPrice, 'Bid < total price');
@@ -1005,6 +1012,40 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
         IPrime _prime = IPrime(_primeAddress);
         _prime.safeTransferFrom(address(this), _sells.seller, _tokenId);
         emit CloseOrder(msg.sender, _tokenId, false);
+        return true;
+    }
+
+    /**
+     * @dev clears an unfilled buy order from state and returns funds/assets
+     * @param _chain keccak256 hash of asset 1 address ^ asset 2 Address ^ expiration
+     * @param _buyOrderNonce nonce of when buy order was submitted
+     * @return bool whether the tx succeeds
+    */
+    function closeUnfilledBuyOrder(
+        bytes4 _chain,
+        uint256 _buyOrderNonce
+    ) 
+        external 
+        nonReentrant 
+        returns (bool) 
+    {
+        /* Buy order request of hash 'chain' at order request nonce */
+        BuyOrdersUnfilled memory _buyUnfilled = _buyOrdersUnfilled[_chain][_buyOrderNonce];
+
+        /* CHECKS */
+        require(msg.sender == _buyUnfilled.buyer, 'Msg.sender != buyer');
+
+        /* EFFECTS */
+        
+        /* Clears the buy order request from state */
+        clearUnfilledBuyOrder(_chain, _buyOrderNonce);
+
+        /* Update user's withdrawable ether balance */
+        _etherBalance[_buyUnfilled.buyer].add(_buyUnfilled.bidPrice);
+
+        /* INTERACTIONS */
+
+        emit CloseUnfilledBuyOrder(msg.sender, _chain, _buyOrderNonce);
         return true;
     }
 

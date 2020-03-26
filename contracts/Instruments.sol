@@ -30,14 +30,6 @@ library Instruments {
         address wax;
         uint256 pow;
         address gem;
-    }
-
-     /** 
-     * @dev A Prime has these properties.
-     * @param chain Keccak256 hash of collateral
-     *  asset address, strike asset address, and  expiration date.
-     */
-    struct Chain {
         bytes4 chain;
     }
 }
