@@ -889,19 +889,19 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
 
         /* EFFECTS */
         if(_poolInterface.getAvailableAssets() >= _xis) {
-            require(_poolInterface.mintPrimeFromPool(
+            _poolInterface.mintPrimeFromPool.value(msg.value)(
                 _xis,
                 _zed,
                 _wax,
                 _pow,
                 msg.sender
-            ), 'Prime not minted');
+            );
 
             emit FillOrderFromPool(msg.sender, _bidPrice, _xis);
 
-            (bool success, ) = _poolAddress.call.value(msg.value)("");
-            require(success, "Transfer failed.");
-            return success;
+            /* (bool success, ) = _poolAddress.call.value(msg.value)("");
+            require(success, "Transfer failed."); */
+            return true;
         }
         
         bytes4 _chain = bytes4(

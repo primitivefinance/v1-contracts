@@ -5,13 +5,13 @@ const tETH = artifacts.require('tETH');
 const Pool = artifacts.require('Pool');
 
 module.exports = async (deployer, accounts) => {
-    const factoryAddress = '0xf5D915570BC477f9B8D6C0E980aA81757A3AaC36'
+    const compoundEthAddress = '0xd6801a1dffcd0a410336ef88def4320d6df1883e'
     let prime = await Prime.deployed();
     let exchange = await Exchange.deployed();
     await deployer.deploy(
         Pool,
         prime.address,
-        factoryAddress,
+        compoundEthAddress,
         exchange.address
     );
 
