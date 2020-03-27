@@ -58,7 +58,6 @@ contract('Prime', accounts => {
 
     async function getBal(contract, address, name, units) {
         let bal = (await web3.utils.fromWei((await contract.balanceOf(address)).toString()));
-        console.log(`${name} has in bank:`, await web3.utils.fromWei(await _prime.getBalance(Alice, contract.address)))
         console.log(`${name} has a balance of ${bal} ${units}.`);
     }
 
@@ -121,7 +120,7 @@ contract('Prime', accounts => {
             pow,
             gem
         );
-
+        let firstNonce = (await _prime.nonce()).toString();
         await _tETH.approve(_prime.address, collateral);
         mint = await _prime.createPrime(
             xis,
@@ -131,10 +130,13 @@ contract('Prime', accounts => {
             pow,
             gem
         );
+        let secondNonce = (await _prime.nonce()).toString();
 
-        console.log((await _prime.nonce()).toString());
-        _collateralID = (await _prime.nonce()) - 1;
-        _burnId = (await _prime.nonce());
+        console.log({firstNonce, secondNonce});
+        console.log(await _prime.getPrime(firstNonce));
+        console.log(await _prime.getPrime(secondNonce));
+        _collateralID = firstNonce;
+        _burnId = secondNonce;
         close = await _prime.close(_collateralID, _burnId);
     });
     
@@ -184,17 +186,4 @@ contract('Prime', accounts => {
             "ERC721: owner query for nonexistent token"
         );
     });
-
-    it('get actor info', async () => {
-        console.log(
-            ((await _prime.getActor(Alice)).mintedTokens).toString(),
-            ((await _prime.getActor(Alice)).deactivatedTokens).toString()
-        );
-    });
-
-    it('only pausable by owner', async () => {
-        await _prime.killSwitch({from: Bob});
-    });
-
-
 })

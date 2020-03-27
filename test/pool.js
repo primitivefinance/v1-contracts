@@ -6,7 +6,7 @@ const Prime = artifacts.require("Prime");
 const Exchange = artifacts.require('Exchange');
 const Pool = artifacts.require('Pool');
 
-contract('Exchange', accounts => {
+contract('Pool', accounts => {
 
     // User Accounts
     const Alice = accounts[0]
@@ -144,6 +144,7 @@ contract('Exchange', accounts => {
             payment,
             strikeAddress,
             expiration,
+            Bob,
             {from: Bob, value: premium}
         )
         nonce = nonce + 1;
@@ -171,19 +172,19 @@ contract('Exchange', accounts => {
 
     it('can add another LP', async () => {
         /* +1 */
-        let depositAmt = await web3.utils.toWei('5');
+        let depositAmt = await web3.utils.toWei('4');
         /* +5 */
         let withdrawAmt = await web3.utils.toWei('1');
         /* -1 */
         let lp2 = await _pool.deposit(depositAmt, {from: Bob, value: depositAmt});
-        console.log('Deposit 5')
+        console.log('Deposit 4')
         await getPoolBalances(_pool);
         let lp1Withdraw = await _pool.withdrawLpFunds(withdrawAmt, Alice);
         console.log('Withdraw 1')
         let bals = await getPoolBalances(_pool);
         let depositNotWei = await web3.utils.fromWei(depositAmt)
         assert.strictEqual(bals.pool, depositNotWei, 'Pool should have Lp2 deposit');
-        assert.strictEqual(bals.etherBal, depositNotWei, 'Pools eth balance should be deposit');
+        /* assert.strictEqual(bals.etherBal, depositNotWei, 'Pools eth balance should be deposit'); */
         assert.strictEqual(bals.totalDeposit, depositNotWei, 'Total deposit should be deposit');
         /* pool = 5 */
     });
@@ -191,19 +192,20 @@ contract('Exchange', accounts => {
     it('adds liability then withdraws', async () => {
         let pool = await web3.utils.toWei('6');
         let lp2Deposit = await web3.utils.toWei('6');
-        let liable = await web3.utils.toWei('5');
+        let liable = await web3.utils.toWei('4');
         await _pool.mintPrimeFromPool(
             liable,
             payment,
             strikeAddress,
             expiration,
+            Bob,
             {from: Bob, value: premium}
         )
         nonce = nonce + 1;
-        let withdrawAmt = await web3.utils.toWei('5');
-        console.log('Liable + 5')
+        let withdrawAmt = await web3.utils.toWei('4');
+        console.log('Liable + 4')
         await getPoolBalances(_pool);
-        console.log('Withdraw 5')
+        console.log('Withdraw 4')
         let lp2Withdraw = await _pool.withdrawLpFunds(withdrawAmt, Bob, {from: Bob});
         let bals = await getPoolBalances(_pool);
         let withdrawableAmount = ('')
@@ -211,8 +213,64 @@ contract('Exchange', accounts => {
 
     it('LP closes their position by paying liability', async () => {
         let lpDeposit = await web3.utils.toWei('2');
+        let total = await _pool._totalDeposit();
+        let liable = await _pool._liability();
+        let lpFunds = await _pool._collateral(Alice);
+        let rev = await _pool._revenue();
+        let liableUser =  liable * lpFunds / total + rev * lpFunds / total;
+        await _pool.closePosition(lpDeposit, {value: lpDeposit});
+        let bals = await getPoolBalances(_pool);
+        console.log(
+            'total deposit in contract');
+            console.log(bals.totalDeposit);
+            console.log('total deposit previous');
+            console.log((total / 10**18).toString());
+            console.log('difference between total deposits');
+            console.log((bals.totalDeposit - (total /10**18)));
+            console.log('user liability');
+            console.log(liableUser / 10**18);
+            console.log('total difference - user difference');
+            console.log((bals.totalDeposit - (total /10**18)) + ((lpFunds - liableUser )/ 10**18));
+            console.log('User remainder');
+            console.log((lpFunds - liableUser )/ 10**18);
+            console.log('total calculated - difference between funds and liability');
+            console.log((total - (lpFunds - liableUser) ));
+            console.log('total - liability');
+            console.log((bals.totalDeposit - (liableUser /10**18)));
+            console.log('total - liability + calc total');
+            console.log((bals.totalDeposit - (liableUser /10**18) + ((total /10**18))));
+        
+    });
+
+    it('LP closes their position when no liabilities', async () => {
+        await _prime.exercise(nonce, {from: Bob});
+        let lpDeposit = await web3.utils.toWei('1');
+        await getPoolBalances(_pool);
+        let strikeBal = await web3.utils.fromWei(await _tUSD.balanceOf(_pool.address));
+        console.log({strikeBal})
         await _pool.closePosition(lpDeposit, {value: lpDeposit});
         let bals = await getPoolBalances(_pool);
     });
 
+    it('can fulfill unfilled buy order from exchange', async () => {
+        let buyOrderUnfilled = await _exchange.buyOrderUnfilled(
+            premium,
+            collateral,
+            _pool.address,
+            payment,
+            strikeAddress,
+            expiration,
+            {from: Bob, value: (10**16)}
+        );
+        nonce = nonce + 1;
+        console.log(await _prime.ownerOf(nonce), Bob);
+        console.log({buyOrderUnfilled}, buyOrderUnfilled.logs);
+        let bals = await getPoolBalances(_pool);
+    }); 
+
+
+    it('can exercise exchange minted prime', async () => {
+        await _prime.exercise(nonce, {from: Bob});
+        let bals = await getPoolBalances(_pool);
+    });
 })

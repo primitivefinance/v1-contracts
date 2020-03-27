@@ -688,6 +688,7 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
     /* Address of Prime ERC-721 */
     address public _primeAddress;
     address public _uniswapFactory;
+    address public _exchangeAddress;
 
     IPrime public _prime;
 
@@ -716,11 +717,14 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
     uint256 public constant _premium = 10**17;
     uint256 public constant _feeDenomination = 3000;
 
-    constructor(address primeAddress, address uniswapFactory) public {
+    constructor(address primeAddress, address uniswapFactory, address exchangeAddress) public {
         _primeAddress = primeAddress;
+        _exchangeAddress = exchangeAddress;
         _prime = IPrime(primeAddress);
         _uniswapFactory = uniswapFactory;
     }
+
+    receive() external payable {}
 
     /**
      * @dev deposits funds to the liquidity pool
@@ -735,8 +739,6 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
     {
         /* CHECKS */
         require(msg.value == _value, 'Value < deposit');
-
-        
 
         /* EFFECTS */
 
@@ -762,7 +764,8 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
         uint256 _long,
         uint256 _short,
         address _strike,
-        uint256 _expiration
+        uint256 _expiration,
+        address _primeReceiver
     )
         external
         payable
@@ -770,10 +773,15 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
         returns (bool) 
     {
         /* CHECKS */
-        uint256 _fee = msg.value.div(_feeDenomination);
-        uint256 _totalCost = _premium.add(_fee);
-        require(msg.value >= _totalCost, 'Value < premium');
-        require(_expiration > block.timestamp, 'expired');
+        uint256 remainder = 0;
+        if(msg.sender != _exchangeAddress) {
+            uint256 _fee = msg.value.div(_feeDenomination);
+            uint256 _totalCost = _premium.add(_fee);
+            require(msg.value >= _totalCost, 'Value < premium');
+            require(_expiration > block.timestamp, 'expired');
+            remainder = msg.value.sub(_totalCost);
+        }
+        
 
         /* EFFECTS */
         
@@ -788,7 +796,7 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
         /* Check if enough capital to fill position */
         require(_availableEth >= _long, 'amt > pool funds');
 
-        _revenue = _revenue.add(_totalCost);
+        _revenue = _revenue.add(_premium);
         /* INTERACTIONS */
 
         /* Trusted Contract */
@@ -802,10 +810,11 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
                 _expiration,
                 address(this)
             );
-        _prime.safeTransferFrom(address(this), msg.sender, nonce);
-        uint256 remainder = msg.value.sub(_totalCost);
+        _prime.safeTransferFrom(address(this), _primeReceiver, nonce);
+        
+        
         if(remainder != 0) {
-            (bool success, ) = msg.sender.call.value(remainder)("");
+            (bool success, ) = _primeReceiver.call.value(remainder)("");
             require(success, "Transfer failed.");
             return success;
         }
@@ -955,7 +964,7 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
 
 
         /* INTERACTIONS */
-        (bool success, ) = msg.sender.call.value(remainingFunds)("");
+        (bool success, ) = msg.sender.call.value(msg.value.add(remainingFunds))("");
         require(success, "Transfer failed.");
         return success;
 
@@ -968,6 +977,15 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
         _liability = _liability.sub(liability);
         return _prime.withdraw(short, strike);
         
+    }
+
+    /**
+     * @dev view function to get pool - liabilities
+     * @return pool amount of available assets
+     */
+    function getAvailableAssets() public view returns (uint256 pool) {
+        /* Available liquidity */
+        return _pool.sub(_liability);
     }
 }
 

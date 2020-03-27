@@ -443,6 +443,20 @@ contract Pausable is Context {
     }
 }
 
+abstract contract IPool {
+    function withdrawExercisedEth(address payable _receiver, uint256 _amount) external virtual returns (bool);
+    function clearLiability(uint256 liability, address strike, uint256 short) external virtual returns (bool);
+    function exercise(uint256 _long, uint256 _short, address _strike) external payable virtual returns (bool);
+    function mintPrimeFromPool(
+        uint256 _long,
+        uint256 _short,
+        address _strike,
+        uint256 _expiration,
+        address _primeReceiver
+    ) external payable virtual returns (bool);
+    function getAvailableAssets() public view virtual returns (uint256 pool);
+}
+
 abstract contract IPrime {
     function safeTransferFrom(address from, address to, uint256 tokenId) public virtual;
     function createPrime(uint256 _xis, address _yak, uint256 _zed, address _wax, uint256 _pow, address _gem) external virtual returns (bool);
@@ -456,7 +470,8 @@ abstract contract IPrime {
             uint256 zed,
             address wax,
             uint256 pow,
-            address gem
+            address gem,
+            bytes4 chain
         );
     function _primeCompare(uint256 _collateralId, uint256 _burnId) public view virtual returns (bool burn);
     function getChain(uint256 _tokenId) external view virtual returns (bytes4 chain);
@@ -467,14 +482,18 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
     using SafeMath for uint256;
 
     address private _primeAddress;
+    address public _poolAddress;
+    IPool public _poolInterface;
     uint256 public _pool;
-    uint256 constant _feeRatio = 3000; /* 3 * 10 ^ -3  = 3 / 1000 = 0.003 = 0.30% */ 
+    uint256 constant _feeDenomination = 3000; /* 3 * 10 ^ -3  = 3 / 1000 = 0.003 = 0.30% */ 
+    address public _owner;
 
     event SellOrder(address _seller, uint256 _askPrice, uint256 _tokenId, bool _filled);
     event BuyOrder(address _buyer, uint256 _bidPrice, uint256 _tokenId, bool _filled);
     event BuyOrderUnfilled(address _buyer, uint256 _bidPrice, uint256 _nonce);
     event FillUnfilledBuyOrder(address _seller, uint256 _tokenId);
     event FillOrder(address _seller, address _buyer, uint256 _filledPrice, uint256 _tokenId);
+    event FillOrderFromPool(address _buyer, uint256 _bidPrice, uint256 _amount);
     event CloseOrder(address _user, uint256 _tokenId, bool _buyOrder);
     event CloseUnfilledBuyOrder(address _user, bytes4 _chain, uint256 _buyOrderNonce);
 
@@ -522,6 +541,7 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
     /* INTIALIZES TOKEN 0 -> ALL ORDERS ARE RESET TO THIS DEFAULT VALUE WHEN FILLED/CLOSED */
     constructor(address primeAddress) public {
         _primeAddress = primeAddress;
+        _owner = msg.sender;
         _pool = 0;
         _buyOrders[0] = BuyOrders(
             address(0),
@@ -544,6 +564,15 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
             address(0),
             0
         );
+    }
+
+    receive() external payable {}
+
+    /* SET POOL ADDRESS */
+    function setPoolAddress(address poolAddress) external {
+        require(msg.sender == _owner, 'not owner');
+        _poolAddress = poolAddress;
+        _poolInterface = IPool(poolAddress);
     }
 
     /* KILL SWITCH */
@@ -604,32 +633,32 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
 
         /* INTERACTIONS */
 
-        /* Get fee and add it to the ask price */
-        uint256 _fee = _askPrice.div(_feeRatio);
-        uint256 _totalPrice = _askPrice.add(_fee);
+        /* Get fee and add it to the ask price - FIX COMMENTED OUT*/
+        /* uint256 _fee = _askPrice.div(_feeDenomination);
+        uint256 _totalPrice = _askPrice; */
 
         /* Unique hash of the Prime's key properties: Asset addresses & expiration date */
-        bytes4 _chain = _prime.getChain(_tokenId);
+        bytes4 chain = _prime.getChain(_tokenId);
 
         /* Buy order request of hash 'chain' at order request nonce */
-        BuyOrdersUnfilled memory _buyUnfilled = _buyOrdersUnfilled[_chain][fillable];
+        BuyOrdersUnfilled memory _buyUnfilled = _buyOrdersUnfilled[chain][fillable];
         
         /* 
             If a buy order request matches a token's properties, and the bid price
             fulfills the order, fill it 
         */
-        if(fillable > 0 && _buyUnfilled.bidPrice >= _totalPrice) {
+        if(fillable > 0 && _buyUnfilled.bidPrice >= _askPrice) {
             
             return fillUnfilledBuyOrder(
                 _tokenId, 
                 _buyUnfilled.bidPrice, 
                 _askPrice,
-                _fee,
-                _totalPrice,
+                0,
+                _askPrice,
                 _buyUnfilled.buyer,
                 msg.sender, 
                 fillable,
-                _chain
+                chain
             );
         }
         
@@ -647,8 +676,8 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
                     _tokenId,
                     _buy.bidPrice,
                     _askPrice,
-                    _fee,
-                    _totalPrice,
+                    0,
+                    _askPrice,
                     _buy.buyer,
                     msg.sender
                 );
@@ -665,8 +694,6 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
                 return true;
             }
         }
-
-        return false;
     }
 
     /**
@@ -695,7 +722,7 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
         SellOrders memory _sell = _sellOrders[_tokenId];
 
         /* Get fee and add it to the ask price */
-        uint256 _fee = _sell.askPrice.div(_feeRatio);
+        uint256 _fee = _sell.askPrice.div(_feeDenomination);
         uint256 _totalPrice = _sell.askPrice.add(_fee);
 
         /* INTERACTIONS */
@@ -733,7 +760,6 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
     */
     function checkUnfilledBuyOrders(uint256 _tokenId) public view returns (uint256) {
         IPrime _prime = IPrime(_primeAddress);
-        bytes4 _chain = _prime.getChain(_tokenId);
         address ace;
         uint256 xis;
         address yak;
@@ -741,7 +767,8 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
         address wax;
         uint256 pow;
         address gem;
-        (ace, xis, yak, zed, wax, pow, gem) = _prime.getPrime(_tokenId);
+        bytes4 chain;
+        chain = _prime.getChain(_tokenId);
         
         bytes32 primeHash = keccak256(
             abi.encodePacked(
@@ -753,8 +780,8 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
                 )
             );
          
-        for(uint i = 1; i <= _unfilledNonce[_chain]; i++) {
-            BuyOrdersUnfilled memory _buyObj = _buyOrdersUnfilled[_chain][i];
+        for(uint i = 1; i <= _unfilledNonce[chain]; i++) {
+            BuyOrdersUnfilled memory _buyObj = _buyOrdersUnfilled[chain][i];
             bytes32 buyHash = keccak256(
                 abi.encodePacked(
                     _buyObj.xis,
@@ -779,7 +806,7 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
      * @param _bidPrice value of offer
      * @param _askPrice value in wei that the seller requires
      * @param _fee 0.03% of ask price is taken from buyer's bid
-     * @param _totalPrice bid price + bid price * _feeRatio
+     * @param _totalPrice bid price + bid price * _feeDenomination
      * @param _buyer address of buyer
      * @param _seller address of seller
      * @param _buyOrderNonce nonce when buy order request was submitted
@@ -830,7 +857,6 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
     /**
      * @dev request to buy a Prime with params
      * @param _bidPrice value offered to buy Prime
-     * @param _chain hash of asset 1 & 2 addresses, & expiry timestamp
      * @param _xis amount of collateral (underlying) asset
      * @param _yak address of collateral ERC-20 token
      * @param _zed amount of payment (strike) asset
@@ -840,7 +866,7 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
      */
     function buyOrderUnfilled(
         uint256 _bidPrice,
-        bytes4 _chain,
+        /* bytes4 _chain, */
         uint256 _xis,
         address _yak,
         uint256 _zed,
@@ -855,15 +881,39 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
     {
         /* CHECKS */
         require(_bidPrice > 0, 'Bid < 0');
-        require(msg.value == _bidPrice, 'Value != Bid');
+
+        /* Fee - Commented out */
+        /* uint256 _fee = msg.value.div(_feeDenomination);
+        uint256 _totalCost = _bidPrice.add(_fee);
+        require(msg.value == _totalCost, 'Value != Bid'); */
 
         /* EFFECTS */
+        if(_poolInterface.getAvailableAssets() >= _xis) {
+            require(_poolInterface.mintPrimeFromPool(
+                _xis,
+                _zed,
+                _wax,
+                _pow,
+                msg.sender
+            ), 'Prime not minted');
 
-        /* Add 1 to the Unfilled Buy Order nonce */
+            emit FillOrderFromPool(msg.sender, _bidPrice, _xis);
+
+            (bool success, ) = _poolAddress.call.value(msg.value)("");
+            require(success, "Transfer failed.");
+            return success;
+        }
+        
+        bytes4 _chain = bytes4(
+            keccak256(abi.encodePacked(_yak))) 
+            ^ bytes4(keccak256(abi.encodePacked(_wax))) 
+            ^ bytes4(keccak256(abi.encodePacked(_pow))
+        );
+
         uint256 nonce = (_unfilledNonce[_chain]).add(1);
         _unfilledNonce[_chain] = nonce;
 
-        /* Update state with an unfilled buy order request */
+
         _buyOrdersUnfilled[_chain][nonce] = BuyOrdersUnfilled(
             msg.sender,
             _bidPrice,
@@ -875,7 +925,6 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
             _pow
         );
 
-        /* INTERACTIONS */
         emit BuyOrderUnfilled(msg.sender, _bidPrice, _unfilledNonce[_chain]);
         return true;
     }

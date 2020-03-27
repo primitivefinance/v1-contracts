@@ -1489,6 +1489,7 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
         );
 
         require(hashCollateral == hashBurn, 'Props !=');
+        return hashCollateral == hashBurn;
     }
 
 
@@ -1505,7 +1506,8 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
             uint256 zed,
             address wax,
             uint256 pow,
-            address gem
+            address gem,
+            bytes4 chain
         ) {
             Instruments.Primes memory _prime = _primes[_tokenId];
             return (
@@ -1515,7 +1517,17 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
                 _prime.zed,
                 _prime.wax,
                 _prime.pow,
-                _prime.gem
+                _prime.gem,
+                _prime.chain
+            );
+    }
+
+    function getChain(uint256 _tokenId) external view returns (
+            bytes4 chain
+        ) {
+            Instruments.Primes memory _prime = _primes[_tokenId];
+            return (
+                _prime.chain
             );
     }
 

@@ -61,7 +61,6 @@ contract('Exchange', accounts => {
 
     async function getBal(contract, address, name, units) {
         let bal = (await web3.utils.fromWei((await contract.balanceOf(address)).toString()));
-        console.log(`${name} has in bank:`, await web3.utils.fromWei(await _prime.getBalance(Alice, contract.address)))
         console.log(`${name} has a balance of ${bal} ${units}.`);
     }
 
@@ -277,7 +276,7 @@ contract('Exchange', accounts => {
 
         let aliceToken1 = await mintPrime(Alice);
 
-        let chain = await _prime.getChain(aliceToken1);
+        let chain = (await _prime.getChain(aliceToken1));
         console.log({chain})
     });
 
@@ -306,10 +305,17 @@ contract('Exchange', accounts => {
 
         let aliceToken1 = await mintPrime(Alice);
         let aliceToken2 = await mintPrime(Alice);
-        let chain = await _prime.getChain(aliceToken1);
+        let chain = (await _prime.getChain(aliceToken1));
         ask = 0.25;
         let bid = await web3.utils.toWei((ask).toString());
-        let unfilled = await _exchange.buyOrderUnfilled(bid, chain, xis, yak, zed, wax, pow, {from: Bob, value: bid});
+        let unfilled = await _exchange.buyOrderUnfilled(
+            bid,
+            xis, 
+            yak, 
+            zed, 
+            wax, 
+            pow, 
+            {from: Bob, value: bid});
         console.log((unfilled.logs[0].args._bidPrice).toString())
         let bidPrice = (unfilled.logs[0].args._bidPrice).toString()
         
@@ -361,7 +367,15 @@ contract('Exchange', accounts => {
         let chain = await _prime.getChain(aliceToken1);
         ask = 0.25;
         let bid = await web3.utils.toWei((ask).toString());
-        let unfilled = await _exchange.buyOrderUnfilled(bid, chain, xis, yak, zed, wax, pow, {from: Bob, value: bid});
+        let unfilled = await _exchange.buyOrderUnfilled(
+            bid,
+            xis,
+            yak,
+            zed,
+            wax,
+            pow,
+            {from: Bob, value: bid}
+        );
         console.log((unfilled.logs[0].args._bidPrice).toString())
         let bidPrice = (unfilled.logs[0].args._bidPrice).toString()
         
