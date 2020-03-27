@@ -623,7 +623,7 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
         /* CHECKS */
         require(_tokenId > 0, 'Invalid Token');
         require(_askPrice > 0, 'Ask < 0');
-        require(!_prime.isTokenExpired(_tokenId), 'Token expired');
+        require(_prime.isTokenExpired(_tokenId), 'Token expired');
         require(!isListed(_tokenId), 'Token listed already');
 
         /* EFFECTS */

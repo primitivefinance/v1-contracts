@@ -273,4 +273,47 @@ contract('Pool', accounts => {
         await _prime.exercise(nonce, {from: Bob});
         let bals = await getPoolBalances(_pool);
     });
+
+    it('can mint a prime using the pools address as the yak', async () => {
+        await _prime.createPrime(
+            collateral,
+            _pool.address,
+            payment,
+            strikeAddress,
+            expiration,
+            Bob,
+            {from: Bob, value: collateral}
+        )
+        nonce = nonce + 1;
+        await getPoolBalances(_pool);
+        console.log('Primes Eth Bal', await web3.utils.fromWei((await web3.eth.getBalance(_prime.address))));
+        console.log('Bobs Eth Bal', await web3.utils.fromWei((await web3.eth.getBalance(Bob))));
+        await _prime.exercise(nonce, {from: Bob});
+        await _prime.withdraw(collateral, _pool.address, {from: Bob});
+        console.log('Primes Eth Bal', await web3.utils.fromWei((await web3.eth.getBalance(_prime.address))));
+        console.log('Bobs Eth Bal', await web3.utils.fromWei((await web3.eth.getBalance(Bob))));
+        await getPoolBalances(_pool);
+    });
+
+    it('can mint a prime using the pools address as the wax', async () => {
+        await _prime.createPrime(
+            payment,
+            strikeAddress,
+            collateral,
+            _pool.address,
+            expiration,
+            Bob,
+            {from: Bob}
+        )
+        nonce = nonce + 1;
+        await getPoolBalances(_pool);
+        console.log('Primes Eth Bal', await web3.utils.fromWei((await web3.eth.getBalance(_prime.address))));
+        console.log('Bobs Eth Bal', await web3.utils.fromWei((await web3.eth.getBalance(Bob))));
+        await _prime.exercise(nonce, {from: Bob, value: collateral});
+        await _prime.withdraw(payment, strikeAddress, {from: Bob});
+        await _prime.withdraw(collateral, _pool.address, {from: Bob});
+        console.log('Primes Eth Bal', await web3.utils.fromWei((await web3.eth.getBalance(_prime.address))));
+        console.log('Bobs Eth Bal', await web3.utils.fromWei((await web3.eth.getBalance(Bob))));
+        await getPoolBalances(_pool);
+    });
 })

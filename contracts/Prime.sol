@@ -355,76 +355,6 @@ contract Context {
 }
 
 /**
- * @dev Contract module which allows children to implement an emergency stop
- * mechanism that can be triggered by an authorized account.
- *
- * This module is used through inheritance. It will make available the
- * modifiers `whenNotPaused` and `whenPaused`, which can be applied to
- * the functions of your contract. Note that they will not be pausable by
- * simply including this module, only once the modifiers are put in place.
- */
-contract Pausable is Context {
-    /**
-     * @dev Emitted when the pause is triggered by a pauser (`account`).
-     */
-    event Paused(address account);
-
-    /**
-     * @dev Emitted when the pause is lifted by a pauser (`account`).
-     */
-    event Unpaused(address account);
-
-    bool private _paused;
-
-    /**
-     * @dev Initializes the contract in unpaused state. Assigns the Pauser role
-     * to the deployer.
-     */
-    constructor () internal {
-        _paused = false;
-    }
-
-    /**
-     * @dev Returns true if the contract is paused, and false otherwise.
-     */
-    function paused() public view returns (bool) {
-        return _paused;
-    }
-
-    /**
-     * @dev Modifier to make a function callable only when the contract is not paused.
-     */
-    modifier whenNotPaused() {
-        require(!_paused, "Pausable: paused");
-        _;
-    }
-
-    /**
-     * @dev Modifier to make a function callable only when the contract is paused.
-     */
-    modifier whenPaused() {
-        require(_paused, "Pausable: not paused");
-        _;
-    }
-
-    /**
-     * @dev Called by a pauser to pause, triggers stopped state.
-     */
-    function _pause() internal virtual whenNotPaused {
-        _paused = true;
-        emit Paused(_msgSender());
-    }
-
-    /**
-     * @dev Called by a pauser to unpause, returns to normal state.
-     */
-    function _unpause() internal virtual whenPaused {
-        _paused = false;
-        emit Unpaused(_msgSender());
-    }
-}
-
-/**
  * @dev Interface of the ERC165 standard, as defined in the
  * https://eips.ethereum.org/EIPS/eip-165[EIP].
  *
@@ -1140,8 +1070,8 @@ abstract contract IPrime {
     );
 
 
-    function createPrime(uint256 _xis, address _yak, uint256 _zed, address _wax, uint256 _pow, address _gem) external virtual returns (uint256 _tokenId);
-    function exercise(uint256 _tokenId) external virtual returns (bool);
+    function createPrime(uint256 _xis, address _yak, uint256 _zed, address _wax, uint256 _pow, address _gem) external payable virtual returns (uint256 _tokenId);
+    function exercise(uint256 _tokenId) external payable virtual returns (bool);
     function close(uint256 _collateralId, uint256 _burnId) external virtual returns (bool);
     function withdraw(uint256 _amount, address _asset) public virtual returns (bool);
 }
@@ -1149,7 +1079,6 @@ abstract contract IPrime {
 contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
     using SafeMath for uint256;
 
-    uint256 constant INCREMENT = 1;
     uint256 public nonce;
     address private _owner;
     address public _poolAddress;
@@ -1199,22 +1128,51 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
         uint256 _pow,
         address _gem
     ) 
-        external 
+        external
+        payable
         override
         returns (uint256 _tokenId) 
     {
-
         /* CHECKS */
-        ERC20 yak = ERC20(_yak);
-        if(msg.sender != _poolAddress) {
-            require(
-                yak.balanceOf(msg.sender) >= _xis, 
-                'bal < amt'
-            );
+        /* Its an Ether Call Prime */
+        if(_yak == _poolAddress && msg.sender != _poolAddress) {
+            isGreaterThanOrEqual(msg.value, _xis);
         }
-        
+
         /* EFFECTS */
-        nonce = nonce.add(INCREMENT);
+
+        /* Update collateral liability of Prime minter */
+        _liabilities[msg.sender][_yak] = _liabilities[msg.sender][_yak].add(_xis);
+
+        /* INTERACTIONS */
+
+        /* Create Prime and Mint to msg.sender */
+        uint256 _nonce = addPrime(msg.sender, _xis, _yak, _zed, _wax, _pow, _gem);
+
+        /* If its an ERC-20 Prime, withdraw token from minter */
+        if(_yak != _poolAddress && msg.sender != _poolAddress) {
+            ERC20 yak = ERC20(_yak);
+            isGreaterThanOrEqual(yak.balanceOf(msg.sender), _xis);
+            yak.transferFrom(msg.sender, address(this), _xis);
+            return _nonce;
+        }
+
+        return _nonce;
+    }
+
+    /**
+     * @dev adds Prime to state, emits event, and mints
+     */
+    function addPrime(
+        address _tokenReceiver,
+        uint256 _xis,
+        address _yak,
+        uint256 _zed,
+        address _wax,
+        uint256 _pow,
+        address _gem
+    ) internal nonReentrant returns (uint256 _nonce) {
+        nonce = nonce.add(1);
 
         bytes4 chain = bytes4(
             keccak256(abi.encodePacked(_yak))) 
@@ -1240,11 +1198,9 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
             fullChain
         );
 
-        _liabilities[msg.sender][_yak] = _liabilities[msg.sender][_yak].add(_xis);
-
         /* INTERACTIONS */
         emit PrimeMinted(
-            msg.sender, 
+            _tokenReceiver, 
             _xis,
             _yak,
             _zed,
@@ -1254,14 +1210,9 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
         );
 
         _safeMint(
-            msg.sender, 
+            _tokenReceiver, 
             nonce
         );
-
-        if(msg.sender != _poolAddress) {
-            yak.transferFrom(msg.sender, address(this), _xis);
-            return nonce;
-        }
         return nonce;
     }
 
@@ -1274,32 +1225,25 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
         uint256 _tokenId
     ) 
         external 
+        payable
         override
         nonReentrant
         returns (bool) 
     {
         /* CHECKS */
-        address own = ownerOf(_tokenId);
-        require(
-            own == msg.sender, 
-            'Owner not sender'
-        );
+        isTokenExpired(_tokenId);
+        isOwner(_tokenId, msg.sender);
 
         /* Get Prime */
         Instruments.Primes memory _prime = _primes[_tokenId];
+
+        /* If wax is a pool, its an Ether Put Prime, else its an ERC-20 Prime */
         ERC20 _wax = ERC20(_prime.wax);
-        if(msg.sender != _poolAddress) {
-            require(
-                _wax.balanceOf(msg.sender) >= _prime.zed, 
-                'Bal < amt'
-            );
+        if(_prime.wax == _poolAddress && msg.sender != _poolAddress) {
+            isGreaterThanOrEqual(msg.value, _prime.zed);
+        } else {
+            isGreaterThanOrEqual(_wax.balanceOf(msg.sender), _prime.zed);
         }
-        
-        
-        require(
-            _prime.pow >= block.timestamp, 
-            'Expired'
-        );
 
         /* EFFECTS */
 
@@ -1327,7 +1271,11 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
             return _pool.exercise(_prime.xis, _prime.zed, _prime.wax);
         }
 
-        return _wax.transferFrom(msg.sender, address(this), _prime.zed);
+        if(_prime.wax != _poolAddress) {
+            return _wax.transferFrom(msg.sender, address(this), _prime.zed);
+        }
+
+        return true;
     }
 
     /** 
@@ -1355,34 +1303,18 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
         returns (bool) 
     {
         /* CHECKS */
-        require(
-            ownerOf(_burnId) == msg.sender, 
-            'Owner not sender'
-        );
 
+        /* Msg.sender burns a Prime that they did not mint.
+        Prime properties need to match, else the tx reverts. */
+        isOwner(_burnId, msg.sender);
+        arePrimesInSameSeries(_collateralId, _burnId);
+        isTokenExpired(_burnId);
 
         /* Get Prime that will get Burned */
         Instruments.Primes memory _burnPrime = _primes[_burnId];
         ERC20 _yakBurn = ERC20(_burnPrime.yak);
-
-        /* Msg.sender burns a Prime that they did not mint.
-        Prime properties need to match, else the tx reverts. */
         
-        bool burn = _primeCompare(_collateralId, _burnId);
-        require(
-            burn,
-            'Props !='
-        );
-
-        require(
-            _assets[msg.sender][_burnPrime.yak] > 0, 
-            'No collateral'
-        );
-
-        require(
-            _burnPrime.pow >= block.timestamp, 
-            'Expired'
-        );
+        isGreaterThanOrEqual(_assets[msg.sender][_burnPrime.yak], 0);
 
         /* EFFECTS */
 
@@ -1399,6 +1331,9 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
         );
 
         _burn(_burnId);
+        if(_burnPrime.yak == _poolAddress) {
+            return sendEther(_burnPrime.xis, msg.sender);
+        }
 
         return _yakBurn.transfer(msg.sender, _burnPrime.xis);
     }
@@ -1419,10 +1354,7 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
     {
         /* CHECKS */
         uint256 assetBal = _assets[msg.sender][_asset];
-        require(
-            assetBal >= _amount, 
-            'Bal < amt'
-        );
+        isGreaterThanOrEqual(assetBal, _amount);
 
         /* EFFECTS */
 
@@ -1438,58 +1370,22 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
         );
 
         if(_asset == _poolAddress) {
+            if(msg.sender == _poolAddress) {
+                return _pool.withdrawExercisedEth(msg.sender, _amount);
+            } else {
+                return sendEther(_amount, msg.sender);
+            }
             
-            return _pool.withdrawExercisedEth(msg.sender, _amount);
         }
 
         ERC20 erc20 = ERC20(_asset);
         return erc20.transfer(msg.sender, _amount);
     }
 
-
-    /* UTILITY FUNCTIONS */
-
-
-    /** 
-     * @dev Utility to compare hashes of Prime properties.
-     * @param _collateralId id of token that is having its collateral withdraw
-     * @param _burnId id of token that is being burned
-     * @return bool of whether Instruments.Primes match.
-    */
-    function _primeCompare(
-        uint256 _collateralId,
-        uint256 _burnId
-    ) 
-        public 
-        view 
-        returns
-        (bool)
-    {
-        Instruments.Primes memory _collateralPrime = _primes[_collateralId];
-        Instruments.Primes memory _burnPrime = _primes[_burnId];
-
-        bytes32 hashCollateral = keccak256(
-            abi.encodePacked(
-                _collateralPrime.xis,
-                _collateralPrime.yak,
-                _collateralPrime.zed,
-                _collateralPrime.wax,
-                _collateralPrime.pow
-            )
-        );
-
-        bytes32 hashBurn = keccak256(
-            abi.encodePacked(
-                _burnPrime.xis,
-                _burnPrime.yak,
-                _burnPrime.zed,
-                _burnPrime.wax,
-                _burnPrime.pow
-            )
-        );
-
-        require(hashCollateral == hashBurn, 'Props !=');
-        return hashCollateral == hashBurn;
+    function sendEther(uint256 _amount, address payable _to) internal returns (bool) {
+        (bool success, ) = _to.call.value(_amount)("");
+        require(success, "Transfer failed.");
+        return success;
     }
 
 
@@ -1522,12 +1418,21 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
             );
     }
 
-    function getChain(uint256 _tokenId) external view returns (
+    function getChain(uint256 _tokenId) public view returns (
             bytes4 chain
         ) {
             Instruments.Primes memory _prime = _primes[_tokenId];
             return (
                 _prime.chain
+            );
+    }
+
+    function getFullChain(uint256 _tokenId) public view returns (
+            bytes4 fullChain
+        ) {
+            Instruments.Primes memory _prime = _primes[_tokenId];
+            return (
+                _prime.fullChain
             );
     }
 
@@ -1539,6 +1444,44 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
     }
 
     function isTokenExpired(uint256 _tokenId) public view returns(bool) {
-        return _primes[_tokenId].pow < block.timestamp;
+        require( _primes[_tokenId].pow >= block.timestamp, 'expired');
+        return true;
     }
+
+    function isOwner(uint256 _tokenId, address _user) public view returns(bool) {
+        require(ownerOf(_tokenId) == _user, '!own');
+        return true;
+    }
+
+    function isGreaterThanOrEqual(uint256 _a, uint256 _b) public pure returns(bool) {
+        require(_a >= _b, 'a < b');
+        return true;
+    }
+
+     /* UTILITY FUNCTIONS */
+
+
+    /** 
+     * @dev Utility to compare hashes of Prime properties.
+     * @param _collateralId id of token that is having its collateral withdraw
+     * @param _burnId id of token that is being burned
+     * @return bool of whether Instruments.Primes match.
+    */
+    function arePrimesInSameSeries(
+        uint256 _collateralId,
+        uint256 _burnId
+    ) 
+        public 
+        view 
+        returns
+        (bool)
+    {
+        bytes4 hashCollateral = getFullChain(_collateralId);
+        bytes4 hashBurn = getFullChain(_burnId);
+
+        require(hashCollateral == hashBurn, 'Props !=');
+        return hashCollateral == hashBurn;
+    }
+
+
 }
