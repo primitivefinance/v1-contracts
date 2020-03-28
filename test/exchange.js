@@ -51,7 +51,8 @@ contract('Exchange', accounts => {
         _burnId,
         _collateralID,
         _exchange,
-        primeAddress
+        primeAddress,
+        val
         ;
 
     async function getGas(func, name) {
@@ -98,6 +99,7 @@ contract('Exchange', accounts => {
         await _tUSD.mint(Alice, payment);
         await _tETH.mint(Bob, payment);
         await _tUSD.mint(Bob, payment);
+        val = (9*10**18).toString();
 
     });
     
@@ -125,7 +127,7 @@ contract('Exchange', accounts => {
 
         let buyerBal = await web3.utils.fromWei(await web3.eth.getBalance(buyer));
         let sellerBal =  await web3.utils.fromWei(await web3.eth.getBalance(seller));
-        let bidPrice = (5*10**17).toString(); // 0.5 eth
+        let bidPrice = (5*10**18).toString(); // 0.5 eth
         let askPrice = (10**17).toString(); // 0.1 eth
         let netPrice = ((bidPrice - askPrice) / 10**18).toString();
 
@@ -134,7 +136,7 @@ contract('Exchange', accounts => {
         
 
         /* BOB SUBMITS BUY ORDER FOR TOKEN */
-        let buyOrder = await _exchange.buyOrder(tokenId, bidPrice, {from: buyer, value: bidPrice});
+        let buyOrder = await _exchange.buyOrder(tokenId, bidPrice, {from: buyer, value: val});
 
         /* ALICE SUBMITS SELL ORDER FOR TOKEN */
         let sellOrder = await _exchange.sellOrder(tokenId, askPrice, {from: seller});
@@ -171,15 +173,15 @@ contract('Exchange', accounts => {
         }
 
         async function buyOrder(address, bid, tokenId) {
-            let bidPrice = (bid*10**18).toString(); // 0.5 eth
+            let bidPrice = (bid*10**17).toString(); // 0.5 eth
 
             /* ADDRESS SUBMITS BUY ORDER FOR TOKEN */
-            let buyOrder = await _exchange.buyOrder(tokenId, bidPrice, {from: address, value: bidPrice});
+            let buyOrder = await _exchange.buyOrder(tokenId, bidPrice, {from: address, value: val});
             return buyOrder;
         }
 
         async function sellOrder(address, ask, tokenId) {
-            let askPrice = (ask*10**18).toString(); // 0.5 eth
+            let askPrice = (ask*10**17).toString(); // 0.5 eth
             /* ADDRESS APPROVES EXCHANGE TO SELL TOKEN */
             await _prime.approve(_exchange.address, tokenId, {from: address});
 
@@ -315,7 +317,7 @@ contract('Exchange', accounts => {
             zed, 
             wax, 
             pow, 
-            {from: Bob, value: bid});
+            {from: Bob, value: val});
         console.log((unfilled.logs[0].args._bidPrice).toString())
         let bidPrice = (unfilled.logs[0].args._bidPrice).toString()
         
@@ -374,7 +376,7 @@ contract('Exchange', accounts => {
             zed,
             wax,
             pow,
-            {from: Bob, value: bid}
+            {from: Bob, value: val}
         );
         console.log((unfilled.logs[0].args._bidPrice).toString())
         let bidPrice = (unfilled.logs[0].args._bidPrice).toString()
@@ -398,7 +400,7 @@ contract('Exchange', accounts => {
             let bidPrice = (bid*10**18).toString(); // 0.5 eth
 
             /* ADDRESS SUBMITS BUY ORDER FOR TOKEN */
-            let buyOrder = await _exchange.buyOrder(tokenId, bidPrice, {from: address, value: bidPrice});
+            let buyOrder = await _exchange.buyOrder(tokenId, bidPrice, {from: address, value: val});
             return buyOrder;
         }
 

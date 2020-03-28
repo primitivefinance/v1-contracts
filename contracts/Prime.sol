@@ -1134,7 +1134,8 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
         returns (uint256 _tokenId) 
     {
         /* CHECKS */
-        /* Its an Ether Call Prime */
+        
+        /* If this is an Ether Call Prime */
         if(_yak == _poolAddress && msg.sender != _poolAddress) {
             isGreaterThanOrEqual(msg.value, _xis);
         }
@@ -1458,7 +1459,8 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
         return true;
     }
 
-     /* UTILITY FUNCTIONS */
+
+    /* UTILITY FUNCTIONS */
 
 
     /** 

@@ -163,7 +163,7 @@ contract('Pool', accounts => {
 
     it('should deposit funds from two LPS then have primes minted from the pool', async () => {
         let _LP = Alice;
-        value = await web3.utils.toWei('0.5');
+        value = await web3.utils.toWei('0.15');
         let lpBal = await web3.utils.fromWei(await web3.eth.getBalance(_LP));
         console.log({lpBal})
 
@@ -193,6 +193,7 @@ contract('Pool', accounts => {
         let poolAssets = await web3.utils.fromWei(await _pool.getAvailableAssets());
         console.log({poolAssets})
         let bid = await web3.utils.toWei(('0.15').toString());
+        let val = await web3.utils.toWei(('0.2').toString());
         let unfilled = await _exchange.buyOrderUnfilled(
             bid,
             xis, 
@@ -200,7 +201,7 @@ contract('Pool', accounts => {
             zed, 
             wax, 
             pow, 
-            {from: Bob, value: bid}
+            {from: Bob, value: val}
         );
         let tokenId = (await _prime.nonce()).toString();
 

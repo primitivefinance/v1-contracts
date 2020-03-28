@@ -618,6 +618,7 @@ abstract contract IPrime {
     function close(uint256 _collateralId, uint256 _burnId) external virtual returns (bool);
     function withdraw(uint256 _amount, address _asset) public virtual returns (bool);
     function safeTransferFrom(address from, address to, uint256 tokenId) external virtual;
+    function isGreaterThanOrEqual(uint256 _a, uint256 _b) public pure virtual returns(bool);
 }
 
 abstract contract ICEther {
@@ -649,6 +650,7 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
     address public _primeAddress;
     address public _compoundEthAddress;
     address public _exchangeAddress;
+    uint256 public _startTime;
 
     ICEther public _cEther;
     IPrime public _prime;
@@ -668,6 +670,9 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
     /* Ether balance of user */
     mapping(address => uint256) public _collateral;
 
+    /* Time balance of user */
+    mapping(address => uint256) public _time;
+
     /* Array of token Ids owned by Pool */
     uint[] public _ownedTokens;
 
@@ -675,8 +680,7 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
     uint256 public _largestToken;
 
     /* For testing */
-    uint256 public constant _premium = 10**17;
-    uint256 public constant _feeDenomination = 3000;
+    uint256 public constant _premiumDenomination = 5; /* 20% = 0.2 = 1 / 5 */
 
     event Debug(string error, uint256 result, uint256 tokenBalance);
 
@@ -686,6 +690,7 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
         _prime = IPrime(primeAddress);
         _cEther = ICEther(compoundEthAddress);
         _compoundEthAddress = compoundEthAddress;
+        _startTime = block.timestamp;
     }
 
     /* SET*/
@@ -713,12 +718,20 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
 
         /* Track user's liquidity contribution */
         _collateral[msg.sender] = _collateral[msg.sender].add(msg.value);
+
+        /* Track the funds start time in Pool */
+        _time[msg.sender] = block.timestamp;
+
+        /* Add the deposit to total deposits to measure user's share */
         _totalDeposit = _totalDeposit.add(msg.value);
+
+        /* Add deposit to available assets that can be used by Pool */
         _pool = _pool.add(msg.value);
 
         /* INTERACTIONS */
-        _cEther.mint.value(msg.value).gas(250000)();
-        return true;
+
+        /* Swap ether to interest bearing cEther */
+        return swapEtherToCompoundEther(msg.value);
     }
 
     /**
@@ -734,7 +747,7 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
         uint256 _short,
         address _strike,
         uint256 _expiration,
-        address _primeReceiver
+        address payable _primeReceiver
     )
         external
         payable
@@ -742,33 +755,34 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
         returns (bool) 
     {
         /* CHECKS */
-        uint256 remainder = 0;
-        /* if(msg.sender != _exchangeAddress) {
-            require(msg.value >= _premium, 'Value < premium');
-            require(_expiration > block.timestamp, 'expired');
-            remainder = msg.value.sub(_premium);
-        } */
-        
+
+        /* Checks to see if the tx pays the premium - 20% constant right now */
+        uint256 calculatedPremium = _long.div(_premiumDenomination);
+        require(msg.value >= calculatedPremium, 'Value < premium');
+
+        /* Cannot be already expired */
+        require(_expiration > block.timestamp, 'expired');
 
         /* EFFECTS */
-        
-        /* Check to see if pool can write the option */
 
-        /* Available liquidity */
+        /* Get Available liquidity */
         uint256 _availableEth = _pool.sub(_liability);
 
-        /* Add the ether liability */
+        /* Add the ether liability to the Pool */
         _liability = _liability.add(_long);
 
-        /* Check if enough capital to fill position */
-        require(_availableEth >= _long, 'amt > pool funds');
+        /* Check if there's enough capital to fill position */
+        require(_availableEth >= _long, 'available < amount');
 
-        _revenue = _revenue.add(_premium);
+        /* Credit revenue the premium */
+        _revenue = _revenue.add(calculatedPremium);
+
         /* INTERACTIONS */
 
         /* Trusted Contract */
         IPrime _prime = IPrime(_primeAddress);
 
+        /* Mint a Prime */
         uint256 nonce = _prime.createPrime(
                 _long,
                 address(this),
@@ -777,19 +791,17 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
                 _expiration,
                 address(this)
             );
+
+        /* Transfer Prime to User */
         _prime.safeTransferFrom(address(this), _primeReceiver, nonce);
         
-        _cEther.mint.value(msg.value).gas(250000)();
-
-        if(remainder != 0) {
-            (bool success, ) = _primeReceiver.call.value(remainder)("");
-            require(success, "Transfer failed.");
-            return success;
-        }
-
-        return true;
+        /* Swap Pool ether to interest Bearing cEther */
+        return swapEtherToCompoundEther(msg.value);
     }
 
+    /**
+     * @dev Called ONLY from the Prime contract
+     */
     function exercise(
         uint256 _long,
         uint256 _short,
@@ -801,14 +813,21 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
         returns (bool) 
     {
         /* CHECKS */
-        
+
+        /* This function should only be called by Prime */
+        require(msg.sender == _primeAddress);
+
         /* EFFECTS */
+
+        /* Reduce available assets in Pool for writing positions */
         _pool = _pool.sub(_long);
 
         /* INTERACTIONS */
 
-        (bool success, ) = msg.sender.call.value(_long)("");
-        require(success, "Transfer failed");
+        /* Ether collateral is sent to Prime, where it can be withdrawn by User who exercised */
+        sendEther(_long, msg.sender);
+
+        /* Clears the liability from State and withdraws Strike asset from Prime */
         return clearLiability(_long, _short, _strike);
     }
 
@@ -830,13 +849,12 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
         require(msg.sender == _primeAddress, 'Addr != Prime');
 
         /* EFFECTS */
+
         /* Subtract the ether liability */
         _liability = _liability.sub(_amount);
 
         /* INTERACTIONS */
-        (bool success, ) = _receiver.call.value(_amount)("");
-        require(success, "Transfer failed.");
-        return success;
+        return sendEther(_amount, _receiver);
     }
 
     /**
@@ -867,18 +885,18 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
         /* Calculate Net Assets */
         uint256 userAssets = userEthBal.sub(liable);
 
-        /* Calculate available Net Pool Assets */
+        /* Calculate Available Net Pool Assets */
         uint256 poolAssets = _pool.sub(_liability);
 
-        /* Calculate User's Portion of Withdrawable Net Assets */
+        /* Calculate User's Portion of Available Net Assets */
         uint256 proceeds = poolAssets.mul(userEthBal).div(_totalDeposit);
 
-        /* Calculate User's Earnings (Proportional Revenue) */
+        /* Calculate User's Earnings (Proportional Revenue) - FIX */
         uint256 dividend = _revenue.mul(userEthBal).div(_totalDeposit);
 
         /* UPDATE SYSTEM BALANCES */
 
-        /* Subtract the ether from user's assets */
+        /* Subtract the user's assets from their total collateral */
         _collateral[_user] = _collateral[_user].sub(userAssets);
 
         /* Subtract net assets withdrawn from pool */
@@ -890,19 +908,17 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
         /* Get cToken equity owned by user */
         uint256 equity = _cEther.balanceOf(address(this)).mul(userEthBal).div(_totalDeposit);
 
-        /* Subtract the net assets from total deposits */
+        /* Subtract the net assets withdrawn by user from total deposits */
         _totalDeposit = _totalDeposit.sub(userAssets);
 
 
         /* INTERACTIONS */
         
+        /* Calculate the amount of equity to redeem, net of liabilities */
         uint256 redeemAmount = equity.sub(liable);
-        uint256 redeemResult = _cEther.redeem(redeemAmount);
-        uint256 exchangeRate = _cEther.exchangeRateCurrent();
-        emit Debug("If this is not 0, there was an error", redeemResult, redeemAmount);
-        (bool success, ) = _user.call.value(redeemAmount.mul(exchangeRate).div(10**18))("");
-        require(success, "Transfer failed.");
-        return true;
+
+        /* Redeem cTokens and send user Ether */
+        return swapCTokensToEtherThenSend(redeemAmount, _user);
     }
 
     /**
@@ -919,8 +935,10 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
         
         /* Calculate Liability of user */
         uint256 liable = _liability.mul(userEthBal).div(_totalDeposit);
+
         /* Calculate User's Earnings (Proportional Revenue) */
         uint256 dividend = _revenue.mul(userEthBal).div(_totalDeposit);
+
         /* Calculate remaining funds after liabilities paid and dividends received */
         uint256 remainingFunds = _amount.add(dividend).sub(liable);
 
@@ -940,10 +958,40 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
 
 
         /* INTERACTIONS */
-        (bool success, ) = msg.sender.call.value(msg.value.add(remainingFunds))("");
+        swapCTokensToEtherThenSend(remainingFunds, msg.sender);
+        return sendEther(msg.value, msg.sender);
+    }
+
+    /**
+     @dev function to send ether with the most security
+     */
+    function sendEther(uint256 _amount, address payable _user) internal returns (bool) {
+        (bool success, ) = _user.call.value(_amount)("");
         require(success, "Transfer failed.");
         return success;
+    }
 
+    /**
+     @dev converts ether to interest bearing cEther (Compound Protocol)
+     @param _amount ether that will be swapped to cEther
+     */
+    function swapEtherToCompoundEther(uint256 _amount) internal returns (bool) {
+        _cEther.mint.value(_amount).gas(250000)();
+        return true;
+    }
+
+    /**
+     @dev converts cEther back into Ether
+     @param _amount ether that will be swapped to cEther
+     */
+    function swapCTokensToEtherThenSend(uint256 _amount, address payable _user) internal returns (bool) {
+        uint256 redeemResult = _cEther.redeem(_amount);
+        uint256 exchangeRate = _cEther.exchangeRateCurrent();
+        emit Debug("If this is not 0, error", redeemResult, _amount);
+        require(redeemResult == 0, 'redeem != 0');
+        (bool success, ) = _user.call.value(_amount.mul(exchangeRate).div(10**18))("");
+        require(success, 'Transfer fail.');
+        return success;
     }
 
     /**
