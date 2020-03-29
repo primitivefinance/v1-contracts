@@ -839,10 +839,7 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
         /* CHECKS */
         require(_bidPrice > 0, 'Bid < 0');
 
-        /* Fee */
-        uint256 fee = _bidPrice.div(_feeDenomination);
-        uint256 totalCost = _bidPrice.add(fee);
-        require(msg.value >= totalCost, 'Val < cost');
+        
         
 
         /* EFFECTS */
@@ -872,13 +869,18 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
             emit FillOrderFromPool(msg.sender, _bidPrice, _xis);
 
             /* Transfer remaining bid to Buyer */
-            if(msg.value > totalCost) {
+            if(msg.value > amountNotReturned) {
                 (bool success,) = msg.sender.call.value(msg.value.sub(amountNotReturned))("");
                 require(success, 'Transfer fail.');
                 return success;
             }
             return true;
         }
+
+        /* Fee */
+        uint256 fee = _bidPrice.div(_feeDenomination);
+        uint256 totalCost = _bidPrice.add(fee);
+        require(msg.value >= totalCost, 'Val < cost');
         
         /* Get chain data and log the nonce of the order */
         bytes4 _chain = bytes4(

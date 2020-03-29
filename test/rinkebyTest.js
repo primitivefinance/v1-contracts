@@ -59,7 +59,8 @@ contract('Pool', accounts => {
         premium,
         value,
         activeTokenId,
-        nonce
+        nonce,
+        tokenId
         ;
 
     async function getGas(func, name) {
@@ -98,19 +99,14 @@ contract('Pool', accounts => {
         _pool = await Pool.deployed();
         collateral = await web3.utils.toWei('0.1');
         payment = await web3.utils.toWei('1');
-        /* collateralPoolAddress = _pool.address;
-        strikeAddress = _tUSD.address;
-        primeAddress = await _exchange.getPrimeAddress();
-        expiration = '1587607322';
-        premium = (13*10**15).toString(); */
-        
+
         await getPoolBalances(_pool);
 
 
     });
     
 
-    it('should deposit funds', async () => {
+    /* it('should deposit funds', async () => {
         let _LP = Alice;
         value = await web3.utils.toWei('0.1');
         let lpBal = await web3.utils.fromWei(await web3.eth.getBalance(_LP));
@@ -159,69 +155,57 @@ contract('Pool', accounts => {
         console.log({deposit, deposit2});
 
         console.log({withdraw, withdraw2})
-    });
+    }); */
 
-    it('should deposit funds from two LPS then have primes minted from the pool', async () => {
-        let _LP = Alice;
-        value = await web3.utils.toWei('0.15');
-        let lpBal = await web3.utils.fromWei(await web3.eth.getBalance(_LP));
-        console.log({lpBal})
+    it('handle a full protocol transaction', async () => {
+        /* LP 1 deposits 0.1 ether into pool */
+        console.log('LP deposits into Pool');
+        let lp = Alice;
+        let deposit = await web3.utils.toWei('0.1');
+        let poolDeposit = await _pool.deposit(deposit, {from: lp, value: deposit});
 
+        /* Pool has 0.1 ether to write options for */
+        let collateralAmount = deposit;
+        let collateral = _pool.address;
 
-        let _LP2 = Bob;
-        let lpBal2 = await web3.utils.fromWei(await web3.eth.getBalance(_LP2));
-        console.log({lpBal2})
+        let premium = await web3.utils.toWei('0.02');
+        let totalCost = await web3.utils.toWei('0.1');
 
+        /* Strike is 1 full tUSD token */
+        let strikeAmount = await web3.utils.toWei('1');
+        let strike = _tUSD.address;
 
-        let deposit = await _pool.deposit(value, {from: _LP, value: value});
-        let deposit2 = await _pool.deposit(value, {from: _LP2, value: value});
+        let expiration = '1600473585';
+        
+        let buyer = Bob;
 
-        await getPoolBalances(_pool);
-        console.log({lpBal, lpBal2})
-        console.log({deposit, deposit2});
-
-        let xis, yak, zed, wax, pow, gem;
-        xis = value;
-        yak = _pool.address;
-        zed = payment;
-        wax = _tUSD.address;
-        pow = '1600473585';
-        await _tUSD.approve(_prime.address, payment, {from: Bob});
-        await _tUSD.mint(Bob, payment);
-        /* TOKEN MINTED TO ADDRESS */
-        await _exchange.setPoolAddress(_pool.address);
-        let poolAssets = await web3.utils.fromWei(await _pool.getAvailableAssets());
-        console.log({poolAssets})
-        let bid = await web3.utils.toWei(('0.15').toString());
-        let val = await web3.utils.toWei(('0.2').toString());
-        let unfilled = await _exchange.buyOrderUnfilled(
-            bid,
-            xis, 
-            yak, 
-            zed, 
-            wax, 
-            pow, 
-            {from: Bob, value: val}
-        );
-        let tokenId = (await _prime.nonce()).toString();
-
-        await getPoolBalances(_pool);
-        console.log({unfilled, tokenId})
-
-        await _prime.createPrime(
-            xis, 
-            yak, 
-            zed, 
-            wax, 
-            pow,
-            Bob, 
-            {from: Bob, value: xis}
+        /* User submits unfilled buy order on DEX which defaults to the Pool filling it */
+        console.log('Buy order submitted');
+        let buyOrder = await _exchange.buyOrderUnfilled(
+            premium,
+            collateralAmount, 
+            collateral, 
+            strikeAmount, 
+            strike, 
+            expiration, 
+            {from: buyer, value: totalCost}
         );
 
-        tokenId = (await _prime.nonce()).toString();
+        let tokenId = await _prime.nonce();
+
+        /* Buyer then exercises the Prime */
+        await _tUSD.approve(_prime.address, strikeAmount, {from: buyer});
+        await _tUSD.mint(buyer, strikeAmount);
+
+        console.log('Exercises ether denominated prime');
+        let exercise = await _prime.exercise(tokenId, {from: buyer});
+
+        /* Buyer withdraws */
+        console.log('exercisor withdraws ether that was the collateral');
+        let buyWithdrawal = await _prime.withdraw(collateralAmount, _pool.address, {from: buyer});
 
         await getPoolBalances(_pool);
-        console.log({unfilled, tokenId})
+
     });
 
 })

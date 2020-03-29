@@ -606,10 +606,366 @@ contract ERC721Holder is IERC721Receiver {
     }
 }
 
-abstract contract ERC20 {
-    function balanceOf(address _owner) virtual external returns(uint256);
-    function transferFrom(address sender, address recipient, uint256 amount) public virtual returns (bool);
-    function transfer(address recipient, uint256 amount) public virtual returns (bool);
+/**
+ * @dev Interface of the ERC20 standard as defined in the EIP. Does not include
+ * the optional functions; to access them see {ERC20Detailed}.
+ */
+interface IERC20 {
+    /**
+     * @dev Returns the amount of tokens in existence.
+     */
+    function totalSupply() external view returns (uint256);
+
+    /**
+     * @dev Returns the amount of tokens owned by `account`.
+     */
+    function balanceOf(address account) external view returns (uint256);
+
+    /**
+     * @dev Moves `amount` tokens from the caller's account to `recipient`.
+     *
+     * Returns a boolean value indicating whether the operation succeeded.
+     *
+     * Emits a {Transfer} event.
+     */
+    function transfer(address recipient, uint256 amount) external returns (bool);
+
+    /**
+     * @dev Returns the remaining number of tokens that `spender` will be
+     * allowed to spend on behalf of `owner` through {transferFrom}. This is
+     * zero by default.
+     *
+     * This value changes when {approve} or {transferFrom} are called.
+     */
+    function allowance(address owner, address spender) external view returns (uint256);
+
+    /**
+     * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.
+     *
+     * Returns a boolean value indicating whether the operation succeeded.
+     *
+     * IMPORTANT: Beware that changing an allowance with this method brings the risk
+     * that someone may use both the old and the new allowance by unfortunate
+     * transaction ordering. One possible solution to mitigate this race
+     * condition is to first reduce the spender's allowance to 0 and set the
+     * desired value afterwards:
+     * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
+     *
+     * Emits an {Approval} event.
+     */
+    function approve(address spender, uint256 amount) external returns (bool);
+
+    /**
+     * @dev Moves `amount` tokens from `sender` to `recipient` using the
+     * allowance mechanism. `amount` is then deducted from the caller's
+     * allowance.
+     *
+     * Returns a boolean value indicating whether the operation succeeded.
+     *
+     * Emits a {Transfer} event.
+     */
+    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
+
+    /**
+     * @dev Emitted when `value` tokens are moved from one account (`from`) to
+     * another (`to`).
+     *
+     * Note that `value` may be zero.
+     */
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
+    /**
+     * @dev Emitted when the allowance of a `spender` for an `owner` is set by
+     * a call to {approve}. `value` is the new allowance.
+     */
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+}
+
+/**
+ * @dev Implementation of the {IERC20} interface.
+ *
+ * This implementation is agnostic to the way tokens are created. This means
+ * that a supply mechanism has to be added in a derived contract using {_mint}.
+ * For a generic mechanism see {ERC20Mintable}.
+ *
+ * TIP: For a detailed writeup see our guide
+ * https://forum.zeppelin.solutions/t/how-to-implement-erc20-supply-mechanisms/226[How
+ * to implement supply mechanisms].
+ *
+ * We have followed general OpenZeppelin guidelines: functions revert instead
+ * of returning `false` on failure. This behavior is nonetheless conventional
+ * and does not conflict with the expectations of ERC20 applications.
+ *
+ * Additionally, an {Approval} event is emitted on calls to {transferFrom}.
+ * This allows applications to reconstruct the allowance for all accounts just
+ * by listening to said events. Other implementations of the EIP may not emit
+ * these events, as it isn't required by the specification.
+ *
+ * Finally, the non-standard {decreaseAllowance} and {increaseAllowance}
+ * functions have been added to mitigate the well-known issues around setting
+ * allowances. See {IERC20-approve}.
+ */
+contract ERC20 is Context, IERC20 {
+    using SafeMath for uint256;
+
+    mapping (address => uint256) private _balances;
+
+    mapping (address => mapping (address => uint256)) private _allowances;
+
+    uint256 private _totalSupply;
+
+    /**
+     * @dev See {IERC20-totalSupply}.
+     */
+    function totalSupply() public view override returns (uint256) {
+        return _totalSupply;
+    }
+
+    /**
+     * @dev See {IERC20-balanceOf}.
+     */
+    function balanceOf(address account) public view override returns (uint256) {
+        return _balances[account];
+    }
+
+    /**
+     * @dev See {IERC20-transfer}.
+     *
+     * Requirements:
+     *
+     * - `recipient` cannot be the zero address.
+     * - the caller must have a balance of at least `amount`.
+     */
+    function transfer(address recipient, uint256 amount) public virtual override returns (bool) {
+        _transfer(_msgSender(), recipient, amount);
+        return true;
+    }
+
+    /**
+     * @dev See {IERC20-allowance}.
+     */
+    function allowance(address owner, address spender) public view virtual override returns (uint256) {
+        return _allowances[owner][spender];
+    }
+
+    /**
+     * @dev See {IERC20-approve}.
+     *
+     * Requirements:
+     *
+     * - `spender` cannot be the zero address.
+     */
+    function approve(address spender, uint256 amount) public virtual override returns (bool) {
+        _approve(_msgSender(), spender, amount);
+        return true;
+    }
+
+    /**
+     * @dev See {IERC20-transferFrom}.
+     *
+     * Emits an {Approval} event indicating the updated allowance. This is not
+     * required by the EIP. See the note at the beginning of {ERC20};
+     *
+     * Requirements:
+     * - `sender` and `recipient` cannot be the zero address.
+     * - `sender` must have a balance of at least `amount`.
+     * - the caller must have allowance for `sender`'s tokens of at least
+     * `amount`.
+     */
+    function transferFrom(address sender, address recipient, uint256 amount) public virtual override returns (bool) {
+        _transfer(sender, recipient, amount);
+        _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, "ERC20: transfer amount exceeds allowance"));
+        return true;
+    }
+
+    /**
+     * @dev Atomically increases the allowance granted to `spender` by the caller.
+     *
+     * This is an alternative to {approve} that can be used as a mitigation for
+     * problems described in {IERC20-approve}.
+     *
+     * Emits an {Approval} event indicating the updated allowance.
+     *
+     * Requirements:
+     *
+     * - `spender` cannot be the zero address.
+     */
+    function increaseAllowance(address spender, uint256 addedValue) public virtual returns (bool) {
+        _approve(_msgSender(), spender, _allowances[_msgSender()][spender].add(addedValue));
+        return true;
+    }
+
+    /**
+     * @dev Atomically decreases the allowance granted to `spender` by the caller.
+     *
+     * This is an alternative to {approve} that can be used as a mitigation for
+     * problems described in {IERC20-approve}.
+     *
+     * Emits an {Approval} event indicating the updated allowance.
+     *
+     * Requirements:
+     *
+     * - `spender` cannot be the zero address.
+     * - `spender` must have allowance for the caller of at least
+     * `subtractedValue`.
+     */
+    function decreaseAllowance(address spender, uint256 subtractedValue) public virtual returns (bool) {
+        _approve(_msgSender(), spender, _allowances[_msgSender()][spender].sub(subtractedValue, "ERC20: decreased allowance below zero"));
+        return true;
+    }
+
+    /**
+     * @dev Moves tokens `amount` from `sender` to `recipient`.
+     *
+     * This is internal function is equivalent to {transfer}, and can be used to
+     * e.g. implement automatic token fees, slashing mechanisms, etc.
+     *
+     * Emits a {Transfer} event.
+     *
+     * Requirements:
+     *
+     * - `sender` cannot be the zero address.
+     * - `recipient` cannot be the zero address.
+     * - `sender` must have a balance of at least `amount`.
+     */
+    function _transfer(address sender, address recipient, uint256 amount) internal virtual {
+        require(sender != address(0), "ERC20: transfer from the zero address");
+        require(recipient != address(0), "ERC20: transfer to the zero address");
+
+        _beforeTokenTransfer(sender, recipient, amount);
+
+        _balances[sender] = _balances[sender].sub(amount, "ERC20: transfer amount exceeds balance");
+        _balances[recipient] = _balances[recipient].add(amount);
+        emit Transfer(sender, recipient, amount);
+    }
+
+    /** @dev Creates `amount` tokens and assigns them to `account`, increasing
+     * the total supply.
+     *
+     * Emits a {Transfer} event with `from` set to the zero address.
+     *
+     * Requirements
+     *
+     * - `to` cannot be the zero address.
+     */
+    function _mint(address account, uint256 amount) internal virtual {
+        require(account != address(0), "ERC20: mint to the zero address");
+
+        _beforeTokenTransfer(address(0), account, amount);
+
+        _totalSupply = _totalSupply.add(amount);
+        _balances[account] = _balances[account].add(amount);
+        emit Transfer(address(0), account, amount);
+    }
+
+    /**
+     * @dev Destroys `amount` tokens from `account`, reducing the
+     * total supply.
+     *
+     * Emits a {Transfer} event with `to` set to the zero address.
+     *
+     * Requirements
+     *
+     * - `account` cannot be the zero address.
+     * - `account` must have at least `amount` tokens.
+     */
+    function _burn(address account, uint256 amount) internal virtual {
+        require(account != address(0), "ERC20: burn from the zero address");
+
+        _beforeTokenTransfer(account, address(0), amount);
+
+        _balances[account] = _balances[account].sub(amount, "ERC20: burn amount exceeds balance");
+        _totalSupply = _totalSupply.sub(amount);
+        emit Transfer(account, address(0), amount);
+    }
+
+    /**
+     * @dev Sets `amount` as the allowance of `spender` over the `owner`s tokens.
+     *
+     * This is internal function is equivalent to `approve`, and can be used to
+     * e.g. set automatic allowances for certain subsystems, etc.
+     *
+     * Emits an {Approval} event.
+     *
+     * Requirements:
+     *
+     * - `owner` cannot be the zero address.
+     * - `spender` cannot be the zero address.
+     */
+    function _approve(address owner, address spender, uint256 amount) internal virtual {
+        require(owner != address(0), "ERC20: approve from the zero address");
+        require(spender != address(0), "ERC20: approve to the zero address");
+
+        _allowances[owner][spender] = amount;
+        emit Approval(owner, spender, amount);
+    }
+
+    /**
+     * @dev Hook that is called before any transfer of tokens. This includes
+     * minting and burning.
+     *
+     * Calling conditions:
+     *
+     * - when `from` and `to` are both non-zero, `amount` of `from`'s tokens
+     * will be to transferred to `to`.
+     * - when `from` is zero, `amount` tokens will be minted for `to`.
+     * - when `to` is zero, `amount` of `from`'s tokens will be burned.
+     * - `from` and `to` are never both zero.
+     *
+     * To learn more about hooks, head to xref:ROOT:using-hooks.adoc[Using Hooks].
+     */
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual { }
+}
+
+/**
+ * @dev Optional functions from the ERC20 standard.
+ */
+abstract contract ERC20Detailed is IERC20 {
+    string private _name;
+    string private _symbol;
+    uint8 private _decimals;
+
+    /**
+     * @dev Sets the values for `name`, `symbol`, and `decimals`. All three of
+     * these values are immutable: they can only be set once during
+     * construction.
+     */
+    constructor (string memory name, string memory symbol, uint8 decimals) public {
+        _name = name;
+        _symbol = symbol;
+        _decimals = decimals;
+    }
+
+    /**
+     * @dev Returns the name of the token.
+     */
+    function name() public view returns (string memory) {
+        return _name;
+    }
+
+    /**
+     * @dev Returns the symbol of the token, usually a shorter version of the
+     * name.
+     */
+    function symbol() public view returns (string memory) {
+        return _symbol;
+    }
+
+    /**
+     * @dev Returns the number of decimals used to get its user representation.
+     * For example, if `decimals` equals `2`, a balance of `505` tokens should
+     * be displayed to a user as `5,05` (`505 / 10 ** 2`).
+     *
+     * Tokens usually opt for a value of 18, imitating the relationship between
+     * Ether and Wei.
+     *
+     * NOTE: This information is only used for _display_ purposes: it in
+     * no way affects any of the arithmetic of the contract, including
+     * {IERC20-balanceOf} and {IERC20-transfer}.
+     */
+    function decimals() public view returns (uint8) {
+        return _decimals;
+    }
 }
 
 abstract contract IPrime {
@@ -624,6 +980,7 @@ abstract contract IPrime {
 abstract contract ICEther {
     function mint() external payable virtual;
     function redeem(uint redeemTokens) external virtual returns (uint);
+    function redeemUnderlying(uint redeemAmount) external virtual returns (uint);
     function transfer(address dst, uint amount) external virtual returns (bool);
     function transferFrom(address src, address dst, uint amount) external virtual returns (bool);
     function approve(address spender, uint amount) external virtual returns (bool);
@@ -636,61 +993,55 @@ abstract contract ICEther {
     function totalBorrowsCurrent() external virtual returns (uint);
     function borrowBalanceCurrent(address account) external virtual returns (uint);
     function borrowBalanceStored(address account) public virtual view returns (uint);
-    function exchangeRateCurrent() public virtual returns (uint);
-    function exchangeRateStored() public virtual view returns (uint);
+    function _exchangeRateCurrent() public virtual returns (uint);
+    function _exchangeRateStored() public virtual view returns (uint);
     function getCash() external virtual view returns (uint);
     function accrueInterest() public virtual returns (uint);
     function seize(address liquidator, address borrower, uint seizeTokens) external virtual returns (uint);
 }
 
-contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
+contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder, ERC20, ERC20Detailed {
     using SafeMath for uint256;
 
     /* Address of Prime ERC-721 */
     address public _primeAddress;
     address public _compoundEthAddress;
     address public _exchangeAddress;
-    uint256 public _startTime;
 
     ICEther public _cEther;
     IPrime public _prime;
 
-    /* Total accumulated ether in pool */
-    uint256 public _totalDeposit;
-
-    /* Ether balance in pool */
-    uint256 public _pool;
-
     /* Ether liability */
     uint256 public _liability;
-
-    /* Ether Revenue */
-    uint256 public _revenue;
-
-    /* Ether balance of user */
-    mapping(address => uint256) public _collateral;
-
-    /* Time balance of user */
-    mapping(address => uint256) public _time;
-
-    /* Array of token Ids owned by Pool */
-    uint[] public _ownedTokens;
-
-    /* Token ID of the largest collateral token */
-    uint256 public _largestToken;
 
     /* For testing */
     uint256 public constant _premiumDenomination = 5; /* 20% = 0.2 = 1 / 5 */
 
-    event Debug(string error, uint256 result, uint256 tokenBalance);
 
-    constructor(address primeAddress, address compoundEthAddress, address exchangeAddress) public {
+    event Debug(string error, uint256 result, uint256 tokenBalance);
+    event Deposit(uint256 _deposit, address _user, uint256 _pulpMinted);
+    event Withdraw(uint256 _withdraw, address _user, uint256 _pulpBurned);
+    event PoolMint(uint256 _nonce, uint256 _collateralAmount, uint256 _strikeAmount);
+    event Exercise(uint256 _amount, uint256 _strikeAmount);
+    event Close(uint256 _closed, address _address, uint256 _pulpBurned);
+
+    constructor (
+        address primeAddress,
+        address compoundEthAddress,
+        address exchangeAddress
+    ) 
+        public
+        ERC20Detailed(
+            "Primitive Underlying Liquidity Provider",
+            "PULP",
+            18
+        )
+    {
         _primeAddress = primeAddress;
         _exchangeAddress = exchangeAddress;
         _prime = IPrime(primeAddress);
         _cEther = ICEther(compoundEthAddress);
         _compoundEthAddress = compoundEthAddress;
-        _startTime = block.timestamp;
     }
 
     /* SET*/
@@ -700,8 +1051,12 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
 
     receive() external payable {}
 
+    /* CAPITAL INPUT / OUTPUT FUNCTIONS*/
+
     /**
      * @dev deposits funds to the liquidity pool
+     * @param _value amount of ether to deposit
+     * @return bool true if liquidity tokens were minted and ether deposit swapped to cETher
      */
     function deposit(
         uint256 _value
@@ -716,23 +1071,105 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
 
         /* EFFECTS */
 
-        /* Track user's liquidity contribution */
-        _collateral[msg.sender] = _collateral[msg.sender].add(msg.value);
-
-        /* Track the funds start time in Pool */
-        _time[msg.sender] = block.timestamp;
-
-        /* Add the deposit to total deposits to measure user's share */
-        _totalDeposit = _totalDeposit.add(msg.value);
-
-        /* Add deposit to available assets that can be used by Pool */
-        _pool = _pool.add(msg.value);
-
         /* INTERACTIONS */
 
+        /* Liquidity Tokens = Ether * Total Ether In Pool / Total Supply of Liquidity Token */
+        _mint(msg.sender, _value.mul(totalSupplyDivTotalEther()));
+        emit Deposit(_value, msg.sender, _value.mul(totalSupplyDivTotalEther()));
+        /* COMPOUND */
         /* Swap ether to interest bearing cEther */
-        return swapEtherToCompoundEther(msg.value);
+        return swapEtherToCompoundEther(_value);
+        /* return true; */
     }
+
+    /**
+     * @dev withdraw ether that is not utilized as collateral
+     * @notice withdrawing utilized collateral requires the debt to be paid using the close function
+     * @param _amount amount of ether to withdraw
+     * @return bool true if liquidity tokens were burned, cEther was swapped to ether and sent
+     */
+    function withdraw(
+        uint256 _amount
+    ) 
+        public 
+        nonReentrant 
+        returns (bool)
+    {
+        /* CHECKS */
+        require(balanceOf(msg.sender) >= _amount, 'Balance < withdraw');
+        require(getMaxBurnAmount() >= _amount, 'Withdraw: max burn < amt');
+
+        /* EFFECTS */
+
+        /* INTERACTIONS */
+        _burn(msg.sender, _amount);
+        emit Withdraw(getEthWithdrawAmount(_amount), msg.sender, _amount);
+        /* COMPOUND */
+        /* Redeem cTokens and send user Ether */
+        return swapCTokensToEtherThenSend(_amount, msg.sender);
+        /* return sendEther(getEthWithdrawAmount(_amount), msg.sender); */
+    }
+
+    /* GET BALANCE SHEET ITEMS */
+
+    /**
+     * @dev returns Net Assets = Pool Assets - Pool Liabilities
+     * @return pool returns 1 / Exchange Rate to use in LP token swaps
+     */
+    function totalSupplyDivTotalEther() public returns (uint256 pool) {
+        /* Exchange rate = ET / ST, where ET = Total Ether balance, and ST = Total LP Supply */
+        if(totalSupply().mul(getPoolBalance()) == 0) {
+            return 1;
+        }
+        return totalSupply().div(getPoolBalance());
+    }
+
+    /**
+     @dev tokens to burn to withdraw all non-utilized collateral
+     @return uint256 max amount of tokens that can be burned for ether
+     */
+    function getMaxBurnAmount() public returns (uint256) {
+        /* LP = (ET - L) * ST / ET where ST = Total Supply */
+        uint256 maxBurn = getAvailableAssets().mul(totalSupply()).div(getPoolBalance());
+        require(getEthWithdrawAmount(maxBurn) <= getAvailableAssets(), 'Withdraw > net assets');
+        return maxBurn;
+    }
+
+    /**
+     * @dev returns Net Assets = Pool Assets - Pool Liabilities
+     * @return pool amount of available assets
+     */
+    function getAvailableAssets() public returns (uint256 pool) {
+        /* Net Assets = ET - L, where ET = Total Ether and L = Total Liabilities */
+        return getPoolBalance().sub(_liability);
+    }
+
+    /**
+     * @dev get ether balance of contract
+     * @return uint256 balance of contract in ether
+     */
+    function getPoolBalance() public returns(uint256) {
+        /* ET, where ET = Total Ether */
+        if(_cEther.balanceOf(address(this)) == 0) {
+            return 0;
+        }
+        uint256 exchangeRate = _cEther._exchangeRateCurrent();
+        return _cEther.balanceOf(address(this)).mul(exchangeRate).div(10**18);
+        /* return address(this).balance; */
+    }
+
+    /**
+     @dev returns the amount of ETH returned from swapped amount of Liquidity tokens
+     */
+    function getEthWithdrawAmount(uint256 _amount) public returns (uint256) {
+        /* LP = A * ET / ST, where LP = Primitive token, A = Amount, ET = Ether balance, ST = Total LP Supply */
+        if(totalSupply().mul(getPoolBalance()) == 0) {
+            return _amount;
+        }
+        return _amount.mul(getPoolBalance()).div(totalSupply());
+    }
+
+    /* PRIME INTERACTION FUNCTIONS */
 
     /**
      * @dev user mints a Prime option from the pool
@@ -757,30 +1194,16 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
         /* CHECKS */
 
         /* Checks to see if the tx pays the premium - 20% constant right now */
-        uint256 calculatedPremium = _long.div(_premiumDenomination);
-        require(msg.value >= calculatedPremium, 'Value < premium');
-
-        /* Cannot be already expired */
-        require(_expiration > block.timestamp, 'expired');
+        require(msg.value >= _long.div(_premiumDenomination), 'Mint: Val < premium');
+        require(_expiration > block.timestamp, 'Mint: expired');
+        require(getAvailableAssets() >= _long, 'Mint: available < amt');
 
         /* EFFECTS */
-
-        /* Get Available liquidity */
-        uint256 _availableEth = _pool.sub(_liability);
 
         /* Add the ether liability to the Pool */
         _liability = _liability.add(_long);
 
-        /* Check if there's enough capital to fill position */
-        require(_availableEth >= _long, 'available < amount');
-
-        /* Credit revenue the premium */
-        _revenue = _revenue.add(calculatedPremium);
-
         /* INTERACTIONS */
-
-        /* Trusted Contract */
-        IPrime _prime = IPrime(_primeAddress);
 
         /* Mint a Prime */
         uint256 nonce = _prime.createPrime(
@@ -792,15 +1215,20 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
                 address(this)
             );
 
-        /* Transfer Prime to User */
+        /* Transfer Prime to User from Pool */
         _prime.safeTransferFrom(address(this), _primeReceiver, nonce);
-        
+        emit PoolMint(nonce, _long, _short);
+        /* COMPOUND */
         /* Swap Pool ether to interest Bearing cEther */
         return swapEtherToCompoundEther(msg.value);
+        /* return true; */
     }
 
     /**
      * @dev Called ONLY from the Prime contract
+     * @param _long amount of collateral
+     * @param _short amount of strike
+     * @param _strike address of strike
      */
     function exercise(
         uint256 _long,
@@ -819,106 +1247,24 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
 
         /* EFFECTS */
 
-        /* Reduce available assets in Pool for writing positions */
-        _pool = _pool.sub(_long);
-
+        /* Clear liability of Prime */
+        _liability = _liability.sub(_long);
+        
         /* INTERACTIONS */
 
-        /* Ether collateral is sent to Prime, where it can be withdrawn by User who exercised */
+        /* COMPOUND */
+
+        
+        uint256 redeemResult = _cEther.redeemUnderlying(_long);
+        require(redeemResult == 0, 'redeem != 0');
+        require(getPoolBalance() >= _long, 'ether bal != collat'); 
+       
+
+        /* Sent to trusted address - Prime Contract */
         sendEther(_long, msg.sender);
-
-        /* Clears the liability from State and withdraws Strike asset from Prime */
-        return clearLiability(_long, _short, _strike);
-    }
-
-    /**
-     * @dev users withdraw ether rather than have it directly sent to them
-     * @param _receiver address of user to send ether to
-     * @param _amount value of ether to withdraw
-     */
-    function withdrawExercisedEth(
-        address payable _receiver,
-        uint256 _amount
-    ) 
-        external 
-        nonReentrant 
-        returns (bool)
-    {
-
-        /* CHECKS */
-        require(msg.sender == _primeAddress, 'Addr != Prime');
-
-        /* EFFECTS */
-
-        /* Subtract the ether liability */
-        _liability = _liability.sub(_amount);
-
-        /* INTERACTIONS */
-        return sendEther(_amount, _receiver);
-    }
-
-    /**
-     * @dev users withdraw up to the total amount of assets they deposited less liabilities
-     * @notice for a user to withdraw all funds, they need to purchase the debt (close position)
-     * @param _amount value of ether to withdraw
-     */
-    function withdrawLpFunds(
-        uint256 _amount,
-        address payable _user
-    ) 
-        public 
-        nonReentrant 
-        returns (bool)
-    {
-
-        /* CHECKS */
-        require(msg.sender == _user || msg.sender == address(this), 'Caller is not user or pool');
-
-        uint256 userEthBal = _collateral[_user];
-        require(userEthBal >= _amount, 'Bal < amt');
-
-        /* EFFECTS */
-        
-        /* Calculate Liability of user */
-        uint256 liable = _liability.mul(userEthBal).div(_totalDeposit);
-
-        /* Calculate Net Assets */
-        uint256 userAssets = userEthBal.sub(liable);
-
-        /* Calculate Available Net Pool Assets */
-        uint256 poolAssets = _pool.sub(_liability);
-
-        /* Calculate User's Portion of Available Net Assets */
-        uint256 proceeds = poolAssets.mul(userEthBal).div(_totalDeposit);
-
-        /* Calculate User's Earnings (Proportional Revenue) - FIX */
-        uint256 dividend = _revenue.mul(userEthBal).div(_totalDeposit);
-
-        /* UPDATE SYSTEM BALANCES */
-
-        /* Subtract the user's assets from their total collateral */
-        _collateral[_user] = _collateral[_user].sub(userAssets);
-
-        /* Subtract net assets withdrawn from pool */
-        _pool = _pool.sub(proceeds);
-
-        /* Subtract the revenue withdrawn */
-        _revenue = _revenue.sub(dividend);
-
-        /* Get cToken equity owned by user */
-        uint256 equity = _cEther.balanceOf(address(this)).mul(userEthBal).div(_totalDeposit);
-
-        /* Subtract the net assets withdrawn by user from total deposits */
-        _totalDeposit = _totalDeposit.sub(userAssets);
-
-
-        /* INTERACTIONS */
-        
-        /* Calculate the amount of equity to redeem, net of liabilities */
-        uint256 redeemAmount = equity.sub(liable);
-
-        /* Redeem cTokens and send user Ether */
-        return swapCTokensToEtherThenSend(redeemAmount, _user);
+        emit Exercise(_long, _short);
+        /* Withdraw strike assets from prime */
+        return _prime.withdraw(_short, _strike);
     }
 
     /**
@@ -927,49 +1273,39 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
      */
     function closePosition(uint256 _amount) external payable returns (bool) {
         /* CHECKS */
-        uint256 userEthBal = _collateral[msg.sender];
-        require(userEthBal >= _amount, 'Eth Bal < amt');
-        require(msg.value == _amount, 'Value < amt');
+        uint256 userEthBal = balanceOf(msg.sender);
+        require(userEthBal >= _amount, 'Close: Eth Bal < amt');
+
+        uint256 debt = _amount.mul(_liability).div(getPoolBalance());
+        require(msg.value >= debt, 'Close: Value < debt');
 
         /* EFFECTS */
-        
-        /* Calculate Liability of user */
-        uint256 liable = _liability.mul(userEthBal).div(_totalDeposit);
 
-        /* Calculate User's Earnings (Proportional Revenue) */
-        uint256 dividend = _revenue.mul(userEthBal).div(_totalDeposit);
-
-        /* Calculate remaining funds after liabilities paid and dividends received */
-        uint256 remainingFunds = _amount.add(dividend).sub(liable);
-
-        /* UPDATE SYSTEM BALANCES */
-
-        /* Subtract the ether from user's assets */
-        _collateral[msg.sender] = _collateral[msg.sender].sub(userEthBal);
-
-        /* Subtract net assets withdrawn from pool */
-        _pool = _pool.sub(remainingFunds);
-
-        /* Subtract the revenue withdrawn */
-        _revenue = _revenue.sub(dividend);
-
-        /* Subtract the net assets from total deposits */
-        _totalDeposit = _totalDeposit.sub(userEthBal);
-
+        uint256 refundEther = msg.value.sub(debt);
 
         /* INTERACTIONS */
-        swapCTokensToEtherThenSend(remainingFunds, msg.sender);
-        return sendEther(msg.value, msg.sender);
+
+        _burn(msg.sender, _amount);
+        emit Close(getEthWithdrawAmount(_amount.add(refundEther)), msg.sender, _amount);
+        /* COMPOUND */
+        return swapCTokensToEtherThenSend(getEthWithdrawAmount(_amount.add(refundEther)), msg.sender);
+
+        /* return sendEther(getEthWithdrawAmount(_amount).add(refundEther), msg.sender); */
     }
+
+
+    /* CAPITAL MANAGEMENT FUNCTIONS */
 
     /**
      @dev function to send ether with the most security
      */
     function sendEther(uint256 _amount, address payable _user) internal returns (bool) {
         (bool success, ) = _user.call.value(_amount)("");
-        require(success, "Transfer failed.");
+        require(success, "Send ether fail");
         return success;
     }
+
+    /* COMPOUND INTERFACE FUNCTIONS */
 
     /**
      @dev converts ether to interest bearing cEther (Compound Protocol)
@@ -986,30 +1322,12 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder {
      */
     function swapCTokensToEtherThenSend(uint256 _amount, address payable _user) internal returns (bool) {
         uint256 redeemResult = _cEther.redeem(_amount);
-        uint256 exchangeRate = _cEther.exchangeRateCurrent();
+        uint256 exchangeRate = _cEther._exchangeRateCurrent();
         emit Debug("If this is not 0, error", redeemResult, _amount);
         require(redeemResult == 0, 'redeem != 0');
         (bool success, ) = _user.call.value(_amount.mul(exchangeRate).div(10**18))("");
         require(success, 'Transfer fail.');
         return success;
-    }
-
-    /**
-     * @dev reduces liability and gets strike assets from exercised Prime
-     */
-    function clearLiability(uint256 liability, uint256 short, address strike) internal returns (bool) {
-        _liability = _liability.sub(liability);
-        return _prime.withdraw(short, strike);
-        
-    }
-
-    /**
-     * @dev view function to get pool - liabilities
-     * @return pool amount of available assets
-     */
-    function getAvailableAssets() public view returns (uint256 pool) {
-        /* Available liquidity */
-        return _pool.sub(_liability);
     }
 }
 
