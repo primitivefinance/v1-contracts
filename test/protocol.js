@@ -6,7 +6,7 @@ const Prime = artifacts.require("Prime");
 const Exchange = artifacts.require('Exchange');
 const Pool = artifacts.require('Pool');
 
-contract('Pool', accounts => {
+contract('Prime - Local', accounts => {
 
     // User Accounts
     const Alice = accounts[0]
@@ -93,7 +93,7 @@ contract('Pool', accounts => {
 
         _prime = await Prime.deployed();
         _tUSD = await tUSD.deployed();
-        /* _tETH = await tETH.deployed(); */
+        _tETH = await tETH.deployed();
         _exchange = await Exchange.deployed();
         _pool = await Pool.deployed();
         collateral = await web3.utils.toWei('1');
@@ -103,91 +103,74 @@ contract('Pool', accounts => {
         primeAddress = await _exchange.getPrimeAddress();
         expiration = '1587607322';
         premium = (13*10**16).toString();
-        
-        
-        
-        /* await _tETH.approve(_prime.address, payment);
-        await _tUSD.approve(_prime.address, payment);
-        await _tETH.approve(_prime.address, payment, {from: Bob});
-        await _tUSD.approve(_prime.address, payment, {from: Bob});
-        
-        await _tETH.mint(Alice, payment);
-        await _tUSD.mint(Alice, payment);
-        await _tETH.mint(Bob, payment);
-        await _tUSD.mint(Bob, payment); */
-
-        /* await _prime.setPoolAddress(_pool.address); */
-        /* let _LP = Alice;
-        value = await web3.utils.toWei('2');
-        let deposit = await _pool.deposit(value, {from: _LP, value: value});
-        
-        await getPoolBalances(_pool); */
-
-
     });
     
 
-    it('should be able to withdraw funds', async () => {
-        let _LP = Alice;
-        value = await web3.utils.toWei('0.2');
-        let deposit = await _pool.deposit(value, {from: _LP, value: value});
-        
-        await getPoolBalances(_pool);
-        nonce = 0;
+    it('create prime with yak == erc20', async () => {
+        /* Base Parameters */
+        let minter = Bob;
+        let one = await web3.utils.toWei('1');
+        let ten = await web3.utils.toWei('10');
+        let collateral = _tETH.address();
+        let strike = _tUSD.address();
+        let expiry = '1587607322';
+        let receiver = minter;
 
-        let withdraw = await _pool.withdraw(value);
-
-        await getPoolBalances(_pool);
-
-    });
-
-    it('should be able to mint a prime', async () => {
-        let _LP = Alice;
-        value = await web3.utils.toWei('0.2');
-        let deposit = await _pool.deposit(value, {from: _LP, value: value});
-        
-        await getPoolBalances(_pool);
-        let price = await web3.utils.toWei('0.1');
-        let strikeAmt = await web3.utils.toWei('1');
-        let buyOrderUnfilled = await _exchange.buyOrderUnfilled(
-            price,
-            price,
-            _pool.address,
-            strikeAmt,
-            tUSD.address,
-            '1587607322',
-            {from: Bob, value: price}
-        );
-
-        /* +1 */
-        await getPoolBalances(_pool);
+        /* Get revert with balance < xis */
         await truffleAssert.reverts(
-            _pool.withdraw(value),
-            "Withdraw: max burn < amt"
+            _prime.createPrime(
+                one,
+                collateral,
+                ten,
+                strike,
+
+            ),
+            "a < b"
         );
-        console.log('withdraw amount',(value-price).toString() )
-        let withdraw = await _pool.withdraw((value-price).toString());
-        /* -1 */
-        await getPoolBalances(_pool);
-        /* = 1 */
+        /* Check for ERC20 interface parameter */
+
+        /* Assert liability of msg sender added the xis */
+
+        /* Assert returns the nonce of the token */
     });
 
-    it('should be able to exercise a Prime', async () => {
-        let tokenId = await _prime.nonce();
+    it('should be able to withdraw funds', async () => {
 
-        /* Bob then exercises the Prime */
-        let collateralAmount = await web3.utils.toWei('0.1');
-        let strikeAmt = await web3.utils.toWei('1');
-        await _tUSD.approve(_prime.address, strikeAmt, {from: Bob});
-        await _tUSD.mint(Bob, strikeAmt);
+    });
 
-        console.log('Exercises ether denominated prime');
-        let exercise = await _prime.exercise(tokenId, {from: Bob});
+    it('should be able to withdraw funds', async () => {
 
-        /* Bob withdraws */
-        console.log('exercisor withdraws ether that was the collateral');
-        let buyWithdrawal = await _prime.withdraw(collateralAmount, _pool.address, {from: Bob});
+    });
 
-        await getPoolBalances(_pool);
+    it('should be able to withdraw funds', async () => {
+
+    });
+
+    it('should be able to withdraw funds', async () => {
+
+    });
+
+    it('should be able to withdraw funds', async () => {
+
+    });
+
+    it('should be able to withdraw funds', async () => {
+
+    });
+
+    it('should be able to withdraw funds', async () => {
+
+    });
+
+    it('should be able to withdraw funds', async () => {
+
+    });
+
+    it('should be able to withdraw funds', async () => {
+
+    });
+
+    it('should be able to withdraw funds', async () => {
+
     });
 })

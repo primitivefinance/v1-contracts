@@ -454,7 +454,7 @@ abstract contract IPool {
         uint256 _expiration,
         address _primeReceiver
     ) external payable virtual returns (bool);
-    function getAvailableAssets() public view virtual returns (uint256 pool);
+    function getAvailableAssets() public virtual returns (uint256);
 }
 
 abstract contract IPrime {

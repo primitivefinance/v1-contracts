@@ -1102,21 +1102,50 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder, ERC20, ERC20D
         /* EFFECTS */
 
         /* INTERACTIONS */
+        /* Burn PULP Tokens */
         _burn(msg.sender, _amount);
         emit Withdraw(getEthWithdrawAmount(_amount), msg.sender, _amount);
+
         /* COMPOUND */
+
         /* Redeem cTokens and send user Ether */
         return swapCTokensToEtherThenSend(_amount, msg.sender);
+
         /* return sendEther(getEthWithdrawAmount(_amount), msg.sender); */
     }
 
     /* GET BALANCE SHEET ITEMS */
 
     /**
+     * @dev get ether balance of contract
+     * @return uint256 balance of contract in ether
+     */
+    function getPoolBalance() public returns(uint256) {
+        /* ET, where ET = Total Ether */
+        /* if(_cEther.balanceOf(address(this)) == 0) {
+            return 0;
+        }
+        uint256 exchangeRate = _cEther._exchangeRateCurrent();
+        return _cEther.balanceOf(address(this)).mul(exchangeRate).div(10**28); */
+        return _cEther.balanceOfUnderlying(address(this));
+        /* return address(this).balance; */
+    }
+
+    
+    /**
+     * @dev returns Net Assets = Pool Assets - Pool Liabilities
+     * @return pool amount of available assets
+     */
+    function getAvailableAssets() public returns (uint256) {
+        /* Net Assets = ET - L, where ET = Total Ether and L = Total Liabilities */
+        return (getPoolBalance()).sub(_liability);
+    }
+
+    /**
      * @dev returns Net Assets = Pool Assets - Pool Liabilities
      * @return pool returns 1 / Exchange Rate to use in LP token swaps
      */
-    function totalSupplyDivTotalEther() public returns (uint256 pool) {
+    function totalSupplyDivTotalEther() public returns (uint256) {
         /* Exchange rate = ET / ST, where ET = Total Ether balance, and ST = Total LP Supply */
         if(totalSupply().mul(getPoolBalance()) == 0) {
             return 1;
@@ -1133,29 +1162,6 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder, ERC20, ERC20D
         uint256 maxBurn = getAvailableAssets().mul(totalSupply()).div(getPoolBalance());
         require(getEthWithdrawAmount(maxBurn) <= getAvailableAssets(), 'Withdraw > net assets');
         return maxBurn;
-    }
-
-    /**
-     * @dev returns Net Assets = Pool Assets - Pool Liabilities
-     * @return pool amount of available assets
-     */
-    function getAvailableAssets() public returns (uint256 pool) {
-        /* Net Assets = ET - L, where ET = Total Ether and L = Total Liabilities */
-        return getPoolBalance().sub(_liability);
-    }
-
-    /**
-     * @dev get ether balance of contract
-     * @return uint256 balance of contract in ether
-     */
-    function getPoolBalance() public returns(uint256) {
-        /* ET, where ET = Total Ether */
-        if(_cEther.balanceOf(address(this)) == 0) {
-            return 0;
-        }
-        uint256 exchangeRate = _cEther._exchangeRateCurrent();
-        return _cEther.balanceOf(address(this)).mul(exchangeRate).div(10**18);
-        /* return address(this).balance; */
     }
 
     /**
@@ -1254,11 +1260,12 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder, ERC20, ERC20D
 
         /* COMPOUND */
 
-        
+        /* Check if enough cTokens can be redeemed to meet collateral */
+        require(getPoolBalance() >= _long, 'Swap: ether != collat'); 
+
+        /* Swap cEther to Ether */
         uint256 redeemResult = _cEther.redeemUnderlying(_long);
-        require(redeemResult == 0, 'redeem != 0');
-        require(getPoolBalance() >= _long, 'ether bal != collat'); 
-       
+        require(redeemResult == 0, 'Swap: redeem != 0');
 
         /* Sent to trusted address - Prime Contract */
         sendEther(_long, msg.sender);
@@ -1321,13 +1328,18 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder, ERC20, ERC20D
      @param _amount ether that will be swapped to cEther
      */
     function swapCTokensToEtherThenSend(uint256 _amount, address payable _user) internal returns (bool) {
-        uint256 redeemResult = _cEther.redeem(_amount);
+        uint256 redeemResult = _cEther.redeemUnderlying(_amount);
+        require(redeemResult == 0, 'redeem != 0');
+        (bool success, ) = _user.call.value(_amount)("");
+        require(success, 'Transfer fail.');
+        return success;
+       
+       /*  uint256 redeemResult = _cEther.redeem(_amount);
         uint256 exchangeRate = _cEther._exchangeRateCurrent();
-        emit Debug("If this is not 0, error", redeemResult, _amount);
         require(redeemResult == 0, 'redeem != 0');
         (bool success, ) = _user.call.value(_amount.mul(exchangeRate).div(10**18))("");
         require(success, 'Transfer fail.');
-        return success;
+        return success; */
     }
 }
 
