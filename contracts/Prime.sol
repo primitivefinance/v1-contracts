@@ -1068,7 +1068,7 @@ abstract contract IPrime {
     );
 
 
-    function createPrime(uint256 _xis, address _yak, uint256 _zed, address _wax, uint256 _pow, address _gem) external payable virtual returns (uint256 _nonce);
+    function createPrime(uint256 _xis, address _yak, uint256 _zed, address _wax, uint256 _pow, address _gem) external payable virtual returns (uint256);
     function exercise(uint256 _tokenId) external payable virtual returns (bool);
     function close(uint256 _collateralId, uint256 _burnId) external virtual returns (bool);
     function withdraw(uint256 _amount, address _asset) public virtual returns (bool);
@@ -1106,7 +1106,7 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
         _pool = IPool(poolAddress);
     }
 
-    /* CORE FUNCTIONS */
+    /* PRIME FUNCTIONS */
 
     /** 
      * @dev `msg.sender` Deposits asset x, mints new Slate.
@@ -1129,7 +1129,7 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
         external
         payable
         override
-        returns (uint256 _nonce) 
+        returns (uint256) 
     {
         /* CHECKS */
         
@@ -1153,7 +1153,7 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
             ERC20 yak = ERC20(_yak);
             isGreaterThanOrEqual(yak.balanceOf(msg.sender), _xis);
             yak.transferFrom(msg.sender, address(this), _xis);
-            return _nonce;
+            return nonce;
         }
 
         return nonce;
@@ -1397,6 +1397,8 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
         return erc20.transfer(msg.sender, _amount);
     }
 
+    /* CAPITAL MANAGEMENT FUNCTION */
+
     function sendEther(uint256 _amount, address payable _to) internal returns (bool) {
         (bool success, ) = _to.call.value(_amount)("");
         require(success, "Transfer failed.");
@@ -1498,6 +1500,4 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
         require(hashCollateral == hashBurn, 'Props !=');
         return hashCollateral == hashBurn;
     }
-
-
 }
