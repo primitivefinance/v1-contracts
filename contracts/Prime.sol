@@ -1078,13 +1078,13 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
     using SafeMath for uint256;
 
     uint256 public nonce;
-    address private _owner;
+    address public _owner;
     address public _poolAddress;
     IPool public _pool;
 
     /* Maps a user's withdrawable asset balance */
-    mapping(address => mapping(address => uint256)) private _assets;
-    mapping(address => mapping(address => uint256)) private _liabilities;
+    mapping(address => mapping(address => uint256)) public _assets;
+    mapping(address => mapping(address => uint256)) public _liabilities;
 
     /* Map NFT IDs to Prime Struct */
     mapping(uint256 => Instruments.Primes) public _primes;
@@ -1132,7 +1132,11 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
         returns (uint256) 
     {
         /* CHECKS */
+        /* Asserts that the strike receiver cannot be set to pool unless the pool calls it */
+        require(msg.sender == _gem, 'Create: Gem != Msg.Sender');
         
+
+        require(_pow >= block.timestamp, 'Create: expired timestamp');
         /* If this is an Ether Call Prime */
         if(_yak == _poolAddress && msg.sender != _poolAddress) {
             isGreaterThanOrEqual(msg.value, _xis);
@@ -1146,31 +1150,6 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
         /* INTERACTIONS */
 
         /* Create Prime and Mint to msg.sender */
-        addPrime(msg.sender, _xis, _yak, _zed, _wax, _pow, _gem);
-
-        /* If its an ERC-20 Prime, withdraw token from minter */
-        if(_yak != _poolAddress && msg.sender != _poolAddress) {
-            ERC20 yak = ERC20(_yak);
-            isGreaterThanOrEqual(yak.balanceOf(msg.sender), _xis);
-            yak.transferFrom(msg.sender, address(this), _xis);
-            return nonce;
-        }
-
-        return nonce;
-    }
-
-    /**
-     * @dev adds Prime to state, emits event, and mints
-     */
-    function addPrime(
-        address _tokenReceiver,
-        uint256 _xis,
-        address _yak,
-        uint256 _zed,
-        address _wax,
-        uint256 _pow,
-        address _gem
-    ) internal nonReentrant returns (uint256) {
         nonce = nonce.add(1);
 
         bytes4 chain = bytes4(
@@ -1186,7 +1165,7 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
         );
 
         _primes[nonce] = Instruments.Primes(
-            _tokenReceiver, 
+            msg.sender, 
             _xis,
             _yak, 
             _zed, 
@@ -1199,7 +1178,7 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
 
         /* INTERACTIONS */
         emit PrimeMinted(
-            _tokenReceiver, 
+            msg.sender, 
             _xis,
             _yak,
             _zed,
@@ -1209,9 +1188,18 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
         );
 
         _safeMint(
-            _tokenReceiver, 
+            msg.sender, 
             nonce
         );
+
+        /* If its an ERC-20 Prime, withdraw token from minter */
+        if(_yak != _poolAddress && msg.sender != _poolAddress) {
+            ERC20 yak = ERC20(_yak);
+            isGreaterThanOrEqual(yak.balanceOf(msg.sender), _xis);
+            yak.transferFrom(msg.sender, address(this), _xis);
+            return nonce;
+        }
+
         return nonce;
     }
 
@@ -1254,6 +1242,7 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
 
         /* Original Minter has their collateral balance debited. */
         _liabilities[_prime.ace][_prime.yak] = _liabilities[_prime.ace][_prime.yak].sub(_prime.xis);
+        
         /* Exercisor has their collateral balance credited. */
         _assets[msg.sender][_prime.yak] = _assets[msg.sender][_prime.yak].add(_prime.xis);
         
@@ -1333,7 +1322,7 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
         /* EFFECTS */
 
         /* Minter's collateral is debited. */
-        _assets[msg.sender][_burnPrime.yak] = _assets[msg.sender][_burnPrime.yak].sub(_burnPrime.xis);
+        _liabilities[msg.sender][_burnPrime.yak] = _liabilities[msg.sender][_burnPrime.yak].sub(_burnPrime.xis);
 
         /* INTERACTIONS */
         emit PrimeClosed(
