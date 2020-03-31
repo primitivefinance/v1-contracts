@@ -4,8 +4,9 @@ const tETH = artifacts.require("tETH");
 const tUSD = artifacts.require("tUSD");
 const Prime = artifacts.require("Prime");
 const Exchange = artifacts.require('Exchange');
+const Pool = artifacts.require('Pool');
 
-contract('Exchange', accounts => {
+contract('Prime - Local', accounts => {
 
     // User Accounts
     const Alice = accounts[0]
@@ -52,7 +53,13 @@ contract('Exchange', accounts => {
         _collateralID,
         _exchange,
         primeAddress,
-        val
+        expiration,
+        collateralPoolAddress,
+        strikeAddress,
+        premium,
+        value,
+        activeTokenId,
+        nonce
         ;
 
     async function getGas(func, name) {
@@ -62,6 +69,7 @@ contract('Exchange', accounts => {
 
     async function getBal(contract, address, name, units) {
         let bal = (await web3.utils.fromWei((await contract.balanceOf(address)).toString()));
+        console.log(`${name} has in bank:`, await web3.utils.fromWei(await _prime.getBalance(Alice, contract.address)))
         console.log(`${name} has a balance of ${bal} ${units}.`);
     }
 
@@ -70,346 +78,662 @@ contract('Exchange', accounts => {
         console.log(`${name} has a balance of ${bal} ${units}.`);
     }
 
+    async function getPoolBalances(poolInstance) {
+        let liability = await web3.utils.fromWei(await poolInstance._liability());
+        let lp1Funds = await web3.utils.fromWei(await poolInstance.balanceOf(Alice));
+        let lp1Ether = await web3.utils.fromWei((await web3.eth.getBalance(Alice)).toString());
+        let lp2Funds = await web3.utils.fromWei(await poolInstance.balanceOf(Bob));
+        let lp2Ether = await web3.utils.fromWei((await web3.eth.getBalance(Bob)).toString());
+        let totalDeposit = await web3.utils.fromWei(await poolInstance.totalSupply());
+        console.log({/* pool, */ liability, lp1Funds, lp1Ether, lp2Funds, lp2Ether, totalDeposit})
+        return ({/* pool, */ liability, lp1Funds, lp1Ether, lp2Funds, lp2Ether, totalDeposit});
+    }
 
-    beforeEach(async () => {
+    describe('Exchange.sol', () => {
+            let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
+            beforeEach(async () => {
+                _prime = await Prime.deployed();
+                _tUSD = await tUSD.deployed();
+                _exchange = await Exchange.deployed();
+                _pool = await Pool.deployed();
 
-        _prime = await Prime.deployed();
-        _tUSD = await tUSD.deployed();
-        _tETH = await tETH.deployed();
-        _exchange = await Exchange.deployed();
-        collateral = await web3.utils.toWei('1');
-        payment = await web3.utils.toWei('10');
-        primeAddress = await _exchange.getPrimeAddress();
+                minter = Bob;
+                collateralAmount = await web3.utils.toWei('1');
+                strikeAmount = await web3.utils.toWei('10');
+                collateral = _pool.address;
+                strike = _tUSD.address;
+                expiry = '1607775120';
+                receiver = minter;
+                
+            });
+            it('should assert only owner can call set exchange', async () => {
+                await truffleAssert.reverts(
+                    _exchange.setPoolAddress(Bob, {from: Bob}),
+                    "Ownable: caller is not the owner"
+                );
+            });
 
-        await getBal(_tUSD, Alice, 'Alice', 'tUSD');
-        await getBal(_tETH, Alice, 'Alice', 'tETH');
-        await getEthBal(Alice, 'Alice', 'ETH')
+            it('should assert only owner can call killswitch', async () => {
+                await truffleAssert.reverts(
+                    _exchange.killSwitch({from: Bob}),
+                    "Ownable: caller is not the owner"
+                );
+            });
 
-        await getBal(_tUSD, Bob, 'Bob', 'tUSD');
-        await getBal(_tETH, Bob, 'Bob', 'tETH');
-        await getEthBal(Bob, 'Bob', 'ETH')
-        
-        
-        await _tETH.approve(_prime.address, payment);
-        await _tUSD.approve(_prime.address, payment);
-        await _tETH.approve(_prime.address, payment, {from: Bob});
-        await _tUSD.approve(_prime.address, payment, {from: Bob});
+            it('should assert only owner can call unpause', async () => {
+                await truffleAssert.reverts(
+                    _exchange.unpause({from: Bob}),
+                    "Ownable: caller is not the owner"
+                );
+            });
 
-        await _tETH.mint(Alice, payment);
-        await _tUSD.mint(Alice, payment);
-        await _tETH.mint(Bob, payment);
-        await _tUSD.mint(Bob, payment);
-        val = (9*10**18).toString();
+            it('should revert if user trys to withdraw more ether than their balance', async () => {
+                let amount = await web3.utils.toWei('10');
+                await truffleAssert.reverts(
+                    _exchange.withdrawEther(amount, {from: Bob}),
+                    "Bal < amount"
+                );
+            });
 
-    });
-    
+        describe('sellOrder()', () => {
+            let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
+            beforeEach(async () => {
+                _prime = await Prime.deployed();
+                _tUSD = await tUSD.deployed();
+                _exchange = await Exchange.deployed();
+                _pool = await Pool.deployed();
 
-    it('Prime mint and exchange sell order', async () => {
-        let cAmt = (10**18).toString();
-        let sAmt = (10**20).toString();
-        await _tETH.approve(_prime.address, sAmt);
-        await _tUSD.approve(_prime.address, sAmt);
+                minter = Bob;
+                collateralAmount = await web3.utils.toWei('1');
+                strikeAmount = await web3.utils.toWei('10');
+                collateral = _pool.address;
+                strike = _tUSD.address;
+                expiry = '1607775120';
+                receiver = minter;
+                
+            });
 
-        let xis, yak, zed, wax, pow, gem;
-        xis = cAmt;
-        yak = _tETH.address;
-        zed = sAmt;
-        wax = _tUSD.address;
-        pow = '1600473585';
-        gem = _exchange.address;
+            it('should revert if tokenId <= 0', async () => {
+                let askPrice = collateralAmount;
+                let tokenId = 0;
+                await truffleAssert.reverts(
+                    _exchange.sellOrder(tokenId, askPrice, {from: minter}),
+                    "Invalid Token"
+                );
+                tokenId = -1;
+                /* ah, maybe since uint it converts to 1? 
+                this is interesting, reverts because expired not because invalid? 
+                even though require(valid) is first */
+                await truffleAssert.reverts(
+                    _exchange.sellOrder(tokenId, askPrice, {from: minter}),
+                    "expired"
+                );
+            });
 
-        /* TOKEN MINTED TO ALICE */
-        let mint = await _prime.createPrime(xis, yak, zed, wax, pow, gem);
-        let tokenId = await _prime.nonce();
-        console.log((tokenId).toString());
-        let buyer = Bob;
-        let seller = Alice;
+            it('should revert if askPrice <= 0', async () => {
+                let askPrice = 0;
+                await _prime.createPrime(
+                    collateralAmount,
+                    collateral,
+                    strikeAmount,
+                    strike,
+                    expiry,
+                    minter,
+                    {from: minter, value: collateralAmount}
+                );
+                let tokenId = await _prime.nonce();
+                await _prime.approve(_exchange.address, tokenId, {from: minter});
+                await truffleAssert.reverts(
+                    _exchange.sellOrder(tokenId, askPrice, {from: minter}),
+                    "Ask < 0"
+                );
+                /* How to deal with negatives? */
+                /* askPrice = -1;
+                await truffleAssert.reverts(
+                    _exchange.sellOrder(tokenId, askPrice, {from: minter}),
+                    "Ask < 0"
+                ); */
+            });
 
-        let buyerBal = await web3.utils.fromWei(await web3.eth.getBalance(buyer));
-        let sellerBal =  await web3.utils.fromWei(await web3.eth.getBalance(seller));
-        let bidPrice = (5*10**18).toString(); // 0.5 eth
-        let askPrice = (10**17).toString(); // 0.1 eth
-        let netPrice = ((bidPrice - askPrice) / 10**18).toString();
+            it('should revert if token is expired', async () => {
+                let expiry = '1607775120';
+                /* FIX - needs a javascript function to get a unix timestamp that will expire immediatly after */
+                /* await _prime.createPrime(
+                    collateralAmount,
+                    collateral,
+                    strikeAmount,
+                    strikeAddress,
+                    expiry,
+                    minter,
+                    {from: minter, value: collateralAmount}
+                )
+                let tokenId = await _prime.nonce();
+                await truffleAssert.reverts(
+                    _exchange.sellOrder(tokenId, askPrice, {from: minter}),
+                    "Token expired"
+                ); */
+            });
 
-        /* ALICE APPROVES EXCHANGE TO SELL TOKEN */
-        await _prime.approve(_exchange.address, tokenId, {from: seller});
-        
+            it('should revert if token is already listed', async () => {
+                await _prime.createPrime(
+                    collateralAmount,
+                    collateral,
+                    strikeAmount,
+                    strike,
+                    expiry,
+                    minter,
+                    {from: minter, value: collateralAmount}
+                ); /* might not work because it wont let an expired token to be made */
+                let tokenId = await _prime.nonce();
+                await _prime.approve(_exchange.address, tokenId, {from: minter});
+                await _exchange.sellOrder(tokenId, collateralAmount, {from: minter});
+                await truffleAssert.reverts(
+                    _exchange.sellOrder(tokenId, collateralAmount, {from: minter}),
+                    "Token listed already"
+                );
+            });
 
-        /* BOB SUBMITS BUY ORDER FOR TOKEN */
-        let buyOrder = await _exchange.buyOrder(tokenId, bidPrice, {from: buyer, value: val});
+            it('should fill unfilled buy order', async () => {
+                await _prime.createPrime(
+                    collateralAmount,
+                    collateral,
+                    strikeAmount,
+                    strike,
+                    expiry,
+                    minter,
+                    {from: minter, value: collateralAmount}
+                ); /* might not work because it wont let an expired token to be made */
+                let tokenId = await _prime.nonce();
+                let bidPrice = (await web3.utils.toWei('0.75')).toString();
+                let askPrice = (await web3.utils.toWei('0.5')).toString();
+                let buyOrderUnfilled = await _exchange.buyOrderUnfilled(
+                    bidPrice,
+                    collateralAmount,
+                    collateral,
+                    strikeAmount,
+                    strike,
+                    expiry, 
+                    {from: minter, value: collateralAmount}
+                );
+                await truffleAssert.eventEmitted(buyOrderUnfilled, 'BuyOrderUnfilled');
+                /* GOES TO FILL UNFILLED BUY ORDER INTERNAL FUNCTION */
+                let chain = await _prime.getChain(tokenId);
+                let buyNonce = await _exchange._unfilledNonce(chain);
+                await _prime.approve(_exchange.address, tokenId, {from: minter});
+                let sellOrder = await _exchange.sellOrder(tokenId, askPrice, {from: minter});
+                
+                await truffleAssert.eventEmitted(sellOrder, 'SellOrder');
+                await truffleAssert.eventEmitted(sellOrder, 'FillUnfilledBuyOrder');
 
-        /* ALICE SUBMITS SELL ORDER FOR TOKEN */
-        let sellOrder = await _exchange.sellOrder(tokenId, askPrice, {from: seller});
-        console.log(sellOrder.logs)
-        
-        buyerBal = await web3.utils.fromWei(await web3.eth.getBalance(buyer)) - buyerBal;
-        sellerBal =  await web3.utils.fromWei(await web3.eth.getBalance(seller)) - sellerBal;
-        console.log({buyerBal, sellerBal, netPrice})
+                let etherBalanceOfSeller = (await _exchange._etherBalance(minter, {from: minter})).toString();
+                assert.strictEqual(
+                    etherBalanceOfSeller,
+                    askPrice,
+                    `Should have the ask price credited to the sellers balance.
+                    ether bal credit: ${etherBalanceOfSeller}, ask price: ${askPrice}`
+                );
+                /* Need to work on fee assertions */
+            });
 
-        let owner = await _prime.ownerOf(tokenId);
-        assert.strict(owner, buyer, `buyer should be owner of ${tokenId}`);
+            it('assert buyer received prime from seller', async () => {
+                let tokenId = await _prime.nonce();
+                let owner = await _prime.ownerOf(tokenId);
+                assert.strictEqual(
+                    owner,
+                    minter,
+                    `Owner should == minter, because they sold then bought it.
+                    owner: ${owner} minter: ${minter}`
+                );
+            });
 
-        /* CHECK BUY ORDER CLEARED */
-        let buyOrders = await _exchange.getBuyOrder(tokenId);
-        console.log({buyOrders})
+            it('assert buyer received prime from seller', async () => {
+                let tokenId = await _prime.nonce();
+                let owner = await _prime.ownerOf(tokenId);
+                assert.strictEqual(
+                    owner,
+                    minter,
+                    `Owner should == minter, because they sold then bought it.
+                    owner: ${owner} minter: ${minter}`
+                );
+            });
 
-    });
+            it('should fill a buy order for the specific token ID', async () => {
+                await _prime.createPrime(
+                    collateralAmount,
+                    collateral,
+                    strikeAmount,
+                    strike,
+                    expiry,
+                    minter,
+                    {from: minter, value: collateralAmount}
+                ); /* might not work because it wont let an expired token to be made */
+                let tokenId = await _prime.nonce();
+                let bidPrice = (await web3.utils.toWei('0.5')).toString();
+                let askPrice = (await web3.utils.toWei('0.5')).toString();
+                /* Pool should not have funds, else itll fill order */
+                let buyOrder = await _exchange.buyOrder(
+                    tokenId,
+                    bidPrice,
+                    {from: minter, value: collateralAmount}
+                );
+                await truffleAssert.eventEmitted(buyOrder, 'BuyOrder');
+                /* GOES TO FILL ORDER INTERNAL FUNCTION */
+                await _prime.approve(_exchange.address, tokenId, {from: minter});
+                let sellOrder = await _exchange.sellOrder(tokenId, askPrice, {from: minter});
+                await truffleAssert.eventEmitted(sellOrder, 'FillOrder');
+                /* Need to work on fee assertions */
+            });
 
-    it('can handle multiple orders', async () => {
+            it('should list a sell order if no buy orders', async () => {
+                await _prime.createPrime(
+                    collateralAmount,
+                    collateral,
+                    strikeAmount,
+                    strike,
+                    expiry,
+                    minter,
+                    {from: minter, value: collateralAmount}
+                ); /* might not work because it wont let an expired token to be made */
+                let tokenId = await _prime.nonce();
+                let askPrice = (await web3.utils.toWei('0.5')).toString();
+                /* Pool should not have funds, else itll fill order */
+                await _prime.approve(_exchange.address, tokenId, {from: minter});
+                let sellOrder = await _exchange.sellOrder(tokenId, askPrice, {from: minter});
+                await truffleAssert.eventEmitted(sellOrder, 'SellOrder');
+            });
 
-        async function mintPrime(address) {
-            let xis, yak, zed, wax, pow, gem;
-            xis = collateral;
-            yak = _tETH.address;
-            zed = payment;
-            wax = _tUSD.address;
-            pow = '1600473585';
-            gem = _exchange.address;
+            it('should have updated state with sell order', async () => {
+                let tokenId = await _prime.nonce();
+                let askPrice = (await web3.utils.toWei('0.5')).toString();
+                let sellOrder = await _exchange.getSellOrder(tokenId, {from: minter});
+                assert.strictEqual(
+                    sellOrder.seller,
+                    minter,
+                    'Sell order seller should be minter'
+                );
+                assert.strictEqual(
+                    (sellOrder.askPrice).toString(),
+                    askPrice,
+                    'Sell order ask should be ask price'
+                );
+                assert.strictEqual(
+                    (sellOrder.tokenId).toString(),
+                    (tokenId).toString(),
+                    `Sell order token id should be token id
+                    sell order: ${sellOrder.tokenId}, tokenId: ${tokenId}`
+                );
+            });
 
-            /* TOKEN MINTED TO ADDRESS */
-            let mint = await _prime.createPrime(xis, yak, zed, wax, pow, gem, {from: address});
-            let tokenId = await _prime.nonce();
-            return tokenId;
-        }
+            it('should have transferred Prime from seller to exchange', async () => {
+                let tokenId = await _prime.nonce();
+                let owner = await _prime.ownerOf(tokenId, {from: minter});
+                assert.strictEqual(
+                    owner,
+                    _exchange.address,
+                    `Owner should be exchange.
+                    owner: ${owner} exchange: ${_exchange.address}`
+                );
+            });
+        });
 
-        async function buyOrder(address, bid, tokenId) {
-            let bidPrice = (bid*10**17).toString(); // 0.5 eth
-
-            /* ADDRESS SUBMITS BUY ORDER FOR TOKEN */
-            let buyOrder = await _exchange.buyOrder(tokenId, bidPrice, {from: address, value: val});
-            return buyOrder;
-        }
-
-        async function sellOrder(address, ask, tokenId) {
-            let askPrice = (ask*10**17).toString(); // 0.5 eth
-            /* ADDRESS APPROVES EXCHANGE TO SELL TOKEN */
-            await _prime.approve(_exchange.address, tokenId, {from: address});
-
-            /* ADDRESS SUBMITS BUY ORDER FOR TOKEN */
-            let sellOrder = await _exchange.sellOrder(tokenId, askPrice, {from: address});
-            return sellOrder;
-        }
-
-        let aliceToken1 = await mintPrime(Alice);
-        let bobToken1 = await mintPrime(Bob);
-        
-
-        let aliceBal = await web3.utils.fromWei(await web3.eth.getBalance(Alice));
-        let bobBal =  await web3.utils.fromWei(await web3.eth.getBalance(Bob));
-
-        let bobBid = 2.5;
-        let bobAsk = 3.5;
-        let aliceBid = 4;
-        let aliceAsk = 1;
-
-        /* 
-            BOB SELLS HIS TOKEN FOR 3.5 ETH
-            ALICE SELLS HER TOKEN FOR 1 ETH
-
-            BOBS BALANCE SHOULD INCREASE BY 2.5
-            ALICE'S BALANCE SHOULD DECREASE BY 2.5
-        
-        */
-        let bobBuyToken = await buyOrder(Bob, bobBid, aliceToken1);
-        let bobSellToken = await sellOrder(Bob, bobAsk, bobToken1);
-
-        let aliceBuyToken = await buyOrder(Alice, aliceBid, bobToken1);
-        let aliceSellToken = await sellOrder(Alice, aliceAsk, aliceToken1);
-
-        /* console.log((aliceBuyToken.logs[1].args._filledPrice / 10**18).toString())
-        console.log((aliceSellToken.logs[0].args._filledPrice / 10**18).toString()) */
-
-        aliceBal = await web3.utils.fromWei(await web3.eth.getBalance(Alice)) - aliceBal;
-        bobBal =  await web3.utils.fromWei(await web3.eth.getBalance(Bob)) - bobBal;
-        let aliceNet = aliceAsk - bobAsk;
-        let bobNet = bobAsk - aliceAsk;
-        console.log({aliceBal, bobBal, aliceNet, bobNet})
-
-    });
-
-    it('handles close order', async () => {
-        async function mintPrime(address) {
-            let xis, yak, zed, wax, pow, gem;
-            xis = collateral;
-            yak = _tETH.address;
-            zed = payment;
-            wax = _tUSD.address;
-            pow = '1600473585';
-            gem = _exchange.address;
-
-            /* TOKEN MINTED TO ADDRESS */
-            let mint = await _prime.createPrime(xis, yak, zed, wax, pow, gem, {from: address});
-            let tokenId = await _prime.nonce();
-            return tokenId;
-        }
-
-        async function sellOrder(address, ask, tokenId) {
-            let askPrice = (ask*10**18).toString(); // 0.5 eth
-            /* ADDRESS APPROVES EXCHANGE TO SELL TOKEN */
-            await _prime.approve(_exchange.address, tokenId, {from: address});
-
-            /* ADDRESS SUBMITS BUY ORDER FOR TOKEN */
-            let sellOrder = await _exchange.sellOrder(tokenId, askPrice, {from: address});
-            return sellOrder;
-        }
-
-        let aliceToken1 = await mintPrime(Alice);
-        let aliceSellToken = await sellOrder(Alice, 4, aliceToken1);
-        /* let close = await _exchange.closeOrder(aliceToken1);
-        console.log(close.logs) */
-
-    });
-
-    it('gets rank', async () => {
-        async function mintPrime(address) {
-            let xis, yak, zed, wax, pow, gem;
-            xis = collateral;
-            yak = _tETH.address;
-            zed = payment;
-            wax = _tUSD.address;
-            pow = '1600473585';
-            gem = _exchange.address;
-
-            /* TOKEN MINTED TO ADDRESS */
-            let mint = await _prime.createPrime(xis, yak, zed, wax, pow, gem, {from: address});
-            let tokenId = await _prime.nonce();
-            return tokenId;
-        }
-
-        let aliceToken1 = await mintPrime(Alice);
-
-        let chain = (await _prime.getChain(aliceToken1));
-        console.log({chain})
-    });
-
-    it('fill unfilled buy order', async () => {
-        async function mintPrime(address) {
-            let xis, yak, zed, wax, pow, gem;
-            xis = collateral;
-            yak = _tETH.address;
-            zed = payment;
-            wax = _tUSD.address;
-            pow = '1600473585';
-            gem = _exchange.address;
-
-            /* TOKEN MINTED TO ADDRESS */
-            let mint = await _prime.createPrime(xis, yak, zed, wax, pow, gem, {from: address});
-            let tokenId = await _prime.nonce();
-            return tokenId;
-        }
-        let xis, yak, zed, wax, pow, gem;
-        xis = collateral;
-        yak = _tETH.address;
-        zed = payment;
-        wax = _tUSD.address;
-        pow = '1600473585';
-        gem = _exchange.address;
-
-        let aliceToken1 = await mintPrime(Alice);
-        let aliceToken2 = await mintPrime(Alice);
-        let chain = (await _prime.getChain(aliceToken1));
-        ask = 0.25;
-        let bid = await web3.utils.toWei((ask).toString());
-        let unfilled = await _exchange.buyOrderUnfilled(
-            bid,
-            xis, 
-            yak, 
-            zed, 
-            wax, 
-            pow, 
-            {from: Bob, value: val});
-        console.log((unfilled.logs[0].args._bidPrice).toString())
-        let bidPrice = (unfilled.logs[0].args._bidPrice).toString()
-        
-        async function sellOrder(address, ask, tokenId) {
-            let askPrice = await web3.utils.toWei((ask).toString()); // 0.5 eth
-            console.log({askPrice})
-            assert.strictEqual(bidPrice, askPrice, 'BID NOT EQUAL ASK');
+        describe('buyOrder()', () => {
+            let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
+            beforeEach(async () => {
+                minter = Bob;
+                collateralAmount = await web3.utils.toWei('1');
+                strikeAmount = await web3.utils.toWei('10');
+                collateral = _pool.address;
+                strike = _tUSD.address;
+                expiry = '1587607322';
+                receiver = minter;
+            });
             
-            /* ADDRESS APPROVES EXCHANGE TO SELL TOKEN */
-            await _prime.approve(_exchange.address, tokenId, {from: address});
+            it('should revert if tokenId <= 0', async () => {
+                let bidPrice = collateralAmount;
+                let tokenId = 0;
+                await truffleAssert.reverts(
+                    _exchange.buyOrder(tokenId, bidPrice, {from: minter}),
+                    "Invalid Token"
+                );
+            });
 
-            /* ADDRESS SUBMITS BUY ORDER FOR TOKEN */
-            let sellOrder = await _exchange.sellOrder(tokenId, askPrice, {from: address});
-            return sellOrder;
-        }
+            it('should revert if bidPrice <= 0', async () => {
+                let bidPrice = 0;
+                let tokenId = 1;
+                await truffleAssert.reverts(
+                    _exchange.buyOrder(tokenId, bidPrice, {from: minter}),
+                    "Bid < 0"
+                );
+            });
 
-        let sell = await sellOrder(Alice, ask, aliceToken1)
-        let bobOwns = await _prime.ownerOf(aliceToken1, {from: Bob});
-        console.log({bobOwns, Bob})
-        console.log(sell)
+            /* Fee unit tests - need to be reworked */
+
+            it('should fill a buy order for an already listed tokenId', async () => {
+                await _prime.createPrime(
+                    collateralAmount,
+                    collateral,
+                    strikeAmount,
+                    strike,
+                    expiry,
+                    Alice,
+                    {from: Alice, value: collateralAmount}
+                );
+                let tokenId = await _prime.nonce();
+                let bidPrice = (await web3.utils.toWei('0.5')).toString();
+                await _prime.approve(_exchange.address, tokenId, {from: Alice});
+                await _exchange.sellOrder(tokenId, bidPrice, {from: Alice});
+                let buyOrder = await _exchange.buyOrder(tokenId, bidPrice, {from: minter, value: collateralAmount});
+                await truffleAssert.eventEmitted(buyOrder, 'FillOrder');
+            });
+
+            it('asserts sellers exchange balance had the ask price added to it', async () => {
+                let tokenId = await _prime.nonce();
+                let bidPrice = (await web3.utils.toWei('0.5')).toString();
+                let etherBalanceOfSeller = (await _exchange._etherBalance(Alice, {from: Alice})).toString();
+                assert.strictEqual(
+                    etherBalanceOfSeller,
+                    bidPrice,
+                    `Ether balance should = ask price = bid price. 
+                    ether bal: ${etherBalanceOfSeller} bid/ask: ${bidPrice}`
+                );
+            });
+
+            it('asserts prime token was transferred from exchange to buyer', async () => {
+                let tokenId = await _prime.nonce();
+                let owner = await _prime.ownerOf(tokenId);
+                assert.strictEqual(
+                    owner,
+                    minter,
+                    `Minter purchased it so they should be the owner.`
+                );
+            });
+
+            it('should submit a buy order for a tokenId', async () => {
+                await _prime.createPrime(
+                    collateralAmount,
+                    collateral,
+                    strikeAmount,
+                    strike,
+                    expiry,
+                    minter,
+                    {from: minter, value: collateralAmount}
+                );
+                let tokenId = await _prime.nonce();
+                let bidPrice = (await web3.utils.toWei('0.5')).toString();
+                let buyOrder = await _exchange.buyOrder(tokenId, bidPrice, {from: minter, value: collateralAmount});
+                await truffleAssert.eventEmitted(buyOrder, 'BuyOrder');
+            });
+
+            it('should have updated state with a buy order for token Id', async () => {
+                let tokenId = await _prime.nonce();
+                let bidPrice = (await web3.utils.toWei('0.5')).toString();
+                let buyOrder = await _exchange.getBuyOrder(tokenId, {from: minter});
+                assert.strictEqual(
+                    buyOrder.buyer,
+                    minter,
+                    'Buy order buyer should be minter'
+                );
+                assert.strictEqual(
+                    (buyOrder.bidPrice).toString(),
+                    (bidPrice).toString(),
+                    'Buy order bid should be bid price'
+                );
+                assert.strictEqual(
+                    (buyOrder.tokenId).toString(),
+                    (tokenId).toString(),
+                    'Buy order token id should be token id'
+                );
+            });
+        });
+
+        describe('closeSellOrder()', () => {
+            let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
+            beforeEach(async () => {
+                minter = Bob;
+                collateralAmount = await web3.utils.toWei('1');
+                strikeAmount = await web3.utils.toWei('10');
+                collateral = _pool.address;
+                strike = _tUSD.address;
+                expiry = '1587607322';
+                receiver = minter;
+            });
+
+            it('should revert if trying to close a token ID <= 0', async () => {
+                let tokenId = 0;
+                await truffleAssert.reverts(
+                    _exchange.closeSellOrder(tokenId, {from: minter}),
+                    "Invalid Token"
+                );
+            });
+
+            it('should revert is trying to close sell order without being seller', async () => {
+                await _prime.createPrime(
+                    collateralAmount,
+                    collateral,
+                    strikeAmount,
+                    strike,
+                    expiry,
+                    minter,
+                    {from: minter, value: collateralAmount}
+                );
+                let tokenId = await _prime.nonce();
+                let askPrice = (await web3.utils.toWei('0.5')).toString();
+                await _prime.approve(_exchange.address, tokenId, {from: minter});
+                let sellOrder = await _exchange.sellOrder(tokenId, askPrice, {from: minter});
+                await truffleAssert.reverts(
+                    _exchange.closeSellOrder(tokenId, {from: Alice}),
+                    "Msg.sender != seller"
+                );
+            });
+
+            it('close sell order', async () => {
+                let tokenId = await _prime.nonce();
+                let askPrice = (await web3.utils.toWei('0.5')).toString();
+                let closeSellOrder = await _exchange.closeSellOrder(tokenId, {from: minter});
+                await truffleAssert.eventEmitted(closeSellOrder, 'CloseOrder');
+            });
+
+            it('assert sell order was cleared from state', async () => {
+                let tokenId = await _prime.nonce();
+                let askPrice = 0;
+                await _prime.approve(_exchange.address, tokenId, {from: minter});
+                let sellOrder = await _exchange.getSellOrder(tokenId, {from: minter});
+                let zeroAddress = '0x0000000000000000000000000000000000000000';
+                assert.strictEqual(
+                    sellOrder.seller,
+                    zeroAddress,
+                    'Sell order Seller should be zero address'
+                );
+                assert.strictEqual(
+                    (sellOrder.askPrice).toString(),
+                    (askPrice).toString(),
+                    'Sell order bid should be 0'
+                );
+                assert.strictEqual(
+                    (sellOrder.tokenId).toString(),
+                    '0',
+                    'Sell order token id should be 0'
+                );
+            });
+
+            it('assert prime was transferred from exchange to seller', async () => {
+                let tokenId = await _prime.nonce();
+                let owner = await _prime.ownerOf(tokenId, {from: minter});
+                assert.strictEqual(
+                    owner,
+                    minter,
+                    `Should be seller who receives prime token back.`
+                );
+            });
+        });
+
+        describe('closeBuyOrder()', () => {
+            let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
+            beforeEach(async () => {
+                minter = Bob;
+                collateralAmount = await web3.utils.toWei('1');
+                strikeAmount = await web3.utils.toWei('10');
+                collateral = _pool.address;
+                strike = _tUSD.address;
+                expiry = '1587607322';
+                receiver = minter;
+            });
+
+            it('should revert if trying to close a token ID <= 0', async () => {
+                let tokenId = 0;
+                await truffleAssert.reverts(
+                    _exchange.closeBuyOrder(tokenId, {from: minter}),
+                    "Invalid Token"
+                );
+            });
+
+            it('should revert is trying to close buy order without being buyer', async () => {
+                await _prime.createPrime(
+                    collateralAmount,
+                    collateral,
+                    strikeAmount,
+                    strike,
+                    expiry,
+                    minter,
+                    {from: minter, value: collateralAmount}
+                );
+                let tokenId = await _prime.nonce();
+                let bidPrice = (await web3.utils.toWei('0.5')).toString();
+                let buyOrder = await _exchange.buyOrder(tokenId, bidPrice, {from: minter, value: collateralAmount});
+                await truffleAssert.reverts(
+                    _exchange.closeBuyOrder(tokenId, {from: Alice}),
+                    "Msg.sender != buyer"
+                );
+            });
+
+            it('close buy order', async () => {
+                let tokenId = await _prime.nonce();
+                let bidPrice = (await web3.utils.toWei('0.5')).toString();
+                let buyOrder = await _exchange.buyOrder(tokenId, bidPrice, {from: minter, value: collateralAmount});
+                let closeBuyOrder = await _exchange.closeBuyOrder(tokenId, {from: minter});
+                await truffleAssert.eventEmitted(closeBuyOrder, 'CloseOrder');
+            });
+
+            it('assert buy order was cleared from state', async () => {
+                let tokenId = await _prime.nonce();
+                let bidPrice = 0;
+                let buyOrder = await _exchange.getBuyOrder(tokenId, {from: Alice});
+                let zeroAddress = '0x0000000000000000000000000000000000000000';
+                assert.strictEqual(
+                    buyOrder.buyer,
+                    zeroAddress,
+                    'Buy order buyer should be zero address'
+                );
+                assert.strictEqual(
+                    (buyOrder.bidPrice).toString(),
+                    (bidPrice).toString(),
+                    'Buy order bid should be 0'
+                );
+                assert.strictEqual(
+                    (buyOrder.tokenId).toString(),
+                    '0',
+                    'Buy order token id should be 0'
+                );
+            });
+
+            it('assert prime bid was added to withdraw amount', async () => {
+                let tokenId = await _prime.nonce();
+                let bidPrice = (await web3.utils.toWei('0.5')).toString();
+                let etherBalanceOfBuyer = (await _exchange._etherBalance(Alice, {from: Alice})).toString();
+                assert.strictEqual(
+                    etherBalanceOfBuyer,
+                    bidPrice,
+                    `Bid price should be users balance in exchange.`
+                );
+            });
+        });
         
+        describe('closeUnfilledBuyOrder()', () => {
+            let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
+            beforeEach(async () => {
+                minter = Bob;
+                collateralAmount = await web3.utils.toWei('1');
+                strikeAmount = await web3.utils.toWei('10');
+                collateral = _pool.address;
+                strike = _tUSD.address;
+                expiry = '1587607322';
+                receiver = minter;
+            });
+
+            it('should revert if trying to close buy order without being buyer', async () => {
+                await _prime.createPrime(
+                    collateralAmount,
+                    collateral,
+                    strikeAmount,
+                    strike,
+                    expiry,
+                    minter,
+                    {from: minter, value: collateralAmount}
+                );
+                let tokenId = await _prime.nonce();
+                let chain = await _prime.getChain(tokenId);
+                let bidPrice = (await web3.utils.toWei('0.5')).toString();
+                let buyOrderUnfilled = await _exchange.buyOrderUnfilled(
+                    bidPrice,
+                    collateralAmount,
+                    collateral,
+                    strikeAmount,
+                    strike,
+                    expiry,
+                    {from: Alice, value: collateralAmount}
+                );
+
+                let buyOrderNonce = await _exchange._unfilledNonce(chain);
+                tokenId = 0;
+                await truffleAssert.reverts(
+                    _exchange.closeUnfilledBuyOrder(chain, buyOrderNonce, {from: minter}),
+                    "Msg.sender != buyer"
+                );
+            });
+
+            it('close unfilled buy order', async () => {
+                let tokenId = await _prime.nonce();
+                let chain = await _prime.getChain(tokenId);
+                let buyOrderNonce = await _exchange._unfilledNonce(chain);
+                let closeUnfilledBuyOrder = await _exchange.closeUnfilledBuyOrder(chain, buyOrderNonce, {from: Alice});
+                await truffleAssert.eventEmitted(closeUnfilledBuyOrder, 'CloseUnfilledBuyOrder');
+            });
+
+            it('assert unfilled buy order was cleared from state', async () => {
+                let tokenId = await _prime.nonce();
+                let bidPrice = 0;
+                let chain = await _prime.getChain(tokenId);
+                let buyOrderNonce = await _exchange._unfilledNonce(chain);
+                let buyOrder = await _exchange._buyOrdersUnfilled(chain, buyOrderNonce, {from: Alice});
+                let zeroAddress = '0x0000000000000000000000000000000000000000';
+                assert.strictEqual(
+                    buyOrder.buyer,
+                    zeroAddress,
+                    'Buy order buyer should be zero address'
+                );
+                assert.strictEqual(
+                    (buyOrder.bidPrice).toString(),
+                    (bidPrice).toString(),
+                    'Buy order bid should be 0'
+                );
+                /* Undefined tokenId */
+                /* assert.strictEqual(
+                    (buyOrder.tokenId).toString(),
+                    '0',
+                    `Buy order token id should be 0
+                    buy order tokenid: ${buyOrder.tokenId}`
+                ); */
+            });
+
+            it('assert prime was transferred from exchange to buyer', async () => {
+                let bidPrice = (await web3.utils.toWei('0.5')).toString();
+                let etherBalanceOfBuyer = (await _exchange._etherBalance(Alice, {from: Alice})).toString();
+                assert.strictEqual(
+                    etherBalanceOfBuyer,
+                    bidPrice,
+                    `Bid price should be users balance in exchange.`
+                );
+            });
+        });
     });
-
-    it('fill unfilled buy order', async () => {
-        async function mintPrime(address) {
-            let xis, yak, zed, wax, pow, gem;
-            xis = collateral;
-            yak = _tETH.address;
-            zed = payment;
-            wax = _tUSD.address;
-            pow = '1600473585';
-            gem = _exchange.address;
-
-            /* TOKEN MINTED TO ADDRESS */
-            let mint = await _prime.createPrime(xis, yak, zed, wax, pow, gem, {from: address});
-            let tokenId = await _prime.nonce();
-            return tokenId;
-        }
-        let xis, yak, zed, wax, pow, gem;
-        xis = collateral;
-        yak = _tETH.address;
-        zed = payment;
-        wax = _tUSD.address;
-        pow = '1600473585';
-        gem = _exchange.address;
-
-        let aliceToken1 = await mintPrime(Alice);
-        let aliceToken2 = await mintPrime(Alice);
-        let chain = await _prime.getChain(aliceToken1);
-        ask = 0.25;
-        let bid = await web3.utils.toWei((ask).toString());
-        let unfilled = await _exchange.buyOrderUnfilled(
-            bid,
-            xis,
-            yak,
-            zed,
-            wax,
-            pow,
-            {from: Bob, value: val}
-        );
-        console.log((unfilled.logs[0].args._bidPrice).toString())
-        let bidPrice = (unfilled.logs[0].args._bidPrice).toString()
-        
-        async function sellOrder(address, ask, tokenId) {
-            let askPrice = await web3.utils.toWei((ask).toString()); // 0.5 eth
-            console.log({askPrice})
-            assert.strictEqual(bidPrice, askPrice, 'BID NOT EQUAL ASK');
-            
-            /* ADDRESS APPROVES EXCHANGE TO SELL TOKEN */
-            await _prime.approve(_exchange.address, tokenId, {from: address});
-
-            /* ADDRESS SUBMITS BUY ORDER FOR TOKEN */
-            let sellOrder = await _exchange.sellOrder(tokenId, askPrice, {from: address});
-            return sellOrder;
-        }
-
-        let sell = await sellOrder(Alice, ask, aliceToken1)
-
-        async function buyOrder(address, bid, tokenId) {
-            let bidPrice = (bid*10**18).toString(); // 0.5 eth
-
-            /* ADDRESS SUBMITS BUY ORDER FOR TOKEN */
-            let buyOrder = await _exchange.buyOrder(tokenId, bidPrice, {from: address, value: val});
-            return buyOrder;
-        }
-
-        let buy2 = await buyOrder(Bob, 0.1, aliceToken2)
-
-        let sell2 = await sellOrder(Alice, ask, aliceToken2)
-        let bobOwns = await _prime.ownerOf(aliceToken1, {from: Bob});
-        console.log({bobOwns, Bob})
-        console.log(sell)
-    });
-
 })

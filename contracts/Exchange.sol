@@ -537,7 +537,7 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
     mapping(bytes4 => uint256) public _unfilledNonce;
 
     /* MAPS USERS TO ETHER BALANCES IN EXCHANGE */
-    mapping(address => uint256) private _etherBalance;
+    mapping(address => uint256) public _etherBalance;
 
     /* Maps a user to added pool funds */
     mapping(address => uint256) private _feePoolContribution;
@@ -574,8 +574,7 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
     receive() external payable {}
 
     /* SET POOL ADDRESS */
-    function setPoolAddress(address poolAddress) external {
-        require(msg.sender == _owner, 'not owner');
+    function setPoolAddress(address poolAddress) external onlyOwner {
         _poolAddress = poolAddress;
         _poolInterface = IPool(poolAddress);
     }
@@ -620,7 +619,6 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
         uint256 _askPrice
     ) 
         external
-        nonReentrant
         whenNotPaused
         returns (bool) 
     {
@@ -629,7 +627,7 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
         /* CHECKS */
         require(_tokenId > 0, 'Invalid Token');
         require(_askPrice > 0, 'Ask < 0');
-        require(_prime.isTokenExpired(_tokenId), 'Token expired');
+        _prime.isTokenExpired(_tokenId);
         require(!isListed(_tokenId), 'Token listed already');
 
         /* EFFECTS */
@@ -719,7 +717,6 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
         if(msg.value > _totalCost) {
             (bool success, ) = msg.sender.call.value(msg.value.sub(_totalCost))("");
             require(success, 'Transfer fail.');
-            return success;
         }
 
         /* EFFECTS */
@@ -839,19 +836,16 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
         /* CHECKS */
         require(_bidPrice > 0, 'Bid < 0');
 
-        
-        
-
         /* EFFECTS */
 
         /* If the pool can fill the order, mint the Prime from pool */
         if(_poolInterface.getAvailableAssets() >= _xis) {
             /* FIX with variable premium from Pool - 20% of collateral */
-            uint256 premiumToPay = _xis.div(_poolPremiumDenomination);
+            uint256 premiumToPay = _xis.mul(20).div(10**2);
             require(_bidPrice >= premiumToPay, 'Bid < premium');
             
             /* Calculate the payment */
-            uint256 feeOnPayment = premiumToPay.div(_feeDenomination);
+            uint256 feeOnPayment = premiumToPay.mul(3).div(1000);
             uint256 amountNotReturned = premiumToPay.add(feeOnPayment);
 
             /* Update fee pool state */
@@ -937,6 +931,7 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
         address gem;
         bytes4 chain;
         chain = _prime.getChain(_tokenId);
+        (ace, xis, yak, zed, wax, pow, gem, ) = _prime.getPrime(_tokenId);
         
         bytes32 primeHash = keccak256(
             abi.encodePacked(
