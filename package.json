@@ -7,7 +7,9 @@
     "test": "test"
   },
   "scripts": {
-    "test": "truffle test"
+    "test": "truffle test",
+    "forked-chain": "",
+    "local-test": "truffle test ./test/protocol.js --network local"
   },
   "repository": {
     "type": "git",

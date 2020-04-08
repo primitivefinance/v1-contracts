@@ -1067,19 +1067,26 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder, ERC20, ERC20D
         returns (bool)
     {
         /* CHECKS */
-        require(msg.value == _value, 'Value < deposit');
+        require(msg.value == _value, 'Deposit: Val < deposit');
 
         /* EFFECTS */
 
         /* INTERACTIONS */
 
-        /* Liquidity Tokens = Ether * Total Ether In Pool / Total Supply of Liquidity Token */
-        _mint(msg.sender, _value.mul(totalSupplyDivTotalEther()));
-        emit Deposit(_value, msg.sender, _value.mul(totalSupplyDivTotalEther()));
-        /* COMPOUND */
-        /* Swap ether to interest bearing cEther */
+        /* Mint Amount = Deposit / Total Ether In Pool / Total Supply of Liquidity Token */
+        uint256 totalSupply = totalSupply();
+        uint256 poolBalance = getPoolBalance();
+        uint256 amountToMint;
+        
+        if(poolBalance.mul(totalSupply) == 0) {
+            amountToMint = _value;
+        } else {
+            amountToMint = _value.mul(totalSupply).div(poolBalance);
+        }
+
+        emit Deposit(_value, msg.sender, amountToMint);
+        _mint(msg.sender, amountToMint);
         return swapEtherToCompoundEther(_value);
-        /* return true; */
     }
 
     /**
@@ -1096,7 +1103,7 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder, ERC20, ERC20D
         returns (bool)
     {
         /* CHECKS */
-        require(balanceOf(msg.sender) >= _amount, 'Balance < withdraw');
+        require(balanceOf(msg.sender) >= _amount, 'Withdraw: Bal < withdraw');
         require(getMaxBurnAmount() >= _amount, 'Withdraw: max burn < amt');
 
         /* EFFECTS */
@@ -1130,7 +1137,6 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder, ERC20, ERC20D
         return _cEther.balanceOfUnderlying(address(this));
         /* return address(this).balance; */
     }
-
     
     /**
      * @dev returns Net Assets = Pool Assets - Pool Liabilities
@@ -1138,7 +1144,12 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder, ERC20, ERC20D
      */
     function getAvailableAssets() public returns (uint256) {
         /* Net Assets = ET - L, where ET = Total Ether and L = Total Liabilities */
-        return (getPoolBalance()).sub(_liability);
+        uint256 poolBalance = getPoolBalance();
+        if(_liability > poolBalance) {
+            return 0;
+        }
+        uint256 available = poolBalance.sub(_liability);
+        return available;
     }
 
     /**
@@ -1261,7 +1272,7 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder, ERC20, ERC20D
         /* COMPOUND */
 
         /* Check if enough cTokens can be redeemed to meet collateral */
-        require(getPoolBalance() >= _long, 'Swap: ether != collat'); 
+        require(getPoolBalance() >= _long, 'Swap: ether < collat'); 
 
         /* Swap cEther to Ether */
         uint256 redeemResult = _cEther.redeemUnderlying(_long);
@@ -1283,7 +1294,8 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder, ERC20, ERC20D
         uint256 userEthBal = balanceOf(msg.sender);
         require(userEthBal >= _amount, 'Close: Eth Bal < amt');
 
-        uint256 debt = _amount.mul(_liability).div(getPoolBalance());
+        uint256 poolBalance = getPoolBalance();
+        uint256 debt = _amount.mul(_liability).div(poolBalance);
         require(msg.value >= debt, 'Close: Value < debt');
 
         /* EFFECTS */
