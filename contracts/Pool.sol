@@ -1277,7 +1277,7 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder, ERC20, ERC20D
      @param amount ether that will be swapped to cEther
      */
     function swapEtherToCompoundEther(uint256 amount) internal returns (bool) {
-        _cEther.mint.value(amount).gas(250000);
+        _cEther.mint.value(amount).gas(250000)();
         return true;
     }
 

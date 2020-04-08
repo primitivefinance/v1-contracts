@@ -1004,17 +1004,17 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
      * @return bool whether the tx succeeds
      */
     function closeSellOrder(uint256 tokenId) external nonReentrant returns (bool) {
-        SellOrders memory sellOrder = _sellOrders[tokenId];
+        SellOrders memory sellOrderObject = _sellOrders[tokenId];
 
         /* CHECKS */
         require(tokenId > 0, 'Invalid Token');
-        require(msg.sender == sellOrder.seller, 'Msg.sender != seller');
+        require(msg.sender == sellOrderObject.seller, 'Msg.sender != seller');
 
         /* EFFECTS */
         clearSellOrder(tokenId);
 
         /* INTERACTIONS */
-        _prime.safeTransferFrom(address(this), sellOrder.seller, tokenId);
+        _prime.safeTransferFrom(address(this), sellOrderObject.seller, tokenId);
         emit CloseOrder(msg.sender, tokenId, false);
         return true;
     }
@@ -1025,11 +1025,11 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
      * @return bool whether the tx succeeds
      */
     function closeBuyOrder(uint256 tokenId) external nonReentrant returns (bool) {
-        BuyOrders memory buyOrder = _buyOrders[tokenId];
+        BuyOrders memory buyOrderObject = _buyOrders[tokenId];
 
         /* CHECKS */
         require(tokenId > 0, 'Invalid Token');
-        require(msg.sender == buyOrder.buyer, 'Msg.sender != buyer');
+        require(msg.sender == buyOrderObject.buyer, 'Msg.sender != buyer');
         
         /* EFFECTS */
         
@@ -1037,7 +1037,7 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
         clearBuyOrder(tokenId);
 
         /* Update user's withdrawable ether balance */
-        _etherBalance[buyOrder.buyer].add(buyOrder.bidPrice);
+        _etherBalance[buyOrderObject.buyer].add(buyOrderObject.bidPrice);
 
         /* INTERACTIONS */
 
