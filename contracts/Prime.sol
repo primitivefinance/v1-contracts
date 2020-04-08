@@ -1024,7 +1024,6 @@ abstract contract IPrime {
         address indexed asset
     );
 
-
     function createPrime(
         uint256 qUnderlying,
         address aUnderlying,
@@ -1139,12 +1138,8 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
         /* INTERACTIONS */
         emit PrimeMinted(
             msg.sender, 
-            qUnderlying,
-            aUnderlying,
-            qStrike,
-            aStrike,
-            _nonce, 
-            block.timestamp
+            symbol,
+            _nonce
         );
 
         _safeMint(
@@ -1165,11 +1160,11 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
 
     /** 
      * @dev Swaps strike asset for collateral
-     * @param _tokenId ID of Prime.
+     * @param tokenId ID of Prime.
      * @return bool Success.
      */
     function exercise(
-        uint256 _tokenId
+        uint256 tokenId
     ) 
         external 
         payable
@@ -1178,22 +1173,22 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
         returns (bool) 
     {
         /* CHECKS */
-        isTokenExpired(_tokenId);
-        isOwner(_tokenId, msg.sender);
+        isTokenExpired(tokenId);
+        isOwner(tokenId, msg.sender);
 
         /* Get Prime */
-        Instruments.Primes memory _prime = _primes[_tokenId];
+        Instruments.Primes memory prime = _primes[tokenId];
 
         /* If aStrike is a pool, its an Ether Put Prime, else its an ERC-20 Prime */
-        ERC20 aStrike = ERC20(_prime.aStrike);
+        ERC20 aStrike = ERC20(prime.aStrike);
 
         /* Require strike assets to be transferred into Prime contract */
-        if(_prime.aStrike == _poolAddress) {
+        if(prime.aStrike == _poolAddress) {
             /* Strike asset is ether, so it should be transferred in as msg.value */
-            isGreaterThanOrEqual(msg.value, _prime.qStrike);
+            isGreaterThanOrEqual(msg.value, prime.qStrike);
         } else {
             /* Strike asset is a token, user should have a balance >= strike amount */
-            isGreaterThanOrEqual(aStrike.balanceOf(msg.sender), _prime.qStrike);
+            isGreaterThanOrEqual(aStrike.balanceOf(msg.sender), prime.qStrike);
         }
 
         /* EFFECTS */
@@ -1201,44 +1196,40 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
         /* UPDATE COLLATERAL BALANCE SHEET */
 
         /* Original Minter has their collateral balance debited. */
-        _liabilities[_prime.writer][_prime.aUnderlying] = _liabilities[_prime.writer][_prime.aUnderlying].sub(_prime.qUnderlying);
+        _liabilities[prime.writer][prime.aUnderlying] = _liabilities[prime.writer][prime.aUnderlying].sub(prime.qUnderlying);
         
         /* Exercisor has their collateral balance credited. */
-        _assets[msg.sender][_prime.aUnderlying] = _assets[msg.sender][_prime.aUnderlying].add(_prime.qUnderlying);
+        _assets[msg.sender][prime.aUnderlying] = _assets[msg.sender][prime.aUnderlying].add(prime.qUnderlying);
         
         /* UPDATE STRIKE BALANCE SHEET */
 
         /* Payment receiver has their payment balance credited. */
-        _assets[_prime.receiver][_prime.aStrike] = _assets[_prime.receiver][_prime.aStrike].add(_prime.qStrike);
+        _assets[prime.receiver][prime.aStrike] = _assets[prime.receiver][prime.aStrike].add(prime.qStrike);
         
         
         /* INTERACTIONS */
 
         emit PrimeExercised(
             msg.sender,
-            _prime.qUnderlying,
-            _prime.aUnderlying,
-            _prime.qStrike,
-            _prime.aStrike,
-            _tokenId, 
-            block.timestamp
+            prime.symbol,
+            tokenId
         );
         
-        _burn(_tokenId);
+        _burn(tokenId);
 
         /* DEBIT THE EXERCISOR'S STRIKE */
 
         /* If strike receiver is pool, pull strike asset from Prime */
-        if(_prime.receiver == _poolAddress) {
+        if(prime.receiver == _poolAddress) {
             /* Transfer the strike asset into the Prime Contract */
-            aStrike.transferFrom(msg.sender, address(this), _prime.qStrike);
+            aStrike.transferFrom(msg.sender, address(this), prime.qStrike);
             /* Calls the Pool to (1) Send collateral ether to Prime and (2) withdraw strike assets from Prime */
-            return _pool.exercise(_prime.qUnderlying, _prime.qStrike, _prime.aStrike);
+            return _pool.exercise(prime.qUnderlying, prime.qStrike, prime.aStrike);
         }
 
         /* If strike asset is a token, transfer from user to Prime contract */
-        if(_prime.aStrike != _poolAddress) {
-            return aStrike.transferFrom(msg.sender, address(this), _prime.qStrike);
+        if(prime.aStrike != _poolAddress) {
+            return aStrike.transferFrom(msg.sender, address(this), prime.qStrike);
         }
 
         /* Strike asset is ether, it was already transferred in as msg.value */
@@ -1255,14 +1246,14 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
      * they need to close the position, 
      * they can buy another Prime rather than track down 
      * the exact one they sold/traded away. 
-     * @param _collateralId Prime NFT ID with Minter's collateral.
+     * @param tokenToClose Prime NFT ID with Minter's collateral.
      * @param _burnId Prime NFT ID that Minter owns,
      *  and intends to burn to withdraw collateral.
      * @return bool Success.
      */
     function close(
-        uint256 _collateralId,
-        uint256 _burnId
+        uint256 tokenToClose,
+        uint256 tokenToBurn
     ) 
         external 
         override
@@ -1270,49 +1261,47 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
         returns (bool) 
     {
         /* CHECKS */
-        isOwner(_burnId, msg.sender);
-        arePrimesInSameSeries(_collateralId, _burnId);
-        isTokenExpired(_burnId);
+        isOwner(tokenToBurn, msg.sender);
+        arePrimesInSameSeries(tokenToClose, tokenToBurn);
+        isTokenExpired(tokenToBurn);
 
         /* Get Prime that will get Burned */
-        Instruments.Primes memory _burnPrime = _primes[_burnId];
-        ERC20 aUnderlyingBurn = ERC20(_burnPrime.aUnderlying);
-        isGreaterThanOrEqual(_assets[msg.sender][_burnPrime.aUnderlying], 0);
+        Instruments.Primes memory burnPrime = _primes[tokenToBurn];
+        ERC20 aUnderlyingBurn = ERC20(burnPrime.aUnderlying);
+        isGreaterThanOrEqual(_assets[msg.sender][burnPrime.aUnderlying], 0);
 
         /* EFFECTS */
 
         /* Minter's collateral is debited. */
-        _liabilities[msg.sender][_burnPrime.aUnderlying] = _liabilities[msg.sender][_burnPrime.aUnderlying].sub(_burnPrime.qUnderlying);
+        _liabilities[msg.sender][burnPrime.aUnderlying] = _liabilities[msg.sender][burnPrime.aUnderlying].sub(burnPrime.qUnderlying);
 
         /* INTERACTIONS */
         emit PrimeClosed(
             msg.sender, 
-            _burnPrime.qUnderlying,
-            _burnPrime.aUnderlying,
-            _burnId, 
-            block.timestamp
+            burnPrime.symbol,
+            tokenToBurn
         );
 
-        _burn(_burnId);
+        _burn(tokenToBurn);
 
         /* If the collateral asset is Ether, send ether to the user. */
-        if(_burnPrime.aUnderlying == _poolAddress) {
-            return sendEther(_burnPrime.qUnderlying, msg.sender);
+        if(burnPrime.aUnderlying == _poolAddress) {
+            return sendEther(burnPrime.qUnderlying, msg.sender);
         }
 
         /* Else, the collateral is an ERC-20 token. Send it to the user. */
-        return aUnderlyingBurn.transfer(msg.sender, _burnPrime.qUnderlying);
+        return aUnderlyingBurn.transfer(msg.sender, burnPrime.qUnderlying);
     }
 
     /** 
      * @dev Users pull their assets from the Prime contract
-     * @param _amount Quantity to withdraw.
-     * @param _asset Address of asset.
+     * @param amount Quantity to withdraw.
+     * @param asset Address of asset.
      * @return success
      */
     function withdraw(
-        uint256 _amount, 
-        address _asset
+        uint256 amount, 
+        address asset
     ) 
         public 
         override
@@ -1320,36 +1309,36 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
     {
         /* CHECKS */
         /* Checks User's ledger balance */
-        uint256 assetBal = _assets[msg.sender][_asset];
-        isGreaterThanOrEqual(assetBal, _amount);
+        uint256 assetBal = assets[msg.sender][asset];
+        isGreaterThanOrEqual(assetBal, amount);
 
         /* EFFECTS */
 
         /* User's account is debited */
-        _assets[msg.sender][_asset] = assetBal.sub(_amount);
+        assets[msg.sender][asset] = assetBal.sub(amount);
 
         /* INTERACTIONS  */
         emit Withdrawal(
             msg.sender, 
-            _amount,
-            _asset,
+            amount,
+            asset,
             block.timestamp
         );
 
         /* If asset is Ether (pool address), withdraw ether */
-        if(_asset == _poolAddress) {
-            return sendEther(_amount, msg.sender);
+        if(asset == _poolAddress) {
+            return sendEther(amount, msg.sender);
         }
 
         /* Else, asset is a token, transfer it to user. */
-        ERC20 erc20 = ERC20(_asset);
-        return erc20.transfer(msg.sender, _amount);
+        ERC20 erc20 = ERC20(asset);
+        return erc20.transfer(msg.sender, amount);
     }
 
     /* CAPITAL MANAGEMENT FUNCTION */
 
-    function sendEther(uint256 _amount, address payable _to) internal returns (bool) {
-        (bool success, ) = _to.call.value(_amount)("");
+    function sendEther(uint256 amount, address payable to) internal returns (bool) {
+        (bool success, ) = to.call.value(amount)("");
         require(success, "Transfer failed.");
         return success;
     }
@@ -1361,7 +1350,7 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
     /** 
      * @dev Public view function to get Prime properties.
      */
-    function getPrime(uint256 _tokenId) external view returns (
+    function getPrime(uint256 tokenId) external view returns (
             address writer,
             uint256 qUnderlying,
             address aUnderlying,
@@ -1372,7 +1361,7 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
             bytes4 series,
             bytes4 symbol
         ) {
-            Instruments.Primes memory _prime = _primes[_tokenId];
+            Instruments.Primes memory _prime = _primes[tokenId];
             return (
                 _prime.writer,
                 _prime.qUnderlying,
@@ -1386,19 +1375,19 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
             );
     }
 
-    function getSeries(uint256 _tokenId) public view returns (
+    function getSeries(uint256 tokenId) public view returns (
             bytes4 series
         ) {
-            Instruments.Primes memory _prime = _primes[_tokenId];
+            Instruments.Primes memory _prime = _primes[tokenId];
             return (
                 _prime.series
             );
     }
 
-    function getSymbol(uint256 _tokenId) public view returns (
+    function getSymbol(uint256 tokenId) public view returns (
             bytes4 symbol
         ) {
-            Instruments.Primes memory _prime = _primes[_tokenId];
+            Instruments.Primes memory _prime = _primes[tokenId];
             return (
                 _prime.symbol
             );
@@ -1407,22 +1396,22 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
     /** 
      * @dev Public view function to get the Bank's balance of a User
      */
-    function getAssetBalance(address _user, address _asset) public view returns (uint256) {
-            return _assets[_user][_asset];
+    function getAssetBalance(address user, address asset) public view returns (uint256) {
+            return _assets[user][asset];
     }
 
-    function isTokenExpired(uint256 _tokenId) public view returns(bool) {
-        require( _primes[_tokenId].tExpiry >= block.timestamp, 'expired');
+    function isTokenExpired(uint256 tokenId) public view returns(bool) {
+        require( _primes[tokenId].tExpiry >= block.timestamp, 'expired');
         return true;
     }
 
-    function isOwner(uint256 _tokenId, address _user) public view returns(bool) {
-        require(ownerOf(_tokenId) == _user, '!own');
+    function isOwner(uint256 tokenId, address user) public view returns(bool) {
+        require(ownerOf(tokenId) == user, '!own');
         return true;
     }
 
-    function isGreaterThanOrEqual(uint256 _a, uint256 _b) public pure returns(bool) {
-        require(_a >= _b, 'a < b');
+    function isGreaterThanOrEqual(uint256 a, uint256 b) public pure returns(bool) {
+        require(a >= b, 'a < b');
         return true;
     }
 
@@ -1431,24 +1420,24 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
 
 
     /** 
-     * @dev Utility to compare hashes of Prime properties.
-     * @param _collateralId id of token that is having its collateral withdraw
-     * @param _burnId id of token that is being burned
+     * @dev Utility to compare hashes of Prime properties using symbol attribute
+     * @param tokenId1 id of token 1
+     * @param tokenId2 id of token 2
      * @return bool of whether Instruments.Primes match.
     */
     function arePrimesInSameSeries(
-        uint256 _collateralId,
-        uint256 _burnId
+        uint256 tokenId1,
+        uint256 tokenId2
     ) 
         public 
         view 
         returns
         (bool)
     {
-        bytes4 hashCollateral = getSymbol(_collateralId);
-        bytes4 hashBurn = getSymbol(_burnId);
+        bytes4 hash1 = getSymbol(tokenId1);
+        bytes4 hash2 = getSymbol(tokenId2);
 
-        require(hashCollateral == hashBurn, 'Props !=');
-        return hashCollateral == hashBurn;
+        require(hash1 == hash2, 'Props !=');
+        return hash1 == hash2;
     }
 }
