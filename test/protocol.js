@@ -369,7 +369,7 @@ contract('Prime - Local', accounts => {
                         receiver,
                         {from: minter,  value: collateralAmount}
                     ),
-                    "Create: Gem != Msg.Sender"
+                    "Create: rcvr != Msg.Sender"
                 );
             });
 
@@ -984,8 +984,8 @@ contract('Prime - Local', accounts => {
             );
             await truffleAssert.eventEmitted(buyOrderUnfilled, 'BuyOrderUnfilled');
             /* GOES TO FILL UNFILLED BUY ORDER INTERNAL FUNCTION */
-            let chain = await _prime.getChain(tokenId);
-            let buyNonce = await _exchange._unfilledNonce(chain);
+            let series = await _prime.getSeries(tokenId);
+            let buyNonce = await _exchange._unfilledNonce(series);
             await _prime.approve(_exchange.address, tokenId, {from: minter});
             let sellOrder = await _exchange.sellOrder(tokenId, askPrice, {from: minter});
             
@@ -1398,7 +1398,7 @@ contract('Prime - Local', accounts => {
                 {from: minter, value: collateralAmount}
             );
             let tokenId = await _prime.nonce();
-            let chain = await _prime.getChain(tokenId);
+            let series = await _prime.getSeries(tokenId);
             let bidPrice = (await web3.utils.toWei('0.5')).toString();
             let buyOrderUnfilled = await _exchange.buyOrderUnfilled(
                 bidPrice,
@@ -1410,28 +1410,28 @@ contract('Prime - Local', accounts => {
                 {from: Alice, value: collateralAmount}
             );
 
-            let buyOrderNonce = await _exchange._unfilledNonce(chain);
+            let buyOrderNonce = await _exchange._unfilledNonce(series);
             tokenId = 0;
             await truffleAssert.reverts(
-                _exchange.closeUnfilledBuyOrder(chain, buyOrderNonce, {from: minter}),
+                _exchange.closeUnfilledBuyOrder(series, buyOrderNonce, {from: minter}),
                 "Msg.sender != buyer"
             );
         });
 
         it('close unfilled buy order', async () => {
             let tokenId = await _prime.nonce();
-            let chain = await _prime.getChain(tokenId);
-            let buyOrderNonce = await _exchange._unfilledNonce(chain);
-            let closeUnfilledBuyOrder = await _exchange.closeUnfilledBuyOrder(chain, buyOrderNonce, {from: Alice});
+            let series = await _prime.getSeries(tokenId);
+            let buyOrderNonce = await _exchange._unfilledNonce(series);
+            let closeUnfilledBuyOrder = await _exchange.closeUnfilledBuyOrder(series, buyOrderNonce, {from: Alice});
             await truffleAssert.eventEmitted(closeUnfilledBuyOrder, 'CloseUnfilledBuyOrder');
         });
 
         it('assert unfilled buy order was cleared from state', async () => {
             let tokenId = await _prime.nonce();
             let bidPrice = 0;
-            let chain = await _prime.getChain(tokenId);
-            let buyOrderNonce = await _exchange._unfilledNonce(chain);
-            let buyOrder = await _exchange._buyOrdersUnfilled(chain, buyOrderNonce, {from: Alice});
+            let series = await _prime.getSeries(tokenId);
+            let buyOrderNonce = await _exchange._unfilledNonce(series);
+            let buyOrder = await _exchange._buyOrdersUnfilled(series, buyOrderNonce, {from: Alice});
             let zeroAddress = '0x0000000000000000000000000000000000000000';
             assert.strictEqual(
                 buyOrder.buyer,
