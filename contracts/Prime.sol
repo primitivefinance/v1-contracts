@@ -1247,7 +1247,7 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
      * they can buy another Prime rather than track down 
      * the exact one they sold/traded away. 
      * @param tokenToClose Prime NFT ID with Minter's collateral.
-     * @param _burnId Prime NFT ID that Minter owns,
+     * @param tokenToBurn Prime NFT ID that Minter owns,
      *  and intends to burn to withdraw collateral.
      * @return bool Success.
      */
@@ -1309,20 +1309,19 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
     {
         /* CHECKS */
         /* Checks User's ledger balance */
-        uint256 assetBal = assets[msg.sender][asset];
+        uint256 assetBal = _assets[msg.sender][asset];
         isGreaterThanOrEqual(assetBal, amount);
 
         /* EFFECTS */
 
         /* User's account is debited */
-        assets[msg.sender][asset] = assetBal.sub(amount);
+        _assets[msg.sender][asset] = assetBal.sub(amount);
 
         /* INTERACTIONS  */
         emit Withdrawal(
             msg.sender, 
             amount,
-            asset,
-            block.timestamp
+            asset
         );
 
         /* If asset is Ether (pool address), withdraw ether */

@@ -406,7 +406,7 @@ contract Pausable is Context {
 import './Instruments.sol';
 
 abstract contract IPool {
-    function withdrawExercisedEth(address payable _receiver, uint256 _amount) external virtual returns (bool);
+    function withdrawExercisedEth(address payable _receiver, uint256 amount) external virtual returns (bool);
     function clearLiability(uint256 liability, address strike, uint256 short) external virtual returns (bool);
     function exercise(uint256 qUnderlying, uint256 qStrike, address aStrike) external payable virtual returns (bool);
     function mintPrimeFromPool(
@@ -428,12 +428,12 @@ abstract contract IPrime {
         address aStrike,
         uint256 tExpiry,
         address receiver
-    ) external virtual returns (uint256 _tokenId);
-    function exercise(uint256 _tokenId) external virtual returns (bool);
-    function close(uint256 _collateralId, uint256 _burnId) external virtual returns (bool);
-    function withdraw(uint256 _amount, address _asset) public virtual returns (bool);
-    function getPrime(uint256 _tokenId) external view virtual returns(
-            address ace,
+    ) external virtual returns (uint256 tokenId);
+    function exercise(uint256 tokenId) external payable virtual returns (bool);
+    function close(uint256 tokenToClose, uint256 tokenToBurn) external virtual returns (bool);
+    function withdraw(uint256 amount, address asset) public virtual returns (bool);
+    function getPrime(uint256 tokenId) external view virtual returns(
+            address writer,
             uint256 qUnderlying,
             address aUnderlying,
             uint256 qStrike,
@@ -443,33 +443,32 @@ abstract contract IPrime {
             bytes4 series,
             bytes4 symbol
         );
-    function _primeCompare(uint256 _collateralId, uint256 _burnId) public view virtual returns (bool burn);
-    function getSeries(uint256 _tokenId) external view virtual returns (bytes4 series);
-    function isTokenExpired(uint256 _tokenId) public view virtual returns(bool);
+    function getSeries(uint256 tokenId) external view virtual returns (bytes4 series);
+    function isTokenExpired(uint256 tokenId) public view virtual returns(bool);
 }
 
 contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
     using SafeMath for uint256;
 
-    address public _owner;
     address private _primeAddress;
     address public _poolAddress;
-    IPool public _poolInterface;
+    IPool public _pool;
+    IPrime public _prime;
 
     uint256 public _feePool;
     uint256 constant _feeDenomination = 333; /* 0.30% = 0.003 = 1 / 333 */
     uint256 constant _poolPremiumDenomination = 5; /* 20% = 0.2 = 1 / 5 - FIX */
     
-    event SellOrder(address _seller, uint256 _askPrice, uint256 _tokenId, bool _filled);
-    event BuyOrder(address _buyer, uint256 _bidPrice, uint256 _tokenId, bool _filled);
-    event BuyOrderUnfilled(address _buyer, uint256 _bidPrice, uint256 _nonce);
+    event SellOrder(address indexed seller, uint256 askPrice, uint256 indexed tokenId, bool filled);
+    event BuyOrder(address indexed buyer, uint256 bidPrice, uint256 indexed tokenId, bool filled);
+    event BuyOrderUnfilled(address indexed buyer, uint256 bidPrice, uint256 nonce);
 
-    event FillUnfilledBuyOrder(address _seller, uint256 _tokenId);
-    event FillOrder(address _seller, address _buyer, uint256 _filledPrice, uint256 _tokenId);
-    event FillOrderFromPool(address _buyer, uint256 _bidPrice, uint256 _amount);
+    event FillUnfilledBuyOrder(address indexed seller, uint256 indexed tokenId);
+    event FillOrder(address indexed seller, address indexed buyer, uint256 filledPrice, uint256 indexed tokenId);
+    event FillOrderFromPool(address indexed buyer, uint256 bidPrice, uint256 amount);
 
-    event CloseOrder(address _user, uint256 _tokenId, bool _buyOrder);
-    event CloseUnfilledBuyOrder(address _user, bytes4 series, uint256 _buyOrderNonce);
+    event CloseOrder(address indexed user, uint256 indexed tokenId, bool buyOrder);
+    event CloseUnfilledBuyOrder(address indexed user, bytes4 indexed series, uint256 buyOrderNonce);
 
     struct SellOrders {
         address payable seller;
@@ -515,7 +514,7 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
     /* INTIALIZES TOKEN 0 -> ALL ORDERS ARE RESET TO THIS DEFAULT VALUE WHEN FILLED/CLOSED */
     constructor(address primeAddress) public {
         _primeAddress = primeAddress;
-        _owner = msg.sender;
+        _prime = IPrime(primeAddress);
         _feePool = 0;
 
         _buyOrders[0] = BuyOrders(
@@ -546,7 +545,7 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
     /* SET POOL ADDRESS */
     function setPoolAddress(address poolAddress) external onlyOwner {
         _poolAddress = poolAddress;
-        _poolInterface = IPool(poolAddress);
+        _pool = IPool(poolAddress);
     }
 
     /* KILL SWITCH */
@@ -566,11 +565,11 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
 
     /**
      * @dev users withdraw ether rather than have it directly sent to them
-     * @param _amount value of ether to withdraw
+     * @param amount value of ether to withdraw
      */
-    function withdrawEther(uint256 _amount) external nonReentrant {
-        require(_etherBalance[msg.sender] >= _amount, 'Bal < amount');
-        (bool success, ) = msg.sender.call.value(_amount)("");
+    function withdrawEther(uint256 amount) external nonReentrant {
+        require(_etherBalance[msg.sender] >= amount, 'Bal < amount');
+        (bool success, ) = msg.sender.call.value(amount)("");
         require(success, "Transfer failed.");
     }
 
@@ -580,30 +579,29 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
 
     /** 
      * @dev List a valid Prime for sale
-     * @param _tokenId the Prime's nonce when minted
-     * @param _askPrice value in wei desired as payment
+     * @param tokenId the Prime's nonce when minted
+     * @param askPrice value in wei desired as payment
      * @return bool Whether or not the tx succeeded
      */
     function sellOrder(
-        uint256 _tokenId, 
-        uint256 _askPrice
+        uint256 tokenId, 
+        uint256 askPrice
     ) 
         external
         whenNotPaused
         returns (bool) 
     {
-        IPrime _prime = IPrime(_primeAddress);
 
         /* CHECKS */
-        require(_tokenId > 0, 'Invalid Token');
-        require(_askPrice > 0, 'Ask < 0');
-        _prime.isTokenExpired(_tokenId);
-        require(!isListed(_tokenId), 'Token listed already');
+        require(tokenId > 0, 'Invalid Token');
+        require(askPrice > 0, 'Ask < 0');
+        _prime.isTokenExpired(tokenId);
+        require(!isListed(tokenId), 'Token listed already');
 
         /* EFFECTS */
 
-        /* Gets a buy order request ID if _tokenId has matching properties and can fill order*/
-        uint256 fillable = checkUnfilledBuyOrders(_tokenId, _askPrice);
+        /* Gets a buy order request ID if tokenId has matching properties and can fill order*/
+        uint256 buyOrderNonce = checkUnfilledBuyOrders(tokenId, askPrice);
 
         /* INTERACTIONS */
 
@@ -611,51 +609,49 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
             If a buy order request matches a token's properties, and the bid price
             fulfills the order, fill it 
         */
-        if(fillable > 0) {
+        if(buyOrderNonce > 0) {
             /* Unique hash of the Prime's key properties: Asset addresses & expiration date */
-            bytes4 series = _prime.getSeries(_tokenId);
+            bytes4 series = _prime.getSeries(tokenId);
             /* Buy order request of hash 'series' at order request nonce */
-            BuyOrdersUnfilled memory _buyUnfilled = _buyOrdersUnfilled[series][fillable];
+            BuyOrdersUnfilled memory unfilledBuyOrder = _buyOrdersUnfilled[series][buyOrderNonce];
             return fillUnfilledBuyOrder(
-                _tokenId, 
-                _buyUnfilled.bidPrice, 
-                _askPrice,
-                _buyUnfilled.buyer,
+                tokenId, 
+                unfilledBuyOrder.bidPrice, 
+                askPrice,
+                unfilledBuyOrder.buyer,
                 msg.sender, 
-                fillable,
+                buyOrderNonce,
                 series
             );
         }
         
         /* 
-         * If a buy order for the _tokenId is available, fill it,
+         * If a buy order for the tokenId is available, fill it,
          * else, list it for sale and transfer it from user to the dex
         */
-        if(fillable == 0) {
+        if(buyOrderNonce == 0) {
 
-            BuyOrders memory _buy = _buyOrders[_tokenId];
+            BuyOrders memory buyOrderObject = _buyOrders[tokenId];
 
-            if(_buy.bidPrice >= _askPrice) {
+            if(buyOrderObject.bidPrice >= askPrice) {
                 return fillOrder(
                     false,
-                    _tokenId,
-                    _buy.bidPrice,
-                    _askPrice,
-                    _buy.buyer,
+                    tokenId,
+                    buyOrderObject.bidPrice,
+                    askPrice,
+                    buyOrderObject.buyer,
                     msg.sender
                 );
             } else {
                 /* Add sell order to state */
-                _sellOrders[_tokenId] = SellOrders(
+                _sellOrders[tokenId] = SellOrders(
                     msg.sender,
-                    _askPrice,
-                    _tokenId
+                    askPrice,
+                    tokenId
                 );
 
-                /* Take prime from sender */
-                _prime.safeTransferFrom(msg.sender, address(this), _tokenId);
-        
-                emit SellOrder(msg.sender, _askPrice, _tokenId, false);
+                _prime.safeTransferFrom(msg.sender, address(this), tokenId);
+                emit SellOrder(msg.sender, askPrice, tokenId, false);
                 return true;
             }
         }
@@ -663,13 +659,13 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
 
     /**
      * @dev offer a bid for a specific token
-     * @param _tokenId nonce of token when minted
-     * @param _bidPrice value offered to purchase Prime
+     * @param tokenId nonce of token when minted
+     * @param bidPrice value offered to purchase Prime
      * @return bool whether the tx succeeds
      */
     function buyOrder(
-        uint256 _tokenId, 
-        uint256 _bidPrice
+        uint256 tokenId, 
+        uint256 bidPrice
     ) 
         public 
         payable
@@ -678,20 +674,21 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
         returns (bool) 
     {
         /* CHECKS */
-        require(_tokenId > 0, 'Invalid Token');
-        require(_bidPrice > 0, 'Bid < 0');
-        uint256 _fee = _bidPrice.div(_feeDenomination);
-        uint256 _totalCost = _bidPrice.add(_fee);
-        require(msg.value >= _totalCost, 'Val < cost');
+        require(tokenId > 0, 'Invalid Token');
+        require(bidPrice > 0, 'Bid < 0');
+
+        uint256 fee = bidPrice.div(_feeDenomination);
+        uint256 totalCost = bidPrice.add(fee);
+        require(msg.value >= totalCost, 'Val < cost');
         /* Transfer remaining bid to Buyer */
-        if(msg.value > _totalCost) {
-            (bool success, ) = msg.sender.call.value(msg.value.sub(_totalCost))("");
+        if(msg.value > totalCost) {
+            (bool success, ) = msg.sender.call.value(msg.value.sub(totalCost))("");
             require(success, 'Transfer fail.');
         }
 
         /* EFFECTS */
 
-        SellOrders memory _sell = _sellOrders[_tokenId];
+        SellOrders memory sellOrderObject = _sellOrders[tokenId];
 
         /* INTERACTIONS */
 
@@ -699,43 +696,43 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
          * If the token is listed for sale, fill it
          * Else, submit an offer to buy a specific token
         */
-        if(isListed(_tokenId) && _bidPrice >= _sell.askPrice ) {
+        if(isListed(tokenId) && bidPrice >= sellOrderObject.askPrice ) {
             return fillOrder(
                 true,
-                _tokenId,
-                _bidPrice,
-                _sell.askPrice,
+                tokenId,
+                bidPrice,
+                sellOrderObject.askPrice,
                 msg.sender,
-                _sell.seller
+                sellOrderObject.seller
             );
         } else {
-            _buyOrders[_tokenId] = BuyOrders(
+            _buyOrders[tokenId] = BuyOrders(
                 msg.sender,
-                _bidPrice,
-                _tokenId
+                bidPrice,
+                tokenId
             );
-            emit BuyOrder(msg.sender, _bidPrice, _tokenId, false);
+            emit BuyOrder(msg.sender, bidPrice, tokenId, false);
             return true;
         }
     }
 
     /**
      * @dev fill an order 
-     * @param _buyOrder whether this order is a buy order
-     * @param _tokenId nonce of Prime when minted
-     * @param _bidPrice value offered to buy Prime
-     * @param _askPrice value required to buy Prime
-     * @param _buyer address of buying party
-     * @param _seller address of selling party (can be DEX or user)
+     * @param isBuyOrder whether this order is a buy order
+     * @param tokenId nonce of Prime when minted
+     * @param bidPrice value offered to buy Prime
+     * @param askPrice value required to buy Prime
+     * @param buyer address of buying party
+     * @param seller address of selling party (can be DEX or user)
      * @return bool whether the tx succeeds
      */
     function fillOrder(
-        bool _buyOrder,
-        uint256 _tokenId, 
-        uint256 _bidPrice, 
-        uint256 _askPrice,
-        address payable _buyer, 
-        address payable _seller
+        bool isBuyOrder,
+        uint256 tokenId, 
+        uint256 bidPrice, 
+        uint256 askPrice,
+        address payable buyer, 
+        address payable seller
     ) 
         private 
         returns (bool) 
@@ -746,19 +743,19 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
         /* EFFECTS */
 
         /* Clears order from state */
-        if(_buyOrder) {
-            emit BuyOrder(_buyer, _bidPrice, _tokenId, true);
-            clearSellOrder(_tokenId);
+        if(isBuyOrder) {
+            emit BuyOrder(buyer, bidPrice, tokenId, true);
+            clearSellOrder(tokenId);
         } else {
-            emit SellOrder(_seller, _askPrice, _tokenId, true);
-            clearBuyOrder(_tokenId);
+            emit SellOrder(seller, askPrice, tokenId, true);
+            clearBuyOrder(tokenId);
         }
 
         /* Update ether balance state of buyer, seller, and reward pool */
-        _etherBalance[_seller] = _etherBalance[_seller].add(_askPrice);
-        uint256 _fee = _bidPrice.div(_feeDenomination);
-        _feePoolContribution[_seller] = _feePoolContribution[_seller].add(_fee);
-        _feePool = _feePool.add(_fee);
+        _etherBalance[seller] = _etherBalance[seller].add(askPrice);
+        uint256 fee = bidPrice.div(_feeDenomination);
+        _feePoolContribution[seller] = _feePoolContribution[seller].add(fee);
+        _feePool = _feePool.add(fee);
 
         /* INTERACTIONS */
 
@@ -766,21 +763,20 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
          * IF ITS BUY ORDER - PRIME IS OWNED BY EXCHANGE
          * IF ITS SELL ORDER - PRIME IS OWNED BY SELLER
          */
-        IPrime _prime = IPrime(_primeAddress);
-        if(_buyOrder) {
-            _prime.safeTransferFrom(address(this), _buyer, _tokenId);
+        if(isBuyOrder) {
+            _prime.safeTransferFrom(address(this), buyer, tokenId);
         } else {
-            _prime.safeTransferFrom(_seller, _buyer, _tokenId);
+            _prime.safeTransferFrom(seller, buyer, tokenId);
         }
 
-        emit FillOrder(_seller, _buyer, _askPrice, _tokenId);
+        emit FillOrder(seller, buyer, askPrice, tokenId);
         return true;
     }
 
 
     /**
      * @dev request to buy a Prime with params
-     * @param _bidPrice value offered to buy Prime
+     * @param bidPrice value offered to buy Prime
      * @param qUnderlying amount of collateral (underlying) asset
      * @param aUnderlying address of collateral ERC-20 token
      * @param qStrike amount of payment (strike) asset
@@ -789,7 +785,7 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
      * @return bool whether the tx suceeds
      */
     function buyOrderUnfilled(
-        uint256 _bidPrice,
+        uint256 bidPrice,
         uint256 qUnderlying,
         address aUnderlying,
         uint256 qStrike,
@@ -803,15 +799,15 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
         returns (bool)
     {
         /* CHECKS */
-        require(_bidPrice > 0, 'Bid < 0');
+        require(bidPrice > 0, 'Bid < 0');
 
         /* EFFECTS */
 
         /* If the pool can fill the order, mint the Prime from pool */
-        if(_poolInterface.getAvailableAssets() >= qUnderlying) {
+        if(_pool.getAvailableAssets() >= qUnderlying) {
             /* FIX with variable premium from Pool - 20% of collateral */
             uint256 premiumToPay = qUnderlying.mul(20).div(10**2);
-            require(_bidPrice >= premiumToPay, 'Bid < premium');
+            require(bidPrice >= premiumToPay, 'Bid < premium');
             
             /* Calculate the payment */
             uint256 feeOnPayment = premiumToPay.mul(3).div(1000);
@@ -821,7 +817,7 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
             _feePoolContribution[msg.sender] = _feePoolContribution[msg.sender].add(feeOnPayment);
 
             /* Mint Prime */
-            _poolInterface.mintPrimeFromPool.value(premiumToPay)(
+            _pool.mintPrimeFromPool.value(premiumToPay)(
                 qUnderlying,
                 qStrike,
                 aStrike,
@@ -829,7 +825,7 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
                 msg.sender
             );
 
-            emit FillOrderFromPool(msg.sender, _bidPrice, qUnderlying);
+            emit FillOrderFromPool(msg.sender, bidPrice, qUnderlying);
 
             /* Transfer remaining bid to Buyer */
             if(msg.value > amountNotReturned) {
@@ -841,8 +837,8 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
         }
 
         /* Fee */
-        uint256 fee = _bidPrice.div(_feeDenomination);
-        uint256 totalCost = _bidPrice.add(fee);
+        uint256 fee = bidPrice.div(_feeDenomination);
+        uint256 totalCost = bidPrice.add(fee);
         require(msg.value >= totalCost, 'Val < cost');
         
         /* Get chain data and log the nonce of the order */
@@ -857,7 +853,7 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
         /* Update Buy Order State */
         _buyOrdersUnfilled[series][nonce] = BuyOrdersUnfilled(
             msg.sender,
-            _bidPrice,
+            bidPrice,
             series,
             qUnderlying,
             aUnderlying,
@@ -866,7 +862,7 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
             tExpiry
         );
 
-        emit BuyOrderUnfilled(msg.sender, _bidPrice, _unfilledNonce[series]);
+        emit BuyOrderUnfilled(msg.sender, bidPrice, _unfilledNonce[series]);
 
         /* Return any remaining bid to Buyer */
         if(msg.value > totalCost) {
@@ -879,18 +875,17 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
 
     /**
      * @dev compares tokenID properties with requested buy order
-     * @param _tokenId nonce of Prime when minted
+     * @param tokenId nonce of Prime when minted
      * @return uint256 unfilled buy order nonce, returns 0 if none found
      */
     function checkUnfilledBuyOrders(
-        uint256 _tokenId,
-        uint256 _askPrice
+        uint256 tokenId,
+        uint256 askPrice
     ) 
         public 
         view 
         returns (uint256) 
     {
-        IPrime _prime = IPrime(_primeAddress);
         address writer;
         uint256 qUnderlying;
         address aUnderlying;
@@ -899,7 +894,7 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
         uint256 tExpiry;
         address receiver;
         bytes4 series;
-        (writer, qUnderlying, aUnderlying, qStrike, aStrike, tExpiry, receiver, series, ) = _prime.getPrime(_tokenId);
+        (writer, qUnderlying, aUnderlying, qStrike, aStrike, tExpiry, receiver, series, ) = _prime.getPrime(tokenId);
         
         bytes32 primeHash = keccak256(
             abi.encodePacked(
@@ -912,18 +907,18 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
             );
          
         for(uint i = 1; i <= _unfilledNonce[series]; i++) {
-            BuyOrdersUnfilled memory _buyObj = _buyOrdersUnfilled[series][i];
+            BuyOrdersUnfilled memory unfilledBuyOrder = _buyOrdersUnfilled[series][i];
             bytes32 buyHash = keccak256(
                 abi.encodePacked(
-                    _buyObj.qUnderlying,
-                    _buyObj.aUnderlying,
-                    _buyObj.qStrike,
-                    _buyObj.aStrike,
-                    _buyObj.tExpiry
+                    unfilledBuyOrder.qUnderlying,
+                    unfilledBuyOrder.aUnderlying,
+                    unfilledBuyOrder.qStrike,
+                    unfilledBuyOrder.aStrike,
+                    unfilledBuyOrder.tExpiry
                 )
             );
 
-            if(primeHash == buyHash && _buyObj.bidPrice >= _askPrice) {
+            if(primeHash == buyHash && unfilledBuyOrder.bidPrice >= askPrice) {
                 return i;
             }
         }
@@ -933,21 +928,21 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
 
     /**
      * @dev fills a sell order using an unfilled buy order
-     * @param _tokenId nonce of Prime when minted
-     * @param _bidPrice value of offer
-     * @param _askPrice value in wei that the seller requires
-     * @param _buyer address of buyer
-     * @param _seller address of seller
+     * @param tokenId nonce of Prime when minted
+     * @param bidPrice value of offer
+     * @param askPrice value in wei that the seller requires
+     * @param buyer address of buyer
+     * @param seller address of seller
      * @param _buyOrderNonce nonce when buy order request was submitted
      * @param series hash of asset 1 address + asset 2 address + expiration
      * @return bool whether or not the tx succeeded
      */
     function fillUnfilledBuyOrder(
-        uint256 _tokenId,
-        uint256 _bidPrice,
-        uint256 _askPrice,
-        address payable _buyer,
-        address payable _seller,
+        uint256 tokenId,
+        uint256 bidPrice,
+        uint256 askPrice,
+        address payable buyer,
+        address payable seller,
         uint256 _buyOrderNonce,
         bytes4 series
     ) 
@@ -963,36 +958,35 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
         clearUnfilledBuyOrder(series, _buyOrderNonce);
 
         /* Updates state of the user's ether balance in the dex */
-        _etherBalance[_seller] = _etherBalance[_seller].add(_askPrice);
-        uint256 _fee = _bidPrice.div(_feeDenomination);
-        _feePoolContribution[_seller] = _feePoolContribution[_seller].add(_fee);
-        _feePool = _feePool.add(_fee);
+        _etherBalance[seller] = _etherBalance[seller].add(askPrice);
+        uint256 fee = bidPrice.div(_feeDenomination);
+        _feePoolContribution[seller] = _feePoolContribution[seller].add(fee);
+        _feePool = _feePool.add(fee);
 
         /* INTERACTIONS */
 
         /* Transfers the Prime to the buyer */
-        IPrime _prime = IPrime(_primeAddress);
-        _prime.safeTransferFrom(_seller, _buyer, _tokenId);
-        emit SellOrder(_seller, _askPrice, _tokenId, true);
-        emit FillUnfilledBuyOrder(_seller, _tokenId);
+        _prime.safeTransferFrom(seller, buyer, tokenId);
+        emit SellOrder(seller, askPrice, tokenId, true);
+        emit FillUnfilledBuyOrder(seller, tokenId);
         return true;
     }
    
     /**
      * @dev changes state of order to 0
-     * @param _tokenId nonce of Prime when minted
+     * @param tokenId nonce of Prime when minted
      */
-    function clearSellOrder(uint256 _tokenId) internal {
-        _sellOrders[_tokenId] = _sellOrders[0];
+    function clearSellOrder(uint256 tokenId) internal {
+        _sellOrders[tokenId] = _sellOrders[0];
     }
 
     /**
      * @dev changes state of order to 0
-     * @param _tokenId nonce of Prime when minted
+     * @param tokenId nonce of Prime when minted
      */
-    function clearBuyOrder(uint256 _tokenId) internal {
+    function clearBuyOrder(uint256 tokenId) internal {
         /* CLEARS BUY ORDER */
-        _buyOrders[_tokenId] = _buyOrders[0];
+        _buyOrders[tokenId] = _buyOrders[0];
     }
 
     /**
@@ -1006,49 +1000,48 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
 
     /**
      * @dev clears a sell order from state and returns funds/assets
-     * @param _tokenId nonce of Prime when minted
+     * @param tokenId nonce of Prime when minted
      * @return bool whether the tx succeeds
      */
-    function closeSellOrder(uint256 _tokenId) external nonReentrant returns (bool) {
-        SellOrders memory _sells = _sellOrders[_tokenId];
+    function closeSellOrder(uint256 tokenId) external nonReentrant returns (bool) {
+        SellOrders memory sellOrder = _sellOrders[tokenId];
 
         /* CHECKS */
-        require(_tokenId > 0, 'Invalid Token');
-        require(msg.sender == _sells.seller, 'Msg.sender != seller');
+        require(tokenId > 0, 'Invalid Token');
+        require(msg.sender == sellOrder.seller, 'Msg.sender != seller');
 
         /* EFFECTS */
-        clearSellOrder(_tokenId);
+        clearSellOrder(tokenId);
 
         /* INTERACTIONS */
-        IPrime _prime = IPrime(_primeAddress);
-        _prime.safeTransferFrom(address(this), _sells.seller, _tokenId);
-        emit CloseOrder(msg.sender, _tokenId, false);
+        _prime.safeTransferFrom(address(this), sellOrder.seller, tokenId);
+        emit CloseOrder(msg.sender, tokenId, false);
         return true;
     }
 
     /**
      * @dev clears a buy order from state and returns funds/assets
-     * @param _tokenId nonce of Prime when minted
+     * @param tokenId nonce of Prime when minted
      * @return bool whether the tx succeeds
      */
-    function closeBuyOrder(uint256 _tokenId) external nonReentrant returns (bool) {
-        BuyOrders memory _buys = _buyOrders[_tokenId];
+    function closeBuyOrder(uint256 tokenId) external nonReentrant returns (bool) {
+        BuyOrders memory buyOrder = _buyOrders[tokenId];
 
         /* CHECKS */
-        require(_tokenId > 0, 'Invalid Token');
-        require(msg.sender == _buys.buyer, 'Msg.sender != buyer');
+        require(tokenId > 0, 'Invalid Token');
+        require(msg.sender == buyOrder.buyer, 'Msg.sender != buyer');
         
         /* EFFECTS */
         
         /* Clear buy order state */
-        clearBuyOrder(_tokenId);
+        clearBuyOrder(tokenId);
 
         /* Update user's withdrawable ether balance */
-        _etherBalance[_buys.buyer].add(_buys.bidPrice);
+        _etherBalance[buyOrder.buyer].add(buyOrder.bidPrice);
 
         /* INTERACTIONS */
 
-        emit CloseOrder(msg.sender, _tokenId, true);
+        emit CloseOrder(msg.sender, tokenId, true);
         return true;
     }
 
@@ -1067,10 +1060,10 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
         returns (bool) 
     {
         /* Buy order request of hash 'chain' at order request nonce */
-        BuyOrdersUnfilled memory _buyUnfilled = _buyOrdersUnfilled[series][_buyOrderNonce];
+        BuyOrdersUnfilled memory unfilledBuyOrder = _buyOrdersUnfilled[series][_buyOrderNonce];
 
         /* CHECKS */
-        require(msg.sender == _buyUnfilled.buyer, 'Msg.sender != buyer');
+        require(msg.sender == unfilledBuyOrder.buyer, 'Msg.sender != buyer');
 
         /* EFFECTS */
         
@@ -1078,7 +1071,7 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
         clearUnfilledBuyOrder(series, _buyOrderNonce);
 
         /* Update user's withdrawable ether balance */
-        _etherBalance[_buyUnfilled.buyer].add(_buyUnfilled.bidPrice);
+        _etherBalance[unfilledBuyOrder.buyer].add(unfilledBuyOrder.bidPrice);
 
         /* INTERACTIONS */
 
@@ -1090,8 +1083,8 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
     /* VIEW FUNCTIONS */
 
 
-    function getFeesGenerated(address payable _user) public view returns(uint256) {
-        return _etherBalance[_user];
+    function getFeesGenerated(address payable user) public view returns(uint256) {
+        return _etherBalance[user];
     }
 
     function getBuyOrder(uint256 _tokenId) 
@@ -1103,11 +1096,11 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
             uint256 tokenId
         )
     {
-        BuyOrders memory _buys = _buyOrders[_tokenId];
+        BuyOrders memory buyOrderObject = _buyOrders[_tokenId];
         return (
-            _buys.buyer,
-            _buys.bidPrice,
-            _buys.tokenId
+            buyOrderObject.buyer,
+            buyOrderObject.bidPrice,
+            buyOrderObject.tokenId
         );
     }
 
@@ -1120,17 +1113,17 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
             uint256 tokenId
         )
     {
-        SellOrders memory _sells = _sellOrders[_tokenId];
+        SellOrders memory sellOrderObject = _sellOrders[_tokenId];
         return (
-            _sells.seller,
-            _sells.askPrice,
-            _sells.tokenId
+            sellOrderObject.seller,
+            sellOrderObject.askPrice,
+            sellOrderObject.tokenId
         );
     }
 
-    function isListed(uint256 _tokenId) public view returns(bool) {
-        SellOrders memory _sells = _sellOrders[_tokenId];
-        return _sells.seller != address(0);
+    function isListed(uint256 tokenId) public view returns(bool) {
+        SellOrders memory sellOrderObject = _sellOrders[tokenId];
+        return sellOrderObject.seller != address(0);
     }
 
 }

@@ -953,11 +953,11 @@ abstract contract IPrime {
         uint256 tExpiry,
         address receiver
     ) external virtual returns (uint256 _tokenId);
-    function exercise(uint256 _tokenId) external virtual returns (bool);
-    function close(uint256 _collateralId, uint256 _burnId) external virtual returns (bool);
-    function withdraw(uint256 _amount, address _asset) public virtual returns (bool);
+    function exercise(uint256 tokenId) external payable virtual returns (bool);
+    function close(uint256 tokenToClose, uint256 tokenToBurn) external virtual returns (bool);
+    function withdraw(uint256 amount, address asset) public virtual returns (bool);
     function safeTransferFrom(address from, address to, uint256 tokenId) external virtual;
-    function isGreaterThanOrEqual(uint256 _a, uint256 _b) public pure virtual returns(bool);
+    function isGreaterThanOrEqual(uint256 a, uint256 b) public pure virtual returns(bool);
 }
 
 abstract contract ICEther {
@@ -1277,7 +1277,7 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder, ERC20, ERC20D
      @param amount ether that will be swapped to cEther
      */
     function swapEtherToCompoundEther(uint256 amount) internal returns (bool) {
-        _cEther.mint.value(amount)("");
+        _cEther.mint.value(amount).gas(250000);
         return true;
     }
 
