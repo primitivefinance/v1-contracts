@@ -989,7 +989,7 @@ contract ERC721Metadata is Context, ERC165, ERC721, IERC721Metadata {
 }
 
 abstract contract ERC20 {
-    function balanceOf(address _owner) virtual external returns(uint256);
+    function balanceOf(address _controller) virtual external returns(uint256);
     function transferFrom(address sender, address recipient, uint256 amount) public virtual returns (bool);
     function transfer(address recipient, uint256 amount) public virtual returns (bool);
 }
@@ -999,74 +999,29 @@ abstract contract IPool {
 }
 
 abstract contract IPrime {
-    /**
-    * @dev Emitted when a Minter deposits collateral.
-    * @param _user Address of user.
-    * @param _collateralQty Quantity of the deposited asset.
-    * @param _collateral Address of the deposited asset.
-    * @param _paymentQty Quantity of the deposited asset.
-    * @param _payment Address of the deposited asset.
-    * @param _tokenId Nonce of minted Prime -> ID.
-    * @param _timestamp Block.timestamp of deposit.
-    **/
+    
     event PrimeMinted(
-        address indexed _user,
-        uint256 _collateralQty,
-        address  _collateral,
-        uint256 _paymentQty,
-        address  _payment,
-        uint256 indexed _tokenId, 
-        uint256 _timestamp
+        address indexed caller,
+        bytes4 symbol,
+        uint256 indexed tokenId
     );
 
-    /**
-    * @dev Emitted when a Burner purchases collateral.
-    * @param _user Address of user.
-    * @param _collateralQty Quantity of the deposited asset.
-    * @param _collateral Address of the deposited asset.
-    * @param _paymentQty Quantity of the deposited asset.
-    * @param _payment Address of the deposited asset.
-    * @param _tokenId Nonce of minted Prime -> ID.
-    * @param _timestamp Block.timestamp of deposit.
-    **/
     event PrimeExercised(
-        address indexed _user,
-        uint256 _collateralQty,
-        address  _collateral,
-        uint256 _paymentQty,
-        address  _payment,
-        uint256 indexed _tokenId, 
-        uint256 _timestamp
+        address indexed caller,
+        bytes4 symbol,
+        uint256 indexed tokenId
     );
 
-    /**
-    * @dev Emitted when collateral is withdrawable by Minter.
-    * @param _user Address of user.
-    * @param _collateralQty Quantity of the deposited asset.
-    * @param _collateral Address of the deposited asset.
-    * @param _tokenId Nonce of minted Prime -> ID.
-    * @param _timestamp Block.timestamp of deposit.
-    **/
     event PrimeClosed(
-        address indexed _user,
-        uint256 _collateralQty,
-        address  indexed _collateral,
-        uint256 indexed _tokenId, 
-        uint256 _timestamp
+        address indexed caller,
+        bytes4 symbol,
+        uint256 indexed tokenId
     );
 
-    /**
-    * @dev Emitted when collateral is withdrawn from Prime.
-    * @param _user Address of user.
-    * @param _collateralQty Quantity of the deposited asset.
-    * @param _collateral Address of the deposited asset.
-    * @param _timestamp Block.timestamp of deposit.
-    **/
     event Withdrawal(
-        address indexed _user,
-        uint256 _collateralQty,
-        address indexed _collateral,
-        uint256 _timestamp
+        address indexed caller,
+        uint256 amount,
+        address indexed asset
     );
 
 
@@ -1078,16 +1033,16 @@ abstract contract IPrime {
         uint256 tExpiry,
         address receiver
     ) external payable virtual returns (uint256);
-    function exercise(uint256 _tokenId) external payable virtual returns (bool);
-    function close(uint256 _collateralId, uint256 _burnId) external virtual returns (bool);
-    function withdraw(uint256 _amount, address _asset) public virtual returns (bool);
+    function exercise(uint256 tokenId) external payable virtual returns (bool);
+    function close(uint256 tokenToClose, uint256 tokenToBurn) external virtual returns (bool);
+    function withdraw(uint256 amount, address asset) public virtual returns (bool);
 }
 
 contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
     using SafeMath for uint256;
 
-    uint256 public nonce;
-    address public _owner;
+    uint256 public _nonce;
+    address public _controller;
     address public _poolAddress;
     IPool public _pool;
 
@@ -1103,14 +1058,14 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
             "Prime Derivative",
             "PRIME"
         ) {
-            _owner = msg.sender;
+            _controller = msg.sender;
         }
     
     receive() external payable {}
 
     /* SET*/
     function setPoolAddress(address poolAddress) external {
-        require(msg.sender == _owner, 'not owner');
+        require(msg.sender == _controller, 'not owner');
         _poolAddress = poolAddress;
         _pool = IPool(poolAddress);
     }
@@ -1155,21 +1110,21 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
         /* INTERACTIONS */
 
         /* Create Prime and Mint to msg.sender */
-        nonce = nonce.add(1);
+        _nonce = _nonce.add(1);
 
-        bytes4 chain = bytes4(
+        bytes4 series = bytes4(
             keccak256(abi.encodePacked(aUnderlying))) 
             ^ bytes4(keccak256(abi.encodePacked(aStrike))) 
             ^ bytes4(keccak256(abi.encodePacked(tExpiry))
         );
 
-        bytes4 fullChain = (
-            chain 
+        bytes4 symbol = (
+            series 
             ^ bytes4(keccak256(abi.encodePacked(qUnderlying))) 
             ^ bytes4(keccak256(abi.encodePacked(qStrike)))
         );
 
-        _primes[nonce] = Instruments.Primes(
+        _primes[_nonce] = Instruments.Primes(
             msg.sender, 
             qUnderlying,
             aUnderlying, 
@@ -1177,8 +1132,8 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
             aStrike, 
             tExpiry, 
             receiver,
-            chain,
-            fullChain
+            series,
+            symbol
         );
 
         /* INTERACTIONS */
@@ -1188,13 +1143,13 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
             aUnderlying,
             qStrike,
             aStrike,
-            nonce, 
+            _nonce, 
             block.timestamp
         );
 
         _safeMint(
             msg.sender, 
-            nonce
+            _nonce
         );
 
         /* If its an ERC-20 Prime, withdraw token from minter */
@@ -1202,10 +1157,10 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
             ERC20 aUnderlying = ERC20(aUnderlying);
             isGreaterThanOrEqual(aUnderlying.balanceOf(msg.sender), qUnderlying);
             aUnderlying.transferFrom(msg.sender, address(this), qUnderlying);
-            return nonce;
+            return _nonce;
         }
 
-        return nonce;
+        return _nonce;
     }
 
     /** 
