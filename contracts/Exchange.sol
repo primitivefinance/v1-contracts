@@ -1,4 +1,4 @@
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.2;
 
 /**
  * @title   Primitive's Exchange Contract
@@ -333,46 +333,6 @@ contract ReentrancyGuard {
     }
 }
 
-/** 
- *  @title Primitive's Instruments
- * @author Primitive Finance
-*/
-library Instruments {
-     struct Actors {
-        uint[] mintedTokens;
-        uint[] deactivatedTokens;
-    }
-
-     /** 
-     * @dev A Prime has these properties.
-     * @param ace `msg.sender` of the createPrime function.
-     * @param xis Quantity of collateral asset token.
-     * @param yak Address of collateral asset token.
-     * @param zed Purchase price of collateral, denominated in quantity of token z.
-     * @param wax Address of purchase price asset token.
-     * @param pow UNIX timestamp of valid time period.
-     * @param gem Address of payment receiver of token z.
-     */
-    struct Primes {
-        address ace;
-        uint256 xis;
-        address yak;
-        uint256 zed;
-        address wax;
-        uint256 pow;
-        address gem;
-    }
-
-     /** 
-     * @dev A Prime has these properties.
-     * @param chain Keccak256 hash of collateral
-     *  asset address, strike asset address, and  expiration date.
-     */
-    struct Chain {
-        bytes4 chain;
-    }
-}
-
 /**
  * @dev Contract module which allows children to implement an emergency stop
  * mechanism that can be triggered by an authorized account.
@@ -442,6 +402,8 @@ contract Pausable is Context {
         emit Unpaused(_msgSender());
     }
 }
+
+import './Instruments.sol';
 
 abstract contract IPool {
     function withdrawExercisedEth(address payable _receiver, uint256 _amount) external virtual returns (bool);
