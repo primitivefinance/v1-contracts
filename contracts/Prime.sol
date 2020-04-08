@@ -1002,19 +1002,19 @@ abstract contract IPrime {
     
     event PrimeMinted(
         address indexed caller,
-        bytes4 symbol,
+        bytes4 indexed symbol,
         uint256 indexed tokenId
     );
 
     event PrimeExercised(
         address indexed caller,
-        bytes4 symbol,
+        bytes4 indexed symbol,
         uint256 indexed tokenId
     );
 
     event PrimeClosed(
         address indexed caller,
-        bytes4 symbol,
+        bytes4 indexed symbol,
         uint256 indexed tokenId
     );
 

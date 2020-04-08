@@ -1000,13 +1000,11 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder, ERC20, ERC20D
     /* For testing */
     uint256 public constant _premiumDenomination = 5; /* 20% = 0.2 = 1 / 5 */
 
-
-    event Debug(string error, uint256 result, uint256 tokenBalance);
-    event Deposit(uint256 _deposit, address _user, uint256 _pulpMinted);
-    event Withdraw(uint256 _withdraw, address _user, uint256 _pulpBurned);
-    event PoolMint(uint256 _nonce, uint256 _collateralAmount, uint256 _strikeAmount);
-    event Exercise(uint256 _amount, uint256 _strikeAmount);
-    event Close(uint256 _closed, address _address, uint256 _pulpBurned);
+    event Deposit(uint256 deposit, address indexed user, uint256 minted);
+    event Withdraw(uint256 withdraw, address indexed user, uint256 burned);
+    event PoolMint(uint256 nonce, uint256 qUnderlying, uint256 qStrike, uint256 indexed tExpiry);
+    event Exercise(uint256 amount, uint256 qStrike);
+    event Close(uint256 amountClosed, address indexed user, uint256 burned);
 
     constructor (
         address primeAddress,
@@ -1027,7 +1025,7 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder, ERC20, ERC20D
         _compoundEthAddress = compoundEthAddress;
     }
 
-    /* SET*/
+    /* SET */
     function setExchangeAddress(address exchangeAddress) external onlyOwner {
         _exchangeAddress = exchangeAddress;
     }
@@ -1038,11 +1036,11 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder, ERC20, ERC20D
 
     /**
      * @dev deposits funds to the liquidity pool
-     * @param _value amount of ether to deposit
+     * @param amount amount of ether to deposit
      * @return bool true if liquidity tokens were minted and ether deposit swapped to cETher
      */
     function deposit(
-        uint256 _value
+        uint256 amount
     )
         external
         payable
@@ -1050,83 +1048,66 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder, ERC20, ERC20D
         returns (bool)
     {
         /* CHECKS */
-        require(msg.value == _value, 'Deposit: Val < deposit');
+        require(msg.value == amount, 'Deposit: Val < deposit');
 
         /* EFFECTS */
-
-        /* INTERACTIONS */
-
-        /* Mint Amount = Deposit / Total Ether In Pool / Total Supply of Liquidity Token */
         uint256 totalSupply = totalSupply();
         uint256 poolBalance = getPoolBalance();
         uint256 amountToMint;
         
         if(poolBalance.mul(totalSupply) == 0) {
-            amountToMint = _value;
+            amountToMint = amount;
         } else {
-            amountToMint = _value.mul(totalSupply).div(poolBalance);
+            amountToMint = amount.mul(totalSupply).div(poolBalance);
         }
 
-        emit Deposit(_value, msg.sender, amountToMint);
+        /* INTERACTIONS */
+        emit Deposit(amount, msg.sender, amountToMint);
         _mint(msg.sender, amountToMint);
-        return swapEtherToCompoundEther(_value);
+        return swapEtherToCompoundEther(amount);
     }
 
     /**
      * @dev withdraw ether that is not utilized as collateral
      * @notice withdrawing utilized collateral requires the debt to be paid using the close function
-     * @param _amount amount of ether to withdraw
+     * @param amount amount of ether to withdraw
      * @return bool true if liquidity tokens were burned, cEther was swapped to ether and sent
      */
     function withdraw(
-        uint256 _amount
+        uint256 amount
     ) 
         public 
         nonReentrant 
         returns (bool)
     {
         /* CHECKS */
-        require(balanceOf(msg.sender) >= _amount, 'Withdraw: Bal < withdraw');
-        require(getMaxBurnAmount() >= _amount, 'Withdraw: max burn < amt');
+        require(balanceOf(msg.sender) >= amount, 'Withdraw: Bal < withdraw');
+        require(getMaxBurnAmount() >= amount, 'Withdraw: max burn < amt');
 
         /* EFFECTS */
 
         /* INTERACTIONS */
-        /* Burn PULP Tokens */
-        _burn(msg.sender, _amount);
-        emit Withdraw(getEthWithdrawAmount(_amount), msg.sender, _amount);
-
-        /* COMPOUND */
-
-        /* Redeem cTokens and send user Ether */
-        return swapCTokensToEtherThenSend(_amount, msg.sender);
-
-        /* return sendEther(getEthWithdrawAmount(_amount), msg.sender); */
+        _burn(msg.sender, amount);
+        emit Withdraw(etherToCEther(amount), msg.sender, amount);
+        return swapCEtherToEtherThenSend(amount, msg.sender);
     }
 
     /* GET BALANCE SHEET ITEMS */
 
     /**
-     * @dev get ether balance of contract
-     * @return uint256 balance of contract in ether
+     * @dev get ether balance of this contract
+     * @return uint256 balance of this contract in ether
      */
     function getPoolBalance() public returns(uint256) {
-        /* ET, where ET = Total Ether */
-        /* if(_cEther.balanceOf(address(this)) == 0) {
-            return 0;
-        }
-        uint256 exchangeRate = _cEther._exchangeRateCurrent();
-        return _cEther.balanceOf(address(this)).mul(exchangeRate).div(10**28); */
         return _cEther.balanceOfUnderlying(address(this));
-        /* return address(this).balance; */
     }
     
     /**
-     * @dev returns Net Assets = Pool Assets - Pool Liabilities
+     * @dev gets the total assets that are not being utilized as underlying assets in Primes
+     * @notice Net Assets = Pool Assets - Pool Liabilities
      * @return pool amount of available assets
      */
     function getAvailableAssets() public returns (uint256) {
-        /* Net Assets = ET - L, where ET = Total Ether and L = Total Liabilities */
         uint256 poolBalance = getPoolBalance();
         if(_liability > poolBalance) {
             return 0;
@@ -1136,11 +1117,10 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder, ERC20, ERC20D
     }
 
     /**
-     * @dev returns Net Assets = Pool Assets - Pool Liabilities
+     * @dev returns Total Supply / Total Pool Assets
      * @return pool returns 1 / Exchange Rate to use in LP token swaps
      */
     function totalSupplyDivTotalEther() public returns (uint256) {
-        /* Exchange rate = ET / ST, where ET = Total Ether balance, and ST = Total LP Supply */
         if(totalSupply().mul(getPoolBalance()) == 0) {
             return 1;
         }
@@ -1148,25 +1128,27 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder, ERC20, ERC20D
     }
 
     /**
-     @dev tokens to burn to withdraw all non-utilized collateral
-     @return uint256 max amount of tokens that can be burned for ether
+     * @dev tokens to burn to withdraw non-utilized pool assets
+     * @notice Max Burn = Net Assets * Total Supply / Total Pool Assets
+     * @return uint256 max amount of tokens that can be burned for ether
      */
     function getMaxBurnAmount() public returns (uint256) {
         /* LP = (ET - L) * ST / ET where ST = Total Supply */
         uint256 maxBurn = getAvailableAssets().mul(totalSupply()).div(getPoolBalance());
-        require(getEthWithdrawAmount(maxBurn) <= getAvailableAssets(), 'Withdraw > net assets');
+        require(etherToCEther(maxBurn) <= getAvailableAssets(), 'Withdraw > net assets');
         return maxBurn;
     }
 
     /**
-     @dev returns the amount of ETH returned from swapped amount of Liquidity tokens
+     * @dev returns the amount of ETH returned from swapped amount of Liquidity tokens
+     * @notice Ether = Amount * Total Pool Assets / Total Supply
+     * @return uint256 amount of cTokens proportional to parameter amount
      */
-    function getEthWithdrawAmount(uint256 _amount) public returns (uint256) {
-        /* LP = A * ET / ST, where LP = Primitive token, A = Amount, ET = Ether balance, ST = Total LP Supply */
+    function etherToCEther(uint256 amount) public returns (uint256) {
         if(totalSupply().mul(getPoolBalance()) == 0) {
-            return _amount;
+            return amount;
         }
-        return _amount.mul(getPoolBalance()).div(totalSupply());
+        return amount.mul(getPoolBalance()).div(totalSupply());
     }
 
     /* PRIME INTERACTION FUNCTIONS */
@@ -1205,8 +1187,6 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder, ERC20, ERC20D
         _liability = _liability.add(qUnderlying);
 
         /* INTERACTIONS */
-
-        /* Mint a Prime */
         uint256 nonce = _prime.createPrime(
                 qUnderlying,
                 address(this),
@@ -1216,13 +1196,9 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder, ERC20, ERC20D
                 address(this)
             );
 
-        /* Transfer Prime to User from Pool */
         _prime.safeTransferFrom(address(this), primeReceiver, nonce);
-        emit PoolMint(nonce, qUnderlying, qStrike);
-        /* COMPOUND */
-        /* Swap Pool ether to interest Bearing cEther */
+        emit PoolMint(nonce, qUnderlying, qStrike, tExpiry);
         return swapEtherToCompoundEther(msg.value);
-        /* return true; */
     }
 
     /**
@@ -1242,58 +1218,44 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder, ERC20, ERC20D
         returns (bool) 
     {
         /* CHECKS */
-
-        /* This function should only be called by Prime */
         require(msg.sender == _primeAddress);
+        require(getPoolBalance() >= qUnderlying, 'Swap: ether < collat'); 
 
         /* EFFECTS */
-
-        /* Clear liability of Prime */
         _liability = _liability.sub(qUnderlying);
         
         /* INTERACTIONS */
-
-        /* COMPOUND */
-
-        /* Check if enough cTokens can be redeemed to meet collateral */
-        require(getPoolBalance() >= qUnderlying, 'Swap: ether < collat'); 
-
-        /* Swap cEther to Ether */
         uint256 redeemResult = _cEther.redeemUnderlying(qUnderlying);
         require(redeemResult == 0, 'Swap: redeem != 0');
 
-        /* Sent to trusted address - Prime Contract */
         sendEther(qUnderlying, msg.sender);
         emit Exercise(qUnderlying, qStrike);
-        /* Withdraw strike assets from prime */
         return _prime.withdraw(qStrike, aStrike);
     }
 
     /**
      * @dev buy debt, withdraw capital
      * @notice user must purchase option and sell to pool, i.e. burn liability (Prime Token)
+     * @param amount size of position to close and withdraw in ether
+     * @return bool if the transaction suceeds
      */
-    function closePosition(uint256 _amount) external payable returns (bool) {
+    function closePosition(uint256 amount) external payable returns (bool) {
         /* CHECKS */
         uint256 userEthBal = balanceOf(msg.sender);
-        require(userEthBal >= _amount, 'Close: Eth Bal < amt');
+        require(userEthBal >= amount, 'Close: Eth Bal < amt');
 
         uint256 poolBalance = getPoolBalance();
-        uint256 debt = _amount.mul(_liability).div(poolBalance);
+        uint256 debt = amount.mul(_liability).div(poolBalance);
         require(msg.value >= debt, 'Close: Value < debt');
 
         /* EFFECTS */
-
         uint256 refundEther = msg.value.sub(debt);
 
         /* INTERACTIONS */
-
-        _burn(msg.sender, _amount);
-        emit Close(getEthWithdrawAmount(_amount.add(refundEther)), msg.sender, _amount);
-        /* COMPOUND */
-        return swapCTokensToEtherThenSend(getEthWithdrawAmount(_amount.add(refundEther)), msg.sender);
-
-        /* return sendEther(getEthWithdrawAmount(_amount).add(refundEther), msg.sender); */
+        _burn(msg.sender, amount);
+        uint256 amountInCEther = etherToCEther(amount.add(refundEther));
+        emit Close(amountInCEther, msg.sender, amount);
+        return swapCEtherToEtherThenSend(amountInCEther, msg.sender);
     }
 
 
@@ -1302,8 +1264,8 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder, ERC20, ERC20D
     /**
      @dev function to send ether with the most security
      */
-    function sendEther(uint256 _amount, address payable _user) internal returns (bool) {
-        (bool success, ) = _user.call.value(_amount)("");
+    function sendEther(uint256 amount, address payable user) internal returns (bool) {
+        (bool success, ) = user.call.value(amount)("");
         require(success, "Send ether fail");
         return success;
     }
@@ -1312,30 +1274,23 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder, ERC20, ERC20D
 
     /**
      @dev converts ether to interest bearing cEther (Compound Protocol)
-     @param _amount ether that will be swapped to cEther
+     @param amount ether that will be swapped to cEther
      */
-    function swapEtherToCompoundEther(uint256 _amount) internal returns (bool) {
-        _cEther.mint.value(_amount).gas(250000)();
+    function swapEtherToCompoundEther(uint256 amount) internal returns (bool) {
+        _cEther.mint.value(amount)("");
         return true;
     }
 
     /**
      @dev converts cEther back into Ether
-     @param _amount ether that will be swapped to cEther
+     @param amount ether that will be swapped to cEther
      */
-    function swapCTokensToEtherThenSend(uint256 _amount, address payable _user) internal returns (bool) {
-        uint256 redeemResult = _cEther.redeemUnderlying(_amount);
+    function swapCEtherToEtherThenSend(uint256 amount, address payable user) internal returns (bool) {
+        uint256 redeemResult = _cEther.redeemUnderlying(amount);
         require(redeemResult == 0, 'redeem != 0');
-        (bool success, ) = _user.call.value(_amount)("");
+        (bool success, ) = user.call.value(amount)("");
         require(success, 'Transfer fail.');
         return success;
-       
-       /*  uint256 redeemResult = _cEther.redeem(_amount);
-        uint256 exchangeRate = _cEther._exchangeRateCurrent();
-        require(redeemResult == 0, 'redeem != 0');
-        (bool success, ) = _user.call.value(_amount.mul(exchangeRate).div(10**18))("");
-        require(success, 'Transfer fail.');
-        return success; */
     }
 }
 
