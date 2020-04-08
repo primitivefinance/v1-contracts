@@ -1042,7 +1042,14 @@ abstract contract IPrime {
     );
 
 
-    function createPrime(uint256 qUnderlying, address aUnderlying, uint256 qStrike, address aStrike, uint256 tExpiry, address receiver) external payable virtual returns (uint256);
+    function createPrime(
+        uint256 qUnderlying,
+        address aUnderlying,
+        uint256 qStrike,
+        address aStrike,
+        uint256 tExpiry,
+        address receiver
+    ) external payable virtual returns (uint256);
     function exercise(uint256 _tokenId) external payable virtual returns (bool);
     function close(uint256 _collateralId, uint256 _burnId) external virtual returns (bool);
     function withdraw(uint256 _amount, address _asset) public virtual returns (bool);
