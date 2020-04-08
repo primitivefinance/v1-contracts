@@ -251,10 +251,10 @@ contract Options is Ownable {
     event AddOptionChain(
         bytes4 series, 
         uint256 tExpiry, 
-        uint256 _increment, 
+        uint256 increment, 
         address aUnderlying, 
         address aStrike,
-        uint256 _baseRatio
+        uint256 baseRatio
     );
 
      /* 
@@ -293,10 +293,10 @@ contract Options is Ownable {
 
     function addOptionChain(
         uint256 tExpiry, 
-        uint256 _increment, 
+        uint256 increment, 
         address aUnderlying, 
         address aStrike,
-        uint256 _baseRatio
+        uint256 baseRatio
     ) 
         public
         onlyOwner
@@ -313,13 +313,13 @@ contract Options is Ownable {
         _optionChains[nonce] = OptionsChain(
             series,
             tExpiry, 
-            _increment, 
+            increment, 
             aUnderlying, 
             aStrike,
-            _baseRatio
+            baseRatio
         );
 
-        emit AddOptionChain(series, tExpiry, _increment, aUnderlying, aStrike, _baseRatio);
+        emit AddOptionChain(series, tExpiry, increment, aUnderlying, aStrike, baseRatio);
         return true;
     }
 
@@ -333,14 +333,14 @@ contract Options is Ownable {
         
     ) 
     {
-        OptionsChain memory _options = _optionChains[_id];
+        OptionsChain memory optionChainObject = _optionChains[_id];
         return (
-            _options.series,
-            _options.tExpiry,
-            _options.increment,
-            _options.aUnderlying,
-            _options.aStrike,
-            _options.baseRatio
+            optionChainObject.series,
+            optionChainObject.tExpiry,
+            optionChainObject.increment,
+            optionChainObject.aUnderlying,
+            optionChainObject.aStrike,
+            optionChainObject.baseRatio
         );
     }
 }
