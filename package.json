@@ -13,14 +13,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Alexangelj/primitive.git"
+    "url": "git+https://github.com/primitivefinance/Primitive-v1.git"
   },
-  "author": "Karbon",
-  "license": "ISC",
+  "author": "Primitive",
+  "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Alexangelj/primitive/issues"
+    "url": "https://github.com/primitivefinance/Primitive-v1/issues"
   },
-  "homepage": "https://github.com/Alexangelj/primitive#readme",
+  "homepage": "https://github.com/primitivefinance/Primitive-v1#readme",
   "dependencies": {
     "@truffle/hdwallet-provider": "^1.0.32",
     "dotenv": "^8.2.0",

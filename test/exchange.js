@@ -181,7 +181,7 @@ contract('Prime - Local', accounts => {
                     minter,
                     {from: minter, value: collateralAmount}
                 );
-                let tokenId = await _prime.nonce();
+                let tokenId = await _prime._nonce();
                 await _prime.approve(_exchange.address, tokenId, {from: minter});
                 await truffleAssert.reverts(
                     _exchange.sellOrder(tokenId, askPrice, {from: minter}),
@@ -207,7 +207,7 @@ contract('Prime - Local', accounts => {
                     minter,
                     {from: minter, value: collateralAmount}
                 )
-                let tokenId = await _prime.nonce();
+                let tokenId = await _prime._nonce();
                 await truffleAssert.reverts(
                     _exchange.sellOrder(tokenId, askPrice, {from: minter}),
                     "Token expired"
@@ -224,7 +224,7 @@ contract('Prime - Local', accounts => {
                     minter,
                     {from: minter, value: collateralAmount}
                 ); /* might not work because it wont let an expired token to be made */
-                let tokenId = await _prime.nonce();
+                let tokenId = await _prime._nonce();
                 await _prime.approve(_exchange.address, tokenId, {from: minter});
                 await _exchange.sellOrder(tokenId, collateralAmount, {from: minter});
                 await truffleAssert.reverts(
@@ -243,7 +243,7 @@ contract('Prime - Local', accounts => {
                     minter,
                     {from: minter, value: collateralAmount}
                 ); /* might not work because it wont let an expired token to be made */
-                let tokenId = await _prime.nonce();
+                let tokenId = await _prime._nonce();
                 let bidPrice = (await web3.utils.toWei('0.75')).toString();
                 let askPrice = (await web3.utils.toWei('0.5')).toString();
                 let buyOrderUnfilled = await _exchange.buyOrderUnfilled(
@@ -276,7 +276,7 @@ contract('Prime - Local', accounts => {
             });
 
             it('assert buyer received prime from seller', async () => {
-                let tokenId = await _prime.nonce();
+                let tokenId = await _prime._nonce();
                 let owner = await _prime.ownerOf(tokenId);
                 assert.strictEqual(
                     owner,
@@ -287,7 +287,7 @@ contract('Prime - Local', accounts => {
             });
 
             it('assert buyer received prime from seller', async () => {
-                let tokenId = await _prime.nonce();
+                let tokenId = await _prime._nonce();
                 let owner = await _prime.ownerOf(tokenId);
                 assert.strictEqual(
                     owner,
@@ -307,7 +307,7 @@ contract('Prime - Local', accounts => {
                     minter,
                     {from: minter, value: collateralAmount}
                 ); /* might not work because it wont let an expired token to be made */
-                let tokenId = await _prime.nonce();
+                let tokenId = await _prime._nonce();
                 let bidPrice = (await web3.utils.toWei('0.5')).toString();
                 let askPrice = (await web3.utils.toWei('0.5')).toString();
                 /* Pool should not have funds, else itll fill order */
@@ -334,7 +334,7 @@ contract('Prime - Local', accounts => {
                     minter,
                     {from: minter, value: collateralAmount}
                 ); /* might not work because it wont let an expired token to be made */
-                let tokenId = await _prime.nonce();
+                let tokenId = await _prime._nonce();
                 let askPrice = (await web3.utils.toWei('0.5')).toString();
                 /* Pool should not have funds, else itll fill order */
                 await _prime.approve(_exchange.address, tokenId, {from: minter});
@@ -343,7 +343,7 @@ contract('Prime - Local', accounts => {
             });
 
             it('should have updated state with sell order', async () => {
-                let tokenId = await _prime.nonce();
+                let tokenId = await _prime._nonce();
                 let askPrice = (await web3.utils.toWei('0.5')).toString();
                 let sellOrder = await _exchange.getSellOrder(tokenId, {from: minter});
                 assert.strictEqual(
@@ -365,7 +365,7 @@ contract('Prime - Local', accounts => {
             });
 
             it('should have transferred Prime from seller to exchange', async () => {
-                let tokenId = await _prime.nonce();
+                let tokenId = await _prime._nonce();
                 let owner = await _prime.ownerOf(tokenId, {from: minter});
                 assert.strictEqual(
                     owner,
@@ -418,7 +418,7 @@ contract('Prime - Local', accounts => {
                     Alice,
                     {from: Alice, value: collateralAmount}
                 );
-                let tokenId = await _prime.nonce();
+                let tokenId = await _prime._nonce();
                 let bidPrice = (await web3.utils.toWei('0.5')).toString();
                 await _prime.approve(_exchange.address, tokenId, {from: Alice});
                 await _exchange.sellOrder(tokenId, bidPrice, {from: Alice});
@@ -427,7 +427,7 @@ contract('Prime - Local', accounts => {
             });
 
             it('asserts sellers exchange balance had the ask price added to it', async () => {
-                let tokenId = await _prime.nonce();
+                let tokenId = await _prime._nonce();
                 let bidPrice = (await web3.utils.toWei('0.5')).toString();
                 let etherBalanceOfSeller = (await _exchange._etherBalance(Alice, {from: Alice})).toString();
                 assert.strictEqual(
@@ -439,7 +439,7 @@ contract('Prime - Local', accounts => {
             });
 
             it('asserts prime token was transferred from exchange to buyer', async () => {
-                let tokenId = await _prime.nonce();
+                let tokenId = await _prime._nonce();
                 let owner = await _prime.ownerOf(tokenId);
                 assert.strictEqual(
                     owner,
@@ -458,14 +458,14 @@ contract('Prime - Local', accounts => {
                     minter,
                     {from: minter, value: collateralAmount}
                 );
-                let tokenId = await _prime.nonce();
+                let tokenId = await _prime._nonce();
                 let bidPrice = (await web3.utils.toWei('0.5')).toString();
                 let buyOrder = await _exchange.buyOrder(tokenId, bidPrice, {from: minter, value: collateralAmount});
                 await truffleAssert.eventEmitted(buyOrder, 'BuyOrder');
             });
 
             it('should have updated state with a buy order for token Id', async () => {
-                let tokenId = await _prime.nonce();
+                let tokenId = await _prime._nonce();
                 let bidPrice = (await web3.utils.toWei('0.5')).toString();
                 let buyOrder = await _exchange.getBuyOrder(tokenId, {from: minter});
                 assert.strictEqual(
@@ -516,7 +516,7 @@ contract('Prime - Local', accounts => {
                     minter,
                     {from: minter, value: collateralAmount}
                 );
-                let tokenId = await _prime.nonce();
+                let tokenId = await _prime._nonce();
                 let askPrice = (await web3.utils.toWei('0.5')).toString();
                 await _prime.approve(_exchange.address, tokenId, {from: minter});
                 let sellOrder = await _exchange.sellOrder(tokenId, askPrice, {from: minter});
@@ -527,14 +527,14 @@ contract('Prime - Local', accounts => {
             });
 
             it('close sell order', async () => {
-                let tokenId = await _prime.nonce();
+                let tokenId = await _prime._nonce();
                 let askPrice = (await web3.utils.toWei('0.5')).toString();
                 let closeSellOrder = await _exchange.closeSellOrder(tokenId, {from: minter});
                 await truffleAssert.eventEmitted(closeSellOrder, 'CloseOrder');
             });
 
             it('assert sell order was cleared from state', async () => {
-                let tokenId = await _prime.nonce();
+                let tokenId = await _prime._nonce();
                 let askPrice = 0;
                 await _prime.approve(_exchange.address, tokenId, {from: minter});
                 let sellOrder = await _exchange.getSellOrder(tokenId, {from: minter});
@@ -557,7 +557,7 @@ contract('Prime - Local', accounts => {
             });
 
             it('assert prime was transferred from exchange to seller', async () => {
-                let tokenId = await _prime.nonce();
+                let tokenId = await _prime._nonce();
                 let owner = await _prime.ownerOf(tokenId, {from: minter});
                 assert.strictEqual(
                     owner,
@@ -597,7 +597,7 @@ contract('Prime - Local', accounts => {
                     minter,
                     {from: minter, value: collateralAmount}
                 );
-                let tokenId = await _prime.nonce();
+                let tokenId = await _prime._nonce();
                 let bidPrice = (await web3.utils.toWei('0.5')).toString();
                 let buyOrder = await _exchange.buyOrder(tokenId, bidPrice, {from: minter, value: collateralAmount});
                 await truffleAssert.reverts(
@@ -607,7 +607,7 @@ contract('Prime - Local', accounts => {
             });
 
             it('close buy order', async () => {
-                let tokenId = await _prime.nonce();
+                let tokenId = await _prime._nonce();
                 let bidPrice = (await web3.utils.toWei('0.5')).toString();
                 let buyOrder = await _exchange.buyOrder(tokenId, bidPrice, {from: minter, value: collateralAmount});
                 let closeBuyOrder = await _exchange.closeBuyOrder(tokenId, {from: minter});
@@ -615,7 +615,7 @@ contract('Prime - Local', accounts => {
             });
 
             it('assert buy order was cleared from state', async () => {
-                let tokenId = await _prime.nonce();
+                let tokenId = await _prime._nonce();
                 let bidPrice = 0;
                 let buyOrder = await _exchange.getBuyOrder(tokenId, {from: Alice});
                 let zeroAddress = '0x0000000000000000000000000000000000000000';
@@ -637,7 +637,7 @@ contract('Prime - Local', accounts => {
             });
 
             it('assert prime bid was added to withdraw amount', async () => {
-                let tokenId = await _prime.nonce();
+                let tokenId = await _prime._nonce();
                 let bidPrice = (await web3.utils.toWei('0.5')).toString();
                 let etherBalanceOfBuyer = (await _exchange._etherBalance(Alice, {from: Alice})).toString();
                 assert.strictEqual(
@@ -670,7 +670,7 @@ contract('Prime - Local', accounts => {
                     minter,
                     {from: minter, value: collateralAmount}
                 );
-                let tokenId = await _prime.nonce();
+                let tokenId = await _prime._nonce();
                 let chain = await _prime.getChain(tokenId);
                 let bidPrice = (await web3.utils.toWei('0.5')).toString();
                 let buyOrderUnfilled = await _exchange.buyOrderUnfilled(
@@ -692,7 +692,7 @@ contract('Prime - Local', accounts => {
             });
 
             it('close unfilled buy order', async () => {
-                let tokenId = await _prime.nonce();
+                let tokenId = await _prime._nonce();
                 let chain = await _prime.getChain(tokenId);
                 let buyOrderNonce = await _exchange._unfilledNonce(chain);
                 let closeUnfilledBuyOrder = await _exchange.closeUnfilledBuyOrder(chain, buyOrderNonce, {from: Alice});
@@ -700,7 +700,7 @@ contract('Prime - Local', accounts => {
             });
 
             it('assert unfilled buy order was cleared from state', async () => {
-                let tokenId = await _prime.nonce();
+                let tokenId = await _prime._nonce();
                 let bidPrice = 0;
                 let chain = await _prime.getChain(tokenId);
                 let buyOrderNonce = await _exchange._unfilledNonce(chain);

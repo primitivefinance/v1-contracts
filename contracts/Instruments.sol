@@ -1,19 +1,17 @@
 pragma solidity ^0.6.2;
 
 /** 
- *  @title Primitive's Instruments
+ * @title Primitive's Instruments
  * @author Primitive Finance
  */
-
-
 library Instruments {
      /** 
      * @dev A Prime has these properties.
      * @param writer `msg.sender` of the createPrime function.
-     * @param qUnderlying Quantity of collateral asset token.
-     * @param aUnderlying Address of collateral asset token.
-     * @param qStrike Purchase price of collateral, denominated in quantity of token z.
-     * @param aStrike Address of purchase price asset token.
+     * @param qUnderlying Quantity of underlying asset token.
+     * @param aUnderlying Address of underlying asset token.
+     * @param qStrike Quantity of strike asset token.
+     * @param aStrike Address of strike asset token.
      * @param tExpiry UNIX timestamp of valid time period.
      * @param receiver Address of payment receiver of token z.
      * @param series Keccak256 hash of (aUnderlying ^ aStrike ^ tExpiry)
