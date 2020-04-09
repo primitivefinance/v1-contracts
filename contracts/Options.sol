@@ -1,4 +1,4 @@
-pragma solidity ^0.6.2;
+pragma solidity ^0.6.0;
 
 /**
  * @dev Wrappers over Solidity's arithmetic operations with added overflow
@@ -249,26 +249,26 @@ contract Options is Ownable {
     using SafeMath for uint256;
 
     event AddOptionChain(
-        bytes4 _chain, 
-        uint256 _expiration, 
+        bytes4 series, 
+        uint256 tExpiry, 
         uint256 _increment, 
-        address _collateral, 
-        address _strike,
+        address aUnderlying, 
+        address aStrike,
         uint256 _baseRatio
     );
 
      /* 
         THE CORE CHAIN STRUCT
-        CHAIN IS A HASH OF THE COLLATERAL/STRIKE/EXPIRATON
+        SERIES IS A HASH OF THE COLLATERAL/STRIKE/EXPIRATON
         COLLATERAL AND STRIKE ARE THE ADDRESSES OF THE TOKENS
         BASE RATIO IS THE CURRENT RATE BETWEEN ASSETS AT CREATION
      */
     struct OptionsChain {
-        bytes4 chain;
-        uint256 expiration;
+        bytes4 series;
+        uint256 tExpiry;
         uint256 increment;
-        address collateral;
-        address strike;
+        address aUnderlying;
+        address aStrike;
         uint256 baseRatio;
         
     }
@@ -277,14 +277,14 @@ contract Options is Ownable {
     address public _exchangeAddress;
     constructor(
         address exchangeAddress,
-        uint256 expiration,
+        uint256 tExpiry,
         uint256 increment,
-        address collateral,
-        address strike,
+        address aUnderlying,
+        address aStrike,
         uint256 baseRatio
     ) public {
         _exchangeAddress = exchangeAddress;
-        addOptionChain(expiration, increment, collateral, strike, baseRatio);
+        addOptionChain(tExpiry, increment, aUnderlying, aStrike, baseRatio);
     }
 
    
@@ -292,10 +292,10 @@ contract Options is Ownable {
     mapping(uint256 => OptionsChain) public _optionChains;
 
     function addOptionChain(
-        uint256 _expiration, 
+        uint256 tExpiry, 
         uint256 _increment, 
-        address _collateral, 
-        address _strike,
+        address aUnderlying, 
+        address aStrike,
         uint256 _baseRatio
     ) 
         public
@@ -303,43 +303,43 @@ contract Options is Ownable {
         returns (bool) 
     {
 
-        bytes4 _chain = bytes4(
-            keccak256(abi.encodePacked(_collateral))) 
-            ^ bytes4(keccak256(abi.encodePacked(_strike))) 
-            ^ bytes4(keccak256(abi.encodePacked(_expiration))
+        bytes4 series = bytes4(
+            keccak256(abi.encodePacked(aUnderlying))) 
+            ^ bytes4(keccak256(abi.encodePacked(aStrike))) 
+            ^ bytes4(keccak256(abi.encodePacked(tExpiry))
         );
 
         nonce = nonce.add(1);
         _optionChains[nonce] = OptionsChain(
-            _chain,
-            _expiration, 
+            series,
+            tExpiry, 
             _increment, 
-            _collateral, 
-            _strike,
+            aUnderlying, 
+            aStrike,
             _baseRatio
         );
 
-        emit AddOptionChain(_chain, _expiration, _increment, _collateral, _strike, _baseRatio);
+        emit AddOptionChain(series, tExpiry, _increment, aUnderlying, aStrike, _baseRatio);
         return true;
     }
 
     function getOptionChain(uint256 _id) public view returns(
-        bytes4 chain,
-        uint256 expiration,
+        bytes4 series,
+        uint256 tExpiry,
         uint256 increment,
-        address collateral,
-        address strike,
+        address aUnderlying,
+        address aStrike,
         uint256 baseRatio
         
     ) 
     {
         OptionsChain memory _options = _optionChains[_id];
         return (
-            _options.chain,
-            _options.expiration,
+            _options.series,
+            _options.tExpiry,
             _options.increment,
-            _options.collateral,
-            _options.strike,
+            _options.aUnderlying,
+            _options.aStrike,
             _options.baseRatio
         );
     }

@@ -1,4 +1,4 @@
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.2;
 
 /**
  * @title   Primitive's Exchange Contract
@@ -333,46 +333,6 @@ contract ReentrancyGuard {
     }
 }
 
-/** 
- *  @title Primitive's Instruments
- * @author Primitive Finance
-*/
-library Instruments {
-     struct Actors {
-        uint[] mintedTokens;
-        uint[] deactivatedTokens;
-    }
-
-     /** 
-     * @dev A Prime has these properties.
-     * @param ace `msg.sender` of the createPrime function.
-     * @param xis Quantity of collateral asset token.
-     * @param yak Address of collateral asset token.
-     * @param zed Purchase price of collateral, denominated in quantity of token z.
-     * @param wax Address of purchase price asset token.
-     * @param pow UNIX timestamp of valid time period.
-     * @param gem Address of payment receiver of token z.
-     */
-    struct Primes {
-        address ace;
-        uint256 xis;
-        address yak;
-        uint256 zed;
-        address wax;
-        uint256 pow;
-        address gem;
-    }
-
-     /** 
-     * @dev A Prime has these properties.
-     * @param chain Keccak256 hash of collateral
-     *  asset address, strike asset address, and  expiration date.
-     */
-    struct Chain {
-        bytes4 chain;
-    }
-}
-
 /**
  * @dev Contract module which allows children to implement an emergency stop
  * mechanism that can be triggered by an authorized account.
@@ -443,38 +403,48 @@ contract Pausable is Context {
     }
 }
 
+import './Instruments.sol';
+
 abstract contract IPool {
     function withdrawExercisedEth(address payable _receiver, uint256 _amount) external virtual returns (bool);
     function clearLiability(uint256 liability, address strike, uint256 short) external virtual returns (bool);
-    function exercise(uint256 _long, uint256 _short, address _strike) external payable virtual returns (bool);
+    function exercise(uint256 qUnderlying, uint256 qStrike, address aStrike) external payable virtual returns (bool);
     function mintPrimeFromPool(
-        uint256 _long,
-        uint256 _short,
-        address _strike,
-        uint256 _expiration,
-        address _primeReceiver
+        uint256 qUnderlying,
+        uint256 qStrike,
+        address aStrike,
+        uint256 tExpiry,
+        address primeReceiver
     ) external payable virtual returns (bool);
     function getAvailableAssets() public virtual returns (uint256);
 }
 
 abstract contract IPrime {
     function safeTransferFrom(address from, address to, uint256 tokenId) public virtual;
-    function createPrime(uint256 _xis, address _yak, uint256 _zed, address _wax, uint256 _pow, address _gem) external virtual returns (bool);
+    function createPrime(
+        uint256 qUnderlying,
+        address aUnderlying,
+        uint256 qStrike,
+        address aStrike,
+        uint256 tExpiry,
+        address receiver
+    ) external virtual returns (uint256 _tokenId);
     function exercise(uint256 _tokenId) external virtual returns (bool);
     function close(uint256 _collateralId, uint256 _burnId) external virtual returns (bool);
     function withdraw(uint256 _amount, address _asset) public virtual returns (bool);
     function getPrime(uint256 _tokenId) external view virtual returns(
             address ace,
-            uint256 xis,
-            address yak,
-            uint256 zed,
-            address wax,
-            uint256 pow,
-            address gem,
-            bytes4 chain
+            uint256 qUnderlying,
+            address aUnderlying,
+            uint256 qStrike,
+            address aStrike,
+            uint256 tExpiry,
+            address receiver,
+            bytes4 series,
+            bytes4 symbol
         );
     function _primeCompare(uint256 _collateralId, uint256 _burnId) public view virtual returns (bool burn);
-    function getChain(uint256 _tokenId) external view virtual returns (bytes4 chain);
+    function getSeries(uint256 _tokenId) external view virtual returns (bytes4 series);
     function isTokenExpired(uint256 _tokenId) public view virtual returns(bool);
 }
 
@@ -499,7 +469,7 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
     event FillOrderFromPool(address _buyer, uint256 _bidPrice, uint256 _amount);
 
     event CloseOrder(address _user, uint256 _tokenId, bool _buyOrder);
-    event CloseUnfilledBuyOrder(address _user, bytes4 _chain, uint256 _buyOrderNonce);
+    event CloseUnfilledBuyOrder(address _user, bytes4 series, uint256 _buyOrderNonce);
 
     struct SellOrders {
         address payable seller;
@@ -516,12 +486,12 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
     struct BuyOrdersUnfilled {
         address payable buyer;
         uint256 bidPrice;
-        bytes4 chain;
-        uint256 xis;
-        address yak;
-        uint256 zed;
-        address wax;
-        uint256 pow;
+        bytes4 series;
+        uint256 qUnderlying;
+        address aUnderlying;
+        uint256 qStrike;
+        address aStrike;
+        uint256 tExpiry;
     }
 
     /* MAPS TOKENIDS WITH SELL ORDER DETAILS */
@@ -643,9 +613,9 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
         */
         if(fillable > 0) {
             /* Unique hash of the Prime's key properties: Asset addresses & expiration date */
-            bytes4 chain = _prime.getChain(_tokenId);
-            /* Buy order request of hash 'chain' at order request nonce */
-            BuyOrdersUnfilled memory _buyUnfilled = _buyOrdersUnfilled[chain][fillable];
+            bytes4 series = _prime.getSeries(_tokenId);
+            /* Buy order request of hash 'series' at order request nonce */
+            BuyOrdersUnfilled memory _buyUnfilled = _buyOrdersUnfilled[series][fillable];
             return fillUnfilledBuyOrder(
                 _tokenId, 
                 _buyUnfilled.bidPrice, 
@@ -653,7 +623,7 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
                 _buyUnfilled.buyer,
                 msg.sender, 
                 fillable,
-                chain
+                series
             );
         }
         
@@ -811,21 +781,20 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
     /**
      * @dev request to buy a Prime with params
      * @param _bidPrice value offered to buy Prime
-     * @param _xis amount of collateral (underlying) asset
-     * @param _yak address of collateral ERC-20 token
-     * @param _zed amount of payment (strike) asset
-     * @param _wax address of strike ERC-20 token
-     * @param _pow timestamp of expiration
+     * @param qUnderlying amount of collateral (underlying) asset
+     * @param aUnderlying address of collateral ERC-20 token
+     * @param qStrike amount of payment (strike) asset
+     * @param aStrike address of strike ERC-20 token
+     * @param tExpiry timestamp of expiration
      * @return bool whether the tx suceeds
      */
     function buyOrderUnfilled(
         uint256 _bidPrice,
-        /* bytes4 _chain, */
-        uint256 _xis,
-        address _yak,
-        uint256 _zed,
-        address _wax,
-        uint256 _pow
+        uint256 qUnderlying,
+        address aUnderlying,
+        uint256 qStrike,
+        address aStrike,
+        uint256 tExpiry
     )
         external
         payable
@@ -839,9 +808,9 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
         /* EFFECTS */
 
         /* If the pool can fill the order, mint the Prime from pool */
-        if(_poolInterface.getAvailableAssets() >= _xis) {
+        if(_poolInterface.getAvailableAssets() >= qUnderlying) {
             /* FIX with variable premium from Pool - 20% of collateral */
-            uint256 premiumToPay = _xis.mul(20).div(10**2);
+            uint256 premiumToPay = qUnderlying.mul(20).div(10**2);
             require(_bidPrice >= premiumToPay, 'Bid < premium');
             
             /* Calculate the payment */
@@ -853,14 +822,14 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
 
             /* Mint Prime */
             _poolInterface.mintPrimeFromPool.value(premiumToPay)(
-                _xis,
-                _zed,
-                _wax,
-                _pow,
+                qUnderlying,
+                qStrike,
+                aStrike,
+                tExpiry,
                 msg.sender
             );
 
-            emit FillOrderFromPool(msg.sender, _bidPrice, _xis);
+            emit FillOrderFromPool(msg.sender, _bidPrice, qUnderlying);
 
             /* Transfer remaining bid to Buyer */
             if(msg.value > amountNotReturned) {
@@ -877,27 +846,27 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
         require(msg.value >= totalCost, 'Val < cost');
         
         /* Get chain data and log the nonce of the order */
-        bytes4 _chain = bytes4(
-            keccak256(abi.encodePacked(_yak))) 
-            ^ bytes4(keccak256(abi.encodePacked(_wax))) 
-            ^ bytes4(keccak256(abi.encodePacked(_pow))
+        bytes4 series = bytes4(
+            keccak256(abi.encodePacked(aUnderlying))) 
+            ^ bytes4(keccak256(abi.encodePacked(aStrike))) 
+            ^ bytes4(keccak256(abi.encodePacked(tExpiry))
         );
-        uint256 nonce = (_unfilledNonce[_chain]).add(1);
-        _unfilledNonce[_chain] = nonce;
+        uint256 nonce = (_unfilledNonce[series]).add(1);
+        _unfilledNonce[series] = nonce;
 
         /* Update Buy Order State */
-        _buyOrdersUnfilled[_chain][nonce] = BuyOrdersUnfilled(
+        _buyOrdersUnfilled[series][nonce] = BuyOrdersUnfilled(
             msg.sender,
             _bidPrice,
-            _chain,
-            _xis,
-            _yak,
-            _zed,
-            _wax,
-            _pow
+            series,
+            qUnderlying,
+            aUnderlying,
+            qStrike,
+            aStrike,
+            tExpiry
         );
 
-        emit BuyOrderUnfilled(msg.sender, _bidPrice, _unfilledNonce[_chain]);
+        emit BuyOrderUnfilled(msg.sender, _bidPrice, _unfilledNonce[series]);
 
         /* Return any remaining bid to Buyer */
         if(msg.value > totalCost) {
@@ -922,36 +891,35 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
         returns (uint256) 
     {
         IPrime _prime = IPrime(_primeAddress);
-        address ace;
-        uint256 xis;
-        address yak;
-        uint256 zed;
-        address wax;
-        uint256 pow;
-        address gem;
-        bytes4 chain;
-        chain = _prime.getChain(_tokenId);
-        (ace, xis, yak, zed, wax, pow, gem, ) = _prime.getPrime(_tokenId);
+        address writer;
+        uint256 qUnderlying;
+        address aUnderlying;
+        uint256 qStrike;
+        address aStrike;
+        uint256 tExpiry;
+        address receiver;
+        bytes4 series;
+        (writer, qUnderlying, aUnderlying, qStrike, aStrike, tExpiry, receiver, series, ) = _prime.getPrime(_tokenId);
         
         bytes32 primeHash = keccak256(
             abi.encodePacked(
-                    xis,
-                    yak,
-                    zed,
-                    wax,
-                    pow
+                    qUnderlying,
+                    aUnderlying,
+                    qStrike,
+                    aStrike,
+                    tExpiry
                 )
             );
          
-        for(uint i = 1; i <= _unfilledNonce[chain]; i++) {
-            BuyOrdersUnfilled memory _buyObj = _buyOrdersUnfilled[chain][i];
+        for(uint i = 1; i <= _unfilledNonce[series]; i++) {
+            BuyOrdersUnfilled memory _buyObj = _buyOrdersUnfilled[series][i];
             bytes32 buyHash = keccak256(
                 abi.encodePacked(
-                    _buyObj.xis,
-                    _buyObj.yak,
-                    _buyObj.zed,
-                    _buyObj.wax,
-                    _buyObj.pow
+                    _buyObj.qUnderlying,
+                    _buyObj.aUnderlying,
+                    _buyObj.qStrike,
+                    _buyObj.aStrike,
+                    _buyObj.tExpiry
                 )
             );
 
@@ -971,7 +939,7 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
      * @param _buyer address of buyer
      * @param _seller address of seller
      * @param _buyOrderNonce nonce when buy order request was submitted
-     * @param _chain hash of asset 1 address + asset 2 address + expiration
+     * @param series hash of asset 1 address + asset 2 address + expiration
      * @return bool whether or not the tx succeeded
      */
     function fillUnfilledBuyOrder(
@@ -981,7 +949,7 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
         address payable _buyer,
         address payable _seller,
         uint256 _buyOrderNonce,
-        bytes4 _chain
+        bytes4 series
     ) 
         private
         nonReentrant
@@ -992,7 +960,7 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
         /* EFFECTS */
 
         /* Clears the buy order request from state */
-        clearUnfilledBuyOrder(_chain, _buyOrderNonce);
+        clearUnfilledBuyOrder(series, _buyOrderNonce);
 
         /* Updates state of the user's ether balance in the dex */
         _etherBalance[_seller] = _etherBalance[_seller].add(_askPrice);
@@ -1029,11 +997,11 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
 
     /**
      * @dev changes state of order to 0
-     * @param _chain hash of asset 1 address + asset 2 address + expiration
+     * @param series hash of asset 1 address + asset 2 address + expiration
      * @param _buyOrderNonce nonce of buy order request
      */
-    function clearUnfilledBuyOrder(bytes4 _chain, uint256 _buyOrderNonce) internal {
-        _buyOrdersUnfilled[_chain][_buyOrderNonce] = _buyOrdersUnfilled[0][0];
+    function clearUnfilledBuyOrder(bytes4 series, uint256 _buyOrderNonce) internal {
+        _buyOrdersUnfilled[series][_buyOrderNonce] = _buyOrdersUnfilled[0][0];
     }
 
     /**
@@ -1086,12 +1054,12 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
 
     /**
      * @dev clears an unfilled buy order from state and returns funds/assets
-     * @param _chain keccak256 hash of asset 1 address ^ asset 2 Address ^ expiration
+     * @param series keccak256 hash of asset 1 address ^ asset 2 Address ^ expiration
      * @param _buyOrderNonce nonce of when buy order was submitted
      * @return bool whether the tx succeeds
      */
     function closeUnfilledBuyOrder(
-        bytes4 _chain,
+        bytes4 series,
         uint256 _buyOrderNonce
     ) 
         external 
@@ -1099,7 +1067,7 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
         returns (bool) 
     {
         /* Buy order request of hash 'chain' at order request nonce */
-        BuyOrdersUnfilled memory _buyUnfilled = _buyOrdersUnfilled[_chain][_buyOrderNonce];
+        BuyOrdersUnfilled memory _buyUnfilled = _buyOrdersUnfilled[series][_buyOrderNonce];
 
         /* CHECKS */
         require(msg.sender == _buyUnfilled.buyer, 'Msg.sender != buyer');
@@ -1107,14 +1075,14 @@ contract Exchange is ERC721Holder, ReentrancyGuard, Ownable, Pausable {
         /* EFFECTS */
         
         /* Clears the buy order request from state */
-        clearUnfilledBuyOrder(_chain, _buyOrderNonce);
+        clearUnfilledBuyOrder(series, _buyOrderNonce);
 
         /* Update user's withdrawable ether balance */
         _etherBalance[_buyUnfilled.buyer].add(_buyUnfilled.bidPrice);
 
         /* INTERACTIONS */
 
-        emit CloseUnfilledBuyOrder(msg.sender, _chain, _buyOrderNonce);
+        emit CloseUnfilledBuyOrder(msg.sender, series, _buyOrderNonce);
         return true;
     }
 

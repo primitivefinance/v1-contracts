@@ -1,4 +1,4 @@
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.2;
 
 /**
  * @title   Primitive's Pool Contract
@@ -7,31 +7,7 @@ pragma solidity ^0.6.0;
  */
 
 
-/** 
- *  @title Primitive's Instruments
- * @author Primitive Finance
- */
-library Instruments {
-     /** 
-     * @dev A Prime has these properties.
-     * @param ace `msg.sender` of the createPrime function.
-     * @param xis Quantity of collateral asset token.
-     * @param yak Address of collateral asset token.
-     * @param zed Purchase price of collateral, denominated in quantity of token z.
-     * @param wax Address of purchase price asset token.
-     * @param pow UNIX timestamp of valid time period.
-     * @param gem Address of payment receiver of token z.
-     */
-    struct Primes {
-        address ace;
-        uint256 xis;
-        address yak;
-        uint256 zed;
-        address wax;
-        uint256 pow;
-        address gem;
-    }
-}
+import './Instruments.sol';
 
 /**
  * @dev Wrappers over Solidity's arithmetic operations with added overflow
@@ -969,7 +945,14 @@ abstract contract ERC20Detailed is IERC20 {
 }
 
 abstract contract IPrime {
-    function createPrime(uint256 _xis, address _yak, uint256 _zed, address _wax, uint256 _pow, address _gem) external virtual returns (uint256 _tokenId);
+    function createPrime(
+        uint256 qUnderlying,
+        address aUnderlying,
+        uint256 qStrike,
+        address aStrike,
+        uint256 tExpiry,
+        address receiver
+    ) external virtual returns (uint256 _tokenId);
     function exercise(uint256 _tokenId) external virtual returns (bool);
     function close(uint256 _collateralId, uint256 _burnId) external virtual returns (bool);
     function withdraw(uint256 _amount, address _asset) public virtual returns (bool);
@@ -1190,18 +1173,19 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder, ERC20, ERC20D
 
     /**
      * @dev user mints a Prime option from the pool
-     * @param _long amount of ether (in wei)
-     * @param _short amount of strike asset
-     * @param _strike address of strike
-     * @param _expiration timestamp of series expiration
+     * @param qUnderlying amount of ether (in wei)
+     * @param qStrike amount of strike asset
+     * @param aStrike address of strike
+     * @param tExpiry timestamp of series expiration
+     * @param primeReceiver Address of Prime reciver
      * @return bool whether or not the Prime is minted
      */
     function mintPrimeFromPool(
-        uint256 _long,
-        uint256 _short,
-        address _strike,
-        uint256 _expiration,
-        address payable _primeReceiver
+        uint256 qUnderlying,
+        uint256 qStrike,
+        address aStrike,
+        uint256 tExpiry,
+        address payable primeReceiver
     )
         external
         payable
@@ -1211,30 +1195,30 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder, ERC20, ERC20D
         /* CHECKS */
 
         /* Checks to see if the tx pays the premium - 20% constant right now */
-        require(msg.value >= _long.div(_premiumDenomination), 'Mint: Val < premium');
-        require(_expiration > block.timestamp, 'Mint: expired');
-        require(getAvailableAssets() >= _long, 'Mint: available < amt');
+        require(msg.value >= qUnderlying.div(_premiumDenomination), 'Mint: Val < premium');
+        require(tExpiry > block.timestamp, 'Mint: expired');
+        require(getAvailableAssets() >= qUnderlying, 'Mint: available < amt');
 
         /* EFFECTS */
 
         /* Add the ether liability to the Pool */
-        _liability = _liability.add(_long);
+        _liability = _liability.add(qUnderlying);
 
         /* INTERACTIONS */
 
         /* Mint a Prime */
         uint256 nonce = _prime.createPrime(
-                _long,
+                qUnderlying,
                 address(this),
-                _short,
-                _strike,
-                _expiration,
+                qStrike,
+                aStrike,
+                tExpiry,
                 address(this)
             );
 
         /* Transfer Prime to User from Pool */
-        _prime.safeTransferFrom(address(this), _primeReceiver, nonce);
-        emit PoolMint(nonce, _long, _short);
+        _prime.safeTransferFrom(address(this), primeReceiver, nonce);
+        emit PoolMint(nonce, qUnderlying, qStrike);
         /* COMPOUND */
         /* Swap Pool ether to interest Bearing cEther */
         return swapEtherToCompoundEther(msg.value);
@@ -1243,14 +1227,14 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder, ERC20, ERC20D
 
     /**
      * @dev Called ONLY from the Prime contract
-     * @param _long amount of collateral
-     * @param _short amount of strike
-     * @param _strike address of strike
+     * @param qUnderlying amount of collateral
+     * @param qStrike amount of strike
+     * @param aStrike address of strike
      */
     function exercise(
-        uint256 _long,
-        uint256 _short,
-        address _strike
+        uint256 qUnderlying,
+        uint256 qStrike,
+        address aStrike
     )
         external
         payable
@@ -1265,24 +1249,24 @@ contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder, ERC20, ERC20D
         /* EFFECTS */
 
         /* Clear liability of Prime */
-        _liability = _liability.sub(_long);
+        _liability = _liability.sub(qUnderlying);
         
         /* INTERACTIONS */
 
         /* COMPOUND */
 
         /* Check if enough cTokens can be redeemed to meet collateral */
-        require(getPoolBalance() >= _long, 'Swap: ether < collat'); 
+        require(getPoolBalance() >= qUnderlying, 'Swap: ether < collat'); 
 
         /* Swap cEther to Ether */
-        uint256 redeemResult = _cEther.redeemUnderlying(_long);
+        uint256 redeemResult = _cEther.redeemUnderlying(qUnderlying);
         require(redeemResult == 0, 'Swap: redeem != 0');
 
         /* Sent to trusted address - Prime Contract */
-        sendEther(_long, msg.sender);
-        emit Exercise(_long, _short);
+        sendEther(qUnderlying, msg.sender);
+        emit Exercise(qUnderlying, qStrike);
         /* Withdraw strike assets from prime */
-        return _prime.withdraw(_short, _strike);
+        return _prime.withdraw(qStrike, aStrike);
     }
 
     /**
