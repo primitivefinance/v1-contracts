@@ -17,12 +17,12 @@ library Instruments {
      /** 
      * @dev A Prime has these properties.
      * @param writer `msg.sender` of the createPrime function.
-     * @param qUnderlying Quantity of collateral asset token.
-     * @param aUnderlying Address of collateral asset token.
-     * @param qStrike Purchase price of collateral, denominated in quantity of token z.
+     * @param qUnderlying Quantity of underlying asset token.
+     * @param aUnderlying Address of underlying asset token.
+     * @param qStrike Purchase price of underlying, denominated in quantity of token z.
      * @param aStrike Address of purchase price asset token.
      * @param tExpiry UNIX timestamp of valid time period.
-     * @param receiver Address of payment receiver of token z.
+     * @param receiver Address of strike receiver of token z.
      * @param series Keccak256 hash of (aUnderlying ^ aStrike ^ tExpiry)
      * @param symbol Keccak256 hash of all params excluding series
      */
@@ -1103,7 +1103,7 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
 
         /* EFFECTS */
 
-        /* Update collateral liability of Prime minter */
+        /* Update underlying liability of Prime minter */
         _liabilities[msg.sender][aUnderlying] = _liabilities[msg.sender][aUnderlying].add(qUnderlying);
 
         /* INTERACTIONS */
@@ -1159,7 +1159,7 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
     }
 
     /** 
-     * @dev Swaps strike asset for collateral
+     * @dev Swaps strike asset for underlying
      * @param tokenId ID of Prime.
      * @return bool Success.
      */
@@ -1193,17 +1193,17 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
 
         /* EFFECTS */
 
-        /* UPDATE COLLATERAL BALANCE SHEET */
+        /* UPDATE underlying BALANCE SHEET */
 
-        /* Original Minter has their collateral balance debited. */
+        /* Original Minter has their underlying balance debited. */
         _liabilities[prime.writer][prime.aUnderlying] = _liabilities[prime.writer][prime.aUnderlying].sub(prime.qUnderlying);
         
-        /* Exercisor has their collateral balance credited. */
+        /* Exercisor has their underlying balance credited. */
         _assets[msg.sender][prime.aUnderlying] = _assets[msg.sender][prime.aUnderlying].add(prime.qUnderlying);
         
         /* UPDATE STRIKE BALANCE SHEET */
 
-        /* Payment receiver has their payment balance credited. */
+        /* strike receiver has their strike balance credited. */
         _assets[prime.receiver][prime.aStrike] = _assets[prime.receiver][prime.aStrike].add(prime.qStrike);
         
         
@@ -1223,7 +1223,7 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
         if(prime.receiver == _poolAddress) {
             /* Transfer the strike asset into the Prime Contract */
             aStrike.transferFrom(msg.sender, address(this), prime.qStrike);
-            /* Calls the Pool to (1) Send collateral ether to Prime and (2) withdraw strike assets from Prime */
+            /* Calls the Pool to (1) Send underlying ether to Prime and (2) withdraw strike assets from Prime */
             return _pool.exercise(prime.qUnderlying, prime.qStrike, prime.aStrike);
         }
 
@@ -1238,7 +1238,7 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
 
     /** 
      * @dev `msg.sender` Closes Prime and 
-     * can withdraw collateral as Prime minter.
+     * can withdraw underlying as Prime minter.
      * Msg.sender can burn any Prime NFT 
      * that has matching properties when compared
      * to their minted Prime NFT. This way, 
@@ -1246,9 +1246,9 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
      * they need to close the position, 
      * they can buy another Prime rather than track down 
      * the exact one they sold/traded away. 
-     * @param tokenToClose Prime NFT ID with Minter's collateral.
+     * @param tokenToClose Prime NFT ID with Minter's underlying.
      * @param tokenToBurn Prime NFT ID that Minter owns,
-     *  and intends to burn to withdraw collateral.
+     *  and intends to burn to withdraw underlying.
      * @return bool Success.
      */
     function close(
@@ -1272,7 +1272,7 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
 
         /* EFFECTS */
 
-        /* Minter's collateral is debited. */
+        /* Minter's underlying is debited. */
         _liabilities[msg.sender][burnPrime.aUnderlying] = _liabilities[msg.sender][burnPrime.aUnderlying].sub(burnPrime.qUnderlying);
 
         /* INTERACTIONS */
@@ -1284,12 +1284,12 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
 
         _burn(tokenToBurn);
 
-        /* If the collateral asset is Ether, send ether to the user. */
+        /* If the underlying asset is Ether, send ether to the user. */
         if(burnPrime.aUnderlying == _poolAddress) {
             return sendEther(burnPrime.qUnderlying, msg.sender);
         }
 
-        /* Else, the collateral is an ERC-20 token. Send it to the user. */
+        /* Else, the underlying is an ERC-20 token. Send it to the user. */
         return aUnderlyingBurn.transfer(msg.sender, burnPrime.qUnderlying);
     }
 
