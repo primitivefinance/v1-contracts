@@ -119,7 +119,7 @@ contract('Prime ERC-20', accounts => {
                 
             });
             it('gets symbol', async () => {
-                await _prime.createPrime(
+                /* await _prime.createPrime(
                     collateralAmount,
                     collateral,
                     strikeAmount,
@@ -128,7 +128,7 @@ contract('Prime ERC-20', accounts => {
                     receiver,
                     {from: minter}
                 );
-                await _prime20.setParentToken(1);
+                await _prime20.setParentToken(1); */
                 let symbol = await _prime20.symbol();
                 console.log('[SYMBOL]', symbol);
                 
@@ -183,7 +183,7 @@ contract('Prime ERC-20', accounts => {
             });
 
             it('should zero sum', async () => {
-                await _prime.createPrime(
+                /* await _prime.createPrime(
                     collateralAmount,
                     collateral,
                     strikeAmount,
@@ -192,7 +192,7 @@ contract('Prime ERC-20', accounts => {
                     receiver,
                     {from: minter}
                 );
-                await _prime20.setParentToken(1);
+                await _prime20.setParentToken(1); */
                 let startEthBob = await getEtherBalance(Bob, "BOBER");
                 let startStrikeBob = await getBalance(_tUSD, Bob, "BOBER");
                 let startEthAlice = await getEtherBalance(Alice, "ALICE");
@@ -398,7 +398,7 @@ contract('Prime ERC-20', accounts => {
             });
 
             it('deposit funds into poolerc20 and get pPulp', async () => {
-                await _prime.createPrime(
+                /* await _prime.createPrime(
                     collateralAmount,
                     collateral,
                     strikeAmount,
@@ -407,7 +407,7 @@ contract('Prime ERC-20', accounts => {
                     receiver,
                     {from: minter}
                 );
-                await _prime20.setParentToken(1);
+                await _prime20.setParentToken(1); */
                 let appr = await web3.utils.toWei('1000000');
 
                 // add liquidity to exchange pool

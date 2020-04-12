@@ -248,6 +248,7 @@ contract PoolERC20 is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
         require(balanceOf(msg.sender) >= qUnderlying, 'Swap: ether < collat'); 
         uint256 qStrike = _prime.withdraw(qUnderlying);
         ERC20 _strike = ERC20(_prime._strikeAddress());
+        _burn(msg.sender, qUnderlying);
         return _prime._strike().transfer(msg.sender, qStrike);
     }
 

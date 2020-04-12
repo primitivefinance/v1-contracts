@@ -63,33 +63,52 @@ contract Options is Ownable, ERC721Holder {
         return true;
     }
 
-    function createNewMarket(
-        uint256 qUnderlying,
-        address aUnderlying,
+    function addEthOption(
         uint256 qStrike,
-        address aStrike,
-        uint256 tExpiry
+        ERC20 aStrike,
+        uint256 tExpiry,
+        bool isCall
     ) 
         public
+        payable
         onlyOwner
         returns (uint256)
     {
         _nonce = _nonce.add(1);
-        ERC20 underlying = ERC20(aUnderlying);
-        underlying.transferFrom(msg.sender, address(this), qUnderlying);
-        underlying.approve(address(_prime), qUnderlying);
-        uint256 tokenId = _prime.createPrime(
-            qUnderlying,
-            aUnderlying,
-            qStrike,
-            aStrike,
-            tExpiry,
-            address(this)
-        );
+        uint256 tokenId;
 
         PrimeERC20 prime20 = new PrimeERC20(
             _primeAddress
         );
+
+        // if its a call the underlying q will be 1 and the address will be the erc-20 oPulp
+        // else its a put, the underlying q+a is the strike q+a and 
+        // the strike q is 1 ether and strike address is erc-20 oPulp
+        // e.g. 1 ETH / 150 DAI Call vs. 150 DAI / 1 ETH Put
+        if(isCall) {
+            require(msg.value >= 1 ether, 'ERR_BAL_ETH');
+            tokenId = _prime.createPrime
+                .value(1 ether)(
+                1 ether,
+                address(prime20),
+                qStrike,
+                address(aStrike),
+                tExpiry,
+                address(this)
+            );
+        } else {
+            aStrike.transferFrom(msg.sender, address(this), qStrike);
+            aStrike.approve(address(_prime), qStrike);
+            tokenId = _prime.createPrime(
+                qStrike,
+                address(aStrike),
+                1 ether,
+                address(prime20),
+                tExpiry,
+                address(this)
+            );
+        }
+        
         prime20.setParentToken(tokenId);
         _primeMarkets[_nonce] = address(prime20);
         return _nonce;

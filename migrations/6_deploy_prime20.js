@@ -9,6 +9,8 @@ const PoolERC20 = artifacts.require('PoolERC20.sol');
 const RPulp = artifacts.require('RPulp.sol');
 const ExchangeERC20 = artifacts.require('ExchangeERC20.sol');
 
+// FIX - This should use factories for Exchange and RPulp
+
 module.exports = async (deployer, accounts, network) => {
     const rinkebyCompoundAddress = '0xd6801a1dffcd0a410336ef88def4320d6df1883e';
     const mainnetCompoundAddress = '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5';
@@ -22,6 +24,7 @@ module.exports = async (deployer, accounts, network) => {
     );
     /* let prime20 = await PrimeERC20.deployed(); */
     let options = await Options.deployed();
+    await prime.setInstrumentController(options.address);
     let _tUSD = await tUSD.deployed();
     let _tETH = await tETH.deployed();
     let minter = accounts[0];
@@ -34,12 +37,13 @@ module.exports = async (deployer, accounts, network) => {
     let expiry = '1607775120';
     let receiver = minter;
     let setPrime = await options.setPrimeAddress(prime.address);
-    await options.createNewMarket(
-        collateralAmount,
-        collateral,
+    let isCall = true;
+    await options.addEthOption(
         strikeAmount,
         strike,
-        expiry
+        expiry,
+        isCall,
+        {value: collateralAmount}
     );
     
     let prime20Address = await options._primeMarkets(1);
@@ -63,25 +67,4 @@ module.exports = async (deployer, accounts, network) => {
     await prime20.setPulp(rPulp.address);
     await prime20.setPool(ePool.address);
 
-
-
-
-    /* await deployer.deploy(
-        ExchangeERC20,
-        prime20.address
-    );
-
-    let ePool = await ExchangeERC20.deployed();
-    await deployer.deploy(
-        PoolERC20,
-        prime20.address,
-        mainnetCompoundAddress,
-        ePool.address
-    );
-
-    
-    let rPulp = await RPulp.deployed();
-    await rPulp.setValid(prime20.address);
-    await prime20.setPulp(rPulp.address);
-    await prime20.setPool(ePool.address); */
 };

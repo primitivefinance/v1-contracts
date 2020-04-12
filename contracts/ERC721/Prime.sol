@@ -1042,6 +1042,7 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
 
     uint256 public _nonce;
     address public _controller;
+    address public _instrumentController;
     address public _poolAddress;
     IPool public _pool;
 
@@ -1067,6 +1068,12 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
         require(msg.sender == _controller, 'not owner');
         _poolAddress = poolAddress;
         _pool = IPool(poolAddress);
+    }
+
+    /* SET*/
+    function setInstrumentController(address instrumentController) external {
+        require(msg.sender == _controller, 'not owner');
+        _instrumentController = instrumentController;
     }
 
     /* PRIME FUNCTIONS */
@@ -1097,7 +1104,11 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
         /* CHECKS */
         require(tExpiry >= block.timestamp, 'Create: expired timestamp');
         /* If this is an Ether Call Prime */
-        if(aUnderlying == _poolAddress && msg.sender != _poolAddress) {
+        if(
+            /* aUnderlying == _poolAddress &&
+            msg.sender != _poolAddress || */
+            msg.sender == _instrumentController
+        ) {
             isGreaterThanOrEqual(msg.value, qUnderlying);
         }
 
@@ -1148,7 +1159,11 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
         );
 
         /* If its an ERC-20 Prime, withdraw token from minter */
-        if(aUnderlying != _poolAddress && msg.sender != _poolAddress) {
+        if(
+            /* aUnderlying != _poolAddress &&
+            msg.sender != _poolAddress && */
+            msg.sender != _instrumentController
+        ) {
             ERC20 aUnderlying = ERC20(aUnderlying);
             isGreaterThanOrEqual(aUnderlying.balanceOf(msg.sender), qUnderlying);
             aUnderlying.transferFrom(msg.sender, address(this), qUnderlying);

@@ -11,7 +11,7 @@ abstract contract IPrime {
         address aStrike,
         uint256 tExpiry,
         address receiver
-    ) external virtual returns (uint256 tokenId);
+    ) external payable virtual returns (uint256 tokenId);
     function exercise(uint256 tokenId) external payable virtual returns (bool);
     function close(uint256 tokenToClose, uint256 tokenToBurn) external virtual returns (bool);
     function withdraw(uint256 amount, address asset) public virtual returns (bool);
