@@ -291,7 +291,7 @@ contract('Prime ERC-20', accounts => {
                 // try to sell the tokens using the initial liquidity
                 await getEtherBalance(minter, "ALICE");
                 console.log('[SELLPRICE]', await web3.utils.fromWei(y));
-                await _exchangePool.swapTokensToEth(collateralAmount, y, {from: minter})
+                await _exchangePool.swapTokensToEth(collateralAmount, y, minter, {from: minter})
 
                 await getEtherBalance(minter, "ALICE");
             });
@@ -315,6 +315,29 @@ contract('Prime ERC-20', accounts => {
 
                 await getEtherBalance(minter, "ALICE");
                 await getBalance(_prime20, minter, "ALICE");
+            });
+
+            it('should addLiquidity() and then depositAndSell()', async () => {
+                await getEtherBalance(minter, "ALICE");
+                let two = await web3.utils.toWei('2');
+                // get option tokens
+                await _prime20.deposit({from: minter, value: two});
+                // should be 2 option token, approve to exchangePool
+                await _prime20.approve(_exchangePool.address, await web3.utils.toWei('10000000'), {from: minter});
+
+                // get lp tokens of pool
+                console.log(await web3.utils.fromWei(await _exchangePool.totalSupply()));
+                console.log(await web3.utils.fromWei(await _exchangePool.tokenReserves()));
+                await getEtherBalance(_exchangePool.address, "EPOOL");
+                // add liquidity by sending 2 {two} ETH and PRIME ERC-20
+                await _exchangePool.addLiquidity(collateralAmount, collateralAmount, {from: minter, value: collateralAmount});
+                
+                // get more prime erc-20 tokens
+
+                // get option tokens
+                await getEtherBalance(minter, "ALICE");
+                await _prime20.depositAndSell({from: minter, value: collateralAmount});
+                await getEtherBalance(minter, "ALICE");
             });
 
 

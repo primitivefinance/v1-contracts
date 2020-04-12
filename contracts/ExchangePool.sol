@@ -80,14 +80,27 @@ contract ExchangePool is ERC20Detailed('ePULP', 'Exchange Primitive LP Tokens', 
      */
     function swapTokensToEth(
         uint256 qTokens,
-        uint256 minQEth
+        uint256 minQEth,
+        address payable receiver
     ) public returns (bool) {
         require(_prime.balanceOf(msg.sender) >= qTokens, 'ERR_BAL_OPTIONS');
+        return tokensToEth(qTokens, minQEth, msg.sender, receiver);
+    }
+
+    /**
+     * @dev sells option tokens for eth
+     */
+    function tokensToEth(
+        uint256 qTokens,
+        uint256 minQEth,
+        address buyer,
+        address payable receiver
+    ) public returns (bool) {
         uint256 rInput = tokenReserves();
         uint256 ethOutput = getInputPrice(qTokens, rInput, address(this).balance);
         require(ethOutput >= minQEth, 'ERR_BAL_ETH');
-        _prime.transferFrom(msg.sender, address(this), qTokens);
-        return sendEther(msg.sender, ethOutput);
+        _prime.transferFrom(buyer, address(this), qTokens);
+        return sendEther(receiver, ethOutput);
     }
 
     /**

@@ -44,6 +44,38 @@ abstract contract IRPulp {
     function balanceOf(address user) public view virtual returns (uint);
 }
 
+abstract contract IEPool {
+    function addLiquidity(
+        uint256 minQLiquidity,
+        uint256 maxQTokens
+    ) public payable virtual returns(uint256);
+    function removeLiquidity(
+        uint256 qLiquidity,
+        uint256 minQEth,
+        uint256 minQTokens
+    ) public virtual returns (uint256, uint256);
+    function swapTokensToEth(
+        uint256 qTokens,
+        uint256 minQEth,
+        address payable receiver
+    ) public virtual returns (bool);
+    function swapEthToTokens(
+        uint256 qTokens
+    ) public payable virtual returns (uint256);
+    function getInputPrice(
+        uint256 qInput,
+        uint256 rInput,
+        uint256 rOutput
+    ) public view virtual returns (uint256);
+    function getOutputPrice(
+        uint256 qOutput,
+        uint256 rInput,
+        uint256 rOutput
+    ) public view virtual returns (uint256);
+    function tokenReserves() public view virtual returns (uint256);
+
+}
+
 contract PrimeERC20 is ERC20Detailed("Prime Option Token", "Prime", 18), ERC20 {
     using SafeMath for uint256;
 
@@ -52,12 +84,13 @@ contract PrimeERC20 is ERC20Detailed("Prime Option Token", "Prime", 18), ERC20 {
     IPrime public _prime;
     Instruments.Primes public _properties;
     address public _controller;
-    mapping(address => uint256) public _liabilities;
-    uint256 public _liability;
-    uint256 public _asset;
+
     ERC20 public _underlying;
     ERC20 public _strike;
     IRPulp public _rPulp;
+    IEPool public _ePool;
+    address public _ePoolAddress;
+
     uint256 public _ratio;
     uint256 public _test;
     uint256 public _test2;
@@ -96,6 +129,13 @@ contract PrimeERC20 is ERC20Detailed("Prime Option Token", "Prime", 18), ERC20 {
         return true;
     }
 
+    function setPool(address ePool) public returns(bool) {
+        require(msg.sender == _controller, 'ERR_NOT_OWNER');
+        _ePool = IEPool(ePool);
+        _ePoolAddress = ePool;
+        return true;
+    }
+
     /**
      * @dev deposits underlying assets to mint prime options
      */
@@ -115,6 +155,32 @@ contract PrimeERC20 is ERC20Detailed("Prime Option Token", "Prime", 18), ERC20 {
         
         _mint(msg.sender, msg.value);
         return true;
+    }
+
+    /**
+     * @dev deposits underlying assets to mint prime options which are sold to exchange pool
+     */
+    function depositAndSell() public payable returns (bool) {
+        require(msg.value > 0, "ERR_ZERO_VALUE");
+        _rPulp.mint(
+            msg.sender,
+            msg.value
+                .mul(_ratio)
+                .div(1 ether)
+        );
+        
+        _mint(
+            address(this), 
+            msg.value
+        );
+
+        uint256 minPrice = _ePool.getInputPrice(
+            msg.value,
+            _ePool.tokenReserves(),
+            address(_ePoolAddress).balance
+        );
+        _approve(address(this), _ePoolAddress, 1000000 ether);
+        return _ePool.swapTokensToEth(msg.value, minPrice, msg.sender);
     }
 
     /**

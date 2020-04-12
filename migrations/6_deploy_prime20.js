@@ -25,6 +25,8 @@ module.exports = async (deployer, accounts, network) => {
 
     
     let rPulp = await RPulp.deployed();
+    let ePool = await ExchangePool.deployed();
     await rPulp.setValid(prime20.address);
     await prime20.setPulp(rPulp.address);
+    await prime20.setPool(ePool.address);
 };
