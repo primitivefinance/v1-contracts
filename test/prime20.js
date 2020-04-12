@@ -6,6 +6,7 @@ const Prime = artifacts.require("Prime");
 const Exchange = artifacts.require('Exchange');
 const Pool = artifacts.require('Pool');
 const PrimeERC20 = artifacts.require('PrimeERC20.sol');
+const ExchangePool = artifacts.require('ExchangePool.sol');
 
 contract('Prime ERC-20', accounts => {
 
@@ -138,6 +139,7 @@ contract('Prime ERC-20', accounts => {
                 _exchange = await Exchange.deployed();
                 _pool = await Pool.deployed();
                 _prime20 = await PrimeERC20.deployed();
+                _exchangePool = await ExchangePool.deployed();
                 await _tUSD.approve(_prime20.address, '10000000000000000000');
                 await _tETH.approve(_prime20.address, '10000000000000000000');
                 await _tUSD.approve(_prime.address, '10000000000000000000');
@@ -178,56 +180,6 @@ contract('Prime ERC-20', accounts => {
                 await _prime20.setParentToken(1);
                 
             });
-            /* it('should deposit', async () => {
-                await _prime.createPrime(
-                    collateralAmount,
-                    collateral,
-                    strikeAmount,
-                    strike,
-                    expiry,
-                    receiver,
-                    {from: minter}
-                );
-                await _prime20.setParentToken(1);
-                let deposit = await _prime20.deposit({from: minter, value: collateralAmount});
-                let deposit2 = await _prime20.deposit({from: Bob, value: collateralAmount});
-                await getBalance(_prime20, Bob, "BOBER");
-                await getEtherBalance(Bob, "BOBER");
-                await getBalance(_prime20, minter, "ALICE");
-                await getEtherBalance(minter, "ALICE");
-                await getBalance(_tUSD, _prime20.address, "PRIME");
-                await getEtherBalance(_prime20.address, "PRIME");
-            });
-
-            it('should swap', async () => {
-                let swap = await _prime20.swap(collateralAmount, {from: minter});
-                await getBalance(_prime20, Bob, "BOBER");
-                await getEtherBalance(Bob, "BOBER");
-                await getBalance(_prime20, minter, "ALICE");
-                await getEtherBalance(minter, "ALICE");
-                await getBalance(_tUSD, _prime20.address, "PRIME");
-                await getEtherBalance(_prime20.address, "PRIME");
-            });
-
-            it('should withdraw twice', async () => {
-                let half = (collateralAmount*1*0.5).toString();
-                await _tUSD.approve(_prime20.address, '10000000000000000000', {from: Bob});
-                let withdraw = await _prime20.withdraw(half, {from: Bob});
-                await getBalance(_prime20, Bob, "BOBER");
-                await getEtherBalance(Bob, "BOBER");
-                await getBalance(_prime20, minter, "ALICE");
-                await getEtherBalance(minter, "ALICE");
-                await getBalance(_tUSD, _prime20.address, "PRIME");
-                await getEtherBalance(_prime20.address, "PRIME");
-
-                let withdraw2 = await _prime20.withdraw(half, {from: Bob});
-                await getBalance(_prime20, Bob, "BOBER");
-                await getEtherBalance(Bob, "BOBER");
-                await getBalance(_prime20, minter, "ALICE");
-                await getEtherBalance(minter, "ALICE");
-                await getBalance(_tUSD, _prime20.address, "PRIME");
-                await getEtherBalance(_prime20.address, "PRIME");
-            }); */
 
             it('should zero sum', async () => {
                 let startEthBob = await getEtherBalance(Bob, "BOBER");
@@ -255,7 +207,7 @@ contract('Prime ERC-20', accounts => {
                 await getEtherBalance(_prime20.address, "PRIME");
                 await getBalance(_tUSD, _prime20.address, "PRIME");
                 await getBalance(_tUSD, Bob, "BOBER");
-                
+
                 // Bob Withdraws
                 await _prime20.withdraw(collateralAmount, {from: Bob});
                 await getBalance(_tUSD, Bob, "BOBER");
@@ -303,6 +255,41 @@ contract('Prime ERC-20', accounts => {
                 await getEtherBalance(Bob, "BOBER");
                 await getEtherBalance(_prime20.address, "PRIME");
             });
+
+            it('should get exchange y', async () => {
+                let qInput = await web3.utils.toWei('1');
+                let rInput = await web3.utils.toWei('10');
+                let rOutput = await web3.utils.toWei('10');
+                let y = await _exchangePool.getInputPrice(qInput, rInput, rOutput);
+                console.log(await web3.utils.fromWei(y));
+                let qOutput = await web3.utils.toWei('1');
+                let x = await _exchangePool.getOutputPrice(qOutput, rInput, rOutput);
+                console.log(await web3.utils.fromWei(x));
+            });
+
+            it('should add liquidity', async () => {
+                await getEtherBalance(minter, "ALICE");
+                // get option tokens
+                await _prime20.deposit({from: minter, value: collateralAmount});
+                // should be 1 option token, approve to exchangePool
+                await _prime20.approve(_exchangePool.address, collateralAmount, {from: minter});
+
+                // add liquidity by sending 1 {collateralAmount} ETH and PRIME ERC-20
+                await _exchangePool.addLiquidity(collateralAmount, collateralAmount, {from: minter, value: collateralAmount});
+                
+                // get more prime erc-20 tokens
+
+                // get option tokens
+                await _prime20.deposit({from: minter, value: collateralAmount});
+                // should be 1 option token, approve to exchangePool
+                await _prime20.approve(_exchangePool.address, collateralAmount, {from: minter});
+
+                // try to sell the tokens using the initial liquidity
+                await _exchangePool.swapTokensToEth(collateralAmount, collateralAmount, {from: minter})
+
+                await getEtherBalance(minter, "ALICE");
+            });
+
 
         });
     });

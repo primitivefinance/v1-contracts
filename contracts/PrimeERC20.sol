@@ -120,33 +120,33 @@ contract PrimeERC20 is ERC20Detailed("Prime Option Token", "Prime", 18), ERC20 {
     /**
      * @dev swaps strike assets to underlying assets and burns prime options
      */
-    function swap(uint256 amount) public returns(bool) {
-        require(balanceOf(msg.sender) >= amount, "ERR_BAL_P");
-        uint256 qStrike = amount.mul(_ratio).div(10**18);
+    function swap(uint256 qUnderlying) public returns(bool) {
+        require(balanceOf(msg.sender) >= qUnderlying, "ERR_BAL_P");
+        uint256 qStrike = qUnderlying.mul(_ratio).div(1 ether);
         require(_strike.balanceOf(msg.sender) >= qStrike, "ERR_BAL_S");
 
         /* _asset = _asset.add(qStrike); */
 
-        _burn(msg.sender, amount);
+        _burn(msg.sender, qUnderlying);
         _strike.transferFrom(msg.sender, address(this), qStrike);
-        return sendEther(msg.sender, amount);
+        return sendEther(msg.sender, qUnderlying);
     }
 
     /**
      * @dev withdraws exercised strike assets
      */
-    function withdraw(uint256 amount) public returns(bool) {
+    function withdraw(uint256 qUnderlying) public returns(bool) {
         // SWAP TO RPULP
         /* uint256 uL = _liabilities[msg.sender];
-        require(uL >= amount, "ERR_BAL_L");
+        require(uL >= qUnderlying, "ERR_BAL_L");
 
-        uint256 sW = amount.mul(_asset).div(_liability);
-        _liabilities[msg.sender] = uL.sub(amount);
-        _liability = _liability.sub(amount); */
+        uint256 sW = qUnderlying.mul(_asset).div(_liability);
+        _liabilities[msg.sender] = uL.sub(qUnderlying);
+        _liability = _liability.sub(qUnderlying); */
 
         // gets deposit certificate of underlying
         uint256 rPulpBalance = _rPulp.balanceOf(msg.sender);
-        uint256 qStrike = amount.mul(_ratio).div(1 ether);
+        uint256 qStrike = qUnderlying.mul(_ratio).div(1 ether);
         // gets strike proportional to underlying and checks if enough is in contract
         require(rPulpBalance >= qStrike, 'ERR_BAL_PULP');
         require(_strike.balanceOf(address(this)) >= qStrike, "ERR_BAL_S");
@@ -163,24 +163,27 @@ contract PrimeERC20 is ERC20Detailed("Prime Option Token", "Prime", 18), ERC20 {
     /**
      * @dev burn prime options to withdraw original underlying asset deposits
      */
-    function close(uint256 amount) public returns(bool) {
+    function close(uint256 qUnderlying) public returns(bool) {
         // SWAP TO PULP
         /* uint256 uL = _liabilities[msg.sender];
-        require(uL >= amount, "ERR_BAL_L");
-        require(balanceOf(msg.sender) >= amount, "ERR_BAL_P");
+        require(uL >= qUnderlying, "ERR_BAL_L");
+        require(balanceOf(msg.sender) >= qUnderlying, "ERR_BAL_P");
 
-        _liabilities[msg.sender] = uL.sub(amount);
-        _liability = _liability.sub(amount); */
+        _liabilities[msg.sender] = uL.sub(qUnderlying);
+        _liability = _liability.sub(qUnderlying); */
 
-        // require pulp
+        // gets deposit certificate of underlying
         uint256 rPulpBalance = _rPulp.balanceOf(msg.sender);
-        require(rPulpBalance >= amount, 'ERR_BAL_PULP');
-        // require prime options
-        require(balanceOf(msg.sender) >= amount, "ERR_BAL_P");
+        uint256 qStrike = qUnderlying.mul(_ratio).div(1 ether);
+        // gets strike proportional to underlying and checks if enough is in contract
+        require(rPulpBalance >= qStrike, 'ERR_BAL_PULP');
 
-        _rPulp.burn(msg.sender, amount);        
-        _burn(msg.sender, amount);
-        return sendEther(msg.sender, amount);
+        // require prime options
+        require(balanceOf(msg.sender) >= qUnderlying, "ERR_BAL_P");
+
+        _rPulp.burn(msg.sender, qStrike);        
+        _burn(msg.sender, qUnderlying);
+        return sendEther(msg.sender, qUnderlying);
     }
 
     /**
