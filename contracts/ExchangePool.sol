@@ -27,11 +27,11 @@ contract ExchangePool is ERC20Detailed('ePULP', 'Exchange Primitive LP Tokens', 
         _prime = IPrimeERC20(prime);
     }
 
-    function sell(uint256 options) public returns (bool) {
-        require(_prime.balanceOf(msg.sender) >= options, 'ERR_BAL_OPTIONS');
-        return true;
-    }
+    receive() external payable {}
 
+    /**
+     * @dev adds option tokens and ether to reserves and sends user ePULP
+     */
     function addLiquidity(
         uint256 minQLiquidity,
         uint256 maxQTokens
@@ -39,7 +39,7 @@ contract ExchangePool is ERC20Detailed('ePULP', 'Exchange Primitive LP Tokens', 
         uint256 totalSupply = totalSupply();
         if (totalSupply > 0) {
             uint256 rEth = address(this).balance.sub(msg.value);
-            uint256 rToken = _prime.balanceOf(address(this));
+            uint256 rToken = tokenReserves();
             uint256 qToken = msg.value.mul(rToken).div(rEth).sub(1);
             uint256 newLiquidity = msg.value.mul(totalSupply).div(rEth);
             _mint(msg.sender, newLiquidity);
@@ -53,6 +53,9 @@ contract ExchangePool is ERC20Detailed('ePULP', 'Exchange Primitive LP Tokens', 
         }
     }
 
+    /**
+     * @dev removes option tokens and ether from reserves, burns ePulp, and sends to user
+     */
     function removeLiquidity(
         uint256 qLiquidity,
         uint256 minQEth,
@@ -61,9 +64,9 @@ contract ExchangePool is ERC20Detailed('ePULP', 'Exchange Primitive LP Tokens', 
         require(qLiquidity > 0 &&  minQEth > 0 && minQTokens > 0, 'ERR_ZERO');
 
         uint256 totalSupply = totalSupply();
-        uint256 rTokens = _prime.balanceOf(address(this));
+        uint256 tokenReserves = tokenReserves();
         uint256 qEth = qLiquidity.mul(address(this).balance).div(totalSupply);
-        uint256 qTokens = qLiquidity.mul(rTokens).div(totalSupply);
+        uint256 qTokens = qLiquidity.mul(tokenReserves).div(totalSupply);
         require(qEth >= minQEth, 'ERR_BAL_ETH');
         require(qTokens >= minQTokens, 'ERR_BAL_TOKENS');
         _burn(msg.sender, qLiquidity);
@@ -72,16 +75,37 @@ contract ExchangePool is ERC20Detailed('ePULP', 'Exchange Primitive LP Tokens', 
         return (qLiquidity, qEth);
     }
 
+    /**
+     * @dev sells option tokens for eth
+     */
     function swapTokensToEth(
         uint256 qTokens,
         uint256 minQEth
     ) public returns (bool) {
         require(_prime.balanceOf(msg.sender) >= qTokens, 'ERR_BAL_OPTIONS');
-        uint256 rInput = _prime.balanceOf(address(this));
+        uint256 rInput = tokenReserves();
         uint256 ethOutput = getInputPrice(qTokens, rInput, address(this).balance);
         require(ethOutput >= minQEth, 'ERR_BAL_ETH');
         _prime.transferFrom(msg.sender, address(this), qTokens);
         return sendEther(msg.sender, ethOutput);
+    }
+
+    /**
+     * @dev sells eth for option tokens
+     */
+    function swapEthToTokens(
+        uint256 qTokens
+    ) public payable returns (uint256) {
+        uint256 maxQEth = msg.value;
+        uint256 tokenReserves = tokenReserves();
+        uint256 ethOutput = getOutputPrice(qTokens, address(this).balance.sub(maxQEth), tokenReserves);
+        uint256 ethRemainder = maxQEth.sub(ethOutput);
+        if(ethRemainder > 0) {
+            sendEther(msg.sender, ethRemainder);
+        }
+
+        _prime.transfer(msg.sender, qTokens);
+        return ethOutput;
     }
 
     /**
@@ -107,6 +131,9 @@ contract ExchangePool is ERC20Detailed('ePULP', 'Exchange Primitive LP Tokens', 
         return y;
     }
 
+    /**
+     * @dev gets the output price (amount of eth sold)
+     */
     function getOutputPrice(
         uint256 qOutput,
         uint256 rInput,
@@ -117,4 +144,8 @@ contract ExchangePool is ERC20Detailed('ePULP', 'Exchange Primitive LP Tokens', 
         uint256 x = k.div(y).add(1);
         return x;
     }
+
+    function tokenReserves() public view returns (uint256) {
+        return _prime.balanceOf(address(this));
+    }   
 }
