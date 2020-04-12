@@ -20,4 +20,5 @@ module.exports = async (deployer, accounts, network) => {
     let prime20 = await PrimeERC20.deployed();
     let rPulp = await RPulp.deployed();
     await rPulp.setValid(prime20.address);
+    await prime20.setPulp(rPulp.address);
 };

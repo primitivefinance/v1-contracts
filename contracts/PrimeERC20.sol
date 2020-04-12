@@ -35,7 +35,13 @@ abstract contract IPrime {
             bytes4 symbol
         );
     function getSeries(uint256 tokenId) external view virtual returns (bytes4 series);
-    function isTokenExpired(uint256 tokenId) public view virtual returns(bool);
+    function isTokenExpired(uint256 tokenId) public view virtual returns (bool);
+}
+
+abstract contract IRPulp {
+    function mint(address user, uint256 amount) public payable virtual returns (bool);
+    function burn(address user, uint256 amount) public payable virtual returns (bool);
+    function balanceOf(address user) public view virtual returns (uint);
 }
 
 contract PrimeERC20 is ERC20Detailed("Prime Option Token", "Prime", 18), ERC20 {
@@ -51,7 +57,7 @@ contract PrimeERC20 is ERC20Detailed("Prime Option Token", "Prime", 18), ERC20 {
     uint256 public _asset;
     ERC20 public _underlying;
     ERC20 public _strike;
-    ERC20 public _rPulp;
+    IRPulp public _rPulp;
     uint256 public _ratio;
     uint256 public _test;
     uint256 public _test2;
@@ -84,13 +90,29 @@ contract PrimeERC20 is ERC20Detailed("Prime Option Token", "Prime", 18), ERC20 {
         return tokenId;
     }
 
+    function setPulp(address rPulp) public returns(bool) {
+        require(msg.sender == _controller, 'ERR_NOT_OWNER');
+        _rPulp = IRPulp(rPulp);
+        return true;
+    }
+
     /**
      * @dev deposits underlying assets to mint prime options
      */
     function deposit() public payable returns (bool) {
         require(msg.value > 0, "ERR_ZERO_VALUE");
-        _liabilities[msg.sender] = _liabilities[msg.sender].add(msg.value);
-        _liability = _liability.add(msg.value);
+        // SWITCH TO RPULP
+        /* _liabilities[msg.sender] = _liabilities[msg.sender].add(msg.value);
+        _liability = _liability.add(msg.value); */
+
+        // mint rPulp equal to strike amount proportional to deposit
+        _rPulp.mint(
+            msg.sender,
+            msg.value
+                .mul(_ratio)
+                .div(1 ether)
+        );
+        
         _mint(msg.sender, msg.value);
         return true;
     }
@@ -99,11 +121,11 @@ contract PrimeERC20 is ERC20Detailed("Prime Option Token", "Prime", 18), ERC20 {
      * @dev swaps strike assets to underlying assets and burns prime options
      */
     function swap(uint256 amount) public returns(bool) {
-        require(balanceOf(msg.sender) >= amount, "ERR_BALANCE_P");
+        require(balanceOf(msg.sender) >= amount, "ERR_BAL_P");
         uint256 qStrike = amount.mul(_ratio).div(10**18);
-        require(_strike.balanceOf(msg.sender) >= qStrike, "ERR_BALANCE_S");
+        require(_strike.balanceOf(msg.sender) >= qStrike, "ERR_BAL_S");
 
-        _asset = _asset.add(qStrike);
+        /* _asset = _asset.add(qStrike); */
 
         _burn(msg.sender, amount);
         _strike.transferFrom(msg.sender, address(this), qStrike);
@@ -114,15 +136,27 @@ contract PrimeERC20 is ERC20Detailed("Prime Option Token", "Prime", 18), ERC20 {
      * @dev withdraws exercised strike assets
      */
     function withdraw(uint256 amount) public returns(bool) {
-        uint256 uL = _liabilities[msg.sender];
-        require(uL >= amount, "ERR_BALANCE_L");
+        // SWAP TO RPULP
+        /* uint256 uL = _liabilities[msg.sender];
+        require(uL >= amount, "ERR_BAL_L");
 
         uint256 sW = amount.mul(_asset).div(_liability);
         _liabilities[msg.sender] = uL.sub(amount);
-        _liability = _liability.sub(amount);
-        _asset = _asset.sub(sW);
+        _liability = _liability.sub(amount); */
+
+        // gets deposit certificate of underlying
+        uint256 rPulpBalance = _rPulp.balanceOf(msg.sender);
+        uint256 qStrike = amount.mul(_ratio).div(1 ether);
+        // gets strike proportional to underlying and checks if enough is in contract
+        require(rPulpBalance >= qStrike, 'ERR_BAL_PULP');
+        require(_strike.balanceOf(address(this)) >= qStrike, "ERR_BAL_S");
+
+        // burns deposit certificate
+        _rPulp.burn(msg.sender, qStrike);
+
+        /* _asset = _asset.sub(sW); */
         
-        _strike.transfer(msg.sender, sW);
+        _strike.transfer(msg.sender, qStrike);
         return true;
     }
 
@@ -130,12 +164,21 @@ contract PrimeERC20 is ERC20Detailed("Prime Option Token", "Prime", 18), ERC20 {
      * @dev burn prime options to withdraw original underlying asset deposits
      */
     function close(uint256 amount) public returns(bool) {
-        uint256 uL = _liabilities[msg.sender];
-        require(uL >= amount, "ERR_BALANCE_L");
-        require(balanceOf(msg.sender) >= amount, "ERR_BALANCE_P");
+        // SWAP TO PULP
+        /* uint256 uL = _liabilities[msg.sender];
+        require(uL >= amount, "ERR_BAL_L");
+        require(balanceOf(msg.sender) >= amount, "ERR_BAL_P");
 
         _liabilities[msg.sender] = uL.sub(amount);
-        _liability = _liability.sub(amount);
+        _liability = _liability.sub(amount); */
+
+        // require pulp
+        uint256 rPulpBalance = _rPulp.balanceOf(msg.sender);
+        require(rPulpBalance >= amount, 'ERR_BAL_PULP');
+        // require prime options
+        require(balanceOf(msg.sender) >= amount, "ERR_BAL_P");
+
+        _rPulp.burn(msg.sender, amount);        
         _burn(msg.sender, amount);
         return sendEther(msg.sender, amount);
     }

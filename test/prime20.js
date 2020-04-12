@@ -248,6 +248,14 @@ contract('Prime ERC-20', accounts => {
                 await getBalance(_tUSD, _prime20.address, "PRIME");
                 await getBalance(_tUSD, Alice, "ALICE");
 
+                // Bob Swaps
+                await _tUSD.transfer(Bob, strikeAmount, {from: Alice});
+                await _tUSD.approve(_prime20.address, strikeAmount, {from: Bob});
+                await _prime20.swap(collateralAmount, {from: Bob});
+                await getEtherBalance(_prime20.address, "PRIME");
+                await getBalance(_tUSD, _prime20.address, "PRIME");
+                await getBalance(_tUSD, Bob, "BOBER");
+                
                 // Bob Withdraws
                 await _prime20.withdraw(collateralAmount, {from: Bob});
                 await getBalance(_tUSD, Bob, "BOBER");
@@ -256,13 +264,7 @@ contract('Prime ERC-20', accounts => {
                 await _prime20.withdraw(collateralAmount, {from: Alice});
                 await getBalance(_tUSD, Alice, "ALICE");
 
-                // Bob Swaps
-                await _tUSD.transfer(Bob, strikeAmount, {from: Alice});
-                await _tUSD.approve(_prime20.address, strikeAmount, {from: Bob});
-                await _prime20.swap(collateralAmount, {from: Bob});
-                await getEtherBalance(_prime20.address, "PRIME");
-                await getBalance(_tUSD, _prime20.address, "PRIME");
-                await getBalance(_tUSD, Bob, "BOBER");
+                
 
                 let endEthBob = await getEtherBalance(Bob, "BOBER");
                 let endStrikeBob = await getBalance(_tUSD, Bob, "BOBER");
