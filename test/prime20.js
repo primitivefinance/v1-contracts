@@ -7,6 +7,7 @@ const Exchange = artifacts.require('Exchange');
 const Pool = artifacts.require('Pool');
 const PrimeERC20 = artifacts.require('PrimeERC20.sol');
 const ExchangePool = artifacts.require('ExchangePool.sol');
+const PoolERC20 = artifacts.require('PoolERC20.sol');
 
 contract('Prime ERC-20', accounts => {
 
@@ -154,20 +155,28 @@ contract('Prime ERC-20', accounts => {
                 receiver = minter;
 
                 getBalance = async (instance, user, name) => {
-                    let balance = await instance.balanceOf(user);
+                    let balance = 1;
+                    let symbol = "ERR"
+                    /* let balance = await instance.balanceOf(user);
                     let symbol = await instance.symbol();
-                    balance = await web3.utils.fromWei(balance);
+                    balance = await web3.utils.fromWei(balance); */
                     console.log(`[${symbol}]`, `[${name}]`,  balance);
                     return balance;
                 }
 
                 getEtherBalance = async (user, name) => {
-                    let balance = await web3.eth.getBalance(user);
-                    balance = await web3.utils.fromWei(balance);
+                    let balance = 1;
+                    /* let balance = await web3.eth.getBalance(user);
+                    balance = await web3.utils.fromWei(balance); */
                     console.log(`[ETHr]`, `[${name}]`, balance);
                     return balance;
                 }
 
+                
+                
+            });
+
+            it('should zero sum', async () => {
                 await _prime.createPrime(
                     collateralAmount,
                     collateral,
@@ -178,10 +187,6 @@ contract('Prime ERC-20', accounts => {
                     {from: minter}
                 );
                 await _prime20.setParentToken(1);
-                
-            });
-
-            it('should zero sum', async () => {
                 let startEthBob = await getEtherBalance(Bob, "BOBER");
                 let startStrikeBob = await getBalance(_tUSD, Bob, "BOBER");
                 let startEthAlice = await getEtherBalance(Alice, "ALICE");
@@ -339,8 +344,81 @@ contract('Prime ERC-20', accounts => {
                 await _prime20.depositAndSell({from: minter, value: collateralAmount});
                 await getEtherBalance(minter, "ALICE");
             });
+        });
 
+        describe('pPulp deposit()', () => {
+            let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
+            beforeEach(async () => {
+                _prime = await Prime.deployed();
+                _tUSD = await tUSD.deployed();
+                _tETH = await tETH.deployed();
+                _exchange = await Exchange.deployed();
+                _pool = await Pool.deployed();
+                _prime20 = await PrimeERC20.deployed();
+                _exchangePool = await ExchangePool.deployed();
+                _pool20 = await PoolERC20.deployed();
+                await _tUSD.approve(_prime20.address, '10000000000000000000');
+                await _tETH.approve(_prime20.address, '10000000000000000000');
+                await _tUSD.approve(_prime.address, '10000000000000000000');
+                await _tETH.approve(_prime.address, '10000000000000000000');
 
+                minter = Alice;
+                collateralAmount = await web3.utils.toWei('1');
+                strikeAmount = await web3.utils.toWei('10');
+                collateral = _tETH.address;
+                strike = _tUSD.address;
+                expiry = '1607775120';
+                receiver = minter;
+
+                getBalance = async (instance, user, name) => {
+                    let balance = 1;
+                    let symbol = "ERR"
+                    /* let balance = await instance.balanceOf(user);
+                    let symbol = await instance.symbol();
+                    balance = await web3.utils.fromWei(balance); */
+                    console.log(`[${symbol}]`, `[${name}]`,  balance);
+                    return balance;
+                }
+
+                getEtherBalance = async (user, name) => {
+                    let balance = 1;
+                    /* let balance = await web3.eth.getBalance(user);
+                    balance = await web3.utils.fromWei(balance); */
+                    console.log(`[ETHr]`, `[${name}]`, balance);
+                    return balance;
+                }
+            });
+
+            it('deposit funds into poolerc20 and get pPulp', async () => {
+                await _prime.createPrime(
+                    collateralAmount,
+                    collateral,
+                    strikeAmount,
+                    strike,
+                    expiry,
+                    receiver,
+                    {from: minter}
+                );
+                await _prime20.setParentToken(1);
+                let appr = await web3.utils.toWei('1000000');
+
+                // add liquidity to exchange pool
+                let two = await web3.utils.toWei('2');
+                let ten = await web3.utils.toWei('10');
+                // get option tokens
+                await _prime20.deposit({from: minter, value: ten});
+                // should be 1 option token, approve to exchangePool
+                await _prime20.approve(_exchangePool.address, appr, {from: minter});
+                // add liquidity by sending 2 {two} ETH and PRIME ERC-20
+                console.log('[PRIME BALANCE]', await web3.utils.fromWei(await _prime20.balanceOf(minter)));
+                console.log('[ePOOL Total Supply]', await web3.utils.fromWei(await _exchangePool.totalSupply()));
+                await _exchangePool.addLiquidity(collateralAmount, await _prime20.balanceOf(minter), {from: minter, value: collateralAmount});
+
+                // deposit funds into pool to get pPulp
+                await _pool20.deposit(collateralAmount, {from: minter, value: collateralAmount});
+                console.log('[PULP BALANCE]', await web3.utils.fromWei(await _pool20.balanceOf(minter)));
+                let poolBal = await _pool20.getPoolBalance();
+            });
         });
     });
 })
