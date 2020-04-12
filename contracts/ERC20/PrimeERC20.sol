@@ -8,35 +8,8 @@ pragma solidity ^0.6.2;
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
-import './Instruments.sol';
-
-abstract contract IPrime {
-    function safeTransferFrom(address from, address to, uint256 tokenId) public virtual;
-    function createPrime(
-        uint256 qUnderlying,
-        address aUnderlying,
-        uint256 qStrike,
-        address aStrike,
-        uint256 tExpiry,
-        address receiver
-    ) external virtual returns (uint256 tokenId);
-    function exercise(uint256 tokenId) external payable virtual returns (bool);
-    function close(uint256 tokenToClose, uint256 tokenToBurn) external virtual returns (bool);
-    function withdraw(uint256 amount, address asset) public virtual returns (bool);
-    function getPrime(uint256 tokenId) external view virtual returns(
-            address writer,
-            uint256 qUnderlying,
-            address aUnderlying,
-            uint256 qStrike,
-            address aStrike,
-            uint256 tExpiry,
-            address receiver,
-            bytes4 series,
-            bytes4 symbol
-        );
-    function getSeries(uint256 tokenId) external view virtual returns (bytes4 series);
-    function isTokenExpired(uint256 tokenId) public view virtual returns (bool);
-}
+import '../Instruments.sol';
+import './InterfaceERC20.sol';
 
 abstract contract IRPulp {
     function mint(address user, uint256 amount) public payable virtual returns (bool);
@@ -105,7 +78,7 @@ contract PrimeERC20 is ERC20Detailed("Prime Option Token", "Prime", 18), ERC20 {
     receive() external payable {}
 
     function setParentToken(uint256 tokenId) public returns(uint256) {
-        require(msg.sender == _controller, "ERR_NOT_OWNER");
+        /* require(msg.sender == _controller, "ERR_NOT_OWNER"); */
         _parentToken = tokenId;
         (
             address writer,
@@ -126,13 +99,13 @@ contract PrimeERC20 is ERC20Detailed("Prime Option Token", "Prime", 18), ERC20 {
     }
 
     function setPulp(address rPulp) public returns(bool) {
-        require(msg.sender == _controller, 'ERR_NOT_OWNER');
+        /* require(msg.sender == _controller, 'ERR_NOT_OWNER'); */ // OWNER IS OPTIONS.sol
         _rPulp = IRPulp(rPulp);
         return true;
     }
 
     function setPool(address ePool) public returns(bool) {
-        require(msg.sender == _controller, 'ERR_NOT_OWNER');
+        /* require(msg.sender == _controller, 'ERR_NOT_OWNER'); */ // OWNER IS OPTIONS.sol
         _ePool = IEPool(ePool);
         _ePoolAddress = ePool;
         _approve(address(this), ePool, 1000000 ether);

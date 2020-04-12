@@ -7,7 +7,7 @@ pragma solidity ^0.6.2;
  */
 
 
-import './Instruments.sol';
+import '../Instruments.sol';
 
 /**
  * @dev Wrappers over Solidity's arithmetic operations with added overflow
@@ -960,19 +960,6 @@ abstract contract IPrime {
     function isGreaterThanOrEqual(uint256 a, uint256 b) public pure virtual returns(bool);
 }
 
-abstract contract IPrimeERC20 {
-    function balanceOf(address user) public view virtual returns (uint);
-    function transferFrom(address from, address to, uint256 amount) public virtual returns (bool);
-    function transfer(address to, uint256 amount) public virtual returns (bool);
-    function deposit() public payable virtual returns (bool);
-    function depositAndSell() public payable virtual returns (uint);
-    function swap(uint256 qUnderlying) public virtual returns (bool);
-    function withdraw(uint256 qUnderlying) public virtual returns (uint);
-    function close(uint256 qUnderlying) public virtual returns (bool);
-    function _strikeAddress() public view virtual returns (address);
-    ERC20 public _strike;
-}
-
 abstract contract ICEther {
     function mint() external payable virtual;
     function redeem(uint redeemTokens) external virtual returns (uint);
@@ -996,7 +983,7 @@ abstract contract ICEther {
     function seize(address liquidator, address borrower, uint seizeTokens) external virtual returns (uint);
 }
 
-contract PoolERC20 is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
+contract Pool is Ownable, Pausable, ReentrancyGuard, ERC721Holder, ERC20, ERC20Detailed {
     using SafeMath for uint256;
 
     /* Address of Prime ERC-721 */
@@ -1005,7 +992,7 @@ contract PoolERC20 is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
     address public _exchangeAddress;
 
     ICEther public _cEther;
-    IPrimeERC20 public _prime;
+    IPrime public _prime;
 
     /* Ether liability */
     uint256 public _liability;
@@ -1033,7 +1020,7 @@ contract PoolERC20 is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
     {
         _primeAddress = primeAddress;
         _exchangeAddress = exchangeAddress;
-        _prime = IPrimeERC20(primeAddress);
+        _prime = IPrime(primeAddress);
         _cEther = ICEther(compoundEthAddress);
         _compoundEthAddress = compoundEthAddress;
     }
@@ -1077,10 +1064,7 @@ contract PoolERC20 is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
         /* INTERACTIONS */
         emit Deposit(amount, msg.sender, amountToMint);
         _mint(msg.sender, amountToMint);
-
-        // NEW DEPOSIT
-        uint256 ethReturn = _prime.depositAndSell.value(amount)();
-        return swapEtherToCompoundEther(ethReturn);
+        return swapEtherToCompoundEther(amount);
     }
 
     /**
@@ -1172,27 +1156,18 @@ contract PoolERC20 is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
     /**
      * @dev user mints a Prime option from the pool
      * @param qUnderlying amount of ether (in wei)
+     * @param qStrike amount of strike asset
+     * @param aStrike address of strike
+     * @param tExpiry timestamp of series expiration
+     * @param primeReceiver Address of Prime reciver
      * @return bool whether or not the Prime is minted
      */
-    function mintPrimeAndSell(
-        uint256 qUnderlying
-    )
-        external
-        payable
-        whenNotPaused
-        returns (bool) 
-    {
-        require(getAvailableAssets() >= qUnderlying, 'Mint: available < amt');
-        uint256 ethReturn = _prime.depositAndSell.value(qUnderlying)();
-        return swapEtherToCompoundEther(ethReturn);
-    }
-
-    /**
-     * @dev Called ONLY from the Prime contract
-     * @param qUnderlying amount of collateral
-     */
-    function redeem(
-        uint256 qUnderlying
+    function mintPrimeFromPool(
+        uint256 qUnderlying,
+        uint256 qStrike,
+        address aStrike,
+        uint256 tExpiry,
+        address payable primeReceiver
     )
         external
         payable
@@ -1200,10 +1175,62 @@ contract PoolERC20 is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
         returns (bool) 
     {
         /* CHECKS */
-        require(balanceOf(msg.sender) >= qUnderlying, 'Swap: ether < collat'); 
-        uint256 qStrike = _prime.withdraw(qUnderlying);
-        ERC20 _strike = ERC20(_prime._strikeAddress());
-        return _prime._strike().transfer(msg.sender, qStrike);
+
+        /* Checks to see if the tx pays the premium - 20% constant right now */
+        require(msg.value >= qUnderlying.div(_premiumDenomination), 'Mint: Val < premium');
+        require(tExpiry > block.timestamp, 'Mint: expired');
+        require(getAvailableAssets() >= qUnderlying, 'Mint: available < amt');
+
+        /* EFFECTS */
+
+        /* Add the ether liability to the Pool */
+        _liability = _liability.add(qUnderlying);
+
+        /* INTERACTIONS */
+        uint256 nonce = _prime.createPrime(
+                qUnderlying,
+                address(this),
+                qStrike,
+                aStrike,
+                tExpiry,
+                address(this)
+            );
+
+        _prime.safeTransferFrom(address(this), primeReceiver, nonce);
+        emit PoolMint(nonce, qUnderlying, qStrike, tExpiry);
+        return swapEtherToCompoundEther(msg.value);
+    }
+
+    /**
+     * @dev Called ONLY from the Prime contract
+     * @param qUnderlying amount of collateral
+     * @param qStrike amount of strike
+     * @param aStrike address of strike
+     */
+    function exercise(
+        uint256 qUnderlying,
+        uint256 qStrike,
+        address aStrike
+    )
+        external
+        payable
+        whenNotPaused
+        returns (bool) 
+    {
+        /* CHECKS */
+        require(msg.sender == _primeAddress);
+        require(getPoolBalance() >= qUnderlying, 'Swap: ether < collat'); 
+
+        /* EFFECTS */
+        _liability = _liability.sub(qUnderlying);
+        
+        /* INTERACTIONS */
+        uint256 redeemResult = _cEther.redeemUnderlying(qUnderlying);
+        require(redeemResult == 0, 'Swap: redeem != 0');
+
+        sendEther(qUnderlying, msg.sender);
+        emit Exercise(qUnderlying, qStrike);
+        return _prime.withdraw(qStrike, aStrike);
     }
 
     /**
@@ -1264,10 +1291,6 @@ contract PoolERC20 is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
         (bool success, ) = user.call.value(amount)("");
         require(success, 'Transfer fail.');
         return success;
-    }
-
-    function getSnapshot() public view returns (uint, uint, uint, uint) {
-        return _cEther.getAccountSnapshot(msg.sender);
     }
 }
 

@@ -1,12 +1,13 @@
 const assert = require('assert').strict;
 const truffleAssert = require('truffle-assertions');
+const Options = artifacts.require('Options');
 const tETH = artifacts.require("tETH");
 const tUSD = artifacts.require("tUSD");
 const Prime = artifacts.require("Prime");
 const Exchange = artifacts.require('Exchange');
 const Pool = artifacts.require('Pool');
 const PrimeERC20 = artifacts.require('PrimeERC20.sol');
-const ExchangePool = artifacts.require('ExchangePool.sol');
+const ExchangeERC20 = artifacts.require('ExchangeERC20.sol');
 const PoolERC20 = artifacts.require('PoolERC20.sol');
 
 contract('Prime ERC-20', accounts => {
@@ -100,7 +101,9 @@ contract('Prime ERC-20', accounts => {
                 _tETH = await tETH.deployed();
                 _exchange = await Exchange.deployed();
                 _pool = await Pool.deployed();
-                _prime20 = await PrimeERC20.deployed();
+                options = await Options.deployed();
+                let prime20Address = await options._primeMarkets(1);
+                _prime20 = await PrimeERC20.at(prime20Address);
                 await _tUSD.approve(_prime20.address, '10000000000000000000');
                 await _tETH.approve(_prime20.address, '10000000000000000000');
                 await _tUSD.approve(_prime.address, '10000000000000000000');
@@ -139,8 +142,11 @@ contract('Prime ERC-20', accounts => {
                 _tETH = await tETH.deployed();
                 _exchange = await Exchange.deployed();
                 _pool = await Pool.deployed();
-                _prime20 = await PrimeERC20.deployed();
-                _exchangePool = await ExchangePool.deployed();
+                options = await Options.deployed();
+                let prime20Address = await options._primeMarkets(1);
+                _prime20 = await PrimeERC20.at(prime20Address);
+                _exchangePool = await ExchangeERC20.deployed();
+                
                 await _tUSD.approve(_prime20.address, '10000000000000000000');
                 await _tETH.approve(_prime20.address, '10000000000000000000');
                 await _tUSD.approve(_prime.address, '10000000000000000000');
@@ -354,8 +360,10 @@ contract('Prime ERC-20', accounts => {
                 _tETH = await tETH.deployed();
                 _exchange = await Exchange.deployed();
                 _pool = await Pool.deployed();
-                _prime20 = await PrimeERC20.deployed();
-                _exchangePool = await ExchangePool.deployed();
+                options = await Options.deployed();
+                let prime20Address = await options._primeMarkets(1);
+                _prime20 = await PrimeERC20.at(prime20Address);
+                _exchangePool = await ExchangeERC20.deployed();
                 _pool20 = await PoolERC20.deployed();
                 await _tUSD.approve(_prime20.address, '10000000000000000000');
                 await _tETH.approve(_prime20.address, '10000000000000000000');

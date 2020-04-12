@@ -8,7 +8,7 @@ pragma solidity ^0.6.2;
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
-import './Instruments.sol';
+import '../Instruments.sol';
 
 
 contract RPulp is ERC20Detailed("Primitive Underlying LP", "rPULP", 18), ERC20 {

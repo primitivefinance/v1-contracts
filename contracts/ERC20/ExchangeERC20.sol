@@ -8,14 +8,9 @@ pragma solidity ^0.6.2;
 import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol';
+import './InterfaceERC20.sol';
 
-abstract contract IPrimeERC20 {
-    function balanceOf(address user) public view virtual returns (uint);
-    function transferFrom(address from, address to, uint256 amount) public virtual returns (bool);
-    function transfer(address to, uint256 amount) public virtual returns (bool);
-}
-
-contract ExchangePool is ERC20Detailed('ePULP', 'Exchange Primitive LP Tokens', 18), ERC20 {
+contract ExchangeERC20 is ERC20Detailed('ePULP', 'Exchange Primitive LP Tokens', 18), ERC20 {
     using SafeMath for uint256;
 
     address public _controller;

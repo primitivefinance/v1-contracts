@@ -403,7 +403,7 @@ contract Pausable is Context {
     }
 }
 
-import './Instruments.sol';
+import '../Instruments.sol';
 
 abstract contract IPool {
     function withdrawExercisedEth(address payable _receiver, uint256 amount) external virtual returns (bool);
