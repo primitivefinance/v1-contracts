@@ -12,6 +12,7 @@ import '@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol';
 abstract contract IPrimeERC20 {
     function balanceOf(address user) public view virtual returns (uint);
     function transferFrom(address from, address to, uint256 amount) public virtual returns (bool);
+    function transfer(address to, uint256 amount) public virtual returns (bool);
 }
 
 contract ExchangePool is ERC20Detailed('ePULP', 'Exchange Primitive LP Tokens', 18), ERC20 {
@@ -50,6 +51,25 @@ contract ExchangePool is ERC20Detailed('ePULP', 'Exchange Primitive LP Tokens', 
             _prime.transferFrom(msg.sender, address(this), maxQTokens);
             return initialQLiquidity;
         }
+    }
+
+    function removeLiquidity(
+        uint256 qLiquidity,
+        uint256 minQEth,
+        uint256 minQTokens
+    ) public returns (uint256, uint256) {
+        require(qLiquidity > 0 &&  minQEth > 0 && minQTokens > 0, 'ERR_ZERO');
+
+        uint256 totalSupply = totalSupply();
+        uint256 rTokens = _prime.balanceOf(address(this));
+        uint256 qEth = qLiquidity.mul(address(this).balance).div(totalSupply);
+        uint256 qTokens = qLiquidity.mul(rTokens).div(totalSupply);
+        require(qEth >= minQEth, 'ERR_BAL_ETH');
+        require(qTokens >= minQTokens, 'ERR_BAL_TOKENS');
+        _burn(msg.sender, qLiquidity);
+        _prime.transfer(msg.sender, qTokens);
+        sendEther(msg.sender, qEth);
+        return (qLiquidity, qEth);
     }
 
     function swapTokensToEth(

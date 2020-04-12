@@ -269,25 +269,52 @@ contract('Prime ERC-20', accounts => {
 
             it('should add liquidity', async () => {
                 await getEtherBalance(minter, "ALICE");
+                let two = await web3.utils.toWei('2');
                 // get option tokens
-                await _prime20.deposit({from: minter, value: collateralAmount});
+                await _prime20.deposit({from: minter, value: two});
                 // should be 1 option token, approve to exchangePool
-                await _prime20.approve(_exchangePool.address, collateralAmount, {from: minter});
+                await _prime20.approve(_exchangePool.address, two, {from: minter});
 
-                // add liquidity by sending 1 {collateralAmount} ETH and PRIME ERC-20
-                await _exchangePool.addLiquidity(collateralAmount, collateralAmount, {from: minter, value: collateralAmount});
+                // add liquidity by sending 2 {two} ETH and PRIME ERC-20
+                await _exchangePool.addLiquidity(two, two, {from: minter, value: two});
                 
                 // get more prime erc-20 tokens
 
                 // get option tokens
-                await _prime20.deposit({from: minter, value: collateralAmount});
-                // should be 1 option token, approve to exchangePool
-                await _prime20.approve(_exchangePool.address, collateralAmount, {from: minter});
+                await _prime20.deposit({from: minter, value: two});
+                // should be 2 option token, approve to exchangePool
+                await _prime20.approve(_exchangePool.address, two, {from: minter});
+
+                // check input price
+                let y = await _exchangePool.getInputPrice(collateralAmount, collateralAmount, collateralAmount);
 
                 // try to sell the tokens using the initial liquidity
-                await _exchangePool.swapTokensToEth(collateralAmount, collateralAmount, {from: minter})
+                await getEtherBalance(minter, "ALICE");
+                console.log('[SELLPRICE]', await web3.utils.fromWei(y));
+                await _exchangePool.swapTokensToEth(collateralAmount, y, {from: minter})
 
                 await getEtherBalance(minter, "ALICE");
+            });
+
+            it('should remove liquidity', async () => {
+                await getEtherBalance(minter, "ALICE");
+                await getBalance(_prime20, minter, "ALICE");
+                let half = await web3.utils.toWei('0.5');
+                let minPrice = (
+                    collateralAmount*1 * 
+                    (await web3.eth.getBalance(_exchangePool.address)) / 
+                    (await _prime20.balanceOf(_exchangePool.address))
+                ).toString();
+
+                await _exchangePool.removeLiquidity(
+                    collateralAmount,
+                    minPrice,
+                    minPrice,
+                    {from: minter}
+                );
+
+                await getEtherBalance(minter, "ALICE");
+                await getBalance(_prime20, minter, "ALICE");
             });
 
 
