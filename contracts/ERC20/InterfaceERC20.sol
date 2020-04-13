@@ -39,8 +39,9 @@ abstract contract IPrimeERC20 {
     function balanceOf(address user) public view virtual returns (uint);
     function transferFrom(address from, address to, uint256 amount) public virtual returns (bool);
     function transfer(address to, uint256 amount) public virtual returns (bool);
-    function deposit() public payable virtual returns (bool);
-    function depositAndSell() public payable virtual returns (uint);
+    function deposit(uint256 amount) public payable virtual returns (bool);
+    function depositAndMarketSell(uint256 amount) public payable virtual returns (uint);
+    function depositAndLimitSell(uint256 amount, uint256 askPrice) public payable virtual returns (uint);
     function swap(uint256 qUnderlying) public virtual returns (bool);
     function withdraw(uint256 qUnderlying) public virtual returns (uint);
     function close(uint256 qUnderlying) public virtual returns (bool);
@@ -83,5 +84,6 @@ abstract contract IEPulp {
         uint256 rOutput
     ) public view virtual returns (uint256);
     function tokenReserves() public view virtual returns (uint256);
+    function etherReserves() public view virtual returns (uint256);
 
 }

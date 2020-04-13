@@ -98,8 +98,8 @@ contract('PrimeERC20', accounts => {
         userA = Alice;
         userB = Bob;
     });
-    
-    describe('PrimeERC20.sol', () => {
+
+    describe('PrimeERC20.sol - Eth Call Option', () => {
         beforeEach(async () => {
             options = await Options.deployed();
             nonce = await options._nonce();
@@ -119,6 +119,7 @@ contract('PrimeERC20', accounts => {
             it('revert if msg.value = 0', async () => {
                 await truffleAssert.reverts(
                     _prime20.deposit(
+                        0,
                         {from: userA,  value: 0}
                     ),
                     "ERR_ZERO"
@@ -129,7 +130,7 @@ contract('PrimeERC20', accounts => {
             it('mints rPulp and oPulp', async () => {
                 let rPulp = strikeAmount;
                 let oPulp = (oneEther).toString();
-                await _prime20.deposit({from: userA, value: oneEther});
+                await _prime20.deposit(oneEther, {from: userA, value: oneEther});
                 let rPulpBal = (await _rPulp.balanceOf(userA)).toString();
                 let oPulpBal = (await _prime20.balanceOf(userA)).toString();
                 assert.strictEqual(rPulpBal, rPulp, 'rPulp balances not equal');
@@ -137,7 +138,7 @@ contract('PrimeERC20', accounts => {
             });
         });
 
-        describe('depositAndSell()', () => {
+        describe('depositAndLimitSell()', () => {
             beforeEach(async () => {
                 options = await Options.deployed();
                 nonce = await options._nonce();
@@ -149,7 +150,9 @@ contract('PrimeERC20', accounts => {
 
             it('revert if msg.value = 0', async () => {
                 await truffleAssert.reverts(
-                    _prime20.depositAndSell(
+                    _prime20.depositAndLimitSell(
+                        0,
+                        0,
                         {from: userA,  value: 0}
                     ),
                     "ERR_ZERO"
@@ -157,7 +160,7 @@ contract('PrimeERC20', accounts => {
             });
 
             it('adds initial liquidity to exchange', async () => {
-                await _prime20.deposit({from: userA, value: twoEther});
+                await _prime20.deposit(twoEther, {from: userA, value: twoEther});
                 let totalSupply = (await _exchange20.totalSupply()).toString();
                 assert.strictEqual(totalSupply, '0', 'Total supply not 0, initial liquidity already set');
                 await _prime20.approve(_exchange20.address, millionEther);
@@ -174,7 +177,7 @@ contract('PrimeERC20', accounts => {
                 let outputEth = await _exchange20.getInputPrice(qInput, rInput, rOutput);
                 let rPulpBalBefore = await _rPulp.balanceOf(userA);
                 let oPulpBalBefore = (await _prime20.balanceOf(userA)).toString();
-                await _prime20.depositAndSell({from: userA, value: oneEther});
+                await _prime20.depositAndLimitSell(oneEther, (oneEther * 0.9).toString(), {from: userA, value: oneEther});
                 let rPulpBal = (await _rPulp.balanceOf(userA)).toString();
                 let oPulpBal = (await _prime20.balanceOf(userA)).toString();
                 let etherBalUserEnd = await web3.eth.getBalance(userA);
@@ -213,7 +216,7 @@ contract('PrimeERC20', accounts => {
             });
 
             it('reverts if user doesnt have enough strike assets', async () => {
-                await _prime20.deposit({from: userB, value: oneEther});
+                await _prime20.deposit(oneEther, {from: userB, value: oneEther});
                 await truffleAssert.reverts(
                     _prime20.swap(
                         oneEther,
@@ -224,7 +227,7 @@ contract('PrimeERC20', accounts => {
             });
 
             it('swaps oPulp for underlying', async () => {
-                await _prime20.deposit({from: userA, value: oneEther});
+                await _prime20.deposit(oneEther, {from: userA, value: oneEther});
                 let iEth = await getBalance(userA);
                 let ioPulp = await _prime20.balanceOf(userA);
                 let iStrike = await _strike.balanceOf(userA);
@@ -263,7 +266,7 @@ contract('PrimeERC20', accounts => {
             });
 
             it('reverts if prime contract doesnt have strike assets', async () => {
-                await _prime20.deposit({from: userA, value: twoEther});
+                await _prime20.deposit(twoEther, {from: userA, value: twoEther});
                 let irPulp = await _rPulp.balanceOf(userA);
                 let ratio = await _prime20._strikePrice();
                 let qStrike = oneEther * ratio / toWei('1');

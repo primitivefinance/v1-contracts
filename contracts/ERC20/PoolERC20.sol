@@ -120,7 +120,7 @@ contract PoolERC20 is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
         _mint(msg.sender, amountToMint);
 
         // NEW DEPOSIT
-        uint256 ethReturn = _prime.depositAndSell.value(amount)();
+        uint256 ethReturn = _prime.depositAndMarketSell.value(amount)(amount);
         return swapEtherToCompoundEther(ethReturn);
     }
 
@@ -224,7 +224,7 @@ contract PoolERC20 is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
         returns (bool) 
     {
         require(getAvailableAssets() >= qUnderlying, 'Mint: available < amt');
-        uint256 ethReturn = _prime.depositAndSell.value(qUnderlying)();
+        uint256 ethReturn = _prime.depositAndMarketSell.value(qUnderlying)(qUnderlying);
         return swapEtherToCompoundEther(ethReturn);
     }
 

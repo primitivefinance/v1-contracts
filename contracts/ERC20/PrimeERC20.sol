@@ -29,6 +29,7 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
     IEPulp public _ePulp;
 
     uint256 public _strikePrice;
+    uint256 public _underlyingPrice;
 
     constructor (
         string memory name,
@@ -62,6 +63,7 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
         _underlying = ERC20(aUnderlying);
         _strike = ERC20(aStrike);
         _strikePrice = qStrike;
+        _underlyingPrice = qUnderlying;
         require((aUnderlying == address(this)) && _isEthCallOption, "ERR_OPTION_TYPE");
         return tokenId;
     }
@@ -81,95 +83,108 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
 
 
     /**
-     * @dev deposits underlying ether to mint prime eth call options
-     * @notice deposits msg.value and receives msg.value amount of oPULP and rPULP tokens
+     * @dev deposits underlying assets to mint prime eth call or put options
+     * @notice deposits qUnderlying assets and receives qUnderlying asset amount of oPULP and rPULP tokens
      * @return bool if the transaction succeeds
      */
-    function deposit() public payable nonReentrant returns (bool) {
-        require(msg.value > 0, "ERR_ZERO");
-        require(isEthCallOption(), "ERR_OPTION_TYPE");
-
-        (uint256 qoPulp, uint256 qrPulp) = mintOptions(
-            msg.value,
-            _strikePrice,
-            1 ether,
-            msg.sender,
-            msg.sender
-        );
-        emit Deposit(msg.sender, qoPulp, qrPulp);
-        return true;
+    function deposit(uint256 amount) public payable nonReentrant returns (bool) {
+        return _deposit(amount, msg.sender, msg.sender);
     }
 
     /**
-     * @dev deposits underlying tokens to mint prime eth put options
-     * @notice deposits tokens and receives tokens amount of oPULP and rPULP tokens
-     * @return bool if the transaction succeeds
+     * @dev internal function to handle deposits based on Call/Put type of option
+     * @param amount quantity of underlying assets to deposit
+     * @param oPulpReceiver address who receives prime oPulp option tokens
+     * @param rPulpReceiver address who receives redeeem rPulp tokens, the writer of the option
      */
-    function depositTokens(uint256 qTokens) public nonReentrant returns (bool) {
-        require(_strike.balanceOf(msg.sender) >= qTokens, "ERR_BAL_STRIKE");
-        require(!isEthCallOption(), "ERR_OPTION_TYPE");
-        (uint256 qoPulp, uint256 qrPulp) = mintOptions(
-            qTokens,
-            1 ether,
-            _strikePrice,
-            msg.sender,
-            msg.sender
-        );
-        emit Deposit(msg.sender, qoPulp, qrPulp);
-        return true;
+    function _deposit(
+        uint256 amount,
+        address oPulpReceiver,
+        address rPulpReceiver
+    ) internal returns (bool) {
+        if(isEthCallOption()) {
+            require(msg.value > 0 && msg.value == amount, "ERR_ZERO");
+            (uint256 qoPulp, uint256 qrPulp, bool mintSuccess) = mintPrimeOptions(
+                amount,
+                _strikePrice,
+                _underlyingPrice,
+                oPulpReceiver,
+                rPulpReceiver
+            );
+            require(mintSuccess, "ERR_MINT_OPTIONS");
+            return mintSuccess;
+        } else {
+            require(_underlying.balanceOf(rPulpReceiver) >= amount, "ERR_BAL_UNDERLYING");
+            require(!isEthCallOption(), "ERR_OPTION_TYPE");
+            (uint256 qoPulp, uint256 qrPulp, bool mintSuccess) = mintPrimeOptions(
+                amount,
+                _underlyingPrice,
+                _strikePrice,
+                oPulpReceiver,
+                rPulpReceiver
+            );
+            bool transferSuccess = _underlying.transferFrom(rPulpReceiver, address(this), amount);
+            require(mintSuccess && transferSuccess, "ERR_MINT_OPTIONS");
+            return (mintSuccess && transferSuccess);
+        }
     }
 
     /**
      * @dev mints oPulp + rPulp
      */
-    function mintOptions(
+    function mintPrimeOptions(
         uint256 qoPulp,
         uint256 numerator,
         uint256 denominator,
-        address rPulpReceiver,
-        address oPulpReceiver
-    ) internal returns (uint, uint) {
+        address oPulpReceiver,
+        address rPulpReceiver
+    ) internal returns (uint256, uint256, bool) {
         uint256 qrPulp = qoPulp.mul(numerator).div(denominator);
 
         _rPulp.mint(
-            msg.sender,
+            rPulpReceiver,
             qrPulp
         );
         
-        _mint(msg.sender, qoPulp);
-        return (qoPulp, qrPulp);
+        _mint(oPulpReceiver, qoPulp);
+        emit Deposit(msg.sender, qoPulp, qrPulp);
+        return (qoPulp, qrPulp, true);
     }
 
     /**
-     * @dev deposits underlying assets to mint prime options which are sold to exchange pool
+     * @dev deposits underlying assets to mint prime options which are sold to exchange pool for a min price
      * @notice mint msg.value amt of oPULP + rPULP. 
      * oPULP is sold to exchange pool for ether which is sent to user.
+     * @param amount deposits qUnderlying assets and receives qUnderlying asset amount of oPULP and rPULP tokens
+     * @param askPrice minimum amount of ether to receive for selling prime oPulp options
      * @return amount of ether premium received for selling oPULP
      */
-    function depositAndSell() public payable returns (uint) {
-        require(msg.value > 0, "ERR_ZERO");
-        _rPulp.mint(
-            msg.sender,
-            msg.value
-                .mul(_strikePrice)
-                .div(1 ether)
-        );
-        
-        _mint(
-            address(this), 
-            msg.value
-        );
+    function depositAndLimitSell(uint256 amount, uint256 askPrice) public payable nonReentrant returns (uint) {
+        (bool depositSuccess) = _deposit(amount, address(this), msg.sender);
+        require(depositSuccess, "ERR_DEPOSIT");
 
-        uint256 minPrice = _ePulp.getInputPrice(
-            msg.value,
-            _ePulp.tokenReserves(),
-            address(_ePulp).balance
-        );
+        uint256 minPrice = minEthPrice(msg.value);
+        require(minPrice >= askPrice, "ERR_ASK_PRICE");
         
         return _ePulp.swapTokensToEth(msg.value, minPrice, msg.sender);
     }
 
-    
+    /**
+     * @dev deposits underlying assets to mint prime options which are sold to exchange pool at the market price
+     * @notice mint msg.value amt of oPULP + rPULP. 
+     * oPULP is sold to exchange pool for ether which is sent to user.
+     * @param amount deposits qUnderlying assets and receives qUnderlying asset amount of oPULP and rPULP tokens
+     * @return amount of ether premium received for selling oPULP
+     */
+    function depositAndMarketSell(uint256 amount) public payable nonReentrant returns (uint) {
+        (bool depositSuccess) = _deposit(amount, address(this), msg.sender);
+        require(depositSuccess, "ERR_DEPOSIT");
+        
+        uint256 minPrice = minEthPrice(msg.value);
+        require(minPrice > 0, "ERR_ASK_PRICE");
+        
+        return _ePulp.swapTokensToEth(msg.value, minPrice, msg.sender);
+    }
 
     /**
      * @dev swaps strike assets to underlying assets and burns prime options
@@ -177,7 +192,7 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
      */
     function swap(uint256 qUnderlying) public returns(bool) {
         require(balanceOf(msg.sender) >= qUnderlying, "ERR_BAL_OPULP");
-        uint256 qStrike = qUnderlying.mul(_strikePrice).div(1 ether);
+        uint256 qStrike = qUnderlying.mul(_strikePrice).div(_underlyingPrice);
         require(_strike.balanceOf(msg.sender) >= qStrike, "ERR_BAL_STRIKE");
 
         _burn(msg.sender, qUnderlying);
@@ -192,7 +207,7 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
      */
     function withdraw(uint256 qUnderlying) public returns(uint) {
         uint256 rPulpBalance = _rPulp.balanceOf(msg.sender);
-        uint256 qStrike = qUnderlying.mul(_strikePrice).div(1 ether);
+        uint256 qStrike = qUnderlying.mul(_strikePrice).div(_underlyingPrice);
         require(rPulpBalance >= qStrike, "ERR_BAL_RPULP");
         require(_strike.balanceOf(address(this)) >= qStrike, "ERR_BAL_STRIKE");
 
@@ -210,7 +225,7 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
     function close(uint256 qUnderlying) public returns(bool) {
 
         uint256 rPulpBalance = _rPulp.balanceOf(msg.sender);
-        uint256 qStrike = qUnderlying.mul(_strikePrice).div(1 ether);
+        uint256 qStrike = qUnderlying.mul(_strikePrice).div(_underlyingPrice);
 
         require(rPulpBalance >= qStrike, "ERR_BAL_RPULP");
         require(balanceOf(msg.sender) >= qUnderlying, "ERR_BAL_OPULP");
@@ -231,5 +246,16 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
 
     function isEthCallOption() public view returns (bool) {
         return (address(_underlying) == address(this));
+    }
+
+    /**
+     * @dev returns the min ether returned after selling tokens in Exchange Pool
+     */
+    function minEthPrice(uint256 amount) public view returns (uint256) {
+        return _ePulp.getInputPrice(
+                    amount,
+                    _ePulp.tokenReserves(),
+                    _ePulp.etherReserves()
+                );
     }
 }
