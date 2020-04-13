@@ -42,3 +42,41 @@ abstract contract IPrimeERC20 {
     function _strikeAddress() public view virtual returns (address);
     ERC20 public _strike;
 }
+
+abstract contract IRPulp {
+    function mint(address user, uint256 amount) public payable virtual returns (bool);
+    function burn(address user, uint256 amount) public payable virtual returns (bool);
+    function balanceOf(address user) public view virtual returns (uint);
+}
+
+abstract contract IEPulp {
+    function addLiquidity(
+        uint256 minQLiquidity,
+        uint256 maxQTokens
+    ) public payable virtual returns(uint256);
+    function removeLiquidity(
+        uint256 qLiquidity,
+        uint256 minQEth,
+        uint256 minQTokens
+    ) public virtual returns (uint256, uint256);
+    function swapTokensToEth(
+        uint256 qTokens,
+        uint256 minQEth,
+        address payable receiver
+    ) public virtual returns (uint);
+    function swapEthToTokens(
+        uint256 qTokens
+    ) public payable virtual returns (uint256);
+    function getInputPrice(
+        uint256 qInput,
+        uint256 rInput,
+        uint256 rOutput
+    ) public view virtual returns (uint256);
+    function getOutputPrice(
+        uint256 qOutput,
+        uint256 rInput,
+        uint256 rOutput
+    ) public view virtual returns (uint256);
+    function tokenReserves() public view virtual returns (uint256);
+
+}

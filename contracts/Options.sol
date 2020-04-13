@@ -12,51 +12,31 @@ import '@openzeppelin/contracts/token/ERC721/ERC721Holder.sol';
 contract Options is Ownable, ERC721Holder {
     using SafeMath for uint256;
 
-    event AddOptionChain(
-        bytes4 series, 
-        uint256 tExpiry, 
-        uint256 increment, 
-        address aUnderlying, 
-        address aStrike,
-        uint256 baseRatio
-    );
-
-     /* 
-        THE CORE CHAIN STRUCT
-        SERIES IS A HASH OF THE COLLATERAL/STRIKE/EXPIRATON
-        COLLATERAL AND STRIKE ARE THE ADDRESSES OF THE TOKENS
-        BASE RATIO IS THE CURRENT RATE BETWEEN ASSETS AT CREATION
-     */
-    struct OptionsChain {
-        bytes4 series;
-        uint256 tExpiry;
-        uint256 increment;
-        address aUnderlying;
-        address aStrike;
-        uint256 baseRatio;
-        
-    }
-
-    uint256 public nonce;
-    mapping(uint256 => OptionsChain) public _optionChains;
     mapping(uint256 => address) public _primeMarkets;
     uint256 public _nonce;
-    address public _exchangeAddress;
-    address public _primeAddress;
     IPrime public _prime;
+    PrimeERC20 public _prime20;
 
     constructor(
         address primeAddress
     ) public {
-        _primeAddress = primeAddress;
         _prime = IPrime(primeAddress);
+    }
+
+    function setRPulp(address rPulp) public onlyOwner {
+        _prime20.setRPulp(rPulp);
+    }
+
+    function setPool(address ePulp) public onlyOwner {
+        _prime20.setPool(ePulp);
     }
 
     function addEthOption(
         uint256 qStrike,
         ERC20 aStrike,
         uint256 tExpiry,
-        bool isCall
+        bool isCall,
+        string memory name
     ) 
         public
         payable
@@ -66,8 +46,9 @@ contract Options is Ownable, ERC721Holder {
         _nonce = _nonce.add(1);
         uint256 tokenId;
 
-        PrimeERC20 prime20 = new PrimeERC20(
-            _primeAddress
+        _prime20 = new PrimeERC20(
+            name,
+            address(_prime)
         );
 
         // if its a call the underlying q will be 1 and the address will be the erc-20 oPulp
@@ -79,7 +60,7 @@ contract Options is Ownable, ERC721Holder {
             tokenId = _prime.createPrime
                 .value(1 ether)(
                 1 ether,
-                address(prime20),
+                address(_prime20),
                 qStrike,
                 address(aStrike),
                 tExpiry,
@@ -92,69 +73,15 @@ contract Options is Ownable, ERC721Holder {
                 qStrike,
                 address(aStrike),
                 1 ether,
-                address(prime20),
+                address(_prime20),
                 tExpiry,
                 address(this)
             );
         }
         
-        prime20.setParentToken(tokenId);
-        _primeMarkets[_nonce] = address(prime20);
+        _prime20.setParentToken(tokenId);
+        _primeMarkets[_nonce] = address(_prime20);
         return _nonce;
-    }
-
-
-    function addOptionChain(
-        uint256 tExpiry, 
-        uint256 increment, 
-        address aUnderlying, 
-        address aStrike,
-        uint256 baseRatio
-    ) 
-        public
-        onlyOwner
-        returns (bool) 
-    {
-
-        bytes4 series = bytes4(
-            keccak256(abi.encodePacked(aUnderlying))) 
-            ^ bytes4(keccak256(abi.encodePacked(aStrike))) 
-            ^ bytes4(keccak256(abi.encodePacked(tExpiry))
-        );
-
-        nonce = nonce.add(1);
-        _optionChains[nonce] = OptionsChain(
-            series,
-            tExpiry, 
-            increment, 
-            aUnderlying, 
-            aStrike,
-            baseRatio
-        );
-
-        emit AddOptionChain(series, tExpiry, increment, aUnderlying, aStrike, baseRatio);
-        return true;
-    }
-
-    function getOptionChain(uint256 _id) public view returns(
-        bytes4 series,
-        uint256 tExpiry,
-        uint256 increment,
-        address aUnderlying,
-        address aStrike,
-        uint256 baseRatio
-        
-    ) 
-    {
-        OptionsChain memory optionChainObject = _optionChains[_id];
-        return (
-            optionChainObject.series,
-            optionChainObject.tExpiry,
-            optionChainObject.increment,
-            optionChainObject.aUnderlying,
-            optionChainObject.aStrike,
-            optionChainObject.baseRatio
-        );
     }
 }
 
