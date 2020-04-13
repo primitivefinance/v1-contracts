@@ -46,21 +46,10 @@ contract Options is Ownable, ERC721Holder {
     IPrime public _prime;
 
     constructor(
-        address exchangeAddress,
-        uint256 tExpiry,
-        uint256 increment,
-        address aUnderlying,
-        address aStrike,
-        uint256 baseRatio
+        address primeAddress
     ) public {
-        _exchangeAddress = exchangeAddress;
-        addOptionChain(tExpiry, increment, aUnderlying, aStrike, baseRatio);
-    }
-
-    function setPrimeAddress(address prime) public onlyOwner returns (bool) {
-        _primeAddress = prime;
-        _prime = IPrime(prime);
-        return true;
+        _primeAddress = primeAddress;
+        _prime = IPrime(primeAddress);
     }
 
     function addEthOption(

@@ -156,5 +156,9 @@ contract ExchangeERC20 is ERC20Detailed('ePULP', 'Exchange Primitive LP Tokens',
 
     function tokenReserves() public view returns (uint256) {
         return _prime.balanceOf(address(this));
-    }   
+    }
+
+    function etherReserves() public view returns (uint256) {
+        return address(this).balance;
+    }
 }

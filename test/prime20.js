@@ -1,11 +1,8 @@
 const assert = require('assert').strict;
 const truffleAssert = require('truffle-assertions');
 const Options = artifacts.require('Options');
-const tETH = artifacts.require("tETH");
 const tUSD = artifacts.require("tUSD");
 const Prime = artifacts.require("Prime");
-const Exchange = artifacts.require('Exchange');
-const Pool = artifacts.require('Pool');
 const PrimeERC20 = artifacts.require('PrimeERC20.sol');
 const ExchangeERC20 = artifacts.require('ExchangeERC20.sol');
 const PoolERC20 = artifacts.require('PoolERC20.sol');
@@ -98,37 +95,23 @@ contract('Prime ERC-20', accounts => {
             beforeEach(async () => {
                 _prime = await Prime.deployed();
                 _tUSD = await tUSD.deployed();
-                _tETH = await tETH.deployed();
-                _exchange = await Exchange.deployed();
-                _pool = await Pool.deployed();
                 options = await Options.deployed();
-                let prime20Address = await options._primeMarkets(1);
+                _exchangePool = await ExchangeERC20.deployed();
+                _pool20 = await PoolERC20.deployed();
+                const prime20Address = await options._primeMarkets(1);
                 _prime20 = await PrimeERC20.at(prime20Address);
                 await _tUSD.approve(_prime20.address, '10000000000000000000');
-                await _tETH.approve(_prime20.address, '10000000000000000000');
-                await _tUSD.approve(_prime.address, '10000000000000000000');
-                await _tETH.approve(_prime.address, '10000000000000000000');
 
                 minter = Alice;
                 collateralAmount = await web3.utils.toWei('1');
                 strikeAmount = await web3.utils.toWei('10');
-                collateral = _tETH.address;
+                collateral = _prime20.address;
                 strike = _tUSD.address;
                 expiry = '1607775120';
                 receiver = minter;
                 
             });
             it('gets symbol', async () => {
-                /* await _prime.createPrime(
-                    collateralAmount,
-                    collateral,
-                    strikeAmount,
-                    strike,
-                    expiry,
-                    receiver,
-                    {from: minter}
-                );
-                await _prime20.setParentToken(1); */
                 let symbol = await _prime20.symbol();
                 console.log('[SYMBOL]', symbol);
                 
@@ -139,23 +122,17 @@ contract('Prime ERC-20', accounts => {
             beforeEach(async () => {
                 _prime = await Prime.deployed();
                 _tUSD = await tUSD.deployed();
-                _tETH = await tETH.deployed();
-                _exchange = await Exchange.deployed();
-                _pool = await Pool.deployed();
                 options = await Options.deployed();
-                let prime20Address = await options._primeMarkets(1);
-                _prime20 = await PrimeERC20.at(prime20Address);
                 _exchangePool = await ExchangeERC20.deployed();
-                
+                _pool20 = await PoolERC20.deployed();
+                const prime20Address = await options._primeMarkets(1);
+                _prime20 = await PrimeERC20.at(prime20Address);
                 await _tUSD.approve(_prime20.address, '10000000000000000000');
-                await _tETH.approve(_prime20.address, '10000000000000000000');
-                await _tUSD.approve(_prime.address, '10000000000000000000');
-                await _tETH.approve(_prime.address, '10000000000000000000');
 
                 minter = Alice;
                 collateralAmount = await web3.utils.toWei('1');
                 strikeAmount = await web3.utils.toWei('10');
-                collateral = _tETH.address;
+                collateral = _prime20.address;
                 strike = _tUSD.address;
                 expiry = '1607775120';
                 receiver = minter;
@@ -357,23 +334,17 @@ contract('Prime ERC-20', accounts => {
             beforeEach(async () => {
                 _prime = await Prime.deployed();
                 _tUSD = await tUSD.deployed();
-                _tETH = await tETH.deployed();
-                _exchange = await Exchange.deployed();
-                _pool = await Pool.deployed();
                 options = await Options.deployed();
-                let prime20Address = await options._primeMarkets(1);
-                _prime20 = await PrimeERC20.at(prime20Address);
                 _exchangePool = await ExchangeERC20.deployed();
                 _pool20 = await PoolERC20.deployed();
+                const prime20Address = await options._primeMarkets(1);
+                _prime20 = await PrimeERC20.at(prime20Address);
                 await _tUSD.approve(_prime20.address, '10000000000000000000');
-                await _tETH.approve(_prime20.address, '10000000000000000000');
-                await _tUSD.approve(_prime.address, '10000000000000000000');
-                await _tETH.approve(_prime.address, '10000000000000000000');
 
                 minter = Alice;
                 collateralAmount = await web3.utils.toWei('1');
                 strikeAmount = await web3.utils.toWei('10');
-                collateral = _tETH.address;
+                collateral = _prime20.address;
                 strike = _tUSD.address;
                 expiry = '1607775120';
                 receiver = minter;

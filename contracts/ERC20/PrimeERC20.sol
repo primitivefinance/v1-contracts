@@ -163,9 +163,9 @@ contract PrimeERC20 is ERC20Detailed("Prime Option Token", "Prime", 18), ERC20 {
      * @dev swaps strike assets to underlying assets and burns prime options
      */
     function swap(uint256 qUnderlying) public returns(bool) {
-        require(balanceOf(msg.sender) >= qUnderlying, "ERR_BAL_P");
+        require(balanceOf(msg.sender) >= qUnderlying, "ERR_BAL_OPULP");
         uint256 qStrike = qUnderlying.mul(_ratio).div(1 ether);
-        require(_strike.balanceOf(msg.sender) >= qStrike, "ERR_BAL_S");
+        require(_strike.balanceOf(msg.sender) >= qStrike, "ERR_BAL_STRIKE");
 
         /* _asset = _asset.add(qStrike); */
 
@@ -190,8 +190,8 @@ contract PrimeERC20 is ERC20Detailed("Prime Option Token", "Prime", 18), ERC20 {
         uint256 rPulpBalance = _rPulp.balanceOf(msg.sender);
         uint256 qStrike = qUnderlying.mul(_ratio).div(1 ether);
         // gets strike proportional to underlying and checks if enough is in contract
-        require(rPulpBalance >= qStrike, 'ERR_BAL_PULP');
-        require(_strike.balanceOf(address(this)) >= qStrike, "ERR_BAL_S");
+        require(rPulpBalance >= qStrike, "ERR_BAL_RPULP");
+        require(_strike.balanceOf(address(this)) >= qStrike, "ERR_BAL_STRIKE");
 
         // burns deposit certificate
         _rPulp.burn(msg.sender, qStrike);
@@ -209,7 +209,7 @@ contract PrimeERC20 is ERC20Detailed("Prime Option Token", "Prime", 18), ERC20 {
         // SWAP TO PULP
         /* uint256 uL = _liabilities[msg.sender];
         require(uL >= qUnderlying, "ERR_BAL_L");
-        require(balanceOf(msg.sender) >= qUnderlying, "ERR_BAL_P");
+        require(balanceOf(msg.sender) >= qUnderlying, "ERR_BAL_OPULP");
 
         _liabilities[msg.sender] = uL.sub(qUnderlying);
         _liability = _liability.sub(qUnderlying); */
@@ -218,10 +218,10 @@ contract PrimeERC20 is ERC20Detailed("Prime Option Token", "Prime", 18), ERC20 {
         uint256 rPulpBalance = _rPulp.balanceOf(msg.sender);
         uint256 qStrike = qUnderlying.mul(_ratio).div(1 ether);
         // gets strike proportional to underlying and checks if enough is in contract
-        require(rPulpBalance >= qStrike, 'ERR_BAL_PULP');
+        require(rPulpBalance >= qStrike, "ERR_BAL_RPULP");
 
         // require prime options
-        require(balanceOf(msg.sender) >= qUnderlying, "ERR_BAL_P");
+        require(balanceOf(msg.sender) >= qUnderlying, "ERR_BAL_OPULP");
 
         _rPulp.burn(msg.sender, qStrike);        
         _burn(msg.sender, qUnderlying);
