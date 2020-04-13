@@ -53,6 +53,7 @@ abstract contract IRPulp {
     function mint(address user, uint256 amount) public payable virtual returns (bool);
     function burn(address user, uint256 amount) public payable virtual returns (bool);
     function balanceOf(address user) public view virtual returns (uint);
+    function isCallPulp() public view virtual returns (bool);
 }
 
 abstract contract IEPulp {

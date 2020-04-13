@@ -68,13 +68,13 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
         return tokenId;
     }
 
-    function setRPulp(address rPulp) public returns(bool) {
+    function setRPulp(address rPulp) public returns (bool) {
         require(msg.sender == _instrumentController, 'ERR_NOT_OWNER'); // OWNER IS OPTIONS.sol
         _rPulp = IRPulp(rPulp);
         return true;
     }
 
-    function setPool(address ePool) public returns(bool) {
+    function setPool(address ePool) public returns (bool) {
         require(msg.sender == _instrumentController, 'ERR_NOT_OWNER'); // OWNER IS OPTIONS.sol
         _ePulp = IEPulp(ePool);
         _approve(address(this), ePool, 1000000 ether);
@@ -114,7 +114,7 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
             require(mintSuccess, "ERR_MINT_OPTIONS");
             return mintSuccess;
         } else {
-            require(_underlying.balanceOf(rPulpReceiver) >= amount, "ERR_BAL_UNDERLYING");
+            verifyBalance(_underlying.balanceOf(rPulpReceiver), amount, "ERR_BAL_UNDERLYING");
             require(!isEthCallOption(), "ERR_OPTION_TYPE");
             (uint256 qoPulp, uint256 qrPulp, bool mintSuccess) = mintPrimeOptions(
                 amount,
@@ -164,7 +164,7 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
         require(depositSuccess, "ERR_DEPOSIT");
 
         uint256 minPrice = minEthPrice(msg.value);
-        require(minPrice >= askPrice, "ERR_ASK_PRICE");
+        verifyBalance(minPrice, askPrice, "ERR_ASK_PRICE");
         
         return _ePulp.swapTokensToEth(msg.value, minPrice, msg.sender);
     }
@@ -181,7 +181,7 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
         require(depositSuccess, "ERR_DEPOSIT");
         
         uint256 minPrice = minEthPrice(msg.value);
-        require(minPrice > 0, "ERR_ASK_PRICE");
+        verifyBalance(minPrice, 0, "ERR_ASK_PRICE");
         
         return _ePulp.swapTokensToEth(msg.value, minPrice, msg.sender);
     }
@@ -190,31 +190,68 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
      * @dev swaps strike assets to underlying assets and burns prime options
      * @notice burns oPULP, transfers strike asset to contract, sends underlying asset to user
      */
-    function swap(uint256 qUnderlying) public returns(bool) {
-        require(balanceOf(msg.sender) >= qUnderlying, "ERR_BAL_OPULP");
-        uint256 qStrike = qUnderlying.mul(_strikePrice).div(_underlyingPrice);
-        require(_strike.balanceOf(msg.sender) >= qStrike, "ERR_BAL_STRIKE");
-
-        _burn(msg.sender, qUnderlying);
-        _strike.transferFrom(msg.sender, address(this), qStrike);
-        return sendEther(msg.sender, qUnderlying);
+    function swap(uint256 qUnderlying) public nonReentrant returns (bool) {
+        return _swap(qUnderlying);
     }
 
     /**
-     * @dev withdraws exercised strike assets
-     * @notice burns rPULP to withdraw strike assets that are from exercised options
-     * @return amount of strike assets received
+     * @dev internal function to swap underlying assets for strike assets depending on option type call/put
      */
-    function withdraw(uint256 qUnderlying) public returns(uint) {
-        uint256 rPulpBalance = _rPulp.balanceOf(msg.sender);
+    function _swap(uint256 qUnderlying) internal returns (bool) {
+        require(balanceOf(msg.sender) >= qUnderlying, "ERR_BAL_OPULP");
         uint256 qStrike = qUnderlying.mul(_strikePrice).div(_underlyingPrice);
-        require(rPulpBalance >= qStrike, "ERR_BAL_RPULP");
-        require(_strike.balanceOf(address(this)) >= qStrike, "ERR_BAL_STRIKE");
+        if(isEthCallOption()) {
+            verifyBalance(_strike.balanceOf(msg.sender), qStrike, "ERR_BAL_STRIKE");
+            _burn(msg.sender, qUnderlying);
+            _strike.transferFrom(msg.sender, address(this), qStrike);
+            return sendEther(msg.sender, qUnderlying);
+        } else {
+            verifyBalance(msg.value, qStrike, "ERR_BAL_UNDERLYING");
+            _burn(msg.sender, qUnderlying);
+            return _underlying.transferFrom(address(this), msg.sender, qStrike);
+        }
+    }
 
-        _rPulp.burn(msg.sender, qStrike);
-        
-        _strike.transfer(msg.sender, qStrike);
-        return qStrike;
+    /**
+     * @dev withdraws exercised strike assets by burning rPulp
+     * @notice burns rPULP to withdraw strike assets that are from exercised options
+     * @param amount quantity of strike assets to withdraw 
+     * @return bool if transfer of strike assets succeeds
+     */
+    function withdraw(uint256 amount) public nonReentrant returns (bool) {
+        return _withdraw(amount, msg.sender);
+    }
+
+    /**
+     * @dev internal function to withdraw strike assets for different option types by burning c/p Pulp tokens
+     * @param amount quantity of strike assets to withdraw
+     * @param receiver address to burn rPulp from and send strike assets to
+     * @return bool if transfer of strike assets succeeds
+     */
+    function _withdraw(uint256 amount, address payable receiver) internal returns (bool) {
+        uint256 rPulpBalance = _rPulp.balanceOf(receiver);
+        uint256 rPulpToBurn = amount;
+        if(isEthCallOption()) {
+            if(!_rPulp.isCallPulp()) {
+                rPulpToBurn = amount.mul(1 ether).div(_strikePrice);
+            }
+
+            verifyBalance(rPulpBalance, rPulpToBurn, "ERR_BAL_RPULP");
+            verifyBalance(_strike.balanceOf(address(this)), amount, "ERR_BAL_STRIKE");
+
+            _rPulp.burn(receiver, rPulpToBurn);
+            return _strike.transfer(receiver, amount);
+        } else {
+            if(_rPulp.isCallPulp()) {
+                rPulpToBurn = amount.mul(_underlyingPrice).div(1 ether);
+            }
+
+            verifyBalance(rPulpBalance, rPulpToBurn, "ERR_BAL_RPULP");
+            verifyBalance(address(this).balance, amount, "ERR_BAL_STRIKE");
+    
+            _rPulp.burn(receiver, rPulpToBurn);
+            return sendEther(receiver, amount);
+        }
     }
 
     /**
@@ -227,8 +264,8 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
         uint256 rPulpBalance = _rPulp.balanceOf(msg.sender);
         uint256 qStrike = qUnderlying.mul(_strikePrice).div(_underlyingPrice);
 
-        require(rPulpBalance >= qStrike, "ERR_BAL_RPULP");
-        require(balanceOf(msg.sender) >= qUnderlying, "ERR_BAL_OPULP");
+        verifyBalance(rPulpBalance, qStrike, "ERR_BAL_RPULP");
+        verifyBalance(balanceOf(msg.sender), qUnderlying, "ERR_BAL_OPULP");
 
         _rPulp.burn(msg.sender, qStrike);        
         _burn(msg.sender, qUnderlying);
@@ -257,5 +294,19 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
                     _ePulp.tokenReserves(),
                     _ePulp.etherReserves()
                 );
+    }
+
+    function verifyBalance(
+        uint256 balance,
+        uint256 minBalance,
+        string memory errorCode
+    ) internal pure returns (bool) {
+        if(minBalance == 0) {
+            require(balance > minBalance, errorCode);
+            return balance > minBalance;
+        } else {
+            require(balance >= minBalance, errorCode);
+            return balance >= minBalance;
+        }
     }
 }

@@ -268,11 +268,12 @@ contract('PrimeERC20', accounts => {
             it('reverts if prime contract doesnt have strike assets', async () => {
                 await _prime20.deposit(twoEther, {from: userA, value: twoEther});
                 let irPulp = await _rPulp.balanceOf(userA);
+                console.log((await fromWei(await _strike.balanceOf(_prime20.address))));
                 let ratio = await _prime20._strikePrice();
                 let qStrike = oneEther * ratio / toWei('1');
                 await truffleAssert.reverts(
                     _prime20.withdraw(
-                        twoEther,
+                        (toWei('2')).toString(),
                         {from: userA, value: 0}),
                     "ERR_BAL_STRIKE"
                 );
@@ -282,12 +283,12 @@ contract('PrimeERC20', accounts => {
                 let irPulp = await _rPulp.balanceOf(userA);
                 let iStrike = await _strike.balanceOf(userA);
                 let ratio = await _prime20._strikePrice();
-                let qStrike = oneEther * ratio / toWei('1');
-                await _prime20.withdraw(oneEther, {from: userA, value: 0});
+                let qStrike = oneEther * strikeAmount / toWei('1');
+                await _prime20.withdraw((oneEther * strikeAmount / toWei('1')).toString(), {from: userA, value: 0});
                 let erPulp = await _rPulp.balanceOf(userA);
                 let eStrike = await _strike.balanceOf(userA);
                 assert.strictEqual((erPulp*1 - qStrike*1 - erPulp) <= ROUNDING_ERR, true, 'rPulp not equal');
-                assert.strictEqual((iStrike*1 + strikeAmount*1 - eStrike) <= ROUNDING_ERR, true, 'Strike not equal');
+                assert.strictEqual((iStrike*1 + (oneEther * strikeAmount / toWei('1'))*1 - eStrike) <= ROUNDING_ERR, true, 'Strike not equal');
             });
         });
 

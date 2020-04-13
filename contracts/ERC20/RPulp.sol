@@ -61,4 +61,8 @@ contract RPulp is ERC20Detailed, ERC20 {
         return success;
     }
 
+    function isCallPulp() public view returns (bool) {
+        return _isCallPulp;
+    }
+
 }
