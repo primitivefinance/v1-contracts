@@ -13,6 +13,15 @@ contract('PrimeERC20', accounts => {
     const { fromWei } = web3.utils;
     const { getBalance } = web3.eth;
     const ROUNDING_ERR = 10**16;
+    const ERR_ZERO = "ERR_ZERO";
+    const ERR_NOT_OWNER = "ERR_NOT_OWNER";
+    const ERR_OPTION_TYPE = "ERR_OPTION_TYPE";
+    const ERR_BAL_STRIKE = "ERR_BAL_STRIKE";
+    const ERR_BAL_OPULP = "ERR_BAL_OPULP";
+    const ERR_BAL_RPULP = "ERR_BAL_RPULP";
+    const ERR_BAL_ETH = "ERR_BAL_ETH";
+    const ERR_BAL_TOKENS = "ERR_BAL_TOKENS";
+
 
     // User Accounts
     const Alice = accounts[0]
@@ -100,6 +109,11 @@ contract('PrimeERC20', accounts => {
             collateral = prime20Address;
         });
 
+        it('should be a call option', async () => {
+            let isCall = await _prime20.isEthCallOption();
+            console.log({isCall});
+        });
+
         describe('deposit()', () => {
 
             it('revert if msg.value = 0', async () => {
@@ -107,9 +121,10 @@ contract('PrimeERC20', accounts => {
                     _prime20.deposit(
                         {from: userA,  value: 0}
                     ),
-                    "ERR_ZERO_VALUE"
+                    "ERR_ZERO"
                 );
             });
+            
 
             it('mints rPulp and oPulp', async () => {
                 let rPulp = strikeAmount;
@@ -137,7 +152,7 @@ contract('PrimeERC20', accounts => {
                     _prime20.depositAndSell(
                         {from: userA,  value: 0}
                     ),
-                    "ERR_ZERO_VALUE"
+                    "ERR_ZERO"
                 );
             });
 
@@ -237,7 +252,7 @@ contract('PrimeERC20', accounts => {
 
             it('reverts if rPulp is less than qStrike', async () => {
                 let irPulp = await _rPulp.balanceOf(userA);
-                let ratio = await _prime20._ratio();
+                let ratio = await _prime20._strikePrice();
                 let qStrike = oneEther * ratio / toWei('1');
                 await truffleAssert.reverts(
                     _prime20.withdraw(
@@ -250,7 +265,7 @@ contract('PrimeERC20', accounts => {
             it('reverts if prime contract doesnt have strike assets', async () => {
                 await _prime20.deposit({from: userA, value: twoEther});
                 let irPulp = await _rPulp.balanceOf(userA);
-                let ratio = await _prime20._ratio();
+                let ratio = await _prime20._strikePrice();
                 let qStrike = oneEther * ratio / toWei('1');
                 await truffleAssert.reverts(
                     _prime20.withdraw(
@@ -263,7 +278,7 @@ contract('PrimeERC20', accounts => {
             it('withdraws strike assets', async () => {
                 let irPulp = await _rPulp.balanceOf(userA);
                 let iStrike = await _strike.balanceOf(userA);
-                let ratio = await _prime20._ratio();
+                let ratio = await _prime20._strikePrice();
                 let qStrike = oneEther * ratio / toWei('1');
                 await _prime20.withdraw(oneEther, {from: userA, value: 0});
                 let erPulp = await _rPulp.balanceOf(userA);
@@ -286,7 +301,7 @@ contract('PrimeERC20', accounts => {
 
             it('reverts if rPulp is less than qStrike', async () => {
                 let irPulp = await _rPulp.balanceOf(userA);
-                let ratio = await _prime20._ratio();
+                let ratio = await _prime20._strikePrice();
                 let qStrike = oneEther * ratio / toWei('1');
                 await truffleAssert.reverts(
                     _prime20.close(
@@ -312,7 +327,7 @@ contract('PrimeERC20', accounts => {
                 let irPulp = await _rPulp.balanceOf(userA);
                 let ioPulp = await _prime20.balanceOf(userA);
                 let iEth = await getBalance(userA);
-                let ratio = await _prime20._ratio();
+                let ratio = await _prime20._strikePrice();
                 let qStrike = oneEther * ratio / toWei('1');
                 await _prime20.close(oneEther, {from: userA, value: 0});
                 let erPulp = await _rPulp.balanceOf(userA);

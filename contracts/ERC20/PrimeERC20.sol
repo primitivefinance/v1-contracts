@@ -1,4 +1,4 @@
-pragma solidity ^0.6.2;
+pragma solidity ^0.6.5;
 
 /**
  * @title Primitive's ERC-20 Option
@@ -8,11 +8,16 @@ pragma solidity ^0.6.2;
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
+import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 import '../Instruments.sol';
 import './InterfaceERC20.sol';
 
-contract PrimeERC20 is ERC20Detailed, ERC20 {
+contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
     using SafeMath for uint256;
+
+    event Deposit(address indexed user, uint256 qUnderlying, uint256 qStrike);
+
+    bool public _isEthCallOption;
 
     uint256 public _parentToken;
     address public _instrumentController;
@@ -27,6 +32,7 @@ contract PrimeERC20 is ERC20Detailed, ERC20 {
 
     constructor (
         string memory name,
+        bool isCall,
         address prime
     ) 
         public
@@ -34,6 +40,7 @@ contract PrimeERC20 is ERC20Detailed, ERC20 {
     {
         _prime = IPrime(prime);
         _instrumentController = msg.sender;
+        _isEthCallOption = isCall;
     }
 
     receive() external payable {}
@@ -55,6 +62,7 @@ contract PrimeERC20 is ERC20Detailed, ERC20 {
         _underlying = ERC20(aUnderlying);
         _strike = ERC20(aStrike);
         _strikePrice = qStrike;
+        require((aUnderlying == address(this)) && _isEthCallOption, "ERR_OPTION_TYPE");
         return tokenId;
     }
 
@@ -71,23 +79,65 @@ contract PrimeERC20 is ERC20Detailed, ERC20 {
         return true;
     }
 
+
     /**
-     * @dev deposits underlying assets to mint prime options
+     * @dev deposits underlying ether to mint prime eth call options
      * @notice deposits msg.value and receives msg.value amount of oPULP and rPULP tokens
      * @return bool if the transaction succeeds
      */
-    function deposit() public payable returns (bool) {
-        require(msg.value > 0, "ERR_ZERO_VALUE");
+    function deposit() public payable nonReentrant returns (bool) {
+        require(msg.value > 0, "ERR_ZERO");
+        require(isEthCallOption(), "ERR_OPTION_TYPE");
+
+        (uint256 qoPulp, uint256 qrPulp) = mintOptions(
+            msg.value,
+            _strikePrice,
+            1 ether,
+            msg.sender,
+            msg.sender
+        );
+        emit Deposit(msg.sender, qoPulp, qrPulp);
+        return true;
+    }
+
+    /**
+     * @dev deposits underlying tokens to mint prime eth put options
+     * @notice deposits tokens and receives tokens amount of oPULP and rPULP tokens
+     * @return bool if the transaction succeeds
+     */
+    function depositTokens(uint256 qTokens) public nonReentrant returns (bool) {
+        require(_strike.balanceOf(msg.sender) >= qTokens, "ERR_BAL_STRIKE");
+        require(!isEthCallOption(), "ERR_OPTION_TYPE");
+        (uint256 qoPulp, uint256 qrPulp) = mintOptions(
+            qTokens,
+            1 ether,
+            _strikePrice,
+            msg.sender,
+            msg.sender
+        );
+        emit Deposit(msg.sender, qoPulp, qrPulp);
+        return true;
+    }
+
+    /**
+     * @dev mints oPulp + rPulp
+     */
+    function mintOptions(
+        uint256 qoPulp,
+        uint256 numerator,
+        uint256 denominator,
+        address rPulpReceiver,
+        address oPulpReceiver
+    ) internal returns (uint, uint) {
+        uint256 qrPulp = qoPulp.mul(numerator).div(denominator);
 
         _rPulp.mint(
             msg.sender,
-            msg.value
-                .mul(_strikePrice)
-                .div(1 ether)
+            qrPulp
         );
         
-        _mint(msg.sender, msg.value);
-        return true;
+        _mint(msg.sender, qoPulp);
+        return (qoPulp, qrPulp);
     }
 
     /**
@@ -97,7 +147,7 @@ contract PrimeERC20 is ERC20Detailed, ERC20 {
      * @return amount of ether premium received for selling oPULP
      */
     function depositAndSell() public payable returns (uint) {
-        require(msg.value > 0, "ERR_ZERO_VALUE");
+        require(msg.value > 0, "ERR_ZERO");
         _rPulp.mint(
             msg.sender,
             msg.value
@@ -118,6 +168,8 @@ contract PrimeERC20 is ERC20Detailed, ERC20 {
         
         return _ePulp.swapTokensToEth(msg.value, minPrice, msg.sender);
     }
+
+    
 
     /**
      * @dev swaps strike assets to underlying assets and burns prime options
@@ -175,5 +227,9 @@ contract PrimeERC20 is ERC20Detailed, ERC20 {
         (bool success, ) = user.call.value(amount)("");
         require(success, "Send ether fail");
         return success;
+    }
+
+    function isEthCallOption() public view returns (bool) {
+        return (address(_underlying) == address(this));
     }
 }

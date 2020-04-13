@@ -11,15 +11,24 @@ import '@openzeppelin/contracts/math/SafeMath.sol';
 import '../Instruments.sol';
 
 
-contract RPulp is ERC20Detailed("Primitive Underlying LP Receipt", "rPULP", 18), ERC20 {
+contract RPulp is ERC20Detailed, ERC20 {
     using SafeMath for uint256;
 
     address public _controller;
     mapping(address => bool) public _valid;
+    bool public _isCallPulp;
 
 
-    constructor () public {
+    constructor (
+        string memory name,
+        string memory symbol,
+        bool isCallPulp
+    ) 
+        public
+        ERC20Detailed(name, symbol, 18)
+    {
         _controller = msg.sender;
+        _isCallPulp = isCallPulp;
     }
 
     receive() external payable {}
@@ -50,10 +59,6 @@ contract RPulp is ERC20Detailed("Primitive Underlying LP Receipt", "rPULP", 18),
         (bool success, ) = user.call.value(amount)("");
         require(success, "Send ether fail");
         return success;
-    }
-
-    function append(string memory a, string memory b, string memory c, string memory d, string memory e) internal pure returns (string memory) {
-        return string(abi.encodePacked(a, b, c, d, e));
     }
 
 }

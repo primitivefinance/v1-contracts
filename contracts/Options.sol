@@ -23,17 +23,31 @@ contract Options is Ownable, ERC721Holder {
         _prime = IPrime(primeAddress);
     }
 
-    function setRPulp(address rPulp) public onlyOwner {
-        _prime20.setRPulp(rPulp);
+    /**
+     * @dev sets the redeem Pulp type for the option, Call Pulp or Put Pulp (cPulp or pPulp)
+     */
+    function setRPulp(address pulp) public onlyOwner {
+        _prime20.setRPulp(pulp);
     }
 
     function setPool(address ePulp) public onlyOwner {
         _prime20.setPool(ePulp);
     }
 
+    /**
+     * @dev Creates a New Eth Option Market including oPulp, cPulp or pPulp, ePulp
+     * @param qEth quantity of ether as underlying or strike asset
+     * @param qToken quantity of ERC-20 token as underlying or strike asset
+     * @param aToken ERC-20 contract of the token
+     * @param tExpiry expiration date of the option
+     * @param isCall bool to clarify if the option is a call or a put
+     * @param name Full option name in the format Underlying Asset + Expiry + Strike Price + Strike Asset
+     * @return _nonce the nonce of the market
+     */
     function addEthOption(
-        uint256 qStrike,
-        ERC20 aStrike,
+        uint256 qEth,
+        uint256 qToken,
+        ERC20 aToken,
         uint256 tExpiry,
         bool isCall,
         string memory name
@@ -48,6 +62,7 @@ contract Options is Ownable, ERC721Holder {
 
         _prime20 = new PrimeERC20(
             name,
+            isCall,
             address(_prime)
         );
 
@@ -56,23 +71,23 @@ contract Options is Ownable, ERC721Holder {
         // the strike q is 1 ether and strike address is erc-20 oPulp
         // e.g. 1 ETH / 150 DAI Call vs. 150 DAI / 1 ETH Put
         if(isCall) {
-            require(msg.value >= 1 ether, 'ERR_BAL_ETH');
+            require(msg.value >= qEth, 'ERR_BAL_ETH');
             tokenId = _prime.createPrime
-                .value(1 ether)(
-                1 ether,
+                .value(qEth)(
+                qEth,
                 address(_prime20),
-                qStrike,
-                address(aStrike),
+                qToken,
+                address(aToken),
                 tExpiry,
                 address(this)
             );
         } else {
-            aStrike.transferFrom(msg.sender, address(this), qStrike);
-            aStrike.approve(address(_prime), qStrike);
+            aToken.transferFrom(msg.sender, address(this), qToken);
+            aToken.approve(address(_prime), qToken);
             tokenId = _prime.createPrime(
-                qStrike,
-                address(aStrike),
-                1 ether,
+                qToken,
+                address(aToken),
+                qEth,
                 address(_prime20),
                 tExpiry,
                 address(this)

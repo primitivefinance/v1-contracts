@@ -22,6 +22,7 @@ module.exports = async (deployer, network) => {
     // deploys new Prime ERC-20
     const options = await Options.deployed();
     await options.addEthOption(
+        collateralAmount,
         strikeAmount,
         strike,
         expiry,
@@ -42,10 +43,23 @@ module.exports = async (deployer, network) => {
 
     const prime20 = await PrimeERC20.at(prime20Address);
     console.log('[NAME]: ', await prime20.name());
-    await deployer.deploy(RPulp);
-    const rPulp = await RPulp.deployed();
-    await rPulp.setValid(prime20Address);
-    await options.setRPulp(rPulp.address);
-    await options.setPool(exchange20.address);
+    if(isCall) {
+        let name = "Call Primitive Underlying LP";
+        let symbol = "cPulp";
+        await deployer.deploy(RPulp, name, symbol, isCall);
+        const cPulp = await RPulp.deployed();
+        await cPulp.setValid(prime20Address);
+        await options.setRPulp(cPulp.address);
+        await options.setPool(exchange20.address);
+    } else {
+        let name = "Put Primitive Underlying LP";
+        let symbol = "pPulp";
+        await deployer.deploy(RPulp, name, symbol, isCall);
+        const pPulp = await RPulp.deployed();
+        await pPulp.setValid(prime20Address);
+        await options.setRPulp(pPulp.address);
+        await options.setPool(exchange20.address);
+    }
+    
 
 };
