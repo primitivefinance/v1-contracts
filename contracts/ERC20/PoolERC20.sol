@@ -71,8 +71,8 @@ contract PoolERC20 is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
     ) 
         public
         ERC20Detailed(
-            "Primitive Underlying Liquidity Provider",
-            "PULP",
+            "Market Maker Primitive LP",
+            "mPULP",
             18
         )
     {

@@ -8,6 +8,10 @@ const ExchangeERC20 = artifacts.require('ExchangeERC20.sol');
 const PoolERC20 = artifacts.require('PoolERC20.sol');
 
 contract('PoolERC20', accounts => {
+    const { toWei } = web3.utils;
+    const { fromWei } = web3.utils;
+    const { getBalance } = web3.eth;
+    const ROUNDING_ERR = 10**16;
 
     // User Accounts
     const Alice = accounts[0]
@@ -53,7 +57,12 @@ contract('PoolERC20', accounts => {
         tenEther,
         userA,
         userB,
-        prime20Address
+        prime20Address,
+        rPulp,
+        _rPulp,
+        millionEther,
+        _strike,
+        strikeAmount
         ;
 
     async function getGas(func, name) {
@@ -63,21 +72,21 @@ contract('PoolERC20', accounts => {
 
     beforeEach(async () => {
         // get values that wont change
+        
         _prime = await Prime.deployed();
         _tUSD = await tUSD.deployed();
+        _strike = _tUSD;
+        _rPulp = await RPulp.deployed();
         strike = _tUSD.address;
-        oneEther = await web3.utils.toWei('1');
-        twoEther = await web3.utils.toWei('2');
-        fiveEther = await web3.utils.toWei('5');
-        tenEther = await web3.utils.toWei('10');
+        oneEther = await toWei('1');
+        twoEther = await toWei('2');
+        fiveEther = await toWei('5');
+        tenEther = await toWei('10');
+        strikeAmount = tenEther;
+        millionEther = await toWei('1000000');
         expiry = '1587607322';
         userA = Alice;
         userB = Bob;
-        options = await Options.deployed();
-        nonce = await options._nonce();
-        prime20Address = await options._primeMarkets(nonce);
-        _prime20 = await PrimeERC20.at(prime20Address);
-        collateral = prime20Address;
     });
 
     describe('PoolERC20.sol', () => {
@@ -89,31 +98,30 @@ contract('PoolERC20', accounts => {
         describe('setExchangeAddress()', () => {
             let minter;
             beforeEach(async () => {
-                minter = Bob;
-                _prime = await Prime.deployed();
-                _tUSD = await tUSD.deployed();
-                _exchange = await Exchange.deployed();
-                _pool = await Pool.deployed();
+                options = await Options.deployed();
+                nonce = await options._nonce();
+                prime20Address = await options._primeMarkets(nonce);
+                _prime20 = await PrimeERC20.at(prime20Address);
+                _exchange20 = await ExchangeERC20.deployed();
+                collateral = prime20Address;
             });
 
             it('should assert only owner can call set exchange', async () => {
                 await truffleAssert.reverts(
-                    _pool.setExchangeAddress(minter, {from: minter}),
+                    _pool.setExchangeAddress(userB, {from: userB}),
                     "Ownable: caller is not the owner"
                 );
             });
         });
 
         describe('deposit()', () => {
-            let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
             beforeEach(async () => {
-                minter = Bob;
-                collateralAmount = await web3.utils.toWei('1');
-                strikeAmount = await web3.utils.toWei('10');
-                collateral = _pool.address;
-                strike = _tUSD.address;
-                expiry = '1587607322';
-                receiver = minter;
+                options = await Options.deployed();
+                nonce = await options._nonce();
+                prime20Address = await options._primeMarkets(nonce);
+                _prime20 = await PrimeERC20.at(prime20Address);
+                _exchange20 = await ExchangeERC20.deployed();
+                collateral = prime20Address;
             });
 
             it('should revert if msg.value != deposit amount', async () => {
@@ -156,15 +164,13 @@ contract('PoolERC20', accounts => {
         });
 
         describe('withdraw()', () => {
-            let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
             beforeEach(async () => {
-                minter = Bob;
-                collateralAmount = await web3.utils.toWei('1');
-                strikeAmount = await web3.utils.toWei('10');
-                collateral = _pool.address;
-                strike = _tUSD.address;
-                expiry = '1587607322';
-                receiver = minter;
+                options = await Options.deployed();
+                nonce = await options._nonce();
+                prime20Address = await options._primeMarkets(nonce);
+                _prime20 = await PrimeERC20.at(prime20Address);
+                _exchange20 = await ExchangeERC20.deployed();
+                collateral = prime20Address;
             });
             
             it('revert with attempted withdraw amount is greater than deposit', async () => {
@@ -199,15 +205,13 @@ contract('PoolERC20', accounts => {
         });
 
         describe('redeem()', () => {
-            let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
             beforeEach(async () => {
-                minter = Bob;
-                collateralAmount = await web3.utils.toWei('1');
-                strikeAmount = await web3.utils.toWei('10');
-                collateral = _pool.address;
-                strike = _tUSD.address;
-                expiry = '1587607322';
-                receiver = minter;
+                options = await Options.deployed();
+                nonce = await options._nonce();
+                prime20Address = await options._primeMarkets(nonce);
+                _prime20 = await PrimeERC20.at(prime20Address);
+                _exchange20 = await ExchangeERC20.deployed();
+                collateral = prime20Address;
             });
 
             it('should revert, attempts to close a position larger than their position', async () => {
@@ -259,15 +263,13 @@ contract('PoolERC20', accounts => {
         });
 
         describe('closePosition()', () => {
-            let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
             beforeEach(async () => {
-                minter = Bob;
-                collateralAmount = await web3.utils.toWei('1');
-                strikeAmount = await web3.utils.toWei('10');
-                collateral = _pool.address;
-                strike = _tUSD.address;
-                expiry = '1587607322';
-                receiver = minter;
+                options = await Options.deployed();
+                nonce = await options._nonce();
+                prime20Address = await options._primeMarkets(nonce);
+                _prime20 = await PrimeERC20.at(prime20Address);
+                _exchange20 = await ExchangeERC20.deployed();
+                collateral = prime20Address;
             });
 
             it('should revert, attempts to close a position larger than their position', async () => {

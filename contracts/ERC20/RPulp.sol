@@ -11,7 +11,7 @@ import '@openzeppelin/contracts/math/SafeMath.sol';
 import '../Instruments.sol';
 
 
-contract RPulp is ERC20Detailed("Primitive Underlying LP", "rPULP", 18), ERC20 {
+contract RPulp is ERC20Detailed("Primitive Underlying LP Receipt", "rPULP", 18), ERC20 {
     using SafeMath for uint256;
 
     address public _controller;

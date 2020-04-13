@@ -49,7 +49,7 @@ abstract contract IEPool {
 
 }
 
-contract PrimeERC20 is ERC20Detailed("Prime Option Token", "Prime", 18), ERC20 {
+contract PrimeERC20 is ERC20Detailed("Prime Option Token", "oPULP", 18), ERC20 {
     using SafeMath for uint256;
 
     uint256 public _parentToken;

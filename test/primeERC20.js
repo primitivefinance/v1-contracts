@@ -73,16 +73,16 @@ contract('PrimeERC20', accounts => {
 
     beforeEach(async () => {
         // get values that wont change
-        
+        _pool20 = await PoolERC20.deployed();
         _prime = await Prime.deployed();
         _tUSD = await tUSD.deployed();
         _strike = _tUSD;
         _rPulp = await RPulp.deployed();
         strike = _tUSD.address;
-        oneEther = await toWei('1');
-        twoEther = await toWei('2');
-        fiveEther = await toWei('5');
-        tenEther = await toWei('10');
+        oneEther = await toWei('0.1');
+        twoEther = await toWei('0.2');
+        fiveEther = await toWei('0.5');
+        tenEther = await toWei('1');
         strikeAmount = tenEther;
         millionEther = await toWei('1000000');
         expiry = '1587607322';
@@ -93,11 +93,11 @@ contract('PrimeERC20', accounts => {
     describe('PrimeERC20.sol', () => {
         beforeEach(async () => {
             options = await Options.deployed();
-                nonce = await options._nonce();
-                prime20Address = await options._primeMarkets(nonce);
-                _prime20 = await PrimeERC20.at(prime20Address);
-                _exchange20 = await ExchangeERC20.deployed();
-                collateral = prime20Address;
+            nonce = await options._nonce();
+            prime20Address = await options._primeMarkets(nonce);
+            _prime20 = await PrimeERC20.at(prime20Address);
+            _exchange20 = await ExchangeERC20.deployed();
+            collateral = prime20Address;
         });
 
         describe('deposit()', () => {
@@ -112,7 +112,7 @@ contract('PrimeERC20', accounts => {
             });
 
             it('mints rPulp and oPulp', async () => {
-                let rPulp = (await _prime20._ratio()).toString();
+                let rPulp = strikeAmount;
                 let oPulp = (oneEther).toString();
                 await _prime20.deposit({from: userA, value: oneEther});
                 let rPulpBal = (await _rPulp.balanceOf(userA)).toString();
@@ -151,7 +151,7 @@ contract('PrimeERC20', accounts => {
 
             it('mints rPulp and oPulp', async () => {
                 let etherBalUserStart = await web3.eth.getBalance(userA);
-                let rPulp = (await _prime20._ratio()).toString();
+                let rPulp = strikeAmount;
                 let oPulp = (oneEther).toString();
                 let qInput = oPulp;
                 let rInput = await _exchange20.tokenReserves();
@@ -321,6 +321,11 @@ contract('PrimeERC20', accounts => {
                 assert.strictEqual((erPulp*1 - qStrike*1 - erPulp) <= ROUNDING_ERR, true, 'rPulp not equal');
                 assert.strictEqual((eoPulp*1 - oneEther*1 - eoPulp) <= ROUNDING_ERR, true, 'oPulp not equal');
                 assert.strictEqual((iEth*1 + oneEther*1 - eEth) <= ROUNDING_ERR, true, `expectedEth: ${eEth} actual: ${iEth*1 + oneEther*1 - eEth}`);
+            });
+
+            it('opens pool position - gets mPulp', async () => {
+                // FIX - NOT APART OF ERC20 TEST
+                await _pool20.deposit(oneEther, {from: userA, value: oneEther});
             });
         });
     });

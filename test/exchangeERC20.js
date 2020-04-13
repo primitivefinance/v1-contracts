@@ -8,6 +8,10 @@ const ExchangeERC20 = artifacts.require('ExchangeERC20.sol');
 const PoolERC20 = artifacts.require('PoolERC20.sol');
 
 contract('ExchangeERC20', accounts => {
+    const { toWei } = web3.utils;
+    const { fromWei } = web3.utils;
+    const { getBalance } = web3.eth;
+    const ROUNDING_ERR = 10**16;
 
     // User Accounts
     const Alice = accounts[0]
@@ -53,7 +57,12 @@ contract('ExchangeERC20', accounts => {
         tenEther,
         userA,
         userB,
-        prime20Address
+        prime20Address,
+        rPulp,
+        _rPulp,
+        millionEther,
+        _strike,
+        strikeAmount
         ;
 
     async function getGas(func, name) {
@@ -63,21 +72,21 @@ contract('ExchangeERC20', accounts => {
 
     beforeEach(async () => {
         // get values that wont change
+        
         _prime = await Prime.deployed();
         _tUSD = await tUSD.deployed();
+        _strike = _tUSD;
+        _rPulp = await RPulp.deployed();
         strike = _tUSD.address;
-        oneEther = await web3.utils.toWei('1');
-        twoEther = await web3.utils.toWei('2');
-        fiveEther = await web3.utils.toWei('5');
-        tenEther = await web3.utils.toWei('10');
+        oneEther = await toWei('1');
+        twoEther = await toWei('2');
+        fiveEther = await toWei('5');
+        tenEther = await toWei('10');
+        strikeAmount = tenEther;
+        millionEther = await toWei('1000000');
         expiry = '1587607322';
         userA = Alice;
         userB = Bob;
-        options = await Options.deployed();
-        nonce = await options._nonce();
-        prime20Address = await options._primeMarkets(nonce);
-        _prime20 = await PrimeERC20.at(prime20Address);
-        collateral = prime20Address;
     });
     
     describe('ExchangeERC20.sol', () => {
