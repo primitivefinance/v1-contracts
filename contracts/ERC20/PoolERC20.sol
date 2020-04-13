@@ -1,8 +1,7 @@
 pragma solidity ^0.6.2;
 
 /**
- * @title   Primitive's Pool Contract
- * @notice  The pool contract.
+ * @title   Primitive's Market Maker Pool Contract
  * @author  Primitive
  */
 
@@ -15,8 +14,6 @@ import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 import '@openzeppelin/contracts/lifecycle/Pausable.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol';
-
-
 
 abstract contract ICEther {
     function mint() external payable virtual;
@@ -76,7 +73,6 @@ contract PoolERC20 is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
             18
         )
     {
-        _primeAddress = primeAddress;
         _exchangeAddress = exchangeAddress;
         _prime = IPrimeERC20(primeAddress);
         _cEther = ICEther(compoundEthAddress);

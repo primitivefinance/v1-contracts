@@ -13,12 +13,9 @@ import './InterfaceERC20.sol';
 contract ExchangeERC20 is ERC20Detailed('Exchange Primitive LP', 'ePULP',  18), ERC20 {
     using SafeMath for uint256;
 
-    address public _controller;
     IPrimeERC20 public _prime;
-    uint256 public _y;
 
     constructor (address prime) public {
-        _controller = msg.sender;
         _prime = IPrimeERC20(prime);
     }
 

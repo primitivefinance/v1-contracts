@@ -1,5 +1,10 @@
 pragma solidity ^0.6.2;
 
+/**
+ * @title Primitive's Contracts' Interfaces
+ * @author Primitive
+ */
+
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 
 abstract contract IPrime {
