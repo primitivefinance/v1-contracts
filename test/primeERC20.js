@@ -1,10 +1,6 @@
 const assert = require('assert').strict;
 const truffleAssert = require('truffle-assertions');
-const ControllerOption = artifacts.require('ControllerOption');
 const ControllerMarket = artifacts.require('ControllerMarket');
-const ControllerExchange = artifacts.require('ControllerExchange');
-const ControllerPool = artifacts.require('ControllerPool');
-const ControllerRedeem = artifacts.require('ControllerRedeem');
 const tUSD = artifacts.require("tUSD");
 const Prime = artifacts.require("Prime");
 const PrimeOption = artifacts.require('PrimeOption.sol');
@@ -26,6 +22,11 @@ contract('PrimeERC20', accounts => {
     const ERR_BAL_ETH = "ERR_BAL_ETH";
     const ERR_BAL_TOKENS = "ERR_BAL_TOKENS";
     const MAINNET_COMPOUND_ETH = '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5';
+    const oneEther = await toWei('0.1');
+    const twoEther = await toWei('0.2');
+    const fiveEther = await toWei('0.5');
+    const tenEther = await toWei('1');
+    const millionEther = await toWei('1000000');
 
 
     // User Accounts
@@ -41,46 +42,22 @@ contract('PrimeERC20', accounts => {
     const Treasury = accounts[9]
 
     let _prime,
-        _tETH,
-        _tUSD,
-        collateral,
-        payment,
-        xis,
-        yak,
-        zed,
-        wax,
-        pow,
-        gem,
-        mint,
-        exercise,
-        close,
-        withdraw,
-        _burnId,
-        _collateralID,
-        _exchange,
-        primeAddress,
-        expiration,
-        collateralPoolAddress,
-        strikeAddress,
-        premium,
-        value,
-        activeTokenId,
-        nonce,
-        oneEther,
-        twoEther,
-        fiveEther,
-        tenEther,
         userA,
         userB,
-        prime20Address,
-        rPulp,
-        _rPulp,
-        millionEther,
         _strike,
         strikeAmount,
-        _controllerExchange,
         _controllerMarket,
-        _controllerPool
+        qUnderlying,
+        aUnderlying,
+        qStrike,
+        aStrike,
+        tExpiry,
+        isEthCall,
+        ethCallName,
+        _redeem,
+        _pool,
+        _option,
+        _exchange
         ;
 
     async function getGas(func, name) {
@@ -89,40 +66,49 @@ contract('PrimeERC20', accounts => {
     }
 
     beforeEach(async () => {
-        // get values that wont change
-        _controllerExchange = await ControllerExchange.deployed();
+
+        // Get the Option Parameters
+        _strike = await tUSD.deployed();
+        qUnderlying = oneEther;
+        qStrike = tenEther;
+        aStrike = _strike.address;
+        tExpiry = '1587607322'
+        isEthCall = true;
+        ethCallName = 'ETH201212C150TUSD'
+        
+
+        // Get the Market Controller Contract
         _controllerMarket = await ControllerMarket.deployed();
-        _controllerPool = await ControllerPool.deployed();
-        _controllerRedeem = await ControllerRedeem.deployed();
-        _pool20 = await PrimePool.deployed();
+
+        // Create a new Eth Option Market
+        const firstMarket = 1;
+        await _controllerMarket.createMarket(
+            qUnderlying,
+            qStrike,
+            aStrike,
+            tExpiry,
+            isEthCall,
+            ethCallName
+        );
+        
+        // Get the market contracts
         _prime = await Prime.deployed();
-        _tUSD = await tUSD.deployed();
-        _strike = _tUSD;
-        _rPulp = await PrimeRedeem.deployed();
-        strike = _tUSD.address;
-        oneEther = await toWei('0.1');
-        twoEther = await toWei('0.2');
-        fiveEther = await toWei('0.5');
-        tenEther = await toWei('1');
-        strikeAmount = tenEther;
-        millionEther = await toWei('1000000');
-        expiry = '1587607322';
+        _redeem = await PrimeRedeem.at(await _controllerMarket._crRedeem());
+        _pool = await PrimePool.at(await _controllerMarket.getMaker(firstMarket));
+        _exchange = await PrimeExchange.at(await _controllerMarket.getExchange(firstMarket));
+        _option = await PrimeOption.at(await _controllerMarket.getOption(firstMarket));
+
         userA = Alice;
         userB = Bob;
     });
 
     describe('PrimeERC20.sol - Eth Call Option', () => {
         beforeEach(async () => {
-            options = await ControllerOption.deployed();
-            nonce = await options._nonce();
-            prime20Address = await options._primeMarkets(nonce);
-            _prime20 = await PrimeOption.at(prime20Address);
-            _exchange20 = await PrimeExchange.deployed();
-            collateral = prime20Address;
+
         });
 
         it('should be a call option', async () => {
-            let isCall = await _prime20.isEthCallOption();
+            let isCall = await _option.isEthCallOption();
             console.log({isCall});
         });
 
@@ -130,7 +116,7 @@ contract('PrimeERC20', accounts => {
 
             it('revert if msg.value = 0', async () => {
                 await truffleAssert.reverts(
-                    _prime20.deposit(
+                    _option.deposit(
                         0,
                         {from: userA,  value: 0}
                     ),
@@ -142,9 +128,9 @@ contract('PrimeERC20', accounts => {
             it('mints rPulp and oPulp', async () => {
                 let rPulp = strikeAmount;
                 let oPulp = (oneEther).toString();
-                await _prime20.deposit(oneEther, {from: userA, value: oneEther});
-                let rPulpBal = (await _rPulp.balanceOf(userA)).toString();
-                let oPulpBal = (await _prime20.balanceOf(userA)).toString();
+                await _option.deposit(oneEther, {from: userA, value: oneEther});
+                let rPulpBal = (await _redeem.balanceOf(userA)).toString();
+                let oPulpBal = (await _option.balanceOf(userA)).toString();
                 assert.strictEqual(rPulpBal, rPulp, 'rPulp balances not equal');
                 assert.strictEqual(oPulpBal, oPulp, 'oPulp balances not equal');
             });
@@ -152,17 +138,12 @@ contract('PrimeERC20', accounts => {
 
         describe('depositAndLimitSell()', () => {
             beforeEach(async () => {
-                options = await ControllerOption.deployed();
-                nonce = await options._nonce();
-                prime20Address = await options._primeMarkets(nonce);
-                _prime20 = await PrimeOption.at(prime20Address);
-                _exchange20 = await PrimeExchange.deployed();
-                collateral = prime20Address;
+
             });
 
             it('revert if msg.value = 0', async () => {
                 await truffleAssert.reverts(
-                    _prime20.depositAndLimitSell(
+                    _option.depositAndLimitSell(
                         0,
                         0,
                         {from: userA,  value: 0}
@@ -172,11 +153,11 @@ contract('PrimeERC20', accounts => {
             });
 
             it('adds initial liquidity to exchange', async () => {
-                await _prime20.deposit(twoEther, {from: userA, value: twoEther});
-                let totalSupply = (await _exchange20.totalSupply()).toString();
+                await _option.deposit(twoEther, {from: userA, value: twoEther});
+                let totalSupply = (await _exchange.totalSupply()).toString();
                 assert.strictEqual(totalSupply, '0', 'Total supply not 0, initial liquidity already set');
-                await _prime20.approve(_exchange20.address, millionEther);
-                await _exchange20.addLiquidity(twoEther, twoEther, {from: userA, value: twoEther});
+                await _option.approve(_exchange.address, millionEther);
+                await _exchange.addLiquidity(twoEther, twoEther, {from: userA, value: twoEther});
             });
 
             it('mints rPulp and oPulp', async () => {
@@ -184,14 +165,14 @@ contract('PrimeERC20', accounts => {
                 let rPulp = strikeAmount;
                 let oPulp = (oneEther).toString();
                 let qInput = oPulp;
-                let rInput = await _exchange20.tokenReserves();
-                let rOutput = await _exchange20.etherReserves();
-                let outputEth = await _exchange20.getInputPrice(qInput, rInput, rOutput);
-                let rPulpBalBefore = await _rPulp.balanceOf(userA);
-                let oPulpBalBefore = (await _prime20.balanceOf(userA)).toString();
-                await _prime20.depositAndLimitSell(oneEther, (oneEther * 0.9).toString(), {from: userA, value: oneEther});
-                let rPulpBal = (await _rPulp.balanceOf(userA)).toString();
-                let oPulpBal = (await _prime20.balanceOf(userA)).toString();
+                let rInput = await _exchange.tokenReserves();
+                let rOutput = await _exchange.etherReserves();
+                let outputEth = await _exchange.getInputPrice(qInput, rInput, rOutput);
+                let rPulpBalBefore = await _redeem.balanceOf(userA);
+                let oPulpBalBefore = (await _option.balanceOf(userA)).toString();
+                await _option.depositAndLimitSell(oneEther, (oneEther * 0.9).toString(), {from: userA, value: oneEther});
+                let rPulpBal = (await _redeem.balanceOf(userA)).toString();
+                let oPulpBal = (await _option.balanceOf(userA)).toString();
                 let etherBalUserEnd = await web3.eth.getBalance(userA);
                 
                 assert.strictEqual(rPulpBal, (rPulpBalBefore*1 + tenEther*1).toString(), 'rPulp balances not equal');
@@ -209,17 +190,12 @@ contract('PrimeERC20', accounts => {
         
         describe('swap()', () => {
             beforeEach(async () => {
-                options = await ControllerOption.deployed();
-                nonce = await options._nonce();
-                prime20Address = await options._primeMarkets(nonce);
-                _prime20 = await PrimeOption.at(prime20Address);
-                _exchange20 = await PrimeExchange.deployed();
-                collateral = prime20Address;
+
             });
 
             it('reverts if user doesnt have enough oPulp', async () => {
                 await truffleAssert.reverts(
-                    _prime20.swap(
+                    _option.swap(
                         millionEther,
                         {from: userA,  value: 0}
                     ),
@@ -228,9 +204,9 @@ contract('PrimeERC20', accounts => {
             });
 
             it('reverts if user doesnt have enough strike assets', async () => {
-                await _prime20.deposit(oneEther, {from: userB, value: oneEther});
+                await _option.deposit(oneEther, {from: userB, value: oneEther});
                 await truffleAssert.reverts(
-                    _prime20.swap(
+                    _option.swap(
                         oneEther,
                         {from: userB,  value: 0}
                     ),
@@ -239,14 +215,14 @@ contract('PrimeERC20', accounts => {
             });
 
             it('swaps oPulp for underlying', async () => {
-                await _prime20.deposit(oneEther, {from: userA, value: oneEther});
+                await _option.deposit(oneEther, {from: userA, value: oneEther});
                 let iEth = await getBalance(userA);
-                let ioPulp = await _prime20.balanceOf(userA);
+                let ioPulp = await _option.balanceOf(userA);
                 let iStrike = await _strike.balanceOf(userA);
-                await _strike.approve(_prime20.address, millionEther, {from: userA});
-                await _prime20.swap(oneEther, {from: userA, value: 0});
+                await _strike.approve(_option.address, millionEther, {from: userA});
+                await _option.swap(oneEther, {from: userA, value: 0});
                 let eEth = await getBalance(userA);
-                let eoPulp = await _prime20.balanceOf(userA);
+                let eoPulp = await _option.balanceOf(userA);
                 let eStrike = await _strike.balanceOf(userA);
                 assert.strictEqual((iEth*1 + oneEther*1 - eEth) <= ROUNDING_ERR, true, `expectedEth: ${eEth}, actual: ${iEth*1 + oneEther*1}`);
                 assert.strictEqual((eoPulp*1 - oneEther*1 - eoPulp) <= ROUNDING_ERR, true, `expectedoPulp: ${eoPulp}, actual: ${eoPulp*1 - oneEther*1}`);
@@ -257,21 +233,16 @@ contract('PrimeERC20', accounts => {
         
         describe('withdraw()', () => {
             beforeEach(async () => {
-                options = await ControllerOption.deployed();
-                nonce = await options._nonce();
-                prime20Address = await options._primeMarkets(nonce);
-                _prime20 = await PrimeOption.at(prime20Address);
-                _exchange20 = await PrimeExchange.deployed();
-                collateral = prime20Address;
+
             });
 
             it('reverts if rPulp is less than qStrike', async () => {
-                let irPulp = await _rPulp.balanceOf(userA);
-                console.log((await _prime20.option()).qStrike);
-                let ratio = await _prime20.option();
+                let irPulp = await _redeem.balanceOf(userA);
+                console.log((await _option.option()).qStrike);
+                let ratio = await _option.option();
                 let qStrike = oneEther * ratio / toWei('1');
                 await truffleAssert.reverts(
-                    _prime20.withdraw(
+                    _option.withdraw(
                         millionEther,
                         {from: userA, value: 0}),
                     "ERR_BAL_RPULP"
@@ -279,13 +250,13 @@ contract('PrimeERC20', accounts => {
             });
 
             it('reverts if prime contract doesnt have strike assets', async () => {
-                await _prime20.deposit(twoEther, {from: userA, value: twoEther});
-                let irPulp = await _rPulp.balanceOf(userA);
-                console.log((await fromWei(await _strike.balanceOf(_prime20.address))));
-                let ratio = await _prime20.option();
+                await _option.deposit(twoEther, {from: userA, value: twoEther});
+                let irPulp = await _redeem.balanceOf(userA);
+                console.log((await fromWei(await _strike.balanceOf(_option.address))));
+                let ratio = await _option.option();
                 let qStrike = oneEther * ratio / toWei('1');
                 await truffleAssert.reverts(
-                    _prime20.withdraw(
+                    _option.withdraw(
                         (toWei('2')).toString(),
                         {from: userA, value: 0}),
                     "ERR_BAL_STRIKE"
@@ -293,12 +264,12 @@ contract('PrimeERC20', accounts => {
             });
 
             it('withdraws strike assets', async () => {
-                let irPulp = await _rPulp.balanceOf(userA);
+                let irPulp = await _redeem.balanceOf(userA);
                 let iStrike = await _strike.balanceOf(userA);
-                let ratio = await _prime20.option();
+                let ratio = await _option.option();
                 let qStrike = oneEther * strikeAmount / toWei('1');
-                await _prime20.withdraw((oneEther * strikeAmount / toWei('1')).toString(), {from: userA, value: 0});
-                let erPulp = await _rPulp.balanceOf(userA);
+                await _option.withdraw((oneEther * strikeAmount / toWei('1')).toString(), {from: userA, value: 0});
+                let erPulp = await _redeem.balanceOf(userA);
                 let eStrike = await _strike.balanceOf(userA);
                 assert.strictEqual((erPulp*1 - qStrike*1 - erPulp) <= ROUNDING_ERR, true, 'rPulp not equal');
                 assert.strictEqual((iStrike*1 + (oneEther * strikeAmount / toWei('1'))*1 - eStrike) <= ROUNDING_ERR, true, 'Strike not equal');
@@ -308,20 +279,15 @@ contract('PrimeERC20', accounts => {
         
         describe('close()', () => {
             beforeEach(async () => {
-                options = await ControllerOption.deployed();
-                nonce = await options._nonce();
-                prime20Address = await options._primeMarkets(nonce);
-                _prime20 = await PrimeOption.at(prime20Address);
-                _exchange20 = await PrimeExchange.deployed();
-                collateral = prime20Address;
+
             });
 
             it('reverts if rPulp is less than qStrike', async () => {
-                let irPulp = await _rPulp.balanceOf(userA);
-                let ratio = await _prime20.option();
+                let irPulp = await _redeem.balanceOf(userA);
+                let ratio = await _option.option();
                 let qStrike = oneEther * ratio / toWei('1');
                 await truffleAssert.reverts(
-                    _prime20.close(
+                    _option.close(
                         millionEther,
                         {from: userA, value: 0}),
                     "ERR_BAL_RPULP"
@@ -329,10 +295,10 @@ contract('PrimeERC20', accounts => {
             });
 
             it('reverts if user doesnt have enough oPulp', async () => {
-                let oPulpBal = await _prime20.balanceOf(userB);
-                await _prime20.transfer(userA, oPulpBal, {from: userB});
+                let oPulpBal = await _option.balanceOf(userB);
+                await _option.transfer(userA, oPulpBal, {from: userB});
                 await truffleAssert.reverts(
-                    _prime20.close(
+                    _option.close(
                         oneEther,
                         {from: userB,  value: 0}
                     ),
@@ -341,14 +307,14 @@ contract('PrimeERC20', accounts => {
             });
 
             it('closes position', async () => {
-                let irPulp = await _rPulp.balanceOf(userA);
-                let ioPulp = await _prime20.balanceOf(userA);
+                let irPulp = await _redeem.balanceOf(userA);
+                let ioPulp = await _option.balanceOf(userA);
                 let iEth = await getBalance(userA);
-                let ratio = await _prime20.option();
+                let ratio = await _option.option();
                 let qStrike = oneEther*1 * strikeAmount*1 / toWei('1');
-                await _prime20.close(oneEther, {from: userA, value: 0});
-                let erPulp = await _rPulp.balanceOf(userA);
-                let eoPulp = await _prime20.balanceOf(userA);
+                await _option.close(oneEther, {from: userA, value: 0});
+                let erPulp = await _redeem.balanceOf(userA);
+                let eoPulp = await _option.balanceOf(userA);
                 let eEth = await getBalance(userA);
                 assert.strictEqual((erPulp*1 - qStrike*1 - erPulp) <= ROUNDING_ERR, true, 'rPulp not equal');
                 assert.strictEqual((eoPulp*1 - oneEther*1 - eoPulp) <= ROUNDING_ERR, true, 'oPulp not equal');
@@ -357,22 +323,9 @@ contract('PrimeERC20', accounts => {
 
             it('opens pool position - gets mPulp', async () => {
                 // FIX - NOT APART OF ERC20 TEST
-                await _pool20.deposit(oneEther, {from: userA, value: oneEther});
+                await _pool.deposit(oneEther, {from: userA, value: oneEther});
             });
 
-            it('adds a new market', async () => {
-                let isCall = true;
-                let name = 'Redeem Primitive LP';
-                let symbol = 'cPulp';
-                let market = await _controllerMarket.addMarket(
-                    _prime20.address,
-                    MAINNET_COMPOUND_ETH,
-                    _controllerExchange.address,
-                    _controllerPool.address
-                );
-
-                console.log({market}, market.receipt.logs)
-            });
         });
     });
 })

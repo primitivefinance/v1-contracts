@@ -8,7 +8,7 @@ const PrimeExchange = artifacts.require('PrimeExchange.sol');
 // FIX - This should use factories for Exchange and PrimeRedeem
 
 module.exports = async (deployer, network) => {
-    const rinkebyCompoundAddress = '0xd6801a1dffcd0a410336ef88def4320d6df1883e';
+    /* const rinkebyCompoundAddress = '0xd6801a1dffcd0a410336ef88def4320d6df1883e';
     const mainnetCompoundAddress = '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5';
     
     const _tUSD = await tUSD.deployed();
@@ -19,7 +19,6 @@ module.exports = async (deployer, network) => {
     let isCall = true;
     let name = 'ETH201212C150TUSD'
 
-    // deploys new Prime ERC-20
     const options = await ControllerOption.deployed();
     await options.addEthOption(
         collateralAmount,
@@ -36,9 +35,9 @@ module.exports = async (deployer, network) => {
     await deployer.deploy(PrimeExchange, prime20Address);
     const exchange20 = await PrimeExchange.deployed();
     if(network == 'rinkeby') {
-        await deployer.deploy(PrimePool, prime20Address,  rinkebyCompoundAddress, /* exchange20.address */);
+        await deployer.deploy(PrimePool, prime20Address,  rinkebyCompoundAddress);
     } else {
-        await deployer.deploy(PrimePool, prime20Address,  mainnetCompoundAddress, /* exchange20.address */);
+        await deployer.deploy(PrimePool, prime20Address,  mainnetCompoundAddress);
     }
 
     const prime20 = await PrimeOption.at(prime20Address);
@@ -59,7 +58,7 @@ module.exports = async (deployer, network) => {
         await pPulp.setValid(prime20Address);
         await options.setRPulp(pPulp.address);
         await options.setPool(exchange20.address);
-    }
+    } */
     
 
 };

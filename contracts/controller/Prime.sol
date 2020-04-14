@@ -3,8 +3,7 @@ pragma solidity ^0.6.2;
 /**
  * @title   Primitive's Prime Contract
  * @notice  The core ERC721 contract that holds all Instruments.Primes.
- *          A Prime is a ERC-721 token that wraps ERC-20 assets
- *          with functions to interact with them.
+ *          A Prime is a ERC-721 token that authenticates an ERC-20 Option Market.
  * @author  Primitive
  */
 
@@ -1104,13 +1103,11 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
         /* CHECKS */
         require(tExpiry >= block.timestamp, 'Create: expired timestamp');
         /* If this is an Ether Call Prime */
-        if(
-            /* aUnderlying == _poolAddress &&
-            msg.sender != _poolAddress || */
+        /* if(
             msg.sender == _instrumentController
         ) {
             isGreaterThanOrEqual(msg.value, qUnderlying);
-        }
+        } */
 
         /* EFFECTS */
 
@@ -1159,16 +1156,14 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
         );
 
         /* If its an ERC-20 Prime, withdraw token from minter */
-        if(
-            /* aUnderlying != _poolAddress &&
-            msg.sender != _poolAddress && */
+        /* if(
             msg.sender != _instrumentController
         ) {
             ERC20 _aUnderlying = ERC20(aUnderlying);
             isGreaterThanOrEqual(_aUnderlying.balanceOf(msg.sender), qUnderlying);
             _aUnderlying.transferFrom(msg.sender, address(this), qUnderlying);
             return _nonce;
-        }
+        } */
 
         return _nonce;
     }

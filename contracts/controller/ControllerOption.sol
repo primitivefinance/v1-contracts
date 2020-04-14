@@ -15,24 +15,25 @@ contract ControllerOption is Ownable, ERC721Holder {
     mapping(uint256 => address) public _primeMarkets;
     uint256 public _nonce;
     IPrime public _prime;
-    PrimeOption public _prime20;
 
     constructor(
+        address controller,
         address primeAddress
     ) public {
+        transferOwnership(controller);
         _prime = IPrime(primeAddress);
     }
 
     /**
      * @dev sets the redeem Pulp type for the option, Call Pulp or Put Pulp (cPulp or pPulp)
      */
-    function setRPulp(address pulp) public onlyOwner {
+    /* function setRPulp(address pulp) public onlyOwner {
         _prime20.setRPulp(pulp);
     }
 
     function setPool(address ePulp) public onlyOwner {
         _prime20.setPool(ePulp);
-    }
+    } */
 
     /**
      * @dev Creates a New Eth Option Market including oPulp, cPulp or pPulp, ePulp
@@ -47,7 +48,7 @@ contract ControllerOption is Ownable, ERC721Holder {
     function addEthOption(
         uint256 qEth,
         uint256 qToken,
-        ERC20 aToken,
+        IERC20 aToken,
         uint256 tExpiry,
         bool isCall,
         string memory name
@@ -57,45 +58,77 @@ contract ControllerOption is Ownable, ERC721Holder {
         onlyOwner
         returns (address)
     {
-        _nonce = _nonce.add(1);
+        PrimeOption primeOption = deployPrimeOption(name);
         uint256 tokenId;
-
-        _prime20 = new PrimeOption(
-            name,
-            address(_prime)
-        );
 
         // if its a call the underlying q will be 1 and the address will be the erc-20 oPulp
         // else its a put, the underlying q+a is the strike q+a and 
         // the strike q is 1 ether and strike address is erc-20 oPulp
         // e.g. 1 ETH / 150 DAI Call vs. 150 DAI / 1 ETH Put
         if(isCall) {
-            require(msg.value >= qEth, 'ERR_BAL_ETH');
-            tokenId = _prime.createPrime
-                .value(qEth)(
+            tokenId = _prime.createPrime(
                 qEth,
-                address(_prime20),
+                address(primeOption),
                 qToken,
                 address(aToken),
                 tExpiry,
                 address(this)
             );
         } else {
-            aToken.transferFrom(msg.sender, address(this), qToken);
-            aToken.approve(address(_prime), qToken);
             tokenId = _prime.createPrime(
                 qToken,
                 address(aToken),
                 qEth,
-                address(_prime20),
+                address(primeOption),
                 tExpiry,
                 address(this)
             );
         }
         
-        _prime20.setParentToken(tokenId);
-        _primeMarkets[_nonce] = address(_prime20);
-        return address(_prime20);
+        primeOption.setParentToken(tokenId);
+        return address(primeOption);
+    }
+
+    /**
+     * @dev Creates a New Eth Option Market including oPulp, cPulp or pPulp, ePulp
+     * @param name Full option name in the format Underlying Asset + Expiry + Strike Price + Strike Asset
+     * @return _nonce the nonce of the market
+     */
+    function addTokenOption(
+        uint256 qUnderlying,
+        IERC20 aUnderlying,
+        uint256 qStrike,
+        IERC20 aStrike,
+        uint256 tExpiry,
+        string memory name
+    ) 
+        public
+        onlyOwner
+        returns (address)
+    {
+        PrimeOption primeOption = deployPrimeOption(name);
+
+        uint256 tokenId = _prime.createPrime(
+            qUnderlying,
+            address(aUnderlying),
+            qStrike,
+            address(aStrike),
+            tExpiry,
+            address(this)
+        );
+        
+        primeOption.setParentToken(tokenId);
+        return address(primeOption);
+    }
+
+    function deployPrimeOption(string memory name) internal returns (PrimeOption) {
+        _nonce = _nonce.add(1);
+        PrimeOption primeOption = new PrimeOption(
+            name,
+            address(_prime)
+        );
+        _primeMarkets[_nonce] = address(primeOption);
+        return primeOption;
     }
 }
 

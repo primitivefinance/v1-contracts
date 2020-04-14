@@ -44,6 +44,7 @@ interface IPrimeOption {
     function withdraw(uint256 qUnderlying) external returns (uint);
     function close(uint256 qUnderlying) external returns (bool);
     function _strikeAddress() external view returns (address);
+    function _parentToken() external view returns (uint256);
 }
 
 interface IPrimeRedeem {

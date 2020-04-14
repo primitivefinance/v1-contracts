@@ -7,7 +7,7 @@ interface IControllerExchange {
 }
 
 interface IControllerPool {
-    function addPool(address primeOption, address compoundEther) external returns (address);
+    function addPool(address compoundEther) external returns (address);
 }
 
 interface IControllerRedeem {
@@ -22,8 +22,14 @@ interface IControllerOption {
         uint256 tExpiry,
         bool isCall,
         string calldata name
-    ) 
-        external
-        payable
-        returns (address);
+    ) external payable returns (address);
+
+    function addTokenOption(
+        uint256 qUnderlying,
+        IERC20 aUnderlying,
+        uint256 qStrike,
+        IERC20 aStrike,
+        uint256 tExpiry,
+        string calldata name
+    ) external returns (address);
 }

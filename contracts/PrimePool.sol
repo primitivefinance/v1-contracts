@@ -42,6 +42,8 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
     ICEther public _cEther;
     IPrimeOption public _prime;
 
+    address[] public _optionMarkets;
+
     /* Ether liability */
     uint256 public _liability;
 
@@ -55,7 +57,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
     event Close(uint256 amountClosed, address indexed user, uint256 burned);
 
     constructor (
-        address primeOption,
+        /* address primeOption, */
         address compoundEthAddress
         /* address exchangeAddress */
     ) 
@@ -67,8 +69,13 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
         )
     {
         /* _exchangeAddress = exchangeAddress; */
-        _prime = IPrimeOption(primeOption);
+        /* _prime = IPrimeOption(primeOption); */
         _cEther = ICEther(compoundEthAddress);
+    }
+
+    function addMarket(address primeOption) public onlyOwner returns (address) {
+        _optionMarkets.push(primeOption);
+        return primeOption;
     }
 
 
