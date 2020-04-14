@@ -17,21 +17,21 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
 
     event Deposit(address indexed user, uint256 qUnderlying, uint256 qStrike);
 
-    bool public _isEthCallOption;
-
     uint256 public _parentToken;
     address public _instrumentController;
+
+    Instruments.Primes public option;
+
     IPrime public _prime;
-    
-    ERC20 public _underlying;
-    ERC20 public _strike;
     IRPulp public _rPulp;
     IEPulp public _ePulp;
 
+    /* ERC20 public _underlying;
+    ERC20 public _strike;
     uint256 public _strikePrice;
-    uint256 public _underlyingPrice;
+    uint256 public _underlyingPrice; */
 
-    constructor (
+    constructor(
         string memory name,
         bool isCall,
         address prime
@@ -41,7 +41,6 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
     {
         _prime = IPrime(prime);
         _instrumentController = msg.sender;
-        _isEthCallOption = isCall;
     }
 
     receive() external payable {}
@@ -60,11 +59,21 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
             bytes4 series,
             bytes4 symbol
         ) = _prime.getPrime(tokenId);
-        _underlying = ERC20(aUnderlying);
+        option = Instruments.Primes(
+            writer,
+            qUnderlying,
+            aUnderlying,
+            qStrike,
+            aStrike,
+            tExpiry,
+            receiver,
+            series,
+            symbol
+        );
+        /* _underlying = ERC20(aUnderlying);
         _strike = ERC20(aStrike);
         _strikePrice = qStrike;
-        _underlyingPrice = qUnderlying;
-        require((aUnderlying == address(this)) && _isEthCallOption, "ERR_OPTION_TYPE");
+        _underlyingPrice = qUnderlying; */
         return tokenId;
     }
 
@@ -77,7 +86,7 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
     function setPool(address ePool) public returns (bool) {
         require(msg.sender == _instrumentController, 'ERR_NOT_OWNER'); // OWNER IS OPTIONS.sol
         _ePulp = IEPulp(ePool);
-        _approve(address(this), ePool, 1000000 ether);
+        _approve(address(this), ePool, 2**256-1 ether);
         return true;
     }
 
@@ -106,20 +115,20 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
             require(msg.value > 0 && msg.value == amount, "ERR_ZERO");
             (uint256 qoPulp, uint256 qrPulp, bool mintSuccess) = mintPrimeOptions(
                 amount,
-                _strikePrice,
-                _underlyingPrice,
+                option.qStrike,
+                option.qUnderlying,
                 oPulpReceiver,
                 rPulpReceiver
             );
             require(mintSuccess, "ERR_MINT_OPTIONS");
             return mintSuccess;
         } else {
+            ERC20 _underlying = ERC20(option.aUnderlying);
             verifyBalance(_underlying.balanceOf(rPulpReceiver), amount, "ERR_BAL_UNDERLYING");
-            require(!isEthCallOption(), "ERR_OPTION_TYPE");
             (uint256 qoPulp, uint256 qrPulp, bool mintSuccess) = mintPrimeOptions(
                 amount,
-                _underlyingPrice,
-                _strikePrice,
+                option.qUnderlying,
+                option.qStrike,
                 oPulpReceiver,
                 rPulpReceiver
             );
@@ -163,10 +172,10 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
         (bool depositSuccess) = _deposit(amount, address(this), msg.sender);
         require(depositSuccess, "ERR_DEPOSIT");
 
-        uint256 minPrice = minEthPrice(msg.value);
+        uint256 minPrice = minEthPrice(amount);
         verifyBalance(minPrice, askPrice, "ERR_ASK_PRICE");
         
-        return _ePulp.swapTokensToEth(msg.value, minPrice, msg.sender);
+        return _ePulp.swapTokensToEth(amount, minPrice, msg.sender);
     }
 
     /**
@@ -180,10 +189,10 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
         (bool depositSuccess) = _deposit(amount, address(this), msg.sender);
         require(depositSuccess, "ERR_DEPOSIT");
         
-        uint256 minPrice = minEthPrice(msg.value);
+        uint256 minPrice = minEthPrice(amount);
         verifyBalance(minPrice, 0, "ERR_ASK_PRICE");
         
-        return _ePulp.swapTokensToEth(msg.value, minPrice, msg.sender);
+        return _ePulp.swapTokensToEth(amount, minPrice, msg.sender);
     }
 
     /**
@@ -199,17 +208,19 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
      */
     function _swap(uint256 qUnderlying) internal returns (bool) {
         require(balanceOf(msg.sender) >= qUnderlying, "ERR_BAL_OPULP");
-        uint256 qStrike = qUnderlying.mul(_strikePrice).div(_underlyingPrice);
-        if(isEthCallOption()) {
+        uint256 qStrike = qUnderlying.mul(option.qStrike).div(option.qUnderlying);
+        if(isEthPutOption()) {
+            verifyBalance(msg.value, qStrike, "ERR_BAL_UNDERLYING");
+            _burn(msg.sender, qUnderlying);
+            ERC20 _underlying = ERC20(option.aUnderlying);
+            return _underlying.transferFrom(address(this), msg.sender, qStrike);
+        } else {
+            ERC20 _strike = ERC20(option.aStrike);
             verifyBalance(_strike.balanceOf(msg.sender), qStrike, "ERR_BAL_STRIKE");
             _burn(msg.sender, qUnderlying);
             _strike.transferFrom(msg.sender, address(this), qStrike);
             return sendEther(msg.sender, qUnderlying);
-        } else {
-            verifyBalance(msg.value, qStrike, "ERR_BAL_UNDERLYING");
-            _burn(msg.sender, qUnderlying);
-            return _underlying.transferFrom(address(this), msg.sender, qStrike);
-        }
+        } 
     }
 
     /**
@@ -231,19 +242,9 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
     function _withdraw(uint256 amount, address payable receiver) internal returns (bool) {
         uint256 rPulpBalance = _rPulp.balanceOf(receiver);
         uint256 rPulpToBurn = amount;
-        if(isEthCallOption()) {
-            if(!_rPulp.isCallPulp()) {
-                rPulpToBurn = amount.mul(1 ether).div(_strikePrice);
-            }
-
-            verifyBalance(rPulpBalance, rPulpToBurn, "ERR_BAL_RPULP");
-            verifyBalance(_strike.balanceOf(address(this)), amount, "ERR_BAL_STRIKE");
-
-            _rPulp.burn(receiver, rPulpToBurn);
-            return _strike.transfer(receiver, amount);
-        } else {
+        if(isEthPutOption()) {
             if(_rPulp.isCallPulp()) {
-                rPulpToBurn = amount.mul(_underlyingPrice).div(1 ether);
+                rPulpToBurn = amount.mul(option.qUnderlying).div(1 ether);
             }
 
             verifyBalance(rPulpBalance, rPulpToBurn, "ERR_BAL_RPULP");
@@ -251,7 +252,18 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
     
             _rPulp.burn(receiver, rPulpToBurn);
             return sendEther(receiver, amount);
-        }
+        } else {
+            if(!_rPulp.isCallPulp()) {
+                rPulpToBurn = amount.mul(1 ether).div(option.qStrike);
+            }
+
+            ERC20 _strike = ERC20(option.aStrike);
+            verifyBalance(rPulpBalance, rPulpToBurn, "ERR_BAL_RPULP");
+            verifyBalance(_strike.balanceOf(address(this)), amount, "ERR_BAL_STRIKE");
+
+            _rPulp.burn(receiver, rPulpToBurn);
+            return _strike.transfer(receiver, amount);
+        } 
     }
 
     /**
@@ -262,14 +274,19 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
     function close(uint256 qUnderlying) public returns(bool) {
 
         uint256 rPulpBalance = _rPulp.balanceOf(msg.sender);
-        uint256 qStrike = qUnderlying.mul(_strikePrice).div(_underlyingPrice);
+        uint256 qStrike = qUnderlying.mul(option.qStrike).div(option.qUnderlying);
 
         verifyBalance(rPulpBalance, qStrike, "ERR_BAL_RPULP");
         verifyBalance(balanceOf(msg.sender), qUnderlying, "ERR_BAL_OPULP");
 
         _rPulp.burn(msg.sender, qStrike);        
         _burn(msg.sender, qUnderlying);
-        return sendEther(msg.sender, qUnderlying);
+        if(isEthCallOption()) {
+            return sendEther(msg.sender, qUnderlying);
+        } else {
+            ERC20 _underlying = ERC20(option.aUnderlying);
+            return _underlying.transferFrom(address(this), msg.sender, qUnderlying);
+        }
     }
 
     /**
@@ -282,7 +299,11 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
     }
 
     function isEthCallOption() public view returns (bool) {
-        return (address(_underlying) == address(this));
+        return (option.aUnderlying == address(this));
+    }
+
+    function isEthPutOption() public view returns (bool) {
+        return (option.aStrike == address(this));
     }
 
     /**
