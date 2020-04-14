@@ -42,7 +42,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [],
@@ -55,7 +56,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [],
@@ -1086,9 +1088,37 @@
     "name": "solc",
     "version": "0.6.2+commit.bacdbe57.Emscripten.clang"
   },
-  "networks": {},
+  "networks": {
+    "4": {
+      "events": {
+        "0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "previousOwner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "OwnershipTransferred",
+          "type": "event"
+        }
+      },
+      "links": {},
+      "address": "0x4C273E73CAeb873CBa3e88EEC92715Bd7e38560c",
+      "transactionHash": "0xb39142714b0b3213f816d1d49cdc5a60591717734fff71325f24c4882cbf3f4c"
+    }
+  },
   "schemaVersion": "3.0.23",
-  "updatedAt": "2020-04-14T21:29:07.238Z",
+  "updatedAt": "2020-04-14T21:59:16.756Z",
+  "networkType": "ethereum",
   "devdoc": {
     "methods": {
       "isOwner()": {

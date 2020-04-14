@@ -15887,7 +15887,8 @@
   },
   "networks": {},
   "schemaVersion": "3.0.23",
-  "updatedAt": "2020-04-14T21:29:07.165Z",
+  "updatedAt": "2020-04-14T21:59:31.482Z",
+  "networkType": "ethereum",
   "devdoc": {
     "methods": {
       "addLiquidity(uint256,uint256)": {
