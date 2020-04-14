@@ -42,7 +42,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
     ICEther public _cEther;
     IPrimeOption public _prime;
 
-    address[] public _optionMarkets;
+    address payable[]  public _optionMarkets;
 
     /* Ether liability */
     uint256 public _liability;
@@ -73,7 +73,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
         _cEther = ICEther(compoundEthAddress);
     }
 
-    function addMarket(address primeOption) public onlyOwner returns (address) {
+    function addMarket(address payable primeOption) public onlyOwner returns (address) {
         _optionMarkets.push(primeOption);
         return primeOption;
     }
@@ -115,7 +115,9 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
         _mint(msg.sender, amountToMint);
 
         // NEW DEPOSIT
-        uint256 ethReturn = _prime.depositAndMarketSell.value(amount)(amount);
+        address primeAddress = _optionMarkets[0];
+        IPrimeOption prime = IPrimeOption(primeAddress);
+        uint256 ethReturn = prime.depositAndMarketSell.value(amount)(amount);
         return swapEtherToCompoundEther(ethReturn);
     }
 

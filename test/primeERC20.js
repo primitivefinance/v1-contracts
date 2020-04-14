@@ -22,11 +22,11 @@ contract('PrimeERC20', accounts => {
     const ERR_BAL_ETH = "ERR_BAL_ETH";
     const ERR_BAL_TOKENS = "ERR_BAL_TOKENS";
     const MAINNET_COMPOUND_ETH = '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5';
-    const oneEther = await toWei('0.1');
-    const twoEther = await toWei('0.2');
-    const fiveEther = await toWei('0.5');
-    const tenEther = await toWei('1');
-    const millionEther = await toWei('1000000');
+    const oneEther = toWei('0.1');
+    const twoEther = toWei('0.2');
+    const fiveEther = toWei('0.5');
+    const tenEther = toWei('1');
+    const millionEther = toWei('1000000');
 
 
     // User Accounts
@@ -45,7 +45,6 @@ contract('PrimeERC20', accounts => {
         userA,
         userB,
         _strike,
-        strikeAmount,
         _controllerMarket,
         qUnderlying,
         aUnderlying,
@@ -126,13 +125,14 @@ contract('PrimeERC20', accounts => {
             
 
             it('mints rPulp and oPulp', async () => {
-                let rPulp = strikeAmount;
+                let rPulp = qStrike;
                 let oPulp = (oneEther).toString();
+                console.log({oneEther})
                 await _option.deposit(oneEther, {from: userA, value: oneEther});
                 let rPulpBal = (await _redeem.balanceOf(userA)).toString();
                 let oPulpBal = (await _option.balanceOf(userA)).toString();
-                assert.strictEqual(rPulpBal, rPulp, 'rPulp balances not equal');
-                assert.strictEqual(oPulpBal, oPulp, 'oPulp balances not equal');
+                assert.strictEqual(rPulpBal, rPulp, `${rPulpBal} != ${rPulp}`);
+                assert.strictEqual(oPulpBal, oPulp, `${oPulpBal} != ${oPulp}`);
             });
         });
 
@@ -162,7 +162,7 @@ contract('PrimeERC20', accounts => {
 
             it('mints rPulp and oPulp', async () => {
                 let etherBalUserStart = await web3.eth.getBalance(userA);
-                let rPulp = strikeAmount;
+                let rPulp = qStrike;
                 let oPulp = (oneEther).toString();
                 let qInput = oPulp;
                 let rInput = await _exchange.tokenReserves();
@@ -170,6 +170,7 @@ contract('PrimeERC20', accounts => {
                 let outputEth = await _exchange.getInputPrice(qInput, rInput, rOutput);
                 let rPulpBalBefore = await _redeem.balanceOf(userA);
                 let oPulpBalBefore = (await _option.balanceOf(userA)).toString();
+                console.log(oneEther, (oneEther * 0.9).toString(),);
                 await _option.depositAndLimitSell(oneEther, (oneEther * 0.9).toString(), {from: userA, value: oneEther});
                 let rPulpBal = (await _redeem.balanceOf(userA)).toString();
                 let oPulpBal = (await _option.balanceOf(userA)).toString();
@@ -226,7 +227,7 @@ contract('PrimeERC20', accounts => {
                 let eStrike = await _strike.balanceOf(userA);
                 assert.strictEqual((iEth*1 + oneEther*1 - eEth) <= ROUNDING_ERR, true, `expectedEth: ${eEth}, actual: ${iEth*1 + oneEther*1}`);
                 assert.strictEqual((eoPulp*1 - oneEther*1 - eoPulp) <= ROUNDING_ERR, true, `expectedoPulp: ${eoPulp}, actual: ${eoPulp*1 - oneEther*1}`);
-                assert.strictEqual((eStrike*1 - strikeAmount*1 - eStrike) <= ROUNDING_ERR, true, `expectedeStrike: ${eStrike}, actual: ${eStrike*1 - strikeAmount*1}`);
+                assert.strictEqual((eStrike*1 - qStrike*1 - eStrike) <= ROUNDING_ERR, true, `expectedeStrike: ${eStrike}, actual: ${eStrike*1 - qStrike*1}`);
             });
         });
 
@@ -267,12 +268,12 @@ contract('PrimeERC20', accounts => {
                 let irPulp = await _redeem.balanceOf(userA);
                 let iStrike = await _strike.balanceOf(userA);
                 let ratio = await _option.option();
-                let qStrike = oneEther * strikeAmount / toWei('1');
-                await _option.withdraw((oneEther * strikeAmount / toWei('1')).toString(), {from: userA, value: 0});
+                let beforeStrike = oneEther * qStrike / toWei('1');
+                await _option.withdraw((oneEther * qStrike / toWei('1')).toString(), {from: userA, value: 0});
                 let erPulp = await _redeem.balanceOf(userA);
                 let eStrike = await _strike.balanceOf(userA);
-                assert.strictEqual((erPulp*1 - qStrike*1 - erPulp) <= ROUNDING_ERR, true, 'rPulp not equal');
-                assert.strictEqual((iStrike*1 + (oneEther * strikeAmount / toWei('1'))*1 - eStrike) <= ROUNDING_ERR, true, 'Strike not equal');
+                assert.strictEqual((erPulp*1 - beforeStrike*1 - erPulp) <= ROUNDING_ERR, true, 'rPulp not equal');
+                assert.strictEqual((iStrike*1 + (oneEther * beforeStrike / toWei('1'))*1 - eStrike) <= ROUNDING_ERR, true, 'Strike not equal');
             });
         });
 
@@ -283,9 +284,6 @@ contract('PrimeERC20', accounts => {
             });
 
             it('reverts if rPulp is less than qStrike', async () => {
-                let irPulp = await _redeem.balanceOf(userA);
-                let ratio = await _option.option();
-                let qStrike = oneEther * ratio / toWei('1');
                 await truffleAssert.reverts(
                     _option.close(
                         millionEther,
@@ -311,18 +309,22 @@ contract('PrimeERC20', accounts => {
                 let ioPulp = await _option.balanceOf(userA);
                 let iEth = await getBalance(userA);
                 let ratio = await _option.option();
-                let qStrike = oneEther*1 * strikeAmount*1 / toWei('1');
+                let strikeBefore = oneEther*1 * qStrike*1 / toWei('1');
                 await _option.close(oneEther, {from: userA, value: 0});
                 let erPulp = await _redeem.balanceOf(userA);
                 let eoPulp = await _option.balanceOf(userA);
                 let eEth = await getBalance(userA);
-                assert.strictEqual((erPulp*1 - qStrike*1 - erPulp) <= ROUNDING_ERR, true, 'rPulp not equal');
+                assert.strictEqual((erPulp*1 - strikeBefore*1 - erPulp) <= ROUNDING_ERR, true, 'rPulp not equal');
                 assert.strictEqual((eoPulp*1 - oneEther*1 - eoPulp) <= ROUNDING_ERR, true, 'oPulp not equal');
                 assert.strictEqual((iEth*1 + oneEther*1 - eEth) <= ROUNDING_ERR, true, `expectedEth: ${eEth} actual: ${iEth*1 + oneEther*1 - eEth}`);
             });
+        });
+
+        describe('Market Maker Pool deposit()', () => {
 
             it('opens pool position - gets mPulp', async () => {
                 // FIX - NOT APART OF ERC20 TEST
+                console.log(await _pool._optionMarkets(0));
                 await _pool.deposit(oneEther, {from: userA, value: oneEther});
             });
 

@@ -1,15 +1,9 @@
 {
-  "contractName": "IControllerPool",
+  "contractName": "IControllerMarket",
   "abi": [
     {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "compoundEther",
-          "type": "address"
-        }
-      ],
-      "name": "addPool",
+      "inputs": [],
+      "name": "_crRedeem",
       "outputs": [
         {
           "internalType": "address",
@@ -17,18 +11,31 @@
           "type": "address"
         }
       ],
-      "stateMutability": "nonpayable",
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "_prRedeem",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     },
     {
       "inputs": [
         {
-          "internalType": "address payable",
-          "name": "primeOption",
-          "type": "address"
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
         }
       ],
-      "name": "addMarket",
+      "name": "getExchange",
       "outputs": [
         {
           "internalType": "address",
@@ -36,11 +43,11 @@
           "type": "address"
         }
       ],
-      "stateMutability": "nonpayable",
+      "stateMutability": "view",
       "type": "function"
     }
   ],
-  "metadata": "{\"compiler\":{\"version\":\"0.6.2+commit.bacdbe57\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address payable\",\"name\":\"primeOption\",\"type\":\"address\"}],\"name\":\"addMarket\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"compoundEther\",\"type\":\"address\"}],\"name\":\"addPool\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"methods\":{}},\"userdoc\":{\"methods\":{}}},\"settings\":{\"compilationTarget\":{\"/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/controller/ControllerInterface.sol\":\"IControllerPool\"},\"evmVersion\":\"constantinople\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/controller/ControllerInterface.sol\":{\"keccak256\":\"0x16ba9b379aa38a6c71383fd8538fdedb97b9528b2de01b1fac24469d004ffa63\",\"urls\":[\"bzz-raw://d0f25bef2a76ee1c6580232a17754e476f81f4ce520accd96f8a0dad22ba4cca\",\"dweb:/ipfs/QmXdDrFnTpp958HJyQoLUGX5LWQEBxVZoswCf86KRVkGnE\"]},\"@openzeppelin/contracts/token/ERC20/IERC20.sol\":{\"keccak256\":\"0x708ae901e214e044a5c922748462157b9be162b3620aa56d7c0e7258f66aee1d\",\"urls\":[\"bzz-raw://c287ed9989e5f16114553a30f4ba3794be657f90598f101f7b92ce5859f46978\",\"dweb:/ipfs/QmeFeDCzfhhBTaY9NE9wREmrBRETvn4k3mo2FejqskVMtg\"]}},\"version\":1}",
+  "metadata": "{\"compiler\":{\"version\":\"0.6.2+commit.bacdbe57\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"name\":\"_crRedeem\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"_prRedeem\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"getExchange\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"methods\":{}},\"userdoc\":{\"methods\":{}}},\"settings\":{\"compilationTarget\":{\"/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/controller/ControllerInterface.sol\":\"IControllerMarket\"},\"evmVersion\":\"constantinople\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/controller/ControllerInterface.sol\":{\"keccak256\":\"0x16ba9b379aa38a6c71383fd8538fdedb97b9528b2de01b1fac24469d004ffa63\",\"urls\":[\"bzz-raw://d0f25bef2a76ee1c6580232a17754e476f81f4ce520accd96f8a0dad22ba4cca\",\"dweb:/ipfs/QmXdDrFnTpp958HJyQoLUGX5LWQEBxVZoswCf86KRVkGnE\"]},\"@openzeppelin/contracts/token/ERC20/IERC20.sol\":{\"keccak256\":\"0x708ae901e214e044a5c922748462157b9be162b3620aa56d7c0e7258f66aee1d\",\"urls\":[\"bzz-raw://c287ed9989e5f16114553a30f4ba3794be657f90598f101f7b92ce5859f46978\",\"dweb:/ipfs/QmeFeDCzfhhBTaY9NE9wREmrBRETvn4k3mo2FejqskVMtg\"]}},\"version\":1}",
   "bytecode": "0x",
   "deployedBytecode": "0x",
   "sourceMap": "",
@@ -2885,7 +2892,7 @@
   },
   "networks": {},
   "schemaVersion": "3.0.23",
-  "updatedAt": "2020-04-14T21:29:07.246Z",
+  "updatedAt": "2020-04-14T21:29:07.241Z",
   "devdoc": {
     "methods": {}
   },

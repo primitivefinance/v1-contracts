@@ -31,8 +31,6 @@ contract PrimeRedeem is ERC20Detailed, ERC20 {
         _isCallPulp = isCallPulp;
     }
 
-    receive() external payable {}
-
     function setValid(address valid) public returns(bool) {
         require(msg.sender == _controller, 'ERR_NOT_OWNER');
         _valid[valid] = true;

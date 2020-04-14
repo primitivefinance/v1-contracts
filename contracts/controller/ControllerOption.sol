@@ -6,6 +6,7 @@ pragma solidity ^0.6.2;
  */
 
 import '../PrimeOption.sol';
+import { IControllerMarket } from './ControllerInterface.sol';
 import '@openzeppelin/contracts/ownership/Ownable.sol';
 import '@openzeppelin/contracts/token/ERC721/ERC721Holder.sol';
 
@@ -15,6 +16,7 @@ contract ControllerOption is Ownable, ERC721Holder {
     mapping(uint256 => address) public _primeMarkets;
     uint256 public _nonce;
     IPrime public _prime;
+    IControllerMarket public market;
 
     constructor(
         address controller,
@@ -22,18 +24,8 @@ contract ControllerOption is Ownable, ERC721Holder {
     ) public {
         transferOwnership(controller);
         _prime = IPrime(primeAddress);
+        market = IControllerMarket(controller);
     }
-
-    /**
-     * @dev sets the redeem Pulp type for the option, Call Pulp or Put Pulp (cPulp or pPulp)
-     */
-    /* function setRPulp(address pulp) public onlyOwner {
-        _prime20.setRPulp(pulp);
-    }
-
-    function setPool(address ePulp) public onlyOwner {
-        _prime20.setPool(ePulp);
-    } */
 
     /**
      * @dev Creates a New Eth Option Market including oPulp, cPulp or pPulp, ePulp
@@ -56,10 +48,11 @@ contract ControllerOption is Ownable, ERC721Holder {
         public
         payable
         onlyOwner
-        returns (address)
+        returns (address payable)
     {
         PrimeOption primeOption = deployPrimeOption(name);
         uint256 tokenId;
+        address redeem;
 
         // if its a call the underlying q will be 1 and the address will be the erc-20 oPulp
         // else its a put, the underlying q+a is the strike q+a and 
@@ -74,6 +67,7 @@ contract ControllerOption is Ownable, ERC721Holder {
                 tExpiry,
                 address(this)
             );
+            redeem = market._crRedeem();
         } else {
             tokenId = _prime.createPrime(
                 qToken,
@@ -83,9 +77,11 @@ contract ControllerOption is Ownable, ERC721Holder {
                 tExpiry,
                 address(this)
             );
+            redeem = market._prRedeem();
         }
         
         primeOption.setParentToken(tokenId);
+        primeOption.setRPulp(redeem);
         return address(primeOption);
     }
 
@@ -94,7 +90,7 @@ contract ControllerOption is Ownable, ERC721Holder {
      * @param name Full option name in the format Underlying Asset + Expiry + Strike Price + Strike Asset
      * @return _nonce the nonce of the market
      */
-    function addTokenOption(
+    /* function addTokenOption(
         uint256 qUnderlying,
         IERC20 aUnderlying,
         uint256 qStrike,
@@ -119,7 +115,8 @@ contract ControllerOption is Ownable, ERC721Holder {
         
         primeOption.setParentToken(tokenId);
         return address(primeOption);
-    }
+    } */
+
 
     function deployPrimeOption(string memory name) internal returns (PrimeOption) {
         _nonce = _nonce.add(1);
@@ -129,6 +126,11 @@ contract ControllerOption is Ownable, ERC721Holder {
         );
         _primeMarkets[_nonce] = address(primeOption);
         return primeOption;
+    }
+
+    function setExchange(address exchange, address payable primeOption) public onlyOwner returns (bool) {
+        PrimeOption option = PrimeOption(primeOption);
+        return option.setPool(exchange);
     }
 }
 

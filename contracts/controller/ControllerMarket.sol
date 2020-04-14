@@ -89,7 +89,7 @@ contract ControllerMarket is Ownable {
         bool isCall,
         string memory name
     ) public onlyOwner returns (uint256) {
-        address option = _addEthOption(
+        address payable option = _addEthOption(
             qEth,
             qToken,
             aToken,
@@ -97,8 +97,19 @@ contract ControllerMarket is Ownable {
             isCall,
             name
         );
+
         uint256 tokenId = IPrimeOption(option)._parentToken();
         address exchange = _addExchange(option);
+
+        IControllerOption optionController = IControllerOption(_controllers.option);
+        optionController.setExchange(exchange, option);
+
+        IControllerRedeem redeem = IControllerRedeem(_controllers.redeem);
+        redeem.setValid(option, _crRedeem);
+
+        IControllerPool pool = IControllerPool(_controllers.pool);
+        pool.addMarket(option);
+
         _markets[tokenId] = Market(
             address(this),
             tokenId,
@@ -106,6 +117,7 @@ contract ControllerMarket is Ownable {
             exchange,
             _maker
         );
+        
         return tokenId;
     }
 
@@ -136,9 +148,9 @@ contract ControllerMarket is Ownable {
         uint256 tExpiry,
         bool isCall,
         string memory name
-    ) internal returns (address) {
+    ) internal returns (address payable) {
         IControllerOption option = IControllerOption(_controllers.option);
-        address primeOption = option.addEthOption(
+        address payable primeOption = option.addEthOption(
             qEth,
             qToken,
             aToken,
@@ -150,7 +162,7 @@ contract ControllerMarket is Ownable {
     }
 
     function _addExchange(
-        address primeOption
+        address payable primeOption
     ) internal returns (address) {
         IControllerExchange exchange = IControllerExchange(_controllers.exchange);
         address exchangeAddress = exchange.addExchange(primeOption);

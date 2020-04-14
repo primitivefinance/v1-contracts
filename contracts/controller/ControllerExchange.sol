@@ -14,7 +14,7 @@ contract ControllerExchange is Ownable {
         transferOwnership(controller);
     }
 
-    function addExchange(address primeOption) public onlyOwner returns (address) {
+    function addExchange(address payable primeOption) public onlyOwner returns (address) {
         PrimeExchange primeExchange = new PrimeExchange(primeOption);
         return address(primeExchange);
     }
