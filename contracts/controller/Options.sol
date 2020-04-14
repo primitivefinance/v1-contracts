@@ -5,7 +5,7 @@ pragma solidity ^0.6.0;
  * @author Primitive
  */
 
-import './ERC20/PrimeERC20.sol';
+import '../PrimeOption.sol';
 import '@openzeppelin/contracts/ownership/Ownable.sol';
 import '@openzeppelin/contracts/token/ERC721/ERC721Holder.sol';
 
@@ -15,7 +15,7 @@ contract Options is Ownable, ERC721Holder {
     mapping(uint256 => address) public _primeMarkets;
     uint256 public _nonce;
     IPrime public _prime;
-    PrimeERC20 public _prime20;
+    PrimeOption public _prime20;
 
     constructor(
         address primeAddress
@@ -60,7 +60,7 @@ contract Options is Ownable, ERC721Holder {
         _nonce = _nonce.add(1);
         uint256 tokenId;
 
-        _prime20 = new PrimeERC20(
+        _prime20 = new PrimeOption(
             name,
             address(_prime)
         );

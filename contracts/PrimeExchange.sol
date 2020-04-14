@@ -8,15 +8,15 @@ pragma solidity ^0.6.2;
 import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol';
-import './InterfaceERC20.sol';
+import './PrimeInterface.sol';
 
-contract ExchangeERC20 is ERC20Detailed('Exchange Primitive LP', 'ePULP',  18), ERC20 {
+contract PrimeExchange is ERC20Detailed('Exchange Primitive LP', 'ePULP',  18), ERC20 {
     using SafeMath for uint256;
 
-    IPrimeERC20 public _prime;
+    IPrimeOption public _prime;
 
     constructor (address prime) public {
-        _prime = IPrimeERC20(prime);
+        _prime = IPrimeOption(prime);
     }
 
     receive() external payable {}

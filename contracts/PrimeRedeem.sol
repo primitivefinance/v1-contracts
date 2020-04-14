@@ -8,10 +8,10 @@ pragma solidity ^0.6.2;
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
-import '../Instruments.sol';
+import './controller/Instruments.sol';
 
 
-contract RPulp is ERC20Detailed, ERC20 {
+contract PrimeRedeem is ERC20Detailed, ERC20 {
     using SafeMath for uint256;
 
     address public _controller;

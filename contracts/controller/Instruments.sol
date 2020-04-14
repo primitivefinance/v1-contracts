@@ -2,7 +2,7 @@ pragma solidity ^0.6.2;
 
 /** 
  * @title Primitive's Instruments
- * @author Primitive Finance
+ * @author Primitive
  */
 library Instruments {
      /** 

@@ -3,10 +3,10 @@ const truffleAssert = require('truffle-assertions');
 const Options = artifacts.require('Options');
 const tUSD = artifacts.require("tUSD");
 const Prime = artifacts.require("Prime");
-const PrimeERC20 = artifacts.require('PrimeERC20.sol');
-const ExchangeERC20 = artifacts.require('ExchangeERC20.sol');
-const PoolERC20 = artifacts.require('PoolERC20.sol');
-const RPulp = artifacts.require('RPulp');
+const PrimeOption = artifacts.require('PrimeOption.sol');
+const PrimeExchange = artifacts.require('PrimeExchange.sol');
+const PrimePool = artifacts.require('PrimePool.sol');
+const PrimeRedeem = artifacts.require('PrimeRedeem');
 
 contract('PrimeERC20', accounts => {
     const { toWei } = web3.utils;
@@ -82,11 +82,11 @@ contract('PrimeERC20', accounts => {
 
     beforeEach(async () => {
         // get values that wont change
-        _pool20 = await PoolERC20.deployed();
+        _pool20 = await PrimePool.deployed();
         _prime = await Prime.deployed();
         _tUSD = await tUSD.deployed();
         _strike = _tUSD;
-        _rPulp = await RPulp.deployed();
+        _rPulp = await PrimeRedeem.deployed();
         strike = _tUSD.address;
         oneEther = await toWei('0.1');
         twoEther = await toWei('0.2');
@@ -104,8 +104,8 @@ contract('PrimeERC20', accounts => {
             options = await Options.deployed();
             nonce = await options._nonce();
             prime20Address = await options._primeMarkets(nonce);
-            _prime20 = await PrimeERC20.at(prime20Address);
-            _exchange20 = await ExchangeERC20.deployed();
+            _prime20 = await PrimeOption.at(prime20Address);
+            _exchange20 = await PrimeExchange.deployed();
             collateral = prime20Address;
         });
 
@@ -143,8 +143,8 @@ contract('PrimeERC20', accounts => {
                 options = await Options.deployed();
                 nonce = await options._nonce();
                 prime20Address = await options._primeMarkets(nonce);
-                _prime20 = await PrimeERC20.at(prime20Address);
-                _exchange20 = await ExchangeERC20.deployed();
+                _prime20 = await PrimeOption.at(prime20Address);
+                _exchange20 = await PrimeExchange.deployed();
                 collateral = prime20Address;
             });
 
@@ -200,8 +200,8 @@ contract('PrimeERC20', accounts => {
                 options = await Options.deployed();
                 nonce = await options._nonce();
                 prime20Address = await options._primeMarkets(nonce);
-                _prime20 = await PrimeERC20.at(prime20Address);
-                _exchange20 = await ExchangeERC20.deployed();
+                _prime20 = await PrimeOption.at(prime20Address);
+                _exchange20 = await PrimeExchange.deployed();
                 collateral = prime20Address;
             });
 
@@ -248,8 +248,8 @@ contract('PrimeERC20', accounts => {
                 options = await Options.deployed();
                 nonce = await options._nonce();
                 prime20Address = await options._primeMarkets(nonce);
-                _prime20 = await PrimeERC20.at(prime20Address);
-                _exchange20 = await ExchangeERC20.deployed();
+                _prime20 = await PrimeOption.at(prime20Address);
+                _exchange20 = await PrimeExchange.deployed();
                 collateral = prime20Address;
             });
 
@@ -299,8 +299,8 @@ contract('PrimeERC20', accounts => {
                 options = await Options.deployed();
                 nonce = await options._nonce();
                 prime20Address = await options._primeMarkets(nonce);
-                _prime20 = await PrimeERC20.at(prime20Address);
-                _exchange20 = await ExchangeERC20.deployed();
+                _prime20 = await PrimeOption.at(prime20Address);
+                _exchange20 = await PrimeExchange.deployed();
                 collateral = prime20Address;
             });
 

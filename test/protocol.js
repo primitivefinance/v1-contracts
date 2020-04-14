@@ -3,9 +3,9 @@ const truffleAssert = require('truffle-assertions');
 const Options = artifacts.require('Options');
 const tUSD = artifacts.require("tUSD");
 const Prime = artifacts.require("Prime");
-const PrimeERC20 = artifacts.require('PrimeERC20.sol');
-const ExchangeERC20 = artifacts.require('ExchangeERC20.sol');
-const PoolERC20 = artifacts.require('PoolERC20.sol');
+const PrimeOption = artifacts.require('PrimeOption.sol');
+const PrimeExchange = artifacts.require('PrimeExchange.sol');
+const PrimePool = artifacts.require('PrimePool.sol');
 
 contract('Prime - Local', accounts => {
 

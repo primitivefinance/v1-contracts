@@ -33,7 +33,7 @@ interface IPrime {
     function isTokenExpired(uint256 tokenId) external view returns (bool);
 }
 
-interface IPrimeERC20 {
+interface IPrimeOption {
     function balanceOf(address user) external view returns (uint);
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
     function transfer(address to, uint256 amount) external returns (bool);
@@ -46,14 +46,14 @@ interface IPrimeERC20 {
     function _strikeAddress() external view returns (address);
 }
 
-interface IRPulp {
+interface IPrimeRedeem {
     function mint(address user, uint256 amount) external payable returns (bool);
     function burn(address user, uint256 amount) external payable returns (bool);
     function balanceOf(address user) external view returns (uint);
     function isCallPulp() external view returns (bool);
 }
 
-interface IEPulp {
+interface IPrimeExchange {
     function addLiquidity(
         uint256 minQLiquidity,
         uint256 maxQTokens
@@ -83,5 +83,8 @@ interface IEPulp {
     ) external view returns (uint256);
     function tokenReserves() external view returns (uint256);
     function etherReserves() external view returns (uint256);
+}
 
+interface IPrimePool {
+    
 }

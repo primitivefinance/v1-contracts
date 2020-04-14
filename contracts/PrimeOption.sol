@@ -9,10 +9,10 @@ import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
-import './InterfaceERC20.sol';
-import '../Instruments.sol';
+import './PrimeInterface.sol';
+import './controller/Instruments.sol';
 
-contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
+contract PrimeOption is ERC20Detailed, ERC20, ReentrancyGuard {
     using SafeMath for uint256;
 
     event Deposit(address indexed user, uint256 qUnderlying, uint256 qStrike);
@@ -23,8 +23,8 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
     Instruments.PrimeOption public option;
 
     IPrime public _prime;
-    IRPulp public _rPulp;
-    IEPulp public _ePulp;
+    IPrimeRedeem public _rPulp;
+    IPrimeExchange public _ePulp;
 
     constructor(
         string memory name,
@@ -65,13 +65,13 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
 
     function setRPulp(address rPulp) public returns (bool) {
         require(msg.sender == _instrumentController, 'ERR_NOT_OWNER'); // OWNER IS OPTIONS.sol
-        _rPulp = IRPulp(rPulp);
+        _rPulp = IPrimeRedeem(rPulp);
         return true;
     }
 
     function setPool(address ePool) public returns (bool) {
         require(msg.sender == _instrumentController, 'ERR_NOT_OWNER'); // OWNER IS OPTIONS.sol
-        _ePulp = IEPulp(ePool);
+        _ePulp = IPrimeExchange(ePool);
         _approve(address(this), ePool, 2**255-1 ether);
         return true;
     }

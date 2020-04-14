@@ -6,8 +6,8 @@ pragma solidity ^0.6.2;
  */
 
 
-import '../Instruments.sol';
-import './InterfaceERC20.sol';
+import './controller/Instruments.sol';
+import './PrimeInterface.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@openzeppelin/contracts/ownership/Ownable.sol';
 import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
@@ -34,13 +34,13 @@ interface ICEther {
     function seize(address liquidator, address borrower, uint seizeTokens) external returns (uint);
 }
 
-contract PoolERC20 is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
+contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
     using SafeMath for uint256;
 
     address public _exchangeAddress;
 
     ICEther public _cEther;
-    IPrimeERC20 public _prime;
+    IPrimeOption public _prime;
 
     /* Ether liability */
     uint256 public _liability;
@@ -67,7 +67,7 @@ contract PoolERC20 is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
         )
     {
         _exchangeAddress = exchangeAddress;
-        _prime = IPrimeERC20(primeAddress);
+        _prime = IPrimeOption(primeAddress);
         _cEther = ICEther(compoundEthAddress);
     }
 
