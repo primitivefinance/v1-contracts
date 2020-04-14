@@ -1,25 +1,22 @@
 # Architecture
-## Prime and Slate
+- PrimeOption : ETH/ERC-20 Option as an ERC-20 Token
+- PrimeExchange : ETH/ERC-20 PrimeOption Token Pool for Exchange
+- PrimePool : Market Making Pool to supply PrimeExchange with PrimeOptions
+- PrimeRedeem : An ERC-20 Token to Redeem Strike Assets Prime Options or Close Prime Options
+- Instruments : Defines the PrimeOption
+- Options : Instrument Controller for the Options Instrument - Deploys Option Markets
+# Overview
+## Primary Contracts
+The Prime.sol contract manages its native Prime ERC-721 token, an option-like financial instrument. The contract extends the functionality of an ERC-721 token to give it properties such as optionality. The token is transferable easily between ERC-721 receiver contracts and user addresses, which give the option composability between any protocol.
 
-The Prime is an agreement committed by a party to sell their collateral for a predetermined price, denominated in the predetermined asset. 
 
-The Slate is the NFT representation of this contractual agreement. It uses the ERC-721 standard.
+The Exchange.sol facilitates a trading environment for these ERC-721 tokens. Buy and Sell orders are submitted to the DEX and the DEX settles the trade. Users have the ability to trade these Prime options peer-to-peer.
 
-## Functions
 
-`Prime.sol` - Controls Slate properties and core logic.
-### Prime has these core functions
-- `createSlate` - Creates a new Slate NFT by depositing collateral.
-- `exercise` - Exercises the right defined by the contract; Right to purchase collateral.
-- `close` - If a party wishes to withdraw their collateral, they can burn the Slate NFT minted by them, or purchase another Slate NFT with identical properties.
-- `withdraw` - Asset transfers out of Prime.sol use this withdraw method rather than sending directly to the payment receiver.
+The Pool.sol acts as a market-maker to bootstrap liquidity in the DEX. Facilitating trades between peers does not work if there is no supply-side peers. The Pool uses deposited funds to underwrite options in order to fill buy orders. Peers will compete with the pricing of the Pool's underwritten options. This means that if there is no peer that offers an option for a cheaper price than the Pool, then the Pool will fill the order.
 
-`Slate.sol` - Basically ERC-721 Metadata contract, which Prime.sol inherents.
-### Slates have the following properties:
-- ace - Minter of Slate NFT
-- xis - Collateral asset quantity
-- yak - Collateral asset address
-- zed - Payment asset quantity
-- wax - Payment asset address
-- pow - UNIX Timestamp that the Slate NFT expires
-- gem - Address of Payment asset receiver
+## Supporting Contracts
+
+The Instruments.sol contract defines the Primes struct. This is an object that stores attributes and ties it to minted Primes through the Prime's ID. An option has financial properties, assets that it manages and when the option expires. This Primes struct stores that information.
+
+The Options.sol contract defines which option series that the Exchange.sol and Pool.sol will support. Any combination of a Prime Series can be created; any two ERC-20's (or Ether) and an expiration date. The Exchange and Pool will only support a predefined series on deployment. This is to focus the system's liquidity into a select few options. Higher liquidity in these selected options will be a better trading experience for users. The option series is defined as: an asset pair of ERC-20 tokens and/or ETH and an expiration date. This option series is identified by the Primes struct attribute: series. The series is a keccak256 hash of the asset pair and expiration date and it acts a symbol for the option series.

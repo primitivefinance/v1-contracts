@@ -13,14 +13,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/primitivefinance/Primitive-v1.git"
+    "url": "git+https://github.com/primitivefinance/primitive-contracts.git"
   },
   "author": "Primitive",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/primitivefinance/Primitive-v1/issues"
+    "url": "https://github.com/primitivefinance/primitive-contracts/issues"
   },
-  "homepage": "https://github.com/primitivefinance/Primitive-v1#readme",
+  "homepage": "https://github.com/primitivefinance/primitive-contracts#readme",
   "dependencies": {
     "@truffle/hdwallet-provider": "^1.0.32",
     "dotenv": "^8.2.0",
