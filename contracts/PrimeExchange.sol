@@ -15,8 +15,8 @@ contract PrimeExchange is ERC20Detailed('Exchange Primitive LP', 'ePULP',  18), 
 
     IPrimeOption public _prime;
 
-    constructor (address prime) public {
-        _prime = IPrimeOption(prime);
+    constructor (address primeOption) public {
+        _prime = IPrimeOption(primeOption);
     }
 
     receive() external payable {}

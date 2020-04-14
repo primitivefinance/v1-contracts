@@ -55,9 +55,9 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
     event Close(uint256 amountClosed, address indexed user, uint256 burned);
 
     constructor (
-        address primeAddress,
-        address compoundEthAddress,
-        address exchangeAddress
+        address primeOption,
+        address compoundEthAddress
+        /* address exchangeAddress */
     ) 
         public
         ERC20Detailed(
@@ -66,15 +66,11 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
             18
         )
     {
-        _exchangeAddress = exchangeAddress;
-        _prime = IPrimeOption(primeAddress);
+        /* _exchangeAddress = exchangeAddress; */
+        _prime = IPrimeOption(primeOption);
         _cEther = ICEther(compoundEthAddress);
     }
 
-    /* SET */
-    function setExchangeAddress(address exchangeAddress) external onlyOwner {
-        _exchangeAddress = exchangeAddress;
-    }
 
     receive() external payable {}
 

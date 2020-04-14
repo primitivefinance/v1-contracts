@@ -1,6 +1,10 @@
 const assert = require('assert').strict;
 const truffleAssert = require('truffle-assertions');
-const Options = artifacts.require('Options');
+const ControllerOption = artifacts.require('ControllerOption');
+const ControllerMarket = artifacts.require('ControllerMarket');
+const ControllerExchange = artifacts.require('ControllerExchange');
+const ControllerPool = artifacts.require('ControllerPool');
+const ControllerRedeem = artifacts.require('ControllerRedeem');
 const tUSD = artifacts.require("tUSD");
 const Prime = artifacts.require("Prime");
 const PrimeOption = artifacts.require('PrimeOption.sol');
@@ -21,6 +25,7 @@ contract('PrimeERC20', accounts => {
     const ERR_BAL_RPULP = "ERR_BAL_RPULP";
     const ERR_BAL_ETH = "ERR_BAL_ETH";
     const ERR_BAL_TOKENS = "ERR_BAL_TOKENS";
+    const MAINNET_COMPOUND_ETH = '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5';
 
 
     // User Accounts
@@ -72,7 +77,10 @@ contract('PrimeERC20', accounts => {
         _rPulp,
         millionEther,
         _strike,
-        strikeAmount
+        strikeAmount,
+        _controllerExchange,
+        _controllerMarket,
+        _controllerPool
         ;
 
     async function getGas(func, name) {
@@ -82,6 +90,10 @@ contract('PrimeERC20', accounts => {
 
     beforeEach(async () => {
         // get values that wont change
+        _controllerExchange = await ControllerExchange.deployed();
+        _controllerMarket = await ControllerMarket.deployed();
+        _controllerPool = await ControllerPool.deployed();
+        _controllerRedeem = await ControllerRedeem.deployed();
         _pool20 = await PrimePool.deployed();
         _prime = await Prime.deployed();
         _tUSD = await tUSD.deployed();
@@ -101,7 +113,7 @@ contract('PrimeERC20', accounts => {
 
     describe('PrimeERC20.sol - Eth Call Option', () => {
         beforeEach(async () => {
-            options = await Options.deployed();
+            options = await ControllerOption.deployed();
             nonce = await options._nonce();
             prime20Address = await options._primeMarkets(nonce);
             _prime20 = await PrimeOption.at(prime20Address);
@@ -140,7 +152,7 @@ contract('PrimeERC20', accounts => {
 
         describe('depositAndLimitSell()', () => {
             beforeEach(async () => {
-                options = await Options.deployed();
+                options = await ControllerOption.deployed();
                 nonce = await options._nonce();
                 prime20Address = await options._primeMarkets(nonce);
                 _prime20 = await PrimeOption.at(prime20Address);
@@ -197,7 +209,7 @@ contract('PrimeERC20', accounts => {
         
         describe('swap()', () => {
             beforeEach(async () => {
-                options = await Options.deployed();
+                options = await ControllerOption.deployed();
                 nonce = await options._nonce();
                 prime20Address = await options._primeMarkets(nonce);
                 _prime20 = await PrimeOption.at(prime20Address);
@@ -245,7 +257,7 @@ contract('PrimeERC20', accounts => {
         
         describe('withdraw()', () => {
             beforeEach(async () => {
-                options = await Options.deployed();
+                options = await ControllerOption.deployed();
                 nonce = await options._nonce();
                 prime20Address = await options._primeMarkets(nonce);
                 _prime20 = await PrimeOption.at(prime20Address);
@@ -296,7 +308,7 @@ contract('PrimeERC20', accounts => {
         
         describe('close()', () => {
             beforeEach(async () => {
-                options = await Options.deployed();
+                options = await ControllerOption.deployed();
                 nonce = await options._nonce();
                 prime20Address = await options._primeMarkets(nonce);
                 _prime20 = await PrimeOption.at(prime20Address);
@@ -346,6 +358,20 @@ contract('PrimeERC20', accounts => {
             it('opens pool position - gets mPulp', async () => {
                 // FIX - NOT APART OF ERC20 TEST
                 await _pool20.deposit(oneEther, {from: userA, value: oneEther});
+            });
+
+            it('adds a new market', async () => {
+                let isCall = true;
+                let name = 'Redeem Primitive LP';
+                let symbol = 'cPulp';
+                let market = await _controllerMarket.addMarket(
+                    _prime20.address,
+                    MAINNET_COMPOUND_ETH,
+                    _controllerExchange.address,
+                    _controllerPool.address
+                );
+
+                console.log({market}, market.receipt.logs)
             });
         });
     });

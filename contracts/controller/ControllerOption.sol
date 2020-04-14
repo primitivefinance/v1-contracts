@@ -1,4 +1,4 @@
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.2;
 
 /**
  * @title Primitive's Market Creator Contract
@@ -9,7 +9,7 @@ import '../PrimeOption.sol';
 import '@openzeppelin/contracts/ownership/Ownable.sol';
 import '@openzeppelin/contracts/token/ERC721/ERC721Holder.sol';
 
-contract Options is Ownable, ERC721Holder {
+contract ControllerOption is Ownable, ERC721Holder {
     using SafeMath for uint256;
 
     mapping(uint256 => address) public _primeMarkets;
@@ -55,7 +55,7 @@ contract Options is Ownable, ERC721Holder {
         public
         payable
         onlyOwner
-        returns (uint256)
+        returns (address)
     {
         _nonce = _nonce.add(1);
         uint256 tokenId;
@@ -95,7 +95,7 @@ contract Options is Ownable, ERC721Holder {
         
         _prime20.setParentToken(tokenId);
         _primeMarkets[_nonce] = address(_prime20);
-        return _nonce;
+        return address(_prime20);
     }
 }
 

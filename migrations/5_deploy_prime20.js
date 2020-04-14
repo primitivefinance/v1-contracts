@@ -1,4 +1,4 @@
-const Options = artifacts.require('Options');
+const ControllerOption = artifacts.require('ControllerOption');
 const tUSD = artifacts.require("tUSD");
 const PrimeOption = artifacts.require('PrimeOption.sol');
 const PrimePool = artifacts.require('PrimePool.sol');
@@ -20,7 +20,7 @@ module.exports = async (deployer, network) => {
     let name = 'ETH201212C150TUSD'
 
     // deploys new Prime ERC-20
-    const options = await Options.deployed();
+    const options = await ControllerOption.deployed();
     await options.addEthOption(
         collateralAmount,
         strikeAmount,
@@ -36,9 +36,9 @@ module.exports = async (deployer, network) => {
     await deployer.deploy(PrimeExchange, prime20Address);
     const exchange20 = await PrimeExchange.deployed();
     if(network == 'rinkeby') {
-        await deployer.deploy(PrimePool, prime20Address,  rinkebyCompoundAddress, exchange20.address);
+        await deployer.deploy(PrimePool, prime20Address,  rinkebyCompoundAddress, /* exchange20.address */);
     } else {
-        await deployer.deploy(PrimePool, prime20Address,  mainnetCompoundAddress, exchange20.address);
+        await deployer.deploy(PrimePool, prime20Address,  mainnetCompoundAddress, /* exchange20.address */);
     }
 
     const prime20 = await PrimeOption.at(prime20Address);
