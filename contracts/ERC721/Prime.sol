@@ -1164,9 +1164,9 @@ contract Prime is IPrime, ERC721Metadata, ReentrancyGuard {
             msg.sender != _poolAddress && */
             msg.sender != _instrumentController
         ) {
-            ERC20 aUnderlying = ERC20(aUnderlying);
-            isGreaterThanOrEqual(aUnderlying.balanceOf(msg.sender), qUnderlying);
-            aUnderlying.transferFrom(msg.sender, address(this), qUnderlying);
+            ERC20 _aUnderlying = ERC20(aUnderlying);
+            isGreaterThanOrEqual(_aUnderlying.balanceOf(msg.sender), qUnderlying);
+            _aUnderlying.transferFrom(msg.sender, address(this), qUnderlying);
             return _nonce;
         }
 

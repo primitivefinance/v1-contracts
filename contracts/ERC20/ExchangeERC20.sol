@@ -34,6 +34,7 @@ contract ExchangeERC20 is ERC20Detailed('Exchange Primitive LP', 'ePULP',  18), 
             uint256 rToken = tokenReserves();
             uint256 qToken = msg.value.mul(rToken).div(rEth).sub(1);
             uint256 newLiquidity = msg.value.mul(totalSupply).div(rEth);
+            assert(newLiquidity >= minQLiquidity && maxQTokens >= qToken);
             _mint(msg.sender, newLiquidity);
             _prime.transferFrom(msg.sender, address(this), qToken);
             return newLiquidity;
@@ -130,7 +131,7 @@ contract ExchangeERC20 is ERC20Detailed('Exchange Primitive LP', 'ePULP',  18), 
         uint256 qInput,
         uint256 rInput,
         uint256 rOutput
-    ) public view returns (uint256) {
+    ) public pure returns (uint256) {
         uint256 k = qInput.mul(1000).mul(rOutput);
         uint256 x = rInput.mul(1000).add(qInput);
         uint256 y = k.div(x);
@@ -144,7 +145,7 @@ contract ExchangeERC20 is ERC20Detailed('Exchange Primitive LP', 'ePULP',  18), 
         uint256 qOutput,
         uint256 rInput,
         uint256 rOutput
-    ) public view returns (uint256) {
+    ) public pure returns (uint256) {
         uint256 k = qOutput.mul(1000).mul(rInput);
         uint256 y = (rOutput.sub(qOutput)).mul(1000);
         uint256 x = k.div(y).add(1);

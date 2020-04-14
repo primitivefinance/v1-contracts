@@ -15,35 +15,28 @@ import '@openzeppelin/contracts/lifecycle/Pausable.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol';
 
-abstract contract ICEther {
-    function mint() external payable virtual;
-    function redeem(uint redeemTokens) external virtual returns (uint);
-    function redeemUnderlying(uint redeemAmount) external virtual returns (uint);
-    function transfer(address dst, uint amount) external virtual returns (bool);
-    function transferFrom(address src, address dst, uint amount) external virtual returns (bool);
-    function approve(address spender, uint amount) external virtual returns (bool);
-    function allowance(address owner, address spender) external virtual view returns (uint);
-    function balanceOf(address owner) external virtual view returns (uint);
-    function balanceOfUnderlying(address owner) external virtual returns (uint);
-    function getAccountSnapshot(address account) external virtual view returns (uint, uint, uint, uint);
-    function borrowRatePerBlock() external virtual view returns (uint);
-    function supplyRatePerBlock() external virtual view returns (uint);
-    function totalBorrowsCurrent() external virtual returns (uint);
-    function borrowBalanceCurrent(address account) external virtual returns (uint);
-    function borrowBalanceStored(address account) public virtual view returns (uint);
-    function _exchangeRateCurrent() public virtual returns (uint);
-    function _exchangeRateStored() public virtual view returns (uint);
-    function getCash() external virtual view returns (uint);
-    function accrueInterest() public virtual returns (uint);
-    function seize(address liquidator, address borrower, uint seizeTokens) external virtual returns (uint);
+interface ICEther {
+    function mint() external payable;
+    function redeem(uint redeemTokens) external returns (uint);
+    function redeemUnderlying(uint redeemAmount) external returns (uint);
+    function transfer(address dst, uint amount) external returns (bool);
+    function transferFrom(address src, address dst, uint amount) external returns (bool);
+    function approve(address spender, uint amount) external returns (bool);
+    function allowance(address owner, address spender) external view returns (uint);
+    function balanceOf(address owner) external view returns (uint);
+    function balanceOfUnderlying(address owner) external returns (uint);
+    function getAccountSnapshot(address account) external view returns (uint, uint, uint, uint);
+    function borrowRatePerBlock() external view returns (uint);
+    function supplyRatePerBlock() external view returns (uint);
+    function totalBorrowsCurrent() external returns (uint);
+    function borrowBalanceCurrent(address account) external returns (uint);
+    function getCash() external view returns (uint);
+    function seize(address liquidator, address borrower, uint seizeTokens) external returns (uint);
 }
 
 contract PoolERC20 is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
     using SafeMath for uint256;
 
-    /* Address of Prime ERC-721 */
-    address public _primeAddress;
-    address public _compoundEthAddress;
     address public _exchangeAddress;
 
     ICEther public _cEther;
@@ -76,7 +69,6 @@ contract PoolERC20 is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
         _exchangeAddress = exchangeAddress;
         _prime = IPrimeERC20(primeAddress);
         _cEther = ICEther(compoundEthAddress);
-        _compoundEthAddress = compoundEthAddress;
     }
 
     /* SET */
@@ -245,7 +237,7 @@ contract PoolERC20 is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
         uint256 qStrike = _prime.withdraw(qUnderlying);
         ERC20 _strike = ERC20(_prime._strikeAddress());
         _burn(msg.sender, qUnderlying);
-        return _prime._strike().transfer(msg.sender, qStrike);
+        return _strike.transfer(msg.sender, qStrike);
     }
 
     /**

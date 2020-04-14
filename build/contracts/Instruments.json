@@ -1,25 +1,25 @@
 {
   "contractName": "Instruments",
   "abi": [],
-  "metadata": "{\"compiler\":{\"version\":\"0.6.5+commit.f956cc89\"},\"language\":\"Solidity\",\"output\":{\"abi\":[],\"devdoc\":{\"author\":\"Primitive Finance\",\"methods\":{},\"title\":\"Primitive's Instruments\"},\"userdoc\":{\"methods\":{}}},\"settings\":{\"compilationTarget\":{\"/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/Instruments.sol\":\"Instruments\"},\"evmVersion\":\"constantinople\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/Instruments.sol\":{\"keccak256\":\"0x04b6b2bc0b5ee9744513105fabf4083d49349ee26a579a74060d2544ae8bccdb\",\"urls\":[\"bzz-raw://c489fbc7612d90f184684bce8a337a40c6aa95bf90e85b100750ed682344eeb3\",\"dweb:/ipfs/QmdG1n3AADPp1TEmJyw7yeDiDUs2AmeE2PNpbUbKoahtmv\"]}},\"version\":1}",
-  "bytecode": "0x60566023600b82828239805160001a607314601657fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea264697066735822122047107784677fe61349816f3f2ecca2b034ffbb13ef7f1f9c6b11534dde82c43864736f6c63430006050033",
-  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600080fdfea264697066735822122047107784677fe61349816f3f2ecca2b034ffbb13ef7f1f9c6b11534dde82c43864736f6c63430006050033",
-  "sourceMap": "103:917:8:-:0;;132:2:-1;166:7;155:9;146:7;137:37;255:7;249:14;246:1;241:23;235:4;232:33;222:2;;269:9;222:2;293:9;290:1;283:20;323:4;314:7;306:22;347:7;338;331:24",
-  "deployedSourceMap": "103:917:8:-:0;;;;;;12:1:-1;9;2:12",
-  "source": "pragma solidity ^0.6.2;\r\n\r\n/** \r\n * @title Primitive's Instruments\r\n * @author Primitive Finance\r\n */\r\nlibrary Instruments {\r\n     /** \r\n     * @dev A Prime has these properties.\r\n     * @param writer `msg.sender` of the createPrime function.\r\n     * @param qUnderlying Quantity of underlying asset token.\r\n     * @param aUnderlying Address of underlying asset token.\r\n     * @param qStrike Quantity of strike asset token.\r\n     * @param aStrike Address of strike asset token.\r\n     * @param tExpiry UNIX timestamp of valid time period.\r\n     * @param receiver Address of payment receiver of token z.\r\n     * @param series Keccak256 hash of (aUnderlying ^ aStrike ^ tExpiry)\r\n     * @param symbol Keccak256 hash of all params excluding series\r\n     */\r\n    struct Primes {\r\n        address writer;\r\n        uint256 qUnderlying;\r\n        address aUnderlying;\r\n        uint256 qStrike;\r\n        address aStrike;\r\n        uint256 tExpiry;\r\n        address receiver;\r\n        bytes4 series;\r\n        bytes4 symbol;\r\n    }\r\n}",
+  "metadata": "{\"compiler\":{\"version\":\"0.6.2+commit.bacdbe57\"},\"language\":\"Solidity\",\"output\":{\"abi\":[],\"devdoc\":{\"author\":\"Primitive Finance\",\"methods\":{},\"title\":\"Primitive's Instruments\"},\"userdoc\":{\"methods\":{}}},\"settings\":{\"compilationTarget\":{\"/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/Instruments.sol\":\"Instruments\"},\"evmVersion\":\"constantinople\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/Instruments.sol\":{\"keccak256\":\"0xedaa3d967d0865e65bf7ff96c8fc5770e50c0490669e76ee20b632848b5e72da\",\"urls\":[\"bzz-raw://92806d08b9ba2e8b6e64e9ad0029b092869cf44d17c7f5cd79c10bfffaa863e2\",\"dweb:/ipfs/QmZvrqY5GTkkwnQDdwSBfCajz6sUZrTMFvGqJRoQ4NmBGC\"]}},\"version\":1}",
+  "bytecode": "0x60566023600b82828239805160001a607314601657fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea2646970667358221220a9ed0aa0a2ec0bd279df7e9cb22b6f1885efe454d696bd16857b1323be83ea1964736f6c63430006020033",
+  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600080fdfea2646970667358221220a9ed0aa0a2ec0bd279df7e9cb22b6f1885efe454d696bd16857b1323be83ea1964736f6c63430006020033",
+  "sourceMap": "103:1090:8:-:0;;132:2:-1;166:7;155:9;146:7;137:37;255:7;249:14;246:1;241:23;235:4;232:33;222:2;;269:9;222:2;293:9;290:1;283:20;323:4;314:7;306:22;347:7;338;331:24",
+  "deployedSourceMap": "103:1090:8:-:0;;;;;;;;",
+  "source": "pragma solidity ^0.6.2;\r\n\r\n/** \r\n * @title Primitive's Instruments\r\n * @author Primitive Finance\r\n */\r\nlibrary Instruments {\r\n     /** \r\n     * @dev A Prime has these properties.\r\n     * @param writer `msg.sender` of the createPrime function.\r\n     * @param qUnderlying Quantity of underlying asset token.\r\n     * @param aUnderlying Address of underlying asset token.\r\n     * @param qStrike Quantity of strike asset token.\r\n     * @param aStrike Address of strike asset token.\r\n     * @param tExpiry UNIX timestamp of valid time period.\r\n     * @param receiver Address of payment receiver of token z.\r\n     * @param series Keccak256 hash of (aUnderlying ^ aStrike ^ tExpiry)\r\n     * @param symbol Keccak256 hash of all params excluding series\r\n     */\r\n    struct Primes {\r\n        address writer;\r\n        uint256 qUnderlying;\r\n        address aUnderlying;\r\n        uint256 qStrike;\r\n        address aStrike;\r\n        uint256 tExpiry;\r\n        address receiver;\r\n        bytes4 series;\r\n        bytes4 symbol;\r\n    }\r\n\r\n    struct PrimeOption {\r\n        uint256 qUnderlying;\r\n        address aUnderlying;\r\n        uint256 qStrike;\r\n        address aStrike;\r\n        uint256 tExpiry;\r\n    }\r\n}",
   "sourcePath": "C:\\Users\\alexa\\OneDrive\\Documents\\Master\\Blockchain\\Projects\\carbon\\contracts\\Instruments.sol",
   "ast": {
     "absolutePath": "/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/Instruments.sol",
     "exportedSymbols": {
       "Instruments": [
-        9541
+        9305
       ]
     },
-    "id": 9542,
+    "id": 9306,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 9520,
+        "id": 9274,
         "literals": [
           "solidity",
           "^",
@@ -34,31 +34,26 @@
         "baseContracts": [],
         "contractDependencies": [],
         "contractKind": "library",
-        "documentation": {
-          "id": 9521,
-          "nodeType": "StructuredDocumentation",
-          "src": "27:74:8",
-          "text": "@title Primitive's Instruments\n@author Primitive Finance"
-        },
+        "documentation": "@title Primitive's Instruments\n@author Primitive Finance",
         "fullyImplemented": true,
-        "id": 9541,
+        "id": 9305,
         "linearizedBaseContracts": [
-          9541
+          9305
         ],
         "name": "Instruments",
         "nodeType": "ContractDefinition",
         "nodes": [
           {
             "canonicalName": "Instruments.Primes",
-            "id": 9540,
+            "id": 9293,
             "members": [
               {
                 "constant": false,
-                "id": 9523,
+                "id": 9276,
                 "name": "writer",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 9540,
+                "scope": 9293,
                 "src": "782:14:8",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -67,7 +62,7 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 9522,
+                  "id": 9275,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
                   "src": "782:7:8",
@@ -82,11 +77,11 @@
               },
               {
                 "constant": false,
-                "id": 9525,
+                "id": 9278,
                 "name": "qUnderlying",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 9540,
+                "scope": 9293,
                 "src": "807:19:8",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -95,7 +90,7 @@
                   "typeString": "uint256"
                 },
                 "typeName": {
-                  "id": 9524,
+                  "id": 9277,
                   "name": "uint256",
                   "nodeType": "ElementaryTypeName",
                   "src": "807:7:8",
@@ -109,11 +104,11 @@
               },
               {
                 "constant": false,
-                "id": 9527,
+                "id": 9280,
                 "name": "aUnderlying",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 9540,
+                "scope": 9293,
                 "src": "837:19:8",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -122,7 +117,7 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 9526,
+                  "id": 9279,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
                   "src": "837:7:8",
@@ -137,11 +132,11 @@
               },
               {
                 "constant": false,
-                "id": 9529,
+                "id": 9282,
                 "name": "qStrike",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 9540,
+                "scope": 9293,
                 "src": "867:15:8",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -150,7 +145,7 @@
                   "typeString": "uint256"
                 },
                 "typeName": {
-                  "id": 9528,
+                  "id": 9281,
                   "name": "uint256",
                   "nodeType": "ElementaryTypeName",
                   "src": "867:7:8",
@@ -164,11 +159,11 @@
               },
               {
                 "constant": false,
-                "id": 9531,
+                "id": 9284,
                 "name": "aStrike",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 9540,
+                "scope": 9293,
                 "src": "893:15:8",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -177,7 +172,7 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 9530,
+                  "id": 9283,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
                   "src": "893:7:8",
@@ -192,11 +187,11 @@
               },
               {
                 "constant": false,
-                "id": 9533,
+                "id": 9286,
                 "name": "tExpiry",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 9540,
+                "scope": 9293,
                 "src": "919:15:8",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -205,7 +200,7 @@
                   "typeString": "uint256"
                 },
                 "typeName": {
-                  "id": 9532,
+                  "id": 9285,
                   "name": "uint256",
                   "nodeType": "ElementaryTypeName",
                   "src": "919:7:8",
@@ -219,11 +214,11 @@
               },
               {
                 "constant": false,
-                "id": 9535,
+                "id": 9288,
                 "name": "receiver",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 9540,
+                "scope": 9293,
                 "src": "945:16:8",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -232,7 +227,7 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 9534,
+                  "id": 9287,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
                   "src": "945:7:8",
@@ -247,11 +242,11 @@
               },
               {
                 "constant": false,
-                "id": 9537,
+                "id": 9290,
                 "name": "series",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 9540,
+                "scope": 9293,
                 "src": "972:13:8",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -260,7 +255,7 @@
                   "typeString": "bytes4"
                 },
                 "typeName": {
-                  "id": 9536,
+                  "id": 9289,
                   "name": "bytes4",
                   "nodeType": "ElementaryTypeName",
                   "src": "972:6:8",
@@ -274,11 +269,11 @@
               },
               {
                 "constant": false,
-                "id": 9539,
+                "id": 9292,
                 "name": "symbol",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 9540,
+                "scope": 9293,
                 "src": "996:13:8",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -287,7 +282,7 @@
                   "typeString": "bytes4"
                 },
                 "typeName": {
-                  "id": 9538,
+                  "id": 9291,
                   "name": "bytes4",
                   "nodeType": "ElementaryTypeName",
                   "src": "996:6:8",
@@ -302,29 +297,177 @@
             ],
             "name": "Primes",
             "nodeType": "StructDefinition",
-            "scope": 9541,
+            "scope": 9305,
             "src": "757:260:8",
+            "visibility": "public"
+          },
+          {
+            "canonicalName": "Instruments.PrimeOption",
+            "id": 9304,
+            "members": [
+              {
+                "constant": false,
+                "id": 9295,
+                "name": "qUnderlying",
+                "nodeType": "VariableDeclaration",
+                "overrides": null,
+                "scope": 9304,
+                "src": "1055:19:8",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 9294,
+                  "name": "uint256",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1055:7:8",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "value": null,
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 9297,
+                "name": "aUnderlying",
+                "nodeType": "VariableDeclaration",
+                "overrides": null,
+                "scope": 9304,
+                "src": "1085:19:8",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                },
+                "typeName": {
+                  "id": 9296,
+                  "name": "address",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1085:7:8",
+                  "stateMutability": "nonpayable",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  }
+                },
+                "value": null,
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 9299,
+                "name": "qStrike",
+                "nodeType": "VariableDeclaration",
+                "overrides": null,
+                "scope": 9304,
+                "src": "1115:15:8",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 9298,
+                  "name": "uint256",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1115:7:8",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "value": null,
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 9301,
+                "name": "aStrike",
+                "nodeType": "VariableDeclaration",
+                "overrides": null,
+                "scope": 9304,
+                "src": "1141:15:8",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                },
+                "typeName": {
+                  "id": 9300,
+                  "name": "address",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1141:7:8",
+                  "stateMutability": "nonpayable",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  }
+                },
+                "value": null,
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 9303,
+                "name": "tExpiry",
+                "nodeType": "VariableDeclaration",
+                "overrides": null,
+                "scope": 9304,
+                "src": "1167:15:8",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 9302,
+                  "name": "uint256",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1167:7:8",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "value": null,
+                "visibility": "internal"
+              }
+            ],
+            "name": "PrimeOption",
+            "nodeType": "StructDefinition",
+            "scope": 9305,
+            "src": "1025:165:8",
             "visibility": "public"
           }
         ],
-        "scope": 9542,
-        "src": "103:917:8"
+        "scope": 9306,
+        "src": "103:1090:8"
       }
     ],
-    "src": "0:1020:8"
+    "src": "0:1193:8"
   },
   "legacyAST": {
     "absolutePath": "/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/Instruments.sol",
     "exportedSymbols": {
       "Instruments": [
-        9541
+        9305
       ]
     },
-    "id": 9542,
+    "id": 9306,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 9520,
+        "id": 9274,
         "literals": [
           "solidity",
           "^",
@@ -339,31 +482,26 @@
         "baseContracts": [],
         "contractDependencies": [],
         "contractKind": "library",
-        "documentation": {
-          "id": 9521,
-          "nodeType": "StructuredDocumentation",
-          "src": "27:74:8",
-          "text": "@title Primitive's Instruments\n@author Primitive Finance"
-        },
+        "documentation": "@title Primitive's Instruments\n@author Primitive Finance",
         "fullyImplemented": true,
-        "id": 9541,
+        "id": 9305,
         "linearizedBaseContracts": [
-          9541
+          9305
         ],
         "name": "Instruments",
         "nodeType": "ContractDefinition",
         "nodes": [
           {
             "canonicalName": "Instruments.Primes",
-            "id": 9540,
+            "id": 9293,
             "members": [
               {
                 "constant": false,
-                "id": 9523,
+                "id": 9276,
                 "name": "writer",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 9540,
+                "scope": 9293,
                 "src": "782:14:8",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -372,7 +510,7 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 9522,
+                  "id": 9275,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
                   "src": "782:7:8",
@@ -387,11 +525,11 @@
               },
               {
                 "constant": false,
-                "id": 9525,
+                "id": 9278,
                 "name": "qUnderlying",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 9540,
+                "scope": 9293,
                 "src": "807:19:8",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -400,7 +538,7 @@
                   "typeString": "uint256"
                 },
                 "typeName": {
-                  "id": 9524,
+                  "id": 9277,
                   "name": "uint256",
                   "nodeType": "ElementaryTypeName",
                   "src": "807:7:8",
@@ -414,11 +552,11 @@
               },
               {
                 "constant": false,
-                "id": 9527,
+                "id": 9280,
                 "name": "aUnderlying",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 9540,
+                "scope": 9293,
                 "src": "837:19:8",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -427,7 +565,7 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 9526,
+                  "id": 9279,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
                   "src": "837:7:8",
@@ -442,11 +580,11 @@
               },
               {
                 "constant": false,
-                "id": 9529,
+                "id": 9282,
                 "name": "qStrike",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 9540,
+                "scope": 9293,
                 "src": "867:15:8",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -455,7 +593,7 @@
                   "typeString": "uint256"
                 },
                 "typeName": {
-                  "id": 9528,
+                  "id": 9281,
                   "name": "uint256",
                   "nodeType": "ElementaryTypeName",
                   "src": "867:7:8",
@@ -469,11 +607,11 @@
               },
               {
                 "constant": false,
-                "id": 9531,
+                "id": 9284,
                 "name": "aStrike",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 9540,
+                "scope": 9293,
                 "src": "893:15:8",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -482,7 +620,7 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 9530,
+                  "id": 9283,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
                   "src": "893:7:8",
@@ -497,11 +635,11 @@
               },
               {
                 "constant": false,
-                "id": 9533,
+                "id": 9286,
                 "name": "tExpiry",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 9540,
+                "scope": 9293,
                 "src": "919:15:8",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -510,7 +648,7 @@
                   "typeString": "uint256"
                 },
                 "typeName": {
-                  "id": 9532,
+                  "id": 9285,
                   "name": "uint256",
                   "nodeType": "ElementaryTypeName",
                   "src": "919:7:8",
@@ -524,11 +662,11 @@
               },
               {
                 "constant": false,
-                "id": 9535,
+                "id": 9288,
                 "name": "receiver",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 9540,
+                "scope": 9293,
                 "src": "945:16:8",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -537,7 +675,7 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 9534,
+                  "id": 9287,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
                   "src": "945:7:8",
@@ -552,11 +690,11 @@
               },
               {
                 "constant": false,
-                "id": 9537,
+                "id": 9290,
                 "name": "series",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 9540,
+                "scope": 9293,
                 "src": "972:13:8",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -565,7 +703,7 @@
                   "typeString": "bytes4"
                 },
                 "typeName": {
-                  "id": 9536,
+                  "id": 9289,
                   "name": "bytes4",
                   "nodeType": "ElementaryTypeName",
                   "src": "972:6:8",
@@ -579,11 +717,11 @@
               },
               {
                 "constant": false,
-                "id": 9539,
+                "id": 9292,
                 "name": "symbol",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 9540,
+                "scope": 9293,
                 "src": "996:13:8",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -592,7 +730,7 @@
                   "typeString": "bytes4"
                 },
                 "typeName": {
-                  "id": 9538,
+                  "id": 9291,
                   "name": "bytes4",
                   "nodeType": "ElementaryTypeName",
                   "src": "996:6:8",
@@ -607,24 +745,172 @@
             ],
             "name": "Primes",
             "nodeType": "StructDefinition",
-            "scope": 9541,
+            "scope": 9305,
             "src": "757:260:8",
+            "visibility": "public"
+          },
+          {
+            "canonicalName": "Instruments.PrimeOption",
+            "id": 9304,
+            "members": [
+              {
+                "constant": false,
+                "id": 9295,
+                "name": "qUnderlying",
+                "nodeType": "VariableDeclaration",
+                "overrides": null,
+                "scope": 9304,
+                "src": "1055:19:8",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 9294,
+                  "name": "uint256",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1055:7:8",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "value": null,
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 9297,
+                "name": "aUnderlying",
+                "nodeType": "VariableDeclaration",
+                "overrides": null,
+                "scope": 9304,
+                "src": "1085:19:8",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                },
+                "typeName": {
+                  "id": 9296,
+                  "name": "address",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1085:7:8",
+                  "stateMutability": "nonpayable",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  }
+                },
+                "value": null,
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 9299,
+                "name": "qStrike",
+                "nodeType": "VariableDeclaration",
+                "overrides": null,
+                "scope": 9304,
+                "src": "1115:15:8",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 9298,
+                  "name": "uint256",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1115:7:8",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "value": null,
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 9301,
+                "name": "aStrike",
+                "nodeType": "VariableDeclaration",
+                "overrides": null,
+                "scope": 9304,
+                "src": "1141:15:8",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                },
+                "typeName": {
+                  "id": 9300,
+                  "name": "address",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1141:7:8",
+                  "stateMutability": "nonpayable",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  }
+                },
+                "value": null,
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 9303,
+                "name": "tExpiry",
+                "nodeType": "VariableDeclaration",
+                "overrides": null,
+                "scope": 9304,
+                "src": "1167:15:8",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 9302,
+                  "name": "uint256",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "1167:7:8",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "value": null,
+                "visibility": "internal"
+              }
+            ],
+            "name": "PrimeOption",
+            "nodeType": "StructDefinition",
+            "scope": 9305,
+            "src": "1025:165:8",
             "visibility": "public"
           }
         ],
-        "scope": 9542,
-        "src": "103:917:8"
+        "scope": 9306,
+        "src": "103:1090:8"
       }
     ],
-    "src": "0:1020:8"
+    "src": "0:1193:8"
   },
   "compiler": {
     "name": "solc",
-    "version": "0.6.5+commit.f956cc89.Emscripten.clang"
+    "version": "0.6.2+commit.bacdbe57.Emscripten.clang"
   },
   "networks": {},
   "schemaVersion": "3.0.23",
-  "updatedAt": "2020-04-14T02:24:19.154Z",
+  "updatedAt": "2020-04-14T03:36:06.806Z",
   "devdoc": {
     "author": "Primitive Finance",
     "methods": {},

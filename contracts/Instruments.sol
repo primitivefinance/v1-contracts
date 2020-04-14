@@ -28,4 +28,12 @@ library Instruments {
         bytes4 series;
         bytes4 symbol;
     }
+
+    struct PrimeOption {
+        uint256 qUnderlying;
+        address aUnderlying;
+        uint256 qStrike;
+        address aStrike;
+        uint256 tExpiry;
+    }
 }

@@ -62,7 +62,6 @@ contract Options is Ownable, ERC721Holder {
 
         _prime20 = new PrimeERC20(
             name,
-            isCall,
             address(_prime)
         );
 

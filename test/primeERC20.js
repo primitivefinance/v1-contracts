@@ -255,7 +255,8 @@ contract('PrimeERC20', accounts => {
 
             it('reverts if rPulp is less than qStrike', async () => {
                 let irPulp = await _rPulp.balanceOf(userA);
-                let ratio = await _prime20._strikePrice();
+                console.log((await _prime20.option()).qStrike);
+                let ratio = await _prime20.option();
                 let qStrike = oneEther * ratio / toWei('1');
                 await truffleAssert.reverts(
                     _prime20.withdraw(
@@ -269,7 +270,7 @@ contract('PrimeERC20', accounts => {
                 await _prime20.deposit(twoEther, {from: userA, value: twoEther});
                 let irPulp = await _rPulp.balanceOf(userA);
                 console.log((await fromWei(await _strike.balanceOf(_prime20.address))));
-                let ratio = await _prime20._strikePrice();
+                let ratio = await _prime20.option();
                 let qStrike = oneEther * ratio / toWei('1');
                 await truffleAssert.reverts(
                     _prime20.withdraw(
@@ -282,7 +283,7 @@ contract('PrimeERC20', accounts => {
             it('withdraws strike assets', async () => {
                 let irPulp = await _rPulp.balanceOf(userA);
                 let iStrike = await _strike.balanceOf(userA);
-                let ratio = await _prime20._strikePrice();
+                let ratio = await _prime20.option();
                 let qStrike = oneEther * strikeAmount / toWei('1');
                 await _prime20.withdraw((oneEther * strikeAmount / toWei('1')).toString(), {from: userA, value: 0});
                 let erPulp = await _rPulp.balanceOf(userA);
@@ -305,7 +306,7 @@ contract('PrimeERC20', accounts => {
 
             it('reverts if rPulp is less than qStrike', async () => {
                 let irPulp = await _rPulp.balanceOf(userA);
-                let ratio = await _prime20._strikePrice();
+                let ratio = await _prime20.option();
                 let qStrike = oneEther * ratio / toWei('1');
                 await truffleAssert.reverts(
                     _prime20.close(
@@ -331,8 +332,8 @@ contract('PrimeERC20', accounts => {
                 let irPulp = await _rPulp.balanceOf(userA);
                 let ioPulp = await _prime20.balanceOf(userA);
                 let iEth = await getBalance(userA);
-                let ratio = await _prime20._strikePrice();
-                let qStrike = oneEther * ratio / toWei('1');
+                let ratio = await _prime20.option();
+                let qStrike = oneEther*1 * strikeAmount*1 / toWei('1');
                 await _prime20.close(oneEther, {from: userA, value: 0});
                 let erPulp = await _rPulp.balanceOf(userA);
                 let eoPulp = await _prime20.balanceOf(userA);

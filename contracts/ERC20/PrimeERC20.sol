@@ -1,4 +1,4 @@
-pragma solidity ^0.6.5;
+pragma solidity ^0.6.2;
 
 /**
  * @title Primitive's ERC-20 Option
@@ -9,8 +9,8 @@ import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
-import '../Instruments.sol';
 import './InterfaceERC20.sol';
+import '../Instruments.sol';
 
 contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
     using SafeMath for uint256;
@@ -20,20 +20,14 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
     uint256 public _parentToken;
     address public _instrumentController;
 
-    Instruments.Primes public option;
+    Instruments.PrimeOption public option;
 
     IPrime public _prime;
     IRPulp public _rPulp;
     IEPulp public _ePulp;
 
-    /* ERC20 public _underlying;
-    ERC20 public _strike;
-    uint256 public _strikePrice;
-    uint256 public _underlyingPrice; */
-
     constructor(
         string memory name,
-        bool isCall,
         address prime
     ) 
         public
@@ -59,21 +53,13 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
             bytes4 series,
             bytes4 symbol
         ) = _prime.getPrime(tokenId);
-        option = Instruments.Primes(
-            writer,
+        option = Instruments.PrimeOption(
             qUnderlying,
             aUnderlying,
             qStrike,
             aStrike,
-            tExpiry,
-            receiver,
-            series,
-            symbol
+            tExpiry
         );
-        /* _underlying = ERC20(aUnderlying);
-        _strike = ERC20(aStrike);
-        _strikePrice = qStrike;
-        _underlyingPrice = qUnderlying; */
         return tokenId;
     }
 
@@ -86,7 +72,7 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
     function setPool(address ePool) public returns (bool) {
         require(msg.sender == _instrumentController, 'ERR_NOT_OWNER'); // OWNER IS OPTIONS.sol
         _ePulp = IEPulp(ePool);
-        _approve(address(this), ePool, 2**256-1 ether);
+        _approve(address(this), ePool, 2**255-1 ether);
         return true;
     }
 
@@ -113,7 +99,7 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
     ) internal returns (bool) {
         if(isEthCallOption()) {
             require(msg.value > 0 && msg.value == amount, "ERR_ZERO");
-            (uint256 qoPulp, uint256 qrPulp, bool mintSuccess) = mintPrimeOptions(
+            (bool mintSuccess) = mintPrimeOptions(
                 amount,
                 option.qStrike,
                 option.qUnderlying,
@@ -123,9 +109,9 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
             require(mintSuccess, "ERR_MINT_OPTIONS");
             return mintSuccess;
         } else {
-            ERC20 _underlying = ERC20(option.aUnderlying);
+            IERC20 _underlying = IERC20(option.aUnderlying);
             verifyBalance(_underlying.balanceOf(rPulpReceiver), amount, "ERR_BAL_UNDERLYING");
-            (uint256 qoPulp, uint256 qrPulp, bool mintSuccess) = mintPrimeOptions(
+            (bool mintSuccess) = mintPrimeOptions(
                 amount,
                 option.qUnderlying,
                 option.qStrike,
@@ -147,7 +133,7 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
         uint256 denominator,
         address oPulpReceiver,
         address rPulpReceiver
-    ) internal returns (uint256, uint256, bool) {
+    ) internal returns (bool) {
         uint256 qrPulp = qoPulp.mul(numerator).div(denominator);
 
         _rPulp.mint(
@@ -157,7 +143,7 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
         
         _mint(oPulpReceiver, qoPulp);
         emit Deposit(msg.sender, qoPulp, qrPulp);
-        return (qoPulp, qrPulp, true);
+        return (true);
     }
 
     /**
@@ -212,10 +198,10 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
         if(isEthPutOption()) {
             verifyBalance(msg.value, qStrike, "ERR_BAL_UNDERLYING");
             _burn(msg.sender, qUnderlying);
-            ERC20 _underlying = ERC20(option.aUnderlying);
+            IERC20 _underlying = IERC20(option.aUnderlying);
             return _underlying.transferFrom(address(this), msg.sender, qStrike);
         } else {
-            ERC20 _strike = ERC20(option.aStrike);
+            IERC20 _strike = IERC20(option.aStrike);
             verifyBalance(_strike.balanceOf(msg.sender), qStrike, "ERR_BAL_STRIKE");
             _burn(msg.sender, qUnderlying);
             _strike.transferFrom(msg.sender, address(this), qStrike);
@@ -257,7 +243,7 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
                 rPulpToBurn = amount.mul(1 ether).div(option.qStrike);
             }
 
-            ERC20 _strike = ERC20(option.aStrike);
+            IERC20 _strike = IERC20(option.aStrike);
             verifyBalance(rPulpBalance, rPulpToBurn, "ERR_BAL_RPULP");
             verifyBalance(_strike.balanceOf(address(this)), amount, "ERR_BAL_STRIKE");
 
@@ -284,7 +270,7 @@ contract PrimeERC20 is ERC20Detailed, ERC20, ReentrancyGuard {
         if(isEthCallOption()) {
             return sendEther(msg.sender, qUnderlying);
         } else {
-            ERC20 _underlying = ERC20(option.aUnderlying);
+            IERC20 _underlying = IERC20(option.aUnderlying);
             return _underlying.transferFrom(address(this), msg.sender, qUnderlying);
         }
     }
