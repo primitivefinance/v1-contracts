@@ -108,7 +108,7 @@ contract('PrimeERC20', accounts => {
 
         it('should be a call option', async () => {
             let isCall = await _option.isEthCallOption();
-            console.log({isCall});
+            assert.strictEqual(isCall, true, 'Not Call but should be');
         });
 
         describe('deposit()', () => {
@@ -127,7 +127,6 @@ contract('PrimeERC20', accounts => {
             it('mints rPulp and oPulp', async () => {
                 let rPulp = qStrike;
                 let oPulp = (oneEther).toString();
-                console.log({oneEther})
                 await _option.deposit(oneEther, {from: userA, value: oneEther});
                 let rPulpBal = (await _redeem.balanceOf(userA)).toString();
                 let oPulpBal = (await _option.balanceOf(userA)).toString();
@@ -170,7 +169,6 @@ contract('PrimeERC20', accounts => {
                 let outputEth = await _exchange.getInputPrice(qInput, rInput, rOutput);
                 let rPulpBalBefore = await _redeem.balanceOf(userA);
                 let oPulpBalBefore = (await _option.balanceOf(userA)).toString();
-                console.log(oneEther, (oneEther * 0.9).toString(),);
                 await _option.depositAndLimitSell(oneEther, (oneEther * 0.9).toString(), {from: userA, value: oneEther});
                 let rPulpBal = (await _redeem.balanceOf(userA)).toString();
                 let oPulpBal = (await _option.balanceOf(userA)).toString();
@@ -238,10 +236,6 @@ contract('PrimeERC20', accounts => {
             });
 
             it('reverts if rPulp is less than qStrike', async () => {
-                let irPulp = await _redeem.balanceOf(userA);
-                console.log((await _option.option()).qStrike);
-                let ratio = await _option.option();
-                let qStrike = oneEther * ratio / toWei('1');
                 await truffleAssert.reverts(
                     _option.withdraw(
                         millionEther,
@@ -252,10 +246,6 @@ contract('PrimeERC20', accounts => {
 
             it('reverts if prime contract doesnt have strike assets', async () => {
                 await _option.deposit(twoEther, {from: userA, value: twoEther});
-                let irPulp = await _redeem.balanceOf(userA);
-                console.log((await fromWei(await _strike.balanceOf(_option.address))));
-                let ratio = await _option.option();
-                let qStrike = oneEther * ratio / toWei('1');
                 await truffleAssert.reverts(
                     _option.withdraw(
                         (toWei('2')).toString(),
@@ -265,9 +255,7 @@ contract('PrimeERC20', accounts => {
             });
 
             it('withdraws strike assets', async () => {
-                let irPulp = await _redeem.balanceOf(userA);
                 let iStrike = await _strike.balanceOf(userA);
-                let ratio = await _option.option();
                 let beforeStrike = oneEther * qStrike / toWei('1');
                 await _option.withdraw((oneEther * qStrike / toWei('1')).toString(), {from: userA, value: 0});
                 let erPulp = await _redeem.balanceOf(userA);
@@ -324,7 +312,6 @@ contract('PrimeERC20', accounts => {
 
             it('opens pool position - gets mPulp', async () => {
                 // FIX - NOT APART OF ERC20 TEST
-                console.log(await _pool._optionMarkets(0));
                 await _pool.deposit(oneEther, {from: userA, value: oneEther});
             });
 
