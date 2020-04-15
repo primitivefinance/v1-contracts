@@ -21,6 +21,7 @@ contract('PrimeERC20', accounts => {
     const ERR_BAL_RPULP = "ERR_BAL_RPULP";
     const ERR_BAL_ETH = "ERR_BAL_ETH";
     const ERR_BAL_TOKENS = "ERR_BAL_TOKENS";
+    const ERR_BAL_OPTIONS = "ERR_BAL_OPTIONS";
     const MAINNET_COMPOUND_ETH = '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5';
     const oneEther = toWei('0.1');
     const twoEther = toWei('0.2');
@@ -56,7 +57,8 @@ contract('PrimeERC20', accounts => {
         _redeem,
         _pool,
         _option,
-        _exchange
+        _exchange,
+        totalLiquidity
         ;
 
     async function getGas(func, name) {
@@ -101,7 +103,7 @@ contract('PrimeERC20', accounts => {
         userB = Bob;
     });
 
-    describe('PrimeERC20.sol - Eth Call Option', () => {
+    describe('Eth Call Option', () => {
         beforeEach(async () => {
 
         });
@@ -111,7 +113,7 @@ contract('PrimeERC20', accounts => {
             assert.strictEqual(isCall, true, 'Not Call but should be');
         });
 
-        describe('deposit()', () => {
+        /* describe('PrimeOption.deposit()', () => {
 
             it('revert if msg.value = 0', async () => {
                 await truffleAssert.reverts(
@@ -135,7 +137,7 @@ contract('PrimeERC20', accounts => {
             });
         });
 
-        describe('depositAndLimitSell()', () => {
+        describe('PrimeOption.depositAndLimitSell()', () => {
             beforeEach(async () => {
 
             });
@@ -187,7 +189,7 @@ contract('PrimeERC20', accounts => {
         });
 
         
-        describe('swap()', () => {
+        describe('PrimeOption.swap()', () => {
             beforeEach(async () => {
 
             });
@@ -230,7 +232,7 @@ contract('PrimeERC20', accounts => {
         });
 
         
-        describe('withdraw()', () => {
+        describe('PrimeOption.withdraw()', () => {
             beforeEach(async () => {
 
             });
@@ -266,7 +268,7 @@ contract('PrimeERC20', accounts => {
         });
 
         
-        describe('close()', () => {
+        describe('PrimeOption.close()', () => {
             beforeEach(async () => {
 
             });
@@ -306,15 +308,265 @@ contract('PrimeERC20', accounts => {
                 assert.strictEqual((eoPulp*1 - oneEther*1 - eoPulp) <= ROUNDING_ERR, true, 'oPulp not equal');
                 assert.strictEqual((iEth*1 + oneEther*1 - eEth) <= ROUNDING_ERR, true, `expectedEth: ${eEth} actual: ${iEth*1 + oneEther*1 - eEth}`);
             });
-        });
+        }); */
 
-        describe('Market Maker Pool deposit()', () => {
+        describe('Exchange.addLiquidity()', () => {
 
-            it('opens pool position - gets mPulp', async () => {
-                // FIX - NOT APART OF ERC20 TEST
-                await _pool.deposit(oneEther, {from: userA, value: oneEther});
+            it('reverts if minQLiquidity is 0', async () => {
+                await truffleAssert.reverts(
+                    _exchange.addLiquidity(
+                        0,
+                        oneEther,
+                        {from: userA, value: 0}
+                    ),
+                    ERR_ZERO
+                );
             });
 
+            it('reverts if maxQTokens is 0', async () => {
+                await truffleAssert.reverts(
+                    _exchange.addLiquidity(
+                        oneEther,
+                        0,
+                        {from: userA, value: 0}
+                    ),
+                    ERR_ZERO
+                );
+            });
+
+            it('reverts if initializing liquidity with 0 msg.value', async () => {
+                await truffleAssert.reverts(
+                    _exchange.addLiquidity(
+                        oneEther,
+                        oneEther,
+                        {from: userA, value: 0}
+                    ),
+                    ERR_ZERO
+                );
+            });
+
+            it('reverts if initializing liquidity without having tokens', async () => {
+                await truffleAssert.fails(
+                    _exchange.addLiquidity(
+                        oneEther,
+                        oneEther,
+                        {from: userA, value: oneEther}
+                    ),
+                    truffleAssert.ErrorType.REVERT
+                );
+            });
+
+            it('reverts if initializing liquidity with 0 msg.value', async () => {
+                await truffleAssert.fails(
+                    _exchange.addLiquidity(
+                        oneEther,
+                        oneEther,
+                        {from: userA, value: 0}
+                    ),
+                    ERR_ZERO
+                );
+            });
+            
+
+            it('initializes liquidity', async () => {
+                let addAmount = twoEther;
+                await _option.deposit(twoEther, {from: userA, value: twoEther});
+                await _option.approve(_exchange.address, millionEther, {from: userA});
+
+                let balance = await _exchange.balanceOf(userA);
+                
+                let addLiquidity = await _exchange.addLiquidity(twoEther, twoEther, {from: userA, value: twoEther});
+                await truffleAssert.eventEmitted(addLiquidity, 'AddLiquidity');
+
+                let actual = await _exchange.balanceOf(userA);
+                let expected = balance*1 + oneEther*1;
+                totalLiquidity += oneEther;
+                assert.strictEqual((expected - actual) <= ROUNDING_ERR, true, `${expected} != ${actual}`);
+            });
+
+            it('adds liquidity', async () => {
+                await _option.deposit(oneEther, {from: userA, value: oneEther});
+                await _option.approve(_exchange.address, millionEther, {from: userA});
+
+                let balance = await _exchange.balanceOf(userA);
+                let minQLiquidity = await _exchange.newLiquidity(oneEther);
+                let maxQTokens = await _exchange.newTokens(oneEther);
+                console.log(await fromWei(minQLiquidity), await fromWei(maxQTokens));
+                let addLiquidity = await _exchange.addLiquidity(minQLiquidity, maxQTokens, {from: userA, value: oneEther});
+                await truffleAssert.eventEmitted(addLiquidity, 'AddLiquidity');
+
+                let actual = await _exchange.balanceOf(userA);
+                let expected = balance*1 + oneEther*1;
+                totalLiquidity + oneEther;
+                assert.strictEqual((expected - actual) <= ROUNDING_ERR, true, `${expected} != ${actual}`);
+            });
+
+        });
+
+        describe('Exchange.swapTokensToEth()', () => {
+
+            it('reverts if qTokens is 0', async () => {
+                await _option.deposit(twoEther, {from: userA, value: twoEther});
+                await truffleAssert.reverts(
+                    _exchange.swapTokensToEth(
+                        0,
+                        oneEther,
+                        userA,
+                        {from: userA, value: 0}
+                    ),
+                    ERR_BAL_ETH
+                );
+            });
+
+            it('reverts if minQEth is 0', async () => {
+                await truffleAssert.reverts(
+                    _exchange.swapTokensToEth(
+                        oneEther,
+                        0,
+                        userA,
+                        {from: userA, value: 0}
+                    ),
+                    ERR_ZERO
+                );
+            });
+
+            it('reverts if user doesnt have enough tokens in their balance', async () => {
+                await truffleAssert.reverts(
+                    _exchange.swapTokensToEth(
+                        oneEther,
+                        oneEther,
+                        {from: userB, value: 0}
+                    ),
+                    ERR_BAL_OPTIONS
+                );
+            });
+
+            it('reverts if minQEth is too high', async () => {
+                await truffleAssert.reverts(
+                    _exchange.swapTokensToEth(
+                        oneEther,
+                        tenEther,
+                        {from: userA, value: oneEther}
+                    ),
+                    ERR_BAL_ETH
+                );
+            });
+
+            it('swaps tokens to ether', async () => {
+                let balance = await getBalance(userA);
+                let qTokens = twoEther;
+                let minQEth = oneEther;
+                await _exchange.swapTokensToEth(qTokens, minQEth, userA, {from: userA, value: 0});
+                let tokenReserves = await _exchange.tokenReserves();
+                let etherReserves = await _exchange.etherReserves();
+                let delta = await _exchange.getInputPrice(qTokens, tokenReserves, etherReserves);
+                let actual = await getBalance(userA);
+                let actualDelta = (actual*1 - balance*1 - delta*1);
+                assert.strictEqual(actualDelta <= ROUNDING_ERR, true, `${actual} != ${actualDelta}`);
+            });
+
+        });
+
+        describe('Exchange.swapEthToTokens()', () => {
+
+            it('reverts if qTokens is 0', async () => {
+                await truffleAssert.reverts(
+                    _exchange.swapEthToTokens(
+                        0,
+                        {from: userA, value: oneEther}
+                    ),
+                    ERR_ZERO
+                );
+            });
+
+            it('reverts if maxQEth (msg.value) is 0', async () => {
+                await truffleAssert.reverts(
+                    _exchange.swapEthToTokens(
+                        oneEther,
+                        {from: userA, value: 0}
+                    ),
+                    ERR_ZERO
+                );
+            });
+
+            it('swaps ether to tokens', async () => {
+                let balance = await _option.balanceOf(userA);
+                let qTokens = oneEther;
+                let maxQEth = twoEther;
+                await _exchange.swapEthToTokens(qTokens, {from: userA, value: maxQEth});
+                let tokenReserves = await _exchange.tokenReserves();
+                let etherReserves = await _exchange.etherReserves();
+                etherReserves = etherReserves*1 - maxQEth*1;
+                let delta = await _exchange.getOutputPrice(qTokens, etherReserves, tokenReserves);
+                let actual = await _option.balanceOf(userA);
+                let actualDelta = (actual*1 - balance*1 - delta*1);
+                assert.strictEqual(actualDelta <= ROUNDING_ERR, true, `${actual} != ${actualDelta}`);
+            });
+        });
+
+        describe('Exchange.removeLiquidity()', () => {
+
+            it('reverts if qLiquidity is 0', async () => {
+                await truffleAssert.reverts(
+                    _exchange.removeLiquidity(
+                        0,
+                        oneEther,
+                        oneEther,
+                        {from: userA, value: 0}
+                    ),
+                    ERR_ZERO
+                );
+            });
+
+            it('reverts if minQEth is 0', async () => {
+                await truffleAssert.reverts(
+                    _exchange.removeLiquidity(
+                        oneEther,
+                        0,
+                        oneEther,
+                        {from: userA, value: 0}
+                    ),
+                    ERR_ZERO
+                );
+            });
+
+            it('reverts if minQTokens is 0', async () => {
+                await truffleAssert.reverts(
+                    _exchange.removeLiquidity(
+                        oneEther,
+                        oneEther,
+                        0,
+                        {from: userA, value: 0}
+                    ),
+                    ERR_ZERO
+                );
+            });
+
+            it('removes liquidity', async () => {
+                let balanceOption = await _option.balanceOf(userA);
+                let balanceLiquidity = await _exchange.balanceOf(userA);
+                let balanceEther = await getBalance(userA);
+
+                let qLiquidity = oneEther;
+                let minQEth = await _exchange.ethLiquidity(oneEther);
+                let minQTokens = await _exchange.tokenLiquidity(oneEther);
+                await _exchange.removeLiquidity(qLiquidity, minQEth, minQTokens, {from: userA, value: 0});
+
+                let deltaBalanceOption = minQTokens;
+                let deltaBalanceLiquidity = qLiquidity;
+                let deltaBalanceEther = minQEth;
+
+                let actualBalanceOption = await _option.balanceOf(userA);
+                let actualBalanceLiquidity = await _exchange.balanceOf(userA);
+                let actualBalanceEther = await getBalance(userA);
+
+                let actualDeltaBalanceOption = (actualBalanceOption*1 - deltaBalanceOption*1 - balanceOption*1);
+                let actualDeltaBalanceLiquidity = (actualBalanceLiquidity*1 - deltaBalanceLiquidity*1 - balanceLiquidity*1);
+                let actualDeltaBalanceEther = (actualBalanceEther*1 - deltaBalanceEther*1 - balanceEther*1);
+                assert.strictEqual(actualDeltaBalanceOption <= ROUNDING_ERR, true, `${actualBalanceOption} != ${actualDeltaBalanceOption}`);
+                assert.strictEqual(actualDeltaBalanceLiquidity <= ROUNDING_ERR, true, `${actualBalanceLiquidity} != ${actualDeltaBalanceLiquidity}`);
+                assert.strictEqual(actualDeltaBalanceEther <= ROUNDING_ERR, true, `${actualBalanceEther} != ${actualDeltaBalanceEther}`);
+            });
         });
     });
 })

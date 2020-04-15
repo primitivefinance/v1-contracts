@@ -42,8 +42,7 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function",
-      "constant": true
+      "type": "function"
     },
     {
       "inputs": [],
@@ -56,8 +55,7 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function",
-      "constant": true
+      "type": "function"
     },
     {
       "inputs": [],
@@ -70,8 +68,7 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function",
-      "constant": true
+      "type": "function"
     },
     {
       "inputs": [],
@@ -143,14 +140,14 @@
     "absolutePath": "/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/controller/ControllerPool.sol",
     "exportedSymbols": {
       "ControllerPool": [
-        3601
+        3617
       ]
     },
-    "id": 3602,
+    "id": 3618,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 3540,
+        "id": 3556,
         "literals": [
           "solidity",
           "^",
@@ -163,10 +160,10 @@
       {
         "absolutePath": "/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/PrimePool.sol",
         "file": "../PrimePool.sol",
-        "id": 3541,
+        "id": 3557,
         "nodeType": "ImportDirective",
-        "scope": 3602,
-        "sourceUnit": 2545,
+        "scope": 3618,
+        "sourceUnit": 2561,
         "src": "114:26:10",
         "symbolAliases": [],
         "unitAlias": ""
@@ -174,10 +171,10 @@
       {
         "absolutePath": "@openzeppelin/contracts/ownership/Ownable.sol",
         "file": "@openzeppelin/contracts/ownership/Ownable.sol",
-        "id": 3542,
+        "id": 3558,
         "nodeType": "ImportDirective",
-        "scope": 3602,
-        "sourceUnit": 6582,
+        "scope": 3618,
+        "sourceUnit": 6598,
         "src": "142:55:10",
         "symbolAliases": [],
         "unitAlias": ""
@@ -189,34 +186,34 @@
             "arguments": null,
             "baseName": {
               "contractScope": null,
-              "id": 3543,
+              "id": 3559,
               "name": "Ownable",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 6581,
+              "referencedDeclaration": 6597,
               "src": "228:7:10",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_Ownable_$6581",
+                "typeIdentifier": "t_contract$_Ownable_$6597",
                 "typeString": "contract Ownable"
               }
             },
-            "id": 3544,
+            "id": 3560,
             "nodeType": "InheritanceSpecifier",
             "src": "228:7:10"
           }
         ],
         "contractDependencies": [
-          2544,
-          6191,
-          6581
+          2560,
+          6207,
+          6597
         ],
         "contractKind": "contract",
         "documentation": null,
         "fullyImplemented": true,
-        "id": 3601,
+        "id": 3617,
         "linearizedBaseContracts": [
-          3601,
-          6581,
-          6191
+          3617,
+          6597,
+          6207
         ],
         "name": "ControllerPool",
         "nodeType": "ContractDefinition",
@@ -224,27 +221,27 @@
           {
             "constant": false,
             "functionSelector": "fc2e9e7b",
-            "id": 3546,
+            "id": 3562,
             "name": "_maker",
             "nodeType": "VariableDeclaration",
             "overrides": null,
-            "scope": 3601,
+            "scope": 3617,
             "src": "245:23:10",
             "stateVariable": true,
             "storageLocation": "default",
             "typeDescriptions": {
-              "typeIdentifier": "t_contract$_PrimePool_$2544",
+              "typeIdentifier": "t_contract$_PrimePool_$2560",
               "typeString": "contract PrimePool"
             },
             "typeName": {
               "contractScope": null,
-              "id": 3545,
+              "id": 3561,
               "name": "PrimePool",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 2544,
+              "referencedDeclaration": 2560,
               "src": "245:9:10",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_PrimePool_$2544",
+                "typeIdentifier": "t_contract$_PrimePool_$2560",
                 "typeString": "contract PrimePool"
               }
             },
@@ -253,7 +250,7 @@
           },
           {
             "body": {
-              "id": 3555,
+              "id": 3571,
               "nodeType": "Block",
               "src": "316:48:10",
               "statements": [
@@ -263,11 +260,11 @@
                     "arguments": [
                       {
                         "argumentTypes": null,
-                        "id": 3552,
+                        "id": 3568,
                         "name": "controller",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3548,
+                        "referencedDeclaration": 3564,
                         "src": "345:10:10",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
@@ -282,18 +279,18 @@
                           "typeString": "address"
                         }
                       ],
-                      "id": 3551,
+                      "id": 3567,
                       "name": "transferOwnership",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 6555,
+                      "referencedDeclaration": 6571,
                       "src": "327:17:10",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_nonpayable$_t_address_$returns$__$",
                         "typeString": "function (address)"
                       }
                     },
-                    "id": 3553,
+                    "id": 3569,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -308,14 +305,14 @@
                       "typeString": "tuple()"
                     }
                   },
-                  "id": 3554,
+                  "id": 3570,
                   "nodeType": "ExpressionStatement",
                   "src": "327:29:10"
                 }
               ]
             },
             "documentation": null,
-            "id": 3556,
+            "id": 3572,
             "implemented": true,
             "kind": "constructor",
             "modifiers": [],
@@ -323,16 +320,16 @@
             "nodeType": "FunctionDefinition",
             "overrides": null,
             "parameters": {
-              "id": 3549,
+              "id": 3565,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3548,
+                  "id": 3564,
                   "name": "controller",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3556,
+                  "scope": 3572,
                   "src": "289:18:10",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -341,7 +338,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3547,
+                    "id": 3563,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "289:7:10",
@@ -358,12 +355,12 @@
               "src": "288:20:10"
             },
             "returnParameters": {
-              "id": 3550,
+              "id": 3566,
               "nodeType": "ParameterList",
               "parameters": [],
               "src": "316:0:10"
             },
-            "scope": 3601,
+            "scope": 3617,
             "src": "277:87:10",
             "stateMutability": "nonpayable",
             "virtual": false,
@@ -371,38 +368,38 @@
           },
           {
             "body": {
-              "id": 3581,
+              "id": 3597,
               "nodeType": "Block",
               "src": "447:134:10",
               "statements": [
                 {
                   "assignments": [
-                    3566
+                    3582
                   ],
                   "declarations": [
                     {
                       "constant": false,
-                      "id": 3566,
+                      "id": 3582,
                       "name": "primePool",
                       "nodeType": "VariableDeclaration",
                       "overrides": null,
-                      "scope": 3581,
+                      "scope": 3597,
                       "src": "458:19:10",
                       "stateVariable": false,
                       "storageLocation": "default",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_contract$_PrimePool_$2544",
+                        "typeIdentifier": "t_contract$_PrimePool_$2560",
                         "typeString": "contract PrimePool"
                       },
                       "typeName": {
                         "contractScope": null,
-                        "id": 3565,
+                        "id": 3581,
                         "name": "PrimePool",
                         "nodeType": "UserDefinedTypeName",
-                        "referencedDeclaration": 2544,
+                        "referencedDeclaration": 2560,
                         "src": "458:9:10",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_contract$_PrimePool_$2544",
+                          "typeIdentifier": "t_contract$_PrimePool_$2560",
                           "typeString": "contract PrimePool"
                         }
                       },
@@ -410,17 +407,17 @@
                       "visibility": "internal"
                     }
                   ],
-                  "id": 3571,
+                  "id": 3587,
                   "initialValue": {
                     "argumentTypes": null,
                     "arguments": [
                       {
                         "argumentTypes": null,
-                        "id": 3569,
+                        "id": 3585,
                         "name": "compoundEther",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3558,
+                        "referencedDeclaration": 3574,
                         "src": "494:13:10",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
@@ -435,7 +432,7 @@
                           "typeString": "address"
                         }
                       ],
-                      "id": 3568,
+                      "id": 3584,
                       "isConstant": false,
                       "isLValue": false,
                       "isPure": false,
@@ -443,23 +440,23 @@
                       "nodeType": "NewExpression",
                       "src": "480:13:10",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_function_creation_nonpayable$_t_address_$returns$_t_contract$_PrimePool_$2544_$",
+                        "typeIdentifier": "t_function_creation_nonpayable$_t_address_$returns$_t_contract$_PrimePool_$2560_$",
                         "typeString": "function (address) returns (contract PrimePool)"
                       },
                       "typeName": {
                         "contractScope": null,
-                        "id": 3567,
+                        "id": 3583,
                         "name": "PrimePool",
                         "nodeType": "UserDefinedTypeName",
-                        "referencedDeclaration": 2544,
+                        "referencedDeclaration": 2560,
                         "src": "484:9:10",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_contract$_PrimePool_$2544",
+                          "typeIdentifier": "t_contract$_PrimePool_$2560",
                           "typeString": "contract PrimePool"
                         }
                       }
                     },
-                    "id": 3570,
+                    "id": 3586,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -470,7 +467,7 @@
                     "src": "480:28:10",
                     "tryCall": false,
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_PrimePool_$2544",
+                      "typeIdentifier": "t_contract$_PrimePool_$2560",
                       "typeString": "contract PrimePool"
                     }
                   },
@@ -480,21 +477,21 @@
                 {
                   "expression": {
                     "argumentTypes": null,
-                    "id": 3574,
+                    "id": 3590,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
                     "lValueRequested": false,
                     "leftHandSide": {
                       "argumentTypes": null,
-                      "id": 3572,
+                      "id": 3588,
                       "name": "_maker",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 3546,
+                      "referencedDeclaration": 3562,
                       "src": "519:6:10",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_contract$_PrimePool_$2544",
+                        "typeIdentifier": "t_contract$_PrimePool_$2560",
                         "typeString": "contract PrimePool"
                       }
                     },
@@ -502,24 +499,24 @@
                     "operator": "=",
                     "rightHandSide": {
                       "argumentTypes": null,
-                      "id": 3573,
+                      "id": 3589,
                       "name": "primePool",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 3566,
+                      "referencedDeclaration": 3582,
                       "src": "528:9:10",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_contract$_PrimePool_$2544",
+                        "typeIdentifier": "t_contract$_PrimePool_$2560",
                         "typeString": "contract PrimePool"
                       }
                     },
                     "src": "519:18:10",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_PrimePool_$2544",
+                      "typeIdentifier": "t_contract$_PrimePool_$2560",
                       "typeString": "contract PrimePool"
                     }
                   },
-                  "id": 3575,
+                  "id": 3591,
                   "nodeType": "ExpressionStatement",
                   "src": "519:18:10"
                 },
@@ -529,14 +526,14 @@
                     "arguments": [
                       {
                         "argumentTypes": null,
-                        "id": 3578,
+                        "id": 3594,
                         "name": "primePool",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3566,
+                        "referencedDeclaration": 3582,
                         "src": "563:9:10",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_contract$_PrimePool_$2544",
+                          "typeIdentifier": "t_contract$_PrimePool_$2560",
                           "typeString": "contract PrimePool"
                         }
                       }
@@ -544,11 +541,11 @@
                     "expression": {
                       "argumentTypes": [
                         {
-                          "typeIdentifier": "t_contract$_PrimePool_$2544",
+                          "typeIdentifier": "t_contract$_PrimePool_$2560",
                           "typeString": "contract PrimePool"
                         }
                       ],
-                      "id": 3577,
+                      "id": 3593,
                       "isConstant": false,
                       "isLValue": false,
                       "isPure": true,
@@ -560,7 +557,7 @@
                         "typeString": "type(address)"
                       },
                       "typeName": {
-                        "id": 3576,
+                        "id": 3592,
                         "name": "address",
                         "nodeType": "ElementaryTypeName",
                         "src": "555:7:10",
@@ -570,7 +567,7 @@
                         }
                       }
                     },
-                    "id": 3579,
+                    "id": 3595,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -585,8 +582,8 @@
                       "typeString": "address payable"
                     }
                   },
-                  "functionReturnParameters": 3564,
-                  "id": 3580,
+                  "functionReturnParameters": 3580,
+                  "id": 3596,
                   "nodeType": "Return",
                   "src": "548:25:10"
                 }
@@ -594,20 +591,20 @@
             },
             "documentation": null,
             "functionSelector": "d914cd4b",
-            "id": 3582,
+            "id": 3598,
             "implemented": true,
             "kind": "function",
             "modifiers": [
               {
                 "arguments": null,
-                "id": 3561,
+                "id": 3577,
                 "modifierName": {
                   "argumentTypes": null,
-                  "id": 3560,
+                  "id": 3576,
                   "name": "onlyOwner",
                   "nodeType": "Identifier",
                   "overloadedDeclarations": [],
-                  "referencedDeclaration": 6511,
+                  "referencedDeclaration": 6527,
                   "src": "419:9:10",
                   "typeDescriptions": {
                     "typeIdentifier": "t_modifier$__$",
@@ -622,16 +619,16 @@
             "nodeType": "FunctionDefinition",
             "overrides": null,
             "parameters": {
-              "id": 3559,
+              "id": 3575,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3558,
+                  "id": 3574,
                   "name": "compoundEther",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3582,
+                  "scope": 3598,
                   "src": "389:21:10",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -640,7 +637,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3557,
+                    "id": 3573,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "389:7:10",
@@ -657,16 +654,16 @@
               "src": "388:23:10"
             },
             "returnParameters": {
-              "id": 3564,
+              "id": 3580,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3563,
+                  "id": 3579,
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3582,
+                  "scope": 3598,
                   "src": "438:7:10",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -675,7 +672,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3562,
+                    "id": 3578,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "438:7:10",
@@ -691,7 +688,7 @@
               ],
               "src": "437:9:10"
             },
-            "scope": 3601,
+            "scope": 3617,
             "src": "372:209:10",
             "stateMutability": "nonpayable",
             "virtual": false,
@@ -699,7 +696,7 @@
           },
           {
             "body": {
-              "id": 3599,
+              "id": 3615,
               "nodeType": "Block",
               "src": "672:77:10",
               "statements": [
@@ -709,11 +706,11 @@
                     "arguments": [
                       {
                         "argumentTypes": null,
-                        "id": 3594,
+                        "id": 3610,
                         "name": "primeOption",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3584,
+                        "referencedDeclaration": 3600,
                         "src": "700:11:10",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address_payable",
@@ -730,32 +727,32 @@
                       ],
                       "expression": {
                         "argumentTypes": null,
-                        "id": 3591,
+                        "id": 3607,
                         "name": "_maker",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3546,
+                        "referencedDeclaration": 3562,
                         "src": "683:6:10",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_contract$_PrimePool_$2544",
+                          "typeIdentifier": "t_contract$_PrimePool_$2560",
                           "typeString": "contract PrimePool"
                         }
                       },
-                      "id": 3593,
+                      "id": 3609,
                       "isConstant": false,
                       "isLValue": false,
                       "isPure": false,
                       "lValueRequested": false,
                       "memberName": "addMarket",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 2001,
+                      "referencedDeclaration": 2017,
                       "src": "683:16:10",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_external_nonpayable$_t_address_payable_$returns$_t_address_$",
                         "typeString": "function (address payable) external returns (address)"
                       }
                     },
-                    "id": 3595,
+                    "id": 3611,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -770,26 +767,26 @@
                       "typeString": "address"
                     }
                   },
-                  "id": 3596,
+                  "id": 3612,
                   "nodeType": "ExpressionStatement",
                   "src": "683:29:10"
                 },
                 {
                   "expression": {
                     "argumentTypes": null,
-                    "id": 3597,
+                    "id": 3613,
                     "name": "primeOption",
                     "nodeType": "Identifier",
                     "overloadedDeclarations": [],
-                    "referencedDeclaration": 3584,
+                    "referencedDeclaration": 3600,
                     "src": "730:11:10",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address_payable",
                       "typeString": "address payable"
                     }
                   },
-                  "functionReturnParameters": 3590,
-                  "id": 3598,
+                  "functionReturnParameters": 3606,
+                  "id": 3614,
                   "nodeType": "Return",
                   "src": "723:18:10"
                 }
@@ -797,20 +794,20 @@
             },
             "documentation": null,
             "functionSelector": "93e30633",
-            "id": 3600,
+            "id": 3616,
             "implemented": true,
             "kind": "function",
             "modifiers": [
               {
                 "arguments": null,
-                "id": 3587,
+                "id": 3603,
                 "modifierName": {
                   "argumentTypes": null,
-                  "id": 3586,
+                  "id": 3602,
                   "name": "onlyOwner",
                   "nodeType": "Identifier",
                   "overloadedDeclarations": [],
-                  "referencedDeclaration": 6511,
+                  "referencedDeclaration": 6527,
                   "src": "644:9:10",
                   "typeDescriptions": {
                     "typeIdentifier": "t_modifier$__$",
@@ -825,16 +822,16 @@
             "nodeType": "FunctionDefinition",
             "overrides": null,
             "parameters": {
-              "id": 3585,
+              "id": 3601,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3584,
+                  "id": 3600,
                   "name": "primeOption",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3600,
+                  "scope": 3616,
                   "src": "608:27:10",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -843,7 +840,7 @@
                     "typeString": "address payable"
                   },
                   "typeName": {
-                    "id": 3583,
+                    "id": 3599,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "608:15:10",
@@ -860,16 +857,16 @@
               "src": "607:29:10"
             },
             "returnParameters": {
-              "id": 3590,
+              "id": 3606,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3589,
+                  "id": 3605,
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3600,
+                  "scope": 3616,
                   "src": "663:7:10",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -878,7 +875,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3588,
+                    "id": 3604,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "663:7:10",
@@ -894,14 +891,14 @@
               ],
               "src": "662:9:10"
             },
-            "scope": 3601,
+            "scope": 3617,
             "src": "589:160:10",
             "stateMutability": "nonpayable",
             "virtual": false,
             "visibility": "public"
           }
         ],
-        "scope": 3602,
+        "scope": 3618,
         "src": "201:551:10"
       }
     ],
@@ -911,14 +908,14 @@
     "absolutePath": "/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/controller/ControllerPool.sol",
     "exportedSymbols": {
       "ControllerPool": [
-        3601
+        3617
       ]
     },
-    "id": 3602,
+    "id": 3618,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 3540,
+        "id": 3556,
         "literals": [
           "solidity",
           "^",
@@ -931,10 +928,10 @@
       {
         "absolutePath": "/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/PrimePool.sol",
         "file": "../PrimePool.sol",
-        "id": 3541,
+        "id": 3557,
         "nodeType": "ImportDirective",
-        "scope": 3602,
-        "sourceUnit": 2545,
+        "scope": 3618,
+        "sourceUnit": 2561,
         "src": "114:26:10",
         "symbolAliases": [],
         "unitAlias": ""
@@ -942,10 +939,10 @@
       {
         "absolutePath": "@openzeppelin/contracts/ownership/Ownable.sol",
         "file": "@openzeppelin/contracts/ownership/Ownable.sol",
-        "id": 3542,
+        "id": 3558,
         "nodeType": "ImportDirective",
-        "scope": 3602,
-        "sourceUnit": 6582,
+        "scope": 3618,
+        "sourceUnit": 6598,
         "src": "142:55:10",
         "symbolAliases": [],
         "unitAlias": ""
@@ -957,34 +954,34 @@
             "arguments": null,
             "baseName": {
               "contractScope": null,
-              "id": 3543,
+              "id": 3559,
               "name": "Ownable",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 6581,
+              "referencedDeclaration": 6597,
               "src": "228:7:10",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_Ownable_$6581",
+                "typeIdentifier": "t_contract$_Ownable_$6597",
                 "typeString": "contract Ownable"
               }
             },
-            "id": 3544,
+            "id": 3560,
             "nodeType": "InheritanceSpecifier",
             "src": "228:7:10"
           }
         ],
         "contractDependencies": [
-          2544,
-          6191,
-          6581
+          2560,
+          6207,
+          6597
         ],
         "contractKind": "contract",
         "documentation": null,
         "fullyImplemented": true,
-        "id": 3601,
+        "id": 3617,
         "linearizedBaseContracts": [
-          3601,
-          6581,
-          6191
+          3617,
+          6597,
+          6207
         ],
         "name": "ControllerPool",
         "nodeType": "ContractDefinition",
@@ -992,27 +989,27 @@
           {
             "constant": false,
             "functionSelector": "fc2e9e7b",
-            "id": 3546,
+            "id": 3562,
             "name": "_maker",
             "nodeType": "VariableDeclaration",
             "overrides": null,
-            "scope": 3601,
+            "scope": 3617,
             "src": "245:23:10",
             "stateVariable": true,
             "storageLocation": "default",
             "typeDescriptions": {
-              "typeIdentifier": "t_contract$_PrimePool_$2544",
+              "typeIdentifier": "t_contract$_PrimePool_$2560",
               "typeString": "contract PrimePool"
             },
             "typeName": {
               "contractScope": null,
-              "id": 3545,
+              "id": 3561,
               "name": "PrimePool",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 2544,
+              "referencedDeclaration": 2560,
               "src": "245:9:10",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_PrimePool_$2544",
+                "typeIdentifier": "t_contract$_PrimePool_$2560",
                 "typeString": "contract PrimePool"
               }
             },
@@ -1021,7 +1018,7 @@
           },
           {
             "body": {
-              "id": 3555,
+              "id": 3571,
               "nodeType": "Block",
               "src": "316:48:10",
               "statements": [
@@ -1031,11 +1028,11 @@
                     "arguments": [
                       {
                         "argumentTypes": null,
-                        "id": 3552,
+                        "id": 3568,
                         "name": "controller",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3548,
+                        "referencedDeclaration": 3564,
                         "src": "345:10:10",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
@@ -1050,18 +1047,18 @@
                           "typeString": "address"
                         }
                       ],
-                      "id": 3551,
+                      "id": 3567,
                       "name": "transferOwnership",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 6555,
+                      "referencedDeclaration": 6571,
                       "src": "327:17:10",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_nonpayable$_t_address_$returns$__$",
                         "typeString": "function (address)"
                       }
                     },
-                    "id": 3553,
+                    "id": 3569,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -1076,14 +1073,14 @@
                       "typeString": "tuple()"
                     }
                   },
-                  "id": 3554,
+                  "id": 3570,
                   "nodeType": "ExpressionStatement",
                   "src": "327:29:10"
                 }
               ]
             },
             "documentation": null,
-            "id": 3556,
+            "id": 3572,
             "implemented": true,
             "kind": "constructor",
             "modifiers": [],
@@ -1091,16 +1088,16 @@
             "nodeType": "FunctionDefinition",
             "overrides": null,
             "parameters": {
-              "id": 3549,
+              "id": 3565,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3548,
+                  "id": 3564,
                   "name": "controller",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3556,
+                  "scope": 3572,
                   "src": "289:18:10",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -1109,7 +1106,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3547,
+                    "id": 3563,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "289:7:10",
@@ -1126,12 +1123,12 @@
               "src": "288:20:10"
             },
             "returnParameters": {
-              "id": 3550,
+              "id": 3566,
               "nodeType": "ParameterList",
               "parameters": [],
               "src": "316:0:10"
             },
-            "scope": 3601,
+            "scope": 3617,
             "src": "277:87:10",
             "stateMutability": "nonpayable",
             "virtual": false,
@@ -1139,38 +1136,38 @@
           },
           {
             "body": {
-              "id": 3581,
+              "id": 3597,
               "nodeType": "Block",
               "src": "447:134:10",
               "statements": [
                 {
                   "assignments": [
-                    3566
+                    3582
                   ],
                   "declarations": [
                     {
                       "constant": false,
-                      "id": 3566,
+                      "id": 3582,
                       "name": "primePool",
                       "nodeType": "VariableDeclaration",
                       "overrides": null,
-                      "scope": 3581,
+                      "scope": 3597,
                       "src": "458:19:10",
                       "stateVariable": false,
                       "storageLocation": "default",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_contract$_PrimePool_$2544",
+                        "typeIdentifier": "t_contract$_PrimePool_$2560",
                         "typeString": "contract PrimePool"
                       },
                       "typeName": {
                         "contractScope": null,
-                        "id": 3565,
+                        "id": 3581,
                         "name": "PrimePool",
                         "nodeType": "UserDefinedTypeName",
-                        "referencedDeclaration": 2544,
+                        "referencedDeclaration": 2560,
                         "src": "458:9:10",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_contract$_PrimePool_$2544",
+                          "typeIdentifier": "t_contract$_PrimePool_$2560",
                           "typeString": "contract PrimePool"
                         }
                       },
@@ -1178,17 +1175,17 @@
                       "visibility": "internal"
                     }
                   ],
-                  "id": 3571,
+                  "id": 3587,
                   "initialValue": {
                     "argumentTypes": null,
                     "arguments": [
                       {
                         "argumentTypes": null,
-                        "id": 3569,
+                        "id": 3585,
                         "name": "compoundEther",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3558,
+                        "referencedDeclaration": 3574,
                         "src": "494:13:10",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
@@ -1203,7 +1200,7 @@
                           "typeString": "address"
                         }
                       ],
-                      "id": 3568,
+                      "id": 3584,
                       "isConstant": false,
                       "isLValue": false,
                       "isPure": false,
@@ -1211,23 +1208,23 @@
                       "nodeType": "NewExpression",
                       "src": "480:13:10",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_function_creation_nonpayable$_t_address_$returns$_t_contract$_PrimePool_$2544_$",
+                        "typeIdentifier": "t_function_creation_nonpayable$_t_address_$returns$_t_contract$_PrimePool_$2560_$",
                         "typeString": "function (address) returns (contract PrimePool)"
                       },
                       "typeName": {
                         "contractScope": null,
-                        "id": 3567,
+                        "id": 3583,
                         "name": "PrimePool",
                         "nodeType": "UserDefinedTypeName",
-                        "referencedDeclaration": 2544,
+                        "referencedDeclaration": 2560,
                         "src": "484:9:10",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_contract$_PrimePool_$2544",
+                          "typeIdentifier": "t_contract$_PrimePool_$2560",
                           "typeString": "contract PrimePool"
                         }
                       }
                     },
-                    "id": 3570,
+                    "id": 3586,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -1238,7 +1235,7 @@
                     "src": "480:28:10",
                     "tryCall": false,
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_PrimePool_$2544",
+                      "typeIdentifier": "t_contract$_PrimePool_$2560",
                       "typeString": "contract PrimePool"
                     }
                   },
@@ -1248,21 +1245,21 @@
                 {
                   "expression": {
                     "argumentTypes": null,
-                    "id": 3574,
+                    "id": 3590,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
                     "lValueRequested": false,
                     "leftHandSide": {
                       "argumentTypes": null,
-                      "id": 3572,
+                      "id": 3588,
                       "name": "_maker",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 3546,
+                      "referencedDeclaration": 3562,
                       "src": "519:6:10",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_contract$_PrimePool_$2544",
+                        "typeIdentifier": "t_contract$_PrimePool_$2560",
                         "typeString": "contract PrimePool"
                       }
                     },
@@ -1270,24 +1267,24 @@
                     "operator": "=",
                     "rightHandSide": {
                       "argumentTypes": null,
-                      "id": 3573,
+                      "id": 3589,
                       "name": "primePool",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 3566,
+                      "referencedDeclaration": 3582,
                       "src": "528:9:10",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_contract$_PrimePool_$2544",
+                        "typeIdentifier": "t_contract$_PrimePool_$2560",
                         "typeString": "contract PrimePool"
                       }
                     },
                     "src": "519:18:10",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_PrimePool_$2544",
+                      "typeIdentifier": "t_contract$_PrimePool_$2560",
                       "typeString": "contract PrimePool"
                     }
                   },
-                  "id": 3575,
+                  "id": 3591,
                   "nodeType": "ExpressionStatement",
                   "src": "519:18:10"
                 },
@@ -1297,14 +1294,14 @@
                     "arguments": [
                       {
                         "argumentTypes": null,
-                        "id": 3578,
+                        "id": 3594,
                         "name": "primePool",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3566,
+                        "referencedDeclaration": 3582,
                         "src": "563:9:10",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_contract$_PrimePool_$2544",
+                          "typeIdentifier": "t_contract$_PrimePool_$2560",
                           "typeString": "contract PrimePool"
                         }
                       }
@@ -1312,11 +1309,11 @@
                     "expression": {
                       "argumentTypes": [
                         {
-                          "typeIdentifier": "t_contract$_PrimePool_$2544",
+                          "typeIdentifier": "t_contract$_PrimePool_$2560",
                           "typeString": "contract PrimePool"
                         }
                       ],
-                      "id": 3577,
+                      "id": 3593,
                       "isConstant": false,
                       "isLValue": false,
                       "isPure": true,
@@ -1328,7 +1325,7 @@
                         "typeString": "type(address)"
                       },
                       "typeName": {
-                        "id": 3576,
+                        "id": 3592,
                         "name": "address",
                         "nodeType": "ElementaryTypeName",
                         "src": "555:7:10",
@@ -1338,7 +1335,7 @@
                         }
                       }
                     },
-                    "id": 3579,
+                    "id": 3595,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -1353,8 +1350,8 @@
                       "typeString": "address payable"
                     }
                   },
-                  "functionReturnParameters": 3564,
-                  "id": 3580,
+                  "functionReturnParameters": 3580,
+                  "id": 3596,
                   "nodeType": "Return",
                   "src": "548:25:10"
                 }
@@ -1362,20 +1359,20 @@
             },
             "documentation": null,
             "functionSelector": "d914cd4b",
-            "id": 3582,
+            "id": 3598,
             "implemented": true,
             "kind": "function",
             "modifiers": [
               {
                 "arguments": null,
-                "id": 3561,
+                "id": 3577,
                 "modifierName": {
                   "argumentTypes": null,
-                  "id": 3560,
+                  "id": 3576,
                   "name": "onlyOwner",
                   "nodeType": "Identifier",
                   "overloadedDeclarations": [],
-                  "referencedDeclaration": 6511,
+                  "referencedDeclaration": 6527,
                   "src": "419:9:10",
                   "typeDescriptions": {
                     "typeIdentifier": "t_modifier$__$",
@@ -1390,16 +1387,16 @@
             "nodeType": "FunctionDefinition",
             "overrides": null,
             "parameters": {
-              "id": 3559,
+              "id": 3575,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3558,
+                  "id": 3574,
                   "name": "compoundEther",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3582,
+                  "scope": 3598,
                   "src": "389:21:10",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -1408,7 +1405,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3557,
+                    "id": 3573,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "389:7:10",
@@ -1425,16 +1422,16 @@
               "src": "388:23:10"
             },
             "returnParameters": {
-              "id": 3564,
+              "id": 3580,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3563,
+                  "id": 3579,
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3582,
+                  "scope": 3598,
                   "src": "438:7:10",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -1443,7 +1440,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3562,
+                    "id": 3578,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "438:7:10",
@@ -1459,7 +1456,7 @@
               ],
               "src": "437:9:10"
             },
-            "scope": 3601,
+            "scope": 3617,
             "src": "372:209:10",
             "stateMutability": "nonpayable",
             "virtual": false,
@@ -1467,7 +1464,7 @@
           },
           {
             "body": {
-              "id": 3599,
+              "id": 3615,
               "nodeType": "Block",
               "src": "672:77:10",
               "statements": [
@@ -1477,11 +1474,11 @@
                     "arguments": [
                       {
                         "argumentTypes": null,
-                        "id": 3594,
+                        "id": 3610,
                         "name": "primeOption",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3584,
+                        "referencedDeclaration": 3600,
                         "src": "700:11:10",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address_payable",
@@ -1498,32 +1495,32 @@
                       ],
                       "expression": {
                         "argumentTypes": null,
-                        "id": 3591,
+                        "id": 3607,
                         "name": "_maker",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3546,
+                        "referencedDeclaration": 3562,
                         "src": "683:6:10",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_contract$_PrimePool_$2544",
+                          "typeIdentifier": "t_contract$_PrimePool_$2560",
                           "typeString": "contract PrimePool"
                         }
                       },
-                      "id": 3593,
+                      "id": 3609,
                       "isConstant": false,
                       "isLValue": false,
                       "isPure": false,
                       "lValueRequested": false,
                       "memberName": "addMarket",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 2001,
+                      "referencedDeclaration": 2017,
                       "src": "683:16:10",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_external_nonpayable$_t_address_payable_$returns$_t_address_$",
                         "typeString": "function (address payable) external returns (address)"
                       }
                     },
-                    "id": 3595,
+                    "id": 3611,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -1538,26 +1535,26 @@
                       "typeString": "address"
                     }
                   },
-                  "id": 3596,
+                  "id": 3612,
                   "nodeType": "ExpressionStatement",
                   "src": "683:29:10"
                 },
                 {
                   "expression": {
                     "argumentTypes": null,
-                    "id": 3597,
+                    "id": 3613,
                     "name": "primeOption",
                     "nodeType": "Identifier",
                     "overloadedDeclarations": [],
-                    "referencedDeclaration": 3584,
+                    "referencedDeclaration": 3600,
                     "src": "730:11:10",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address_payable",
                       "typeString": "address payable"
                     }
                   },
-                  "functionReturnParameters": 3590,
-                  "id": 3598,
+                  "functionReturnParameters": 3606,
+                  "id": 3614,
                   "nodeType": "Return",
                   "src": "723:18:10"
                 }
@@ -1565,20 +1562,20 @@
             },
             "documentation": null,
             "functionSelector": "93e30633",
-            "id": 3600,
+            "id": 3616,
             "implemented": true,
             "kind": "function",
             "modifiers": [
               {
                 "arguments": null,
-                "id": 3587,
+                "id": 3603,
                 "modifierName": {
                   "argumentTypes": null,
-                  "id": 3586,
+                  "id": 3602,
                   "name": "onlyOwner",
                   "nodeType": "Identifier",
                   "overloadedDeclarations": [],
-                  "referencedDeclaration": 6511,
+                  "referencedDeclaration": 6527,
                   "src": "644:9:10",
                   "typeDescriptions": {
                     "typeIdentifier": "t_modifier$__$",
@@ -1593,16 +1590,16 @@
             "nodeType": "FunctionDefinition",
             "overrides": null,
             "parameters": {
-              "id": 3585,
+              "id": 3601,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3584,
+                  "id": 3600,
                   "name": "primeOption",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3600,
+                  "scope": 3616,
                   "src": "608:27:10",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -1611,7 +1608,7 @@
                     "typeString": "address payable"
                   },
                   "typeName": {
-                    "id": 3583,
+                    "id": 3599,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "608:15:10",
@@ -1628,16 +1625,16 @@
               "src": "607:29:10"
             },
             "returnParameters": {
-              "id": 3590,
+              "id": 3606,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3589,
+                  "id": 3605,
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3600,
+                  "scope": 3616,
                   "src": "663:7:10",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -1646,7 +1643,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3588,
+                    "id": 3604,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "663:7:10",
@@ -1662,14 +1659,14 @@
               ],
               "src": "662:9:10"
             },
-            "scope": 3601,
+            "scope": 3617,
             "src": "589:160:10",
             "stateMutability": "nonpayable",
             "virtual": false,
             "visibility": "public"
           }
         ],
-        "scope": 3602,
+        "scope": 3618,
         "src": "201:551:10"
       }
     ],
@@ -1708,8 +1705,7 @@
     }
   },
   "schemaVersion": "3.0.23",
-  "updatedAt": "2020-04-14T21:59:16.758Z",
-  "networkType": "ethereum",
+  "updatedAt": "2020-04-14T22:57:28.115Z",
   "devdoc": {
     "methods": {
       "isOwner()": {
