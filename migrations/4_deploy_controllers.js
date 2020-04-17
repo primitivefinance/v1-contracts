@@ -4,6 +4,7 @@ const ControllerExchange = artifacts.require('ControllerExchange');
 const ControllerPool = artifacts.require('ControllerPool');
 const ControllerRedeem = artifacts.require('ControllerRedeem');
 const Prime = artifacts.require('Prime');
+const tUSD = artifacts.require("tUSD");
 
 module.exports = async (deployer, network) => {
     const rinkebyCompoundAddress = '0xd6801a1dffcd0a410336ef88def4320d6df1883e';
@@ -35,4 +36,23 @@ module.exports = async (deployer, network) => {
 
     await controller.initMakerPool(compound);
     await controller.initPrimeRedeem();
+    
+    // Get the Option Parameters
+    let _strike = await tUSD.deployed();
+    let qUnderlying = await web3.utils.toWei('0.1');
+    let qStrike = await web3.utils.toWei('1');
+    let aStrike = _strike.address;
+    let tExpiry = '1587607322'
+    let isEthCall = true;
+    let ethCallName = 'ETH201212C150TUSD'
+
+    // Create a new Eth Option Market
+    /* await controller.createMarket(
+        qUnderlying,
+        qStrike,
+        aStrike,
+        tExpiry,
+        isEthCall,
+        ethCallName
+    ); */
 };
