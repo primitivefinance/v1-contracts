@@ -7,6 +7,7 @@ const PrimeOption = artifacts.require('PrimeOption.sol');
 const PrimeExchange = artifacts.require('PrimeExchange.sol');
 const PrimePool = artifacts.require('PrimePool.sol');
 const PrimeRedeem = artifacts.require('PrimeRedeem');
+const PrimePerpetual = artifacts.require('PrimePerpetual');
 
 contract('PrimeERC20', accounts => {
     const { toWei } = web3.utils;

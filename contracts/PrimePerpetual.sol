@@ -43,8 +43,7 @@ contract PrimePerpetual is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detai
 
     address payable[]  public _optionMarkets;
 
-    /* Ether liability */
-    uint256 public _liability;
+    uint256 public _test;
 
     /* For testing */
     uint256 public constant _premiumDenomination = 5; /* 20% = 0.2 = 1 / 5 */
@@ -75,6 +74,19 @@ contract PrimePerpetual is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detai
 
     function addMarket(address payable primeOption) public onlyOwner returns (address) {
         _optionMarkets.push(primeOption);
+        IPrimeOption prime = IPrimeOption(primeOption);
+
+        // Assume this is DAI
+        IERC20 strike = IERC20(prime.getStrike());
+        strike.approve(primeOption, 1000000000 ether);
+        strike.approve(address(_cDai), 1000000000 ether);
+        
+        // Assume this is USDC
+        IERC20 underlying = IERC20(prime.getUnderlying());
+        underlying.approve(primeOption, 1000000000 ether);
+
+        IPrimeRedeem rPulp = IPrimeRedeem(prime._rPulp());
+        rPulp.approve(primeOption, 1000000000 ether)
         return primeOption;
     }
 
@@ -148,16 +160,20 @@ contract PrimePerpetual is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detai
         require(strike.balanceOf(msg.sender) >= cost, "ERR_BAL_STRIKE");
 
         // Mint the insured DAI using the Pool's USDC Balance
+        // Perpetual Should Have Approved Underlying Assets to Prime
         prime.deposit(amount);
 
         // Send the insured DAI - iDAI - to the User (options)
+        assert(prime.balanceOf(address(this)) >= amount);
         prime.transfer(msg.sender, amount);
         
         // Transfer the DAI from the User
         strike.transferFrom(msg.sender, address(this), cost);
 
         // Convert the DAI to cDAI
-        return swapDaiToCDai(cost);
+        // Doesnt work unless you mint real DAI through the forked mainnet - or through rinkeby
+        /* return swapDaiToCDai(cost); */
+        return true;
     }
 
     /**
@@ -195,7 +211,8 @@ contract PrimePerpetual is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detai
         emit Withdraw(usdcToWithdraw, msg.sender, amount);
     
         // Swap cDAI to DAI then send to user
-        swapCDaiToDai(premiumsToWithdraw);
+        /* swapCDaiToDai(premiumsToWithdraw); */
+
         IERC20 strike = IERC20(prime.getStrike());
         assert(strike.balanceOf(address(this)) >= premiumsToWithdraw);
         strike.transfer(msg.sender, premiumsToWithdraw);
@@ -223,7 +240,7 @@ contract PrimePerpetual is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detai
         require(prime.balanceOf(msg.sender) >= amountToRedeem, 'ERR_BAL_INSUREDDAI');
 
         // Swap cDAI into amount DAI needed to redeem
-        swapCDaiToDai(amountToRedeem);
+        /* swapCDaiToDai(amountToRedeem); */
 
         // Assume this is DAI
         IERC20 strike = IERC20(prime.getStrike());
@@ -250,8 +267,9 @@ contract PrimePerpetual is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detai
      * being insured. We can calculate the difference using the Prime Option Redeem Tokens as 
      * the amount of insured Dai. We subtract this amount from the total Dai owned by the Pool
      * to get the total Dai return.
+     * FIX - SHOULD RETURN TO A NOT VIEW FUNCTION WHEN SWAPPING CDAI ENABLED
      */
-    function calculatePremiums() public returns (uint256) {
+    function calculatePremiums() public view returns (uint256) {
         // Assume this is a 1 USDC / 1 DAI Option
         address primeAddress = _optionMarkets[0];
         IPrimeOption prime = IPrimeOption(primeAddress);
@@ -263,7 +281,9 @@ contract PrimePerpetual is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detai
         uint256 redeemBalance = redeem.balanceOf(address(this));
 
         // Get the total Dai balance of the contract - includes interest accrued Dai
-        uint256 daiBalance = _cDai.balanceOfUnderlying(address(this));
+        /* uint256 daiBalance = _cDai.balanceOfUnderlying(address(this)); */
+        IERC20 strike = IERC20(prime.getStrike());
+        uint256 daiBalance = totalDaiBalance();
 
         // Get the net difference of Total Dai - Insured Dai
         assert(daiBalance > redeemBalance);
@@ -273,6 +293,21 @@ contract PrimePerpetual is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detai
     }
 
     /* GET BALANCE SHEET ITEMS */
+    /**
+     * @dev view function to get this contract's USDC Balance
+     * @notice gets the total assets that are not being utilized as underlying assets in Prime Options
+     */
+    function totalDaiBalance() public view returns (uint256) {
+        // Assume this is a 1 USDC / 1 DAI Option
+        address primeAddress = _optionMarkets[0];
+        IPrimeOption prime = IPrimeOption(primeAddress);
+
+        // Assume this is USDC
+        IERC20 strike = IERC20(prime.getStrike());
+        uint256 daiBalance = strike.balanceOf(address(this));
+        return daiBalance;
+    }
+
 
     /**
      * @dev view function to get this contract's USDC Balance
@@ -334,8 +369,9 @@ contract PrimePerpetual is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detai
      @param amount Dai that will be swapped to cDai
      */
     function swapDaiToCDai(uint256 amount) internal returns (bool) {
-        (uint success ) = _cDai.mint(amount);
-        require(success == 0, "ERR_CDAI_MINT");
+        (uint256 success ) = _cDai.mint(amount);
+        _test = success;
+        /* require(success == 0, "ERR_CDAI_MINT"); */
         return success == 0;
     }
 

@@ -13,7 +13,7 @@ import '@openzeppelin/contracts/token/ERC721/ERC721Holder.sol';
 contract ControllerOption is Ownable, ERC721Holder {
     using SafeMath for uint256;
 
-    mapping(uint256 => address) public _primeMarkets;
+    /* mapping(uint256 => address) public _primeMarkets; */
     uint256 public _nonce;
     IPrime public _prime;
     IControllerMarket public market;
@@ -83,6 +83,7 @@ contract ControllerOption is Ownable, ERC721Holder {
         }   
     
         primeOption.setParentToken(tokenId);
+        primeOption.setRPulp(redeem);
         return address(primeOption);
     }
 
@@ -92,7 +93,7 @@ contract ControllerOption is Ownable, ERC721Holder {
             name,
             address(_prime)
         );
-        _primeMarkets[_nonce] = address(primeOption);
+        /* _primeMarkets[_nonce] = address(primeOption); */
         return primeOption;
     }
 

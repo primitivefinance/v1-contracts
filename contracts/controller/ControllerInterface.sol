@@ -18,7 +18,8 @@ interface IControllerPool {
 }
 
 interface IControllerPerpetual {
-    function addPerpetual(address compoundDai) external returns (address) ;
+    function addPerpetual(address compoundDai) external returns (address);
+    function addMarket(address payable primeOption) external returns (address);
 }
 
 interface IControllerRedeem {

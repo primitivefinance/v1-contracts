@@ -109,8 +109,8 @@ contract PrimeOption is ERC20Detailed, ERC20, ReentrancyGuard {
             require(mintSuccess, "ERR_MINT_OPTIONS");
             return mintSuccess;
         } else {
-            IERC20 _underlying = IERC20(option.aUnderlying);
-            verifyBalance(_underlying.balanceOf(rPulpReceiver), amount, "ERR_BAL_UNDERLYING");
+            IERC20 underlying = IERC20(option.aUnderlying);
+            verifyBalance(underlying.balanceOf(rPulpReceiver), amount, "ERR_BAL_UNDERLYING");
             (bool mintSuccess) = mintPrimeOptions(
                 amount,
                 option.qUnderlying,
@@ -118,7 +118,7 @@ contract PrimeOption is ERC20Detailed, ERC20, ReentrancyGuard {
                 oPulpReceiver,
                 rPulpReceiver
             );
-            bool transferSuccess = _underlying.transferFrom(rPulpReceiver, address(this), amount);
+            bool transferSuccess = underlying.transferFrom(rPulpReceiver, address(this), amount);
             require(mintSuccess && transferSuccess, "ERR_MINT_OPTIONS");
             return (mintSuccess && transferSuccess);
         }

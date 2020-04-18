@@ -122,10 +122,22 @@ contract ControllerMarket is Ownable {
         optionController.setExchange(exchange, option);
         
         IControllerRedeem redeem = IControllerRedeem(_controllers.redeem);
-        redeem.setValid(option, _crRedeem);
+        if(isEthCallOption) {
+            redeem.setValid(option, _crRedeem);
+        } else if (isTokenOption) {
+            // TESTING - PERPETUAL PUT SO SETTING TO PUT - FIX
+            redeem.setValid(option, _prRedeem);
+        } else {
+            redeem.setValid(option, _prRedeem);
+        }
+        
 
         IControllerPool pool = IControllerPool(_controllers.pool);
         pool.addMarket(option);
+
+        // For Testing
+        IControllerPerpetual perpetual = IControllerPerpetual(_controllers.perpetual);
+        perpetual.addMarket(option);
 
         _markets[tokenId] = Market(
             address(this),
