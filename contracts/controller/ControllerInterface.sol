@@ -17,29 +17,26 @@ interface IControllerPool {
     function addMarket(address payable primeOption) external returns (address);
 }
 
+interface IControllerPerpetual {
+    function addPerpetual(address compoundDai) external returns (address) ;
+}
+
 interface IControllerRedeem {
     function addRedeem(string calldata name, string calldata symbol, bool isCallOption) external returns (address);
     function setValid(address primeOption, address redeemAddress) external returns (bool);
 }
 
 interface IControllerOption {
-    function addEthOption(
-        uint256 qEth,
-        uint256 qToken,
-        IERC20 aToken,
-        uint256 tExpiry,
-        bool isCall,
-        string calldata name
-    ) external payable returns (address payable);
-
-    function addTokenOption(
+    function addOption(
         uint256 qUnderlying,
         IERC20 aUnderlying,
         uint256 qStrike,
         IERC20 aStrike,
         uint256 tExpiry,
-        string calldata name
-    ) external returns (address);
+        string calldata name,
+        bool isEthCallOption,
+        bool isTokenOption
+    ) external payable returns (address payable);
 
     function setExchange(address exchange, address payable primeOption) external returns (bool);
 }

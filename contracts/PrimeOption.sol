@@ -316,4 +316,13 @@ contract PrimeOption is ERC20Detailed, ERC20, ReentrancyGuard {
             return balance >= minBalance;
         }
     }
+
+    function getStrike() public view returns (address) {
+        return option.aStrike;
+    }
+
+    function getUnderlying() public view returns (address) {
+        return option.aUnderlying;
+    }
+
 }

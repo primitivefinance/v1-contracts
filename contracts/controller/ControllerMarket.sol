@@ -14,6 +14,7 @@ contract ControllerMarket is Ownable {
     struct Initialization {
         bool controllers;
         bool maker;
+        bool perpetual;
         bool redeem;
     }
 
@@ -23,6 +24,7 @@ contract ControllerMarket is Ownable {
         address option;
         address exchange;
         address maker;
+        address perpetual;
     }
 
     struct Controllers {
@@ -30,6 +32,7 @@ contract ControllerMarket is Ownable {
         address exchange;
         address option;
         address pool;
+        address perpetual;
         address redeem;
     }
 
@@ -37,6 +40,7 @@ contract ControllerMarket is Ownable {
     Controllers public _controllers;
     mapping(uint256 => Market) public _markets;
     address public _maker;
+    address public _perpetual;
     address public _crRedeem;
     address public _prRedeem;
 
@@ -48,6 +52,7 @@ contract ControllerMarket is Ownable {
         IControllerExchange exchange,
         IControllerOption option,
         IControllerPool pool,
+        IControllerPerpetual perpetual,
         IControllerRedeem redeem
     ) public onlyOwner returns (bool) {
         require(!_isInitialized.controllers, "ERR_INITIALIZED");
@@ -56,6 +61,7 @@ contract ControllerMarket is Ownable {
             address(exchange),
             address(option),
             address(pool),
+            address(perpetual),
             address(redeem)
         );
         _isInitialized.controllers = true;
@@ -67,6 +73,13 @@ contract ControllerMarket is Ownable {
         address maker = _addMarketMaker(compoundContract);
         _isInitialized.maker = true;
         return maker;
+    }
+
+    function initPerpetual(address compoundContract) public onlyOwner returns (address) {
+        require(!_isInitialized.perpetual, "ERR_INITIALIZED");
+        address perpetual = _addPerpetualMarket(compoundContract);
+        _isInitialized.perpetual = true;
+        return perpetual;
     }
 
     function initPrimeRedeem() public onlyOwner returns (address, address) {
@@ -82,28 +95,32 @@ contract ControllerMarket is Ownable {
     
 
     function createMarket(
-        uint256 qEth,
-        uint256 qToken,
-        IERC20 aToken,
+        uint256 qUnderlying,
+        IERC20 aUnderlying,
+        uint256 qStrike,
+        IERC20 aStrike,
         uint256 tExpiry,
-        bool isCall,
-        string memory name
+        string memory name,
+        bool isEthCallOption,
+        bool isTokenOption
+        
     ) public onlyOwner returns (uint256) {
-        address payable option = _addEthOption(
-            qEth,
-            qToken,
-            aToken,
+        IControllerOption optionController = IControllerOption(_controllers.option);
+        address payable option = optionController.addOption(
+            qUnderlying,
+            aUnderlying,
+            qStrike,
+            aStrike,
             tExpiry,
-            isCall,
-            name
+            name,
+            isEthCallOption,
+            isTokenOption
         );
 
         uint256 tokenId = IPrimeOption(option)._parentToken();
         address exchange = _addExchange(option);
-
-        IControllerOption optionController = IControllerOption(_controllers.option);
         optionController.setExchange(exchange, option);
-
+        
         IControllerRedeem redeem = IControllerRedeem(_controllers.redeem);
         redeem.setValid(option, _crRedeem);
 
@@ -115,50 +132,11 @@ contract ControllerMarket is Ownable {
             tokenId,
             option,
             exchange,
-            _maker
+            _maker,
+            _perpetual
         );
         
         return tokenId;
-    }
-
-    function _addTokenOption(
-        uint256 qUnderlying,
-        IERC20 aUnderlying,
-        uint256 qStrike,
-        IERC20 aStrike,
-        uint256 tExpiry,
-        string memory name
-    ) internal returns (address) {
-        IControllerOption option = IControllerOption(_controllers.option);
-        address primeOption = option.addTokenOption(
-            qUnderlying,
-            aUnderlying,
-            qStrike,
-            aStrike,
-            tExpiry,
-            name
-        );
-        return primeOption;
-    }
-
-    function _addEthOption(
-        uint256 qEth,
-        uint256 qToken,
-        IERC20 aToken,
-        uint256 tExpiry,
-        bool isCall,
-        string memory name
-    ) internal returns (address payable) {
-        IControllerOption option = IControllerOption(_controllers.option);
-        address payable primeOption = option.addEthOption(
-            qEth,
-            qToken,
-            aToken,
-            tExpiry,
-            isCall,
-            name
-        );
-        return primeOption;
     }
 
     function _addExchange(
@@ -178,6 +156,15 @@ contract ControllerMarket is Ownable {
         return poolAddress;
     }
 
+    function _addPerpetualMarket(
+        address compoundEther
+    ) internal returns (address) {
+        IControllerPerpetual perpetual = IControllerPerpetual(_controllers.perpetual);
+        address perpetualAddress = perpetual.addPerpetual(compoundEther);
+        _perpetual = perpetualAddress;
+        return perpetualAddress;
+    }
+
     function getOption(uint256 tokenId) public view returns (address) {
         return _markets[tokenId].option;
     }
@@ -188,5 +175,9 @@ contract ControllerMarket is Ownable {
 
     function getMaker(uint256 tokenId) public view returns (address) {
         return _markets[tokenId].maker;
+    }
+
+    function getPerpetual(uint256 tokenId) public view returns (address) {
+        return _markets[tokenId].perpetual;
     }
 }

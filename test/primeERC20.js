@@ -58,7 +58,8 @@ contract('PrimeERC20', accounts => {
         _pool,
         _option,
         _exchange,
-        totalLiquidity
+        totalLiquidity,
+        isTokenOption
         ;
 
     async function getGas(func, name) {
@@ -88,8 +89,9 @@ contract('PrimeERC20', accounts => {
             qStrike,
             aStrike,
             tExpiry,
+            ethCallName,
             isEthCall,
-            ethCallName
+            isTokenOption,
         );
         
         // Get the market contracts

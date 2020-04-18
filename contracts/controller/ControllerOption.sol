@@ -27,27 +27,19 @@ contract ControllerOption is Ownable, ERC721Holder {
         market = IControllerMarket(controller);
     }
 
-    /**
-     * @dev Creates a New Eth Option Market including oPulp, cPulp or pPulp, ePulp
-     * @param qEth quantity of ether as underlying or strike asset
-     * @param qToken quantity of ERC-20 token as underlying or strike asset
-     * @param aToken ERC-20 contract of the token
-     * @param tExpiry expiration date of the option
-     * @param isCall bool to clarify if the option is a call or a put
-     * @param name Full option name in the format Underlying Asset + Expiry + Strike Price + Strike Asset
-     * @return _nonce the nonce of the market
-     */
-    function addEthOption(
-        uint256 qEth,
-        uint256 qToken,
-        IERC20 aToken,
+    function addOption(
+        uint256 qUnderlying,
+        IERC20 aUnderlying,
+        uint256 qStrike,
+        IERC20 aStrike,
         uint256 tExpiry,
-        bool isCall,
-        string memory name
+        string memory name,
+        bool isEthCallOption,
+        bool isTokenOption
     ) 
-        public
-        payable
-        onlyOwner
+        public 
+        payable 
+        onlyOwner 
         returns (address payable)
     {
         PrimeOption primeOption = deployPrimeOption(name);
@@ -58,65 +50,41 @@ contract ControllerOption is Ownable, ERC721Holder {
         // else its a put, the underlying q+a is the strike q+a and 
         // the strike q is 1 ether and strike address is erc-20 oPulp
         // e.g. 1 ETH / 150 DAI Call vs. 150 DAI / 1 ETH Put
-        if(isCall) {
+        if(isEthCallOption) {
             tokenId = _prime.createPrime(
-                qEth,
+                qUnderlying,
                 address(primeOption),
-                qToken,
-                address(aToken),
+                qStrike,
+                address(aStrike),
                 tExpiry,
                 address(this)
             );
             redeem = market._crRedeem();
+        } else if(isTokenOption) {
+            tokenId = _prime.createPrime(
+                qUnderlying,
+                address(aUnderlying),
+                qStrike,
+                address(aStrike),
+                tExpiry,
+                address(this)
+            );
+            redeem = market._prRedeem();
         } else {
             tokenId = _prime.createPrime(
-                qToken,
-                address(aToken),
-                qEth,
+                qStrike,
+                address(aStrike),
+                qUnderlying,
                 address(primeOption),
                 tExpiry,
                 address(this)
             );
             redeem = market._prRedeem();
-        }
-        
+        }   
+    
         primeOption.setParentToken(tokenId);
-        primeOption.setRPulp(redeem);
         return address(primeOption);
     }
-
-    /**
-     * @dev Creates a New Eth Option Market including oPulp, cPulp or pPulp, ePulp
-     * @param name Full option name in the format Underlying Asset + Expiry + Strike Price + Strike Asset
-     * @return _nonce the nonce of the market
-     */
-    /* function addTokenOption(
-        uint256 qUnderlying,
-        IERC20 aUnderlying,
-        uint256 qStrike,
-        IERC20 aStrike,
-        uint256 tExpiry,
-        string memory name
-    ) 
-        public
-        onlyOwner
-        returns (address)
-    {
-        PrimeOption primeOption = deployPrimeOption(name);
-
-        uint256 tokenId = _prime.createPrime(
-            qUnderlying,
-            address(aUnderlying),
-            qStrike,
-            address(aStrike),
-            tExpiry,
-            address(this)
-        );
-        
-        primeOption.setParentToken(tokenId);
-        return address(primeOption);
-    } */
-
 
     function deployPrimeOption(string memory name) internal returns (PrimeOption) {
         _nonce = _nonce.add(1);
