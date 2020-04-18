@@ -271,7 +271,7 @@ contract PrimeOption is ERC20Detailed, ERC20, ReentrancyGuard {
             return sendEther(msg.sender, qUnderlying);
         } else {
             IERC20 _underlying = IERC20(option.aUnderlying);
-            return _underlying.transferFrom(address(this), msg.sender, qUnderlying);
+            return _underlying.transfer(msg.sender, qUnderlying);
         }
     }
 

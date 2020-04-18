@@ -86,7 +86,7 @@ contract PrimePerpetual is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detai
         underlying.approve(primeOption, 1000000000 ether);
 
         IPrimeRedeem rPulp = IPrimeRedeem(prime._rPulp());
-        rPulp.approve(primeOption, 1000000000 ether)
+        rPulp.approve(primeOption, 1000000000 ether);
         return primeOption;
     }
 

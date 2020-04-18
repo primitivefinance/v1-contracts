@@ -57,6 +57,7 @@ interface IPrimeRedeem {
     function burn(address user, uint256 amount) external payable returns (bool);
     function balanceOf(address user) external view returns (uint);
     function isCallPulp() external view returns (bool);
+    function approve(address spender, uint256 amount) external returns (bool);
 }
 
 interface IPrimeExchange {

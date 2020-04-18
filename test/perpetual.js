@@ -153,6 +153,12 @@ contract('PrimeERC20', accounts => {
                 console.log('[ARPULP]', await _controllerMarket._crRedeem());
                 console.log('[USDCBALANCE]', fromWei(await _perpetual.totalUSDCBalance()));
                 console.log('[PREMIUM]', await _perpetual.FIVE_HUNDRED_BPS());
+                console.log('[QUANTDAI]', fromWei(await _option.balanceOf(userA)));
+                console.log('[DAI]', fromWei(await _strike.balanceOf(userA)));
+                console.log('[USDC]', fromWei(await _underlying.balanceOf(userA)));
+                console.log('[PERPETUAL QUANTDAI]', fromWei(await _option.balanceOf(_perpetual.address)));
+                console.log('[PERPETUAL DAI]', fromWei(await _strike.balanceOf(_perpetual.address)));
+                console.log('[PERPETUAL USDC]', fromWei(await _underlying.balanceOf(_perpetual.address)));
             });
 
             it('Deposits USDC for Insurance Provider Tokens', async () => {
@@ -160,30 +166,56 @@ contract('PrimeERC20', accounts => {
                 await _perpetual.deposit(oneEther, {from: userA});
                 let oPulpBal = (await _perpetual.balanceOf(userA)).toString();
                 assert.strictEqual(oPulpBal, oPulp, `${oPulpBal} != ${oPulp}`);
-                console.log('[USDCBALANCE]', fromWei(await _perpetual.totalUSDCBalance()));
+                console.log('[QUANTDAI]', fromWei(await _option.balanceOf(userA)));
+                console.log('[DAI]', fromWei(await _strike.balanceOf(userA)));
+                console.log('[USDC]', fromWei(await _underlying.balanceOf(userA)));
+                console.log('[PERPETUAL QUANTDAI]', fromWei(await _option.balanceOf(_perpetual.address)));
+                console.log('[PERPETUAL DAI]', fromWei(await _strike.balanceOf(_perpetual.address)));
+                console.log('[PERPETUAL USDC]', fromWei(await _underlying.balanceOf(_perpetual.address)));
+                console.log('[PERPETUAL USDCBALANCE()]', fromWei(await _perpetual.totalUSDCBalance()));
             });
 
             it('Insures Dai with USDC By Depositing Dai, Receives Quant Dai', async () => {
                 let oPulp = (oneEther).toString();
                 // Deposits 1 DAI to get Insured Dai - Quant Dai
                 // Needs to approve strike assets to perpetual
-                console.log('[ERROR CODE]', (await _perpetual._test()).toString());
                 await _perpetual.insure(oneEther, {from: userA});
-                console.log('[ERROR CODE]', (await _perpetual._test()).toString());
                 let oPulpBal = (await _option.balanceOf(userA)).toString();
-                console.log('[QUANTDAI]', fromWei(await _option.balanceOf(userA)));
-                console.log('[DAI]', fromWei(await _strike.balanceOf(_perpetual.address)));
                 console.log('[PREMIUMS]', fromWei(await _perpetual.calculatePremiums()));
+                console.log('[QUANTDAI]', fromWei(await _option.balanceOf(userA)));
+                console.log('[DAI]', fromWei(await _strike.balanceOf(userA)));
+                console.log('[USDC]', fromWei(await _underlying.balanceOf(userA)));
+                console.log('[PERPETUAL QUANTDAI]', fromWei(await _option.balanceOf(_perpetual.address)));
+                console.log('[PERPETUAL DAI]', fromWei(await _strike.balanceOf(_perpetual.address)));
+                console.log('[PERPETUAL USDC]', fromWei(await _underlying.balanceOf(_perpetual.address)));
                 assert.strictEqual(oPulpBal, oPulp, `${oPulpBal} != ${oPulp}`);
             });
 
             it('Redeems Quant Dai to Receive Dai Back', async () => {
-                let oPulp = (oneEther).toString();
+                let oPulp = (0).toString();
                 await _option.approve(_perpetual.address, millionEther, {from: userA});
                 await _perpetual.redeem(oneEther, {from: userA});
                 let oPulpBal = (await _option.balanceOf(userA)).toString();
                 console.log('[QUANTDAI]', fromWei(await _option.balanceOf(userA)));
+                console.log('[DAI]', fromWei(await _strike.balanceOf(userA)));
+                console.log('[USDC]', fromWei(await _underlying.balanceOf(userA)));
+                console.log('[PERPETUAL QUANTDAI]', fromWei(await _option.balanceOf(_perpetual.address)));
+                console.log('[PERPETUAL DAI]', fromWei(await _strike.balanceOf(_perpetual.address)));
+                console.log('[PERPETUAL USDC]', fromWei(await _underlying.balanceOf(_perpetual.address)));
                 assert.strictEqual(oPulpBal, oPulp, `${oPulpBal} != ${oPulp}`);
+            });
+
+            it('Withdraws underlying assets and premiums from pool', async () => {
+                let oPulp = (0).toString();
+                await _perpetual.withdraw(oneEther, {from: userA});
+                let oPulpBal = (await _option.balanceOf(userA)).toString();
+                assert.strictEqual(oPulpBal, oPulp, `${oPulpBal} != ${oPulp}`);
+                console.log('[QUANTDAI]', fromWei(await _option.balanceOf(userA)));
+                console.log('[DAI]', fromWei(await _strike.balanceOf(userA)));
+                console.log('[USDC]', fromWei(await _underlying.balanceOf(userA)));
+                console.log('[PERPETUAL QUANTDAI]', fromWei(await _option.balanceOf(_perpetual.address)));
+                console.log('[PERPETUAL DAI]', fromWei(await _strike.balanceOf(_perpetual.address)));
+                console.log('[PERPETUAL USDC]', fromWei(await _underlying.balanceOf(_perpetual.address)));
             });
         });
     });
