@@ -50,6 +50,8 @@ interface IPrimeOption {
     function _rPulp() external view returns (address);
     function getStrike() external view returns (address);
     function getUnderlying() external view returns (address);
+    function getQuantityUnderlying() external view returns (uint256);
+    function getQuantityStrike() external view returns (uint256);
 }
 
 interface IPrimeRedeem {
@@ -58,6 +60,7 @@ interface IPrimeRedeem {
     function balanceOf(address user) external view returns (uint);
     function isCallPulp() external view returns (bool);
     function approve(address spender, uint256 amount) external returns (bool);
+    function redeem(uint256 amount) external returns (bool);
 }
 
 interface IPrimeExchange {

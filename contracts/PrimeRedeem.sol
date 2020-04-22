@@ -18,6 +18,8 @@ contract PrimeRedeem is ERC20Detailed, ERC20 {
     mapping(address => bool) public _valid;
     bool public _isCallPulp;
 
+    IERC20 public strike;
+
 
     constructor (
         string memory name,
@@ -31,10 +33,23 @@ contract PrimeRedeem is ERC20Detailed, ERC20 {
         _isCallPulp = isCallPulp;
     }
 
+    
+    function addMarket(address payable strikeAddress) public returns (address) {
+        require(_valid[msg.sender], 'ERR_NOT_VALID');
+        strike = IERC20(strikeAddress);
+        return strikeAddress;
+    }
+
     function setValid(address valid) public returns(bool) {
         require(msg.sender == _controller, 'ERR_NOT_OWNER');
         _valid[valid] = true;
         return true;
+    }
+
+    function redeem(uint256 amount) external returns (bool) {
+        require(balanceOf(msg.sender) >= amount, "ERR_BAL_REDEEM");
+        _burn(msg.sender, amount);
+        return strike.transfer(msg.sender, amount);
     }
 
 
