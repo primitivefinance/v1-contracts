@@ -2,7 +2,7 @@ pragma solidity ^0.6.2;
 
 /** 
  * @title Primitive's Instruments
- * @author Primitive Finance
+ * @author Primitive
  */
 library Instruments {
      /** 
@@ -27,5 +27,13 @@ library Instruments {
         address receiver;
         bytes4 series;
         bytes4 symbol;
+    }
+
+    struct PrimeOption {
+        uint256 qUnderlying;
+        address aUnderlying;
+        uint256 qStrike;
+        address aStrike;
+        uint256 tExpiry;
     }
 }

@@ -6,11 +6,13 @@
 
 Primitive is an on-chain options protocol. 
 
-It is powered by the Prime, an ERC-721 option. 
-Prime owners can use the Prime to swap assets at a predefined exchange rate, but only for a fixed
+It is powered by the Prime, an ERC-721 and ERC-20 option token. 
+Prime holders can burn Prime ERC-20 tokens to swap assets at a predefined exchange rate, but only for a fixed
 period of time. 
 
-These Primes have their own value derived by the value of the underlying assets. The holder **can** swap the *underlying asset* for an amount of *strike asset*. The protocol has the ability to support any ERC-20 token and Ether.
+These Primes have their own value derived by the value of the underlying assets. The holder **can** swap the *underlying asset* for an amount of *strike asset*. 
+
+The protocol has the ability to support any ERC-20 token and Ether options.
 
 Buyers pay for the Prime in exchange for the rights granted by it. Sellers provide the underlying asset and allow the underlying to be purchasable at the buyer's discretion. They earn the premiums paid by buyers.
 

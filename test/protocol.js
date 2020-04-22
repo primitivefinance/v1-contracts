@@ -1,10 +1,11 @@
 const assert = require('assert').strict;
 const truffleAssert = require('truffle-assertions');
-const tETH = artifacts.require("tETH");
+const Options = artifacts.require('Options');
 const tUSD = artifacts.require("tUSD");
 const Prime = artifacts.require("Prime");
-const Exchange = artifacts.require('Exchange');
-const Pool = artifacts.require('Pool');
+const PrimeOption = artifacts.require('PrimeOption.sol');
+const PrimeExchange = artifacts.require('PrimeExchange.sol');
+const PrimePool = artifacts.require('PrimePool.sol');
 
 contract('Prime - Local', accounts => {
 
@@ -19,20 +20,6 @@ contract('Prime - Local', accounts => {
     const Bjork = accounts[7]
     const Olga = accounts[8]
     const Treasury = accounts[9]
-
-    // Accounts Array
-    const acc_ray = [
-        ['Alice', Alice],
-        ['Bob', Bob],
-        ['Mary', Mary],
-        ['Kiln', Kiln],
-        ['Don', Don],
-        ['Penny', Penny],
-        ['Cat', Cat],
-        ['Bjork', Bjork],
-        ['Olga', Olga],
-        ['Treasury', Treasury]
-    ]
 
     let _prime,
         _tETH,
@@ -59,7 +46,14 @@ contract('Prime - Local', accounts => {
         premium,
         value,
         activeTokenId,
-        nonce
+        nonce,
+        oneEther,
+        twoEther,
+        fiveEther,
+        tenEther,
+        userA,
+        userB,
+        prime20Address
         ;
 
     async function getGas(func, name) {
@@ -67,47 +61,131 @@ contract('Prime - Local', accounts => {
         gas.push([name + ' gas: ', spent])
     }
 
-    async function getBal(contract, address, name, units) {
-        let bal = (await web3.utils.fromWei((await contract.balanceOf(address)).toString()));
-        console.log(`${name} has in bank:`, await web3.utils.fromWei(await _prime.getBalance(Alice, contract.address)))
-        console.log(`${name} has a balance of ${bal} ${units}.`);
-    }
-
-    async function getEthBal(address, name, units) {
-        let bal = await web3.utils.fromWei((await web3.eth.getBalance(address)).toString());
-        console.log(`${name} has a balance of ${bal} ${units}.`);
-    }
-
-    async function getPoolBalances(poolInstance) {
-        let liability = await web3.utils.fromWei(await poolInstance._liability());
-        let lp1Funds = await web3.utils.fromWei(await poolInstance.balanceOf(Alice));
-        let lp1Ether = await web3.utils.fromWei((await web3.eth.getBalance(Alice)).toString());
-        let lp2Funds = await web3.utils.fromWei(await poolInstance.balanceOf(Bob));
-        let lp2Ether = await web3.utils.fromWei((await web3.eth.getBalance(Bob)).toString());
-        let totalDeposit = await web3.utils.fromWei(await poolInstance.totalSupply());
-        console.log({/* pool, */ liability, lp1Funds, lp1Ether, lp2Funds, lp2Ether, totalDeposit})
-        return ({/* pool, */ liability, lp1Funds, lp1Ether, lp2Funds, lp2Ether, totalDeposit});
-    }
-
     beforeEach(async () => {
-
-        /* _prime = await Prime.deployed();
+        // get values that wont change
+        _prime = await Prime.deployed();
         _tUSD = await tUSD.deployed();
-        _exchange = await Exchange.deployed();
-        _pool = await Pool.deployed(); */
-        
-        /* collateral = await web3.utils.toWei('1');
-        payment = await web3.utils.toWei('10');
-        collateralPoolAddress = _pool.address;
-        strikeAddress = _tUSD.address;
-        primeAddress = await _exchange.getPrimeAddress();
-        expiration = '1587607322';
-        premium = (13*10**16).toString(); */
+        strike = _tUSD.address;
+        oneEther = await web3.utils.toWei('1');
+        twoEther = await web3.utils.toWei('2');
+        fiveEther = await web3.utils.toWei('5');
+        tenEther = await web3.utils.toWei('10');
+        expiry = '1587607322';
+        userA = Alice;
+        userB = Bob;
     });
     
+    describe('PrimeERC20.sol', () => {
+        beforeEach(async () => {
+            // new PrimeERC20 instance
+            options = await Options.deployed();
+            nonce = await options._nonce();
+            prime20Address = await options._primeMarkets(nonce);
+            _prime20 = await PrimeERC20.at(prime20Address);
+            _exchange20 = await ExchangeERC20.deployed();
 
-    describe('Prime.sol', () => {
-        describe('createPrime()', () => {
+            collateral = prime20Address;
+        });
+
+        describe('deposit()', () => {
+
+            it('revert if collateral is > users balance', async () => {
+                let bobBalance = await web3.utils.fromWei(await web3.eth.getBalance(Bob));
+                let million = await web3.utils.toWei('1000000');
+                await truffleAssert.reverts(
+                    _prime.createPrime(
+                        million,
+                        collateral,
+                        strikeAmount,
+                        strike,
+                        expiry,
+                        receiver,
+                        {from: minter,  value: 0}
+                    ),
+                    "a < b"
+                );
+            });
+
+            it('should revert if its an Ether Prime and no ether was sent', async () => {
+                await truffleAssert.reverts(
+                    _prime.createPrime(
+                        collateralAmount,
+                        collateral,
+                        strikeAmount,
+                        strike,
+                        expiry,
+                        receiver,
+                        {from: minter,  value: 0}
+                    ),
+                    "a < b"
+                );
+            });
+
+            it('should revert if expiration date has already passed', async () => {
+                expiry = '1585522471';
+                await truffleAssert.reverts(
+                    _prime.createPrime(
+                        collateralAmount,
+                        collateral,
+                        strikeAmount,
+                        strike,
+                        expiry,
+                        receiver,
+                        {from: minter,  value: 0}
+                    ),
+                    "Create: expired timestamp"
+                );
+            });
+
+            it('create an ether prime', async () => {
+                await _prime.createPrime(
+                    collateralAmount,
+                    collateral,
+                    strikeAmount,
+                    strike,
+                    expiry,
+                    receiver,
+                    {from: minter,  value: collateralAmount}
+                );
+            });
+
+            it('assert liability was updated after prime minted', async () => {
+                /* Assert liability of msg sender added the xis */
+                let liability = (await _prime._liabilities(Bob, collateral)).toString();
+                assert.strictEqual(
+                    liability, 
+                    (collateralAmount).toString(), 
+                    `Create: liability should be updated. 
+                    Liability: ${liability} collateral: ${collateralAmount}`
+                );
+        
+                /* Assert returns the nonce of the token */
+            });
+
+            it('assert ether collateral was deposited in Prime', async () => {
+                let collateralBalance = await web3.eth.getBalance(_prime.address);
+                assert.strictEqual(
+                    collateralBalance,
+                    collateralAmount,
+                    `Prime Balance: ${collateralBalance},
+                     Collateral Amount: ${collateralAmount},
+                     should equal.
+                    `
+                );
+            });
+
+            it('should have had the nonce updated to 1', async () => {
+                let nonce = (await _prime._nonce()).toString();
+                assert.strictEqual(nonce, '1', `Nonce: ${nonce} should be 1 - one minted Prime.`);
+            });
+
+            it('should close the prime', async () => {
+                let nonce = (await _prime._nonce()).toString();
+                await _prime.close(nonce, nonce, {from: minter, value: 0});
+            });
+        });
+
+        describe('depositAndSell()', () => {
             let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
             beforeEach(async () => {
                 _prime = await Prime.deployed();
@@ -220,7 +298,7 @@ contract('Prime - Local', accounts => {
             });
         });
 
-        describe('exercise()', () => {
+        describe('swap()', () => {
             let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
             beforeEach(async () => {
                 minter = Bob;
@@ -467,6 +545,52 @@ contract('Prime - Local', accounts => {
             });
         });
 
+        describe('withdraw()', () => {
+            let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
+            beforeEach(async () => {
+                minter = Bob;
+                collateralAmount = await web3.utils.toWei('1');
+                strikeAmount = await web3.utils.toWei('10');
+                collateral = _pool.address;
+                strike = _tUSD.address;
+                expiry = '1587607322';
+                receiver = minter;
+            });
+
+            it('mint a prime, then try to withdraw more collateral than exercised', async () => {
+                await _prime.createPrime(
+                    collateralAmount,
+                    collateral,
+                    strikeAmount,
+                    strike,
+                    expiry,
+                    receiver,
+                    {from: minter,  value: collateralAmount}
+                );
+                let tokenId = await _prime._nonce();
+                await _tUSD.mint(minter, strikeAmount);
+                await _tUSD.approve(_prime.address, strikeAmount, {from: minter});
+                await _prime.exercise(tokenId, {from: minter, value: 0});
+                let million = await web3.utils.toWei('1000000');
+                await truffleAssert.reverts(
+                    _prime.withdraw(million, collateral, {from: minter, value: 0}),
+                    "a < b"
+                );
+            });
+
+            it('should withdraw valid amount and debited it from assets', async () => {
+                let assetBalanceBefore = (await _prime._assets(minter, collateral, {from: minter, value: 0}));
+                await _prime.withdraw(collateralAmount, collateral, {from: minter, value: 0});
+                let assetBalanceAfter = (await _prime._assets(minter, collateral, {from: minter, value: 0})).toString();
+                assert.strictEqual(
+                    assetBalanceAfter,
+                    (assetBalanceBefore*1 - collateralAmount*1).toString(),
+                    `Withdrawed assets should have been debited.
+                    Before: ${(assetBalanceBefore*1 - collateralAmount*1).toString()}, After: ${assetBalanceAfter}`
+                );
+            });
+        });
+
         describe('close()', () => {
             let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
             beforeEach(async () => {
@@ -596,229 +720,9 @@ contract('Prime - Local', accounts => {
                 ); */
             });
         });
-
-        describe('withdraw()', () => {
-            let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
-            beforeEach(async () => {
-                minter = Bob;
-                collateralAmount = await web3.utils.toWei('1');
-                strikeAmount = await web3.utils.toWei('10');
-                collateral = _pool.address;
-                strike = _tUSD.address;
-                expiry = '1587607322';
-                receiver = minter;
-            });
-
-            it('mint a prime, then try to withdraw more collateral than exercised', async () => {
-                await _prime.createPrime(
-                    collateralAmount,
-                    collateral,
-                    strikeAmount,
-                    strike,
-                    expiry,
-                    receiver,
-                    {from: minter,  value: collateralAmount}
-                );
-                let tokenId = await _prime._nonce();
-                await _tUSD.mint(minter, strikeAmount);
-                await _tUSD.approve(_prime.address, strikeAmount, {from: minter});
-                await _prime.exercise(tokenId, {from: minter, value: 0});
-                let million = await web3.utils.toWei('1000000');
-                await truffleAssert.reverts(
-                    _prime.withdraw(million, collateral, {from: minter, value: 0}),
-                    "a < b"
-                );
-            });
-
-            it('should withdraw valid amount and debited it from assets', async () => {
-                let assetBalanceBefore = (await _prime._assets(minter, collateral, {from: minter, value: 0}));
-                await _prime.withdraw(collateralAmount, collateral, {from: minter, value: 0});
-                let assetBalanceAfter = (await _prime._assets(minter, collateral, {from: minter, value: 0})).toString();
-                assert.strictEqual(
-                    assetBalanceAfter,
-                    (assetBalanceBefore*1 - collateralAmount*1).toString(),
-                    `Withdrawed assets should have been debited.
-                    Before: ${(assetBalanceBefore*1 - collateralAmount*1).toString()}, After: ${assetBalanceAfter}`
-                );
-            });
-        });
     });
 
-    describe('Pool.sol', () => {
-        describe('setExchangeAddress()', () => {
-            let minter;
-            beforeEach(async () => {
-                minter = Bob;
-                _prime = await Prime.deployed();
-                _tUSD = await tUSD.deployed();
-                _exchange = await Exchange.deployed();
-                _pool = await Pool.deployed();
-            });
-
-            it('should assert only owner can call set exchange', async () => {
-                await truffleAssert.reverts(
-                    _pool.setExchangeAddress(minter, {from: minter}),
-                    "Ownable: caller is not the owner"
-                );
-            });
-        });
-
-        describe('deposit()', () => {
-            let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
-            beforeEach(async () => {
-                minter = Bob;
-                collateralAmount = await web3.utils.toWei('1');
-                strikeAmount = await web3.utils.toWei('10');
-                collateral = _pool.address;
-                strike = _tUSD.address;
-                expiry = '1587607322';
-                receiver = minter;
-            });
-
-            it('should revert if msg.value != deposit amount', async () => {
-                await truffleAssert.reverts(
-                    _pool.deposit(collateralAmount, {from: minter, value: strikeAmount}),
-                    "Deposit: Val < deposit"
-                );
-            });
-
-            it('check initial LP token mint is equal to deposit amount', async () => {
-                let deposit = await _pool.deposit(collateralAmount, {from: minter, value: collateralAmount});
-                await truffleAssert.eventEmitted(deposit, "Deposit");
-                let mintedPulpTokens = (await _pool.balanceOf(minter)).toString();
-                /* FIX - NEED TO FIND A WAY TO CALCULATE EXCHANGE RATE BETWEEN PULP AND ETHER */
-                /* assert.strictEqual(
-                    mintedPulpTokens,
-                    collateralAmount,
-                    `Minted LP tokens should match deposit for the initial supply.
-                    Minted: ${mintedPulpTokens}, Collateral: ${collateralAmount}`
-                ); */
-            });
-
-            it('asserts the ether was converted into cEther', async () => {
-                /* FIX */
-
-                /* let etherBalanceOfPool = (await web3.eth.getBalance(_pool.address)).toString();
-                let cEtherBalanceOfPool = (await _pool.getPoolBalance()).toString();
-                assert.strictEqual(
-                    etherBalanceOfPool,
-                    cEtherBalanceOfPool,
-                    `Gets balance of underlying through cEther and compares to deposit.
-                    Ether Bal: ${etherBalanceOfPool}, cEther Equivalent: ${cEtherBalanceOfPool}`
-                ); */
-            });
-
-            it('asserts deposit event was emitted', async () => {
-                let deposit = await _pool.deposit(collateralAmount, {from: minter, value: collateralAmount});
-                await truffleAssert.eventEmitted(deposit, 'Deposit');
-            });
-        });
-
-        describe('withdraw()', () => {
-            let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
-            beforeEach(async () => {
-                minter = Bob;
-                collateralAmount = await web3.utils.toWei('1');
-                strikeAmount = await web3.utils.toWei('10');
-                collateral = _pool.address;
-                strike = _tUSD.address;
-                expiry = '1587607322';
-                receiver = minter;
-            });
-            
-            it('revert with attempted withdraw amount is greater than deposit', async () => {
-                let million = (await web3.utils.toWei('1000000')).toString();
-                await truffleAssert.reverts(
-                    _pool.withdraw(million, {from: minter, value: 0}),
-                    `Withdraw: Bal < withdraw`
-                )
-            });
-
-            it('revert with attempted withdraw amount is greater than max draw', async () => {
-                /* FIX - need to find a way to fill the pool with just enough liabilities to trigger this */
-                
-                /* Make a liabilitiy */
-                /* await _pool.mintPrimeFromPool(
-                    collateralAmount,
-                    strikeAmount,
-                    strike,
-                    expiry,
-                    minter,
-                    {from: minter, value: collateralAmount}
-                );
-                let totalBalance = (await _pool.totalSupply()).toString();
-                await truffleAssert.reverts(
-                    _pool.withdraw(
-                        totalBalance,
-                        {from: minter, value: 0}
-                    ),
-                    "Withdraw: max burn < amt"
-                ); */
-            });
-        });
-
-        describe('closePosition()', () => {
-            let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
-            beforeEach(async () => {
-                minter = Bob;
-                collateralAmount = await web3.utils.toWei('1');
-                strikeAmount = await web3.utils.toWei('10');
-                collateral = _pool.address;
-                strike = _tUSD.address;
-                expiry = '1587607322';
-                receiver = minter;
-            });
-
-            it('should revert, attempts to close a position larger than their position', async () => {
-                let million = (await web3.utils.toWei('1000000')).toString();
-                await truffleAssert.reverts(
-                    _pool.closePosition(million, {from: minter, value: 0}),
-                    "Close: Eth Bal < amt"
-                );
-            });
-
-            it('should revert, attempts to close a position without paying its debt', async () => {
-                let pulpBalanceOfUser = (await _pool.balanceOf(minter, {from: minter})).toString();
-                /* Make a liabilitiy */
-                await _pool.mintPrimeFromPool(
-                    collateralAmount,
-                    strikeAmount,
-                    strike,
-                    expiry,
-                    minter,
-                    {from: minter, value: collateralAmount}
-                );
-                await truffleAssert.reverts(
-                    _pool.closePosition(pulpBalanceOfUser, {from: minter, value: 0}),
-                    "Close: Value < debt"
-                );
-            });
-
-            it('should close position by paying debt', async () => {
-                let pulpBalanceOfUser = (await _pool.balanceOf(minter, {from: minter})).toString();
-                let etherBalanceOfUserBefore = (await web3.eth.getBalance(minter)).toString();
-                let close = await _pool.closePosition(pulpBalanceOfUser, {from: minter, value: pulpBalanceOfUser});
-                let pulpBalanceOfUserAfter = (await _pool.balanceOf(minter, {from: minter})).toString();
-                let etherBalanceOfUserAfter = (await web3.eth.getBalance(minter)).toString();
-                assert.strictEqual(
-                    pulpBalanceOfUserAfter,
-                    (pulpBalanceOfUser*1 - pulpBalanceOfUser*1).toString(),
-                    `Should burn all the pulp tokens.
-                    Pulp before: ${pulpBalanceOfUser}, Pulp after: ${pulpBalanceOfUserAfter}`
-                );
-                await truffleAssert.eventEmitted(close, 'Close');
-                /* Assertion below has 0.0001 ether difference because of Compound interest - FIX */
-                /* assert.strictEqual(
-                    etherBalanceOfUserAfter,
-                    (etherBalanceOfUserBefore*1 + pulpBalanceOfUser*1).toString(),
-                    `Should have sent ether proportional to pulp burned.
-                    Ether before: ${etherBalanceOfUserBefore}, Ether After: ${etherBalanceOfUserAfter}`
-                ); */
-            });
-        });
-    });
-
-    describe('Exchange.sol', () => {
+    describe('ExchangeERC20.sol', () => {
         let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
         beforeEach(async () => {
             _prime = await Prime.deployed();
@@ -864,7 +768,7 @@ contract('Prime - Local', accounts => {
             );
         });
 
-    describe('sellOrder()', () => {
+        describe('addLiquidity()', () => {
         let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
         beforeEach(async () => {
             _prime = await Prime.deployed();
@@ -1103,9 +1007,9 @@ contract('Prime - Local', accounts => {
                 owner: ${owner} exchange: ${_exchange.address}`
             );
         });
-    });
+        });
 
-    describe('buyOrder()', () => {
+        describe('removeLiquidity()', () => {
         let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
         beforeEach(async () => {
             minter = Bob;
@@ -1213,9 +1117,9 @@ contract('Prime - Local', accounts => {
                 'Buy order token id should be token id'
             );
         });
-    });
+        });
 
-    describe('closeSellOrder()', () => {
+        describe('swapTokensToEth()', () => {
         let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
         beforeEach(async () => {
             minter = Bob;
@@ -1294,9 +1198,9 @@ contract('Prime - Local', accounts => {
                 `Should be seller who receives prime token back.`
             );
         });
-    });
+        });
 
-    describe('closeBuyOrder()', () => {
+        describe('swapEthToTokens()', () => {
         let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
         beforeEach(async () => {
             minter = Bob;
@@ -1375,94 +1279,240 @@ contract('Prime - Local', accounts => {
                 `Bid price should be users balance in exchange.`
             );
         });
-    });
-    
-    describe('closeUnfilledBuyOrder()', () => {
-        let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
-        beforeEach(async () => {
-            minter = Bob;
-            collateralAmount = await web3.utils.toWei('1');
-            strikeAmount = await web3.utils.toWei('10');
-            collateral = _pool.address;
-            strike = _tUSD.address;
-            expiry = '1587607322';
-            receiver = minter;
-        });
-
-        it('should revert if trying to close buy order without being buyer', async () => {
-            await _prime.createPrime(
-                collateralAmount,
-                collateral,
-                strikeAmount,
-                strike,
-                expiry,
-                minter,
-                {from: minter, value: collateralAmount}
-            );
-            let tokenId = await _prime._nonce();
-            let series = await _prime.getSeries(tokenId);
-            let bidPrice = (await web3.utils.toWei('0.5')).toString();
-            let buyOrderUnfilled = await _exchange.buyOrderUnfilled(
-                bidPrice,
-                collateralAmount,
-                collateral,
-                strikeAmount,
-                strike,
-                expiry,
-                {from: Alice, value: collateralAmount}
-            );
-
-            let buyOrderNonce = await _exchange._unfilledNonce(series);
-            tokenId = 0;
-            await truffleAssert.reverts(
-                _exchange.closeUnfilledBuyOrder(series, buyOrderNonce, {from: minter}),
-                "Msg.sender != buyer"
-            );
-        });
-
-        it('close unfilled buy order', async () => {
-            let tokenId = await _prime._nonce();
-            let series = await _prime.getSeries(tokenId);
-            let buyOrderNonce = await _exchange._unfilledNonce(series);
-            let closeUnfilledBuyOrder = await _exchange.closeUnfilledBuyOrder(series, buyOrderNonce, {from: Alice});
-            await truffleAssert.eventEmitted(closeUnfilledBuyOrder, 'CloseUnfilledBuyOrder');
-        });
-
-        it('assert unfilled buy order was cleared from state', async () => {
-            let tokenId = await _prime._nonce();
-            let bidPrice = 0;
-            let series = await _prime.getSeries(tokenId);
-            let buyOrderNonce = await _exchange._unfilledNonce(series);
-            let buyOrder = await _exchange._buyOrdersUnfilled(series, buyOrderNonce, {from: Alice});
-            let zeroAddress = '0x0000000000000000000000000000000000000000';
-            assert.strictEqual(
-                buyOrder.buyer,
-                zeroAddress,
-                'Buy order buyer should be zero address'
-            );
-            assert.strictEqual(
-                (buyOrder.bidPrice).toString(),
-                (bidPrice).toString(),
-                'Buy order bid should be 0'
-            );
-            /* Undefined tokenId */
-            /* assert.strictEqual(
-                (buyOrder.tokenId).toString(),
-                '0',
-                `Buy order token id should be 0
-                buy order tokenid: ${buyOrder.tokenId}`
-            ); */
-        });
-
-        it('assert prime was transferred from exchange to buyer', async () => {
-            let bidPrice = (await web3.utils.toWei('0.5')).toString();
-            let etherBalanceOfBuyer = (await _exchange._etherBalance(Alice, {from: Alice})).toString();
-            assert.strictEqual(
-                etherBalanceOfBuyer,
-                bidPrice,
-                `Bid price should be users balance in exchange.`
-            );
         });
     });
+
+    describe('PoolERC20.sol', () => {
+        describe('setExchangeAddress()', () => {
+            let minter;
+            beforeEach(async () => {
+                minter = Bob;
+                _prime = await Prime.deployed();
+                _tUSD = await tUSD.deployed();
+                _exchange = await Exchange.deployed();
+                _pool = await Pool.deployed();
+            });
+
+            it('should assert only owner can call set exchange', async () => {
+                await truffleAssert.reverts(
+                    _pool.setExchangeAddress(minter, {from: minter}),
+                    "Ownable: caller is not the owner"
+                );
+            });
+        });
+
+        describe('deposit()', () => {
+            let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
+            beforeEach(async () => {
+                minter = Bob;
+                collateralAmount = await web3.utils.toWei('1');
+                strikeAmount = await web3.utils.toWei('10');
+                collateral = _pool.address;
+                strike = _tUSD.address;
+                expiry = '1587607322';
+                receiver = minter;
+            });
+
+            it('should revert if msg.value != deposit amount', async () => {
+                await truffleAssert.reverts(
+                    _pool.deposit(collateralAmount, {from: minter, value: strikeAmount}),
+                    "Deposit: Val < deposit"
+                );
+            });
+
+            it('check initial LP token mint is equal to deposit amount', async () => {
+                let deposit = await _pool.deposit(collateralAmount, {from: minter, value: collateralAmount});
+                await truffleAssert.eventEmitted(deposit, "Deposit");
+                let mintedPulpTokens = (await _pool.balanceOf(minter)).toString();
+                /* FIX - NEED TO FIND A WAY TO CALCULATE EXCHANGE RATE BETWEEN PULP AND ETHER */
+                /* assert.strictEqual(
+                    mintedPulpTokens,
+                    collateralAmount,
+                    `Minted LP tokens should match deposit for the initial supply.
+                    Minted: ${mintedPulpTokens}, Collateral: ${collateralAmount}`
+                ); */
+            });
+
+            it('asserts the ether was converted into cEther', async () => {
+                /* FIX */
+
+                /* let etherBalanceOfPool = (await web3.eth.getBalance(_pool.address)).toString();
+                let cEtherBalanceOfPool = (await _pool.getPoolBalance()).toString();
+                assert.strictEqual(
+                    etherBalanceOfPool,
+                    cEtherBalanceOfPool,
+                    `Gets balance of underlying through cEther and compares to deposit.
+                    Ether Bal: ${etherBalanceOfPool}, cEther Equivalent: ${cEtherBalanceOfPool}`
+                ); */
+            });
+
+            it('asserts deposit event was emitted', async () => {
+                let deposit = await _pool.deposit(collateralAmount, {from: minter, value: collateralAmount});
+                await truffleAssert.eventEmitted(deposit, 'Deposit');
+            });
+        });
+
+        describe('withdraw()', () => {
+            let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
+            beforeEach(async () => {
+                minter = Bob;
+                collateralAmount = await web3.utils.toWei('1');
+                strikeAmount = await web3.utils.toWei('10');
+                collateral = _pool.address;
+                strike = _tUSD.address;
+                expiry = '1587607322';
+                receiver = minter;
+            });
+            
+            it('revert with attempted withdraw amount is greater than deposit', async () => {
+                let million = (await web3.utils.toWei('1000000')).toString();
+                await truffleAssert.reverts(
+                    _pool.withdraw(million, {from: minter, value: 0}),
+                    `Withdraw: Bal < withdraw`
+                )
+            });
+
+            it('revert with attempted withdraw amount is greater than max draw', async () => {
+                /* FIX - need to find a way to fill the pool with just enough liabilities to trigger this */
+                
+                /* Make a liabilitiy */
+                /* await _pool.mintPrimeFromPool(
+                    collateralAmount,
+                    strikeAmount,
+                    strike,
+                    expiry,
+                    minter,
+                    {from: minter, value: collateralAmount}
+                );
+                let totalBalance = (await _pool.totalSupply()).toString();
+                await truffleAssert.reverts(
+                    _pool.withdraw(
+                        totalBalance,
+                        {from: minter, value: 0}
+                    ),
+                    "Withdraw: max burn < amt"
+                ); */
+            });
+        });
+
+        describe('redeem()', () => {
+            let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
+            beforeEach(async () => {
+                minter = Bob;
+                collateralAmount = await web3.utils.toWei('1');
+                strikeAmount = await web3.utils.toWei('10');
+                collateral = _pool.address;
+                strike = _tUSD.address;
+                expiry = '1587607322';
+                receiver = minter;
+            });
+
+            it('should revert, attempts to close a position larger than their position', async () => {
+                let million = (await web3.utils.toWei('1000000')).toString();
+                await truffleAssert.reverts(
+                    _pool.closePosition(million, {from: minter, value: 0}),
+                    "Close: Eth Bal < amt"
+                );
+            });
+
+            it('should revert, attempts to close a position without paying its debt', async () => {
+                let pulpBalanceOfUser = (await _pool.balanceOf(minter, {from: minter})).toString();
+                /* Make a liabilitiy */
+                await _pool.mintPrimeFromPool(
+                    collateralAmount,
+                    strikeAmount,
+                    strike,
+                    expiry,
+                    minter,
+                    {from: minter, value: collateralAmount}
+                );
+                await truffleAssert.reverts(
+                    _pool.closePosition(pulpBalanceOfUser, {from: minter, value: 0}),
+                    "Close: Value < debt"
+                );
+            });
+
+            it('should close position by paying debt', async () => {
+                let pulpBalanceOfUser = (await _pool.balanceOf(minter, {from: minter})).toString();
+                let etherBalanceOfUserBefore = (await web3.eth.getBalance(minter)).toString();
+                let close = await _pool.closePosition(pulpBalanceOfUser, {from: minter, value: pulpBalanceOfUser});
+                let pulpBalanceOfUserAfter = (await _pool.balanceOf(minter, {from: minter})).toString();
+                let etherBalanceOfUserAfter = (await web3.eth.getBalance(minter)).toString();
+                assert.strictEqual(
+                    pulpBalanceOfUserAfter,
+                    (pulpBalanceOfUser*1 - pulpBalanceOfUser*1).toString(),
+                    `Should burn all the pulp tokens.
+                    Pulp before: ${pulpBalanceOfUser}, Pulp after: ${pulpBalanceOfUserAfter}`
+                );
+                await truffleAssert.eventEmitted(close, 'Close');
+                /* Assertion below has 0.0001 ether difference because of Compound interest - FIX */
+                /* assert.strictEqual(
+                    etherBalanceOfUserAfter,
+                    (etherBalanceOfUserBefore*1 + pulpBalanceOfUser*1).toString(),
+                    `Should have sent ether proportional to pulp burned.
+                    Ether before: ${etherBalanceOfUserBefore}, Ether After: ${etherBalanceOfUserAfter}`
+                ); */
+            });
+        });
+
+        describe('closePosition()', () => {
+            let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
+            beforeEach(async () => {
+                minter = Bob;
+                collateralAmount = await web3.utils.toWei('1');
+                strikeAmount = await web3.utils.toWei('10');
+                collateral = _pool.address;
+                strike = _tUSD.address;
+                expiry = '1587607322';
+                receiver = minter;
+            });
+
+            it('should revert, attempts to close a position larger than their position', async () => {
+                let million = (await web3.utils.toWei('1000000')).toString();
+                await truffleAssert.reverts(
+                    _pool.closePosition(million, {from: minter, value: 0}),
+                    "Close: Eth Bal < amt"
+                );
+            });
+
+            it('should revert, attempts to close a position without paying its debt', async () => {
+                let pulpBalanceOfUser = (await _pool.balanceOf(minter, {from: minter})).toString();
+                /* Make a liabilitiy */
+                await _pool.mintPrimeFromPool(
+                    collateralAmount,
+                    strikeAmount,
+                    strike,
+                    expiry,
+                    minter,
+                    {from: minter, value: collateralAmount}
+                );
+                await truffleAssert.reverts(
+                    _pool.closePosition(pulpBalanceOfUser, {from: minter, value: 0}),
+                    "Close: Value < debt"
+                );
+            });
+
+            it('should close position by paying debt', async () => {
+                let pulpBalanceOfUser = (await _pool.balanceOf(minter, {from: minter})).toString();
+                let etherBalanceOfUserBefore = (await web3.eth.getBalance(minter)).toString();
+                let close = await _pool.closePosition(pulpBalanceOfUser, {from: minter, value: pulpBalanceOfUser});
+                let pulpBalanceOfUserAfter = (await _pool.balanceOf(minter, {from: minter})).toString();
+                let etherBalanceOfUserAfter = (await web3.eth.getBalance(minter)).toString();
+                assert.strictEqual(
+                    pulpBalanceOfUserAfter,
+                    (pulpBalanceOfUser*1 - pulpBalanceOfUser*1).toString(),
+                    `Should burn all the pulp tokens.
+                    Pulp before: ${pulpBalanceOfUser}, Pulp after: ${pulpBalanceOfUserAfter}`
+                );
+                await truffleAssert.eventEmitted(close, 'Close');
+                /* Assertion below has 0.0001 ether difference because of Compound interest - FIX */
+                /* assert.strictEqual(
+                    etherBalanceOfUserAfter,
+                    (etherBalanceOfUserBefore*1 + pulpBalanceOfUser*1).toString(),
+                    `Should have sent ether proportional to pulp burned.
+                    Ether before: ${etherBalanceOfUserBefore}, Ether After: ${etherBalanceOfUserAfter}`
+                ); */
+            });
+        });
     });
 })

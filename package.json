@@ -13,20 +13,25 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/primitivefinance/Primitive-v1.git"
+    "url": "git+https://github.com/primitivefinance/primitive-contracts.git"
   },
   "author": "Primitive",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/primitivefinance/Primitive-v1/issues"
+    "url": "https://github.com/primitivefinance/primitive-contracts/issues"
   },
-  "homepage": "https://github.com/primitivefinance/Primitive-v1#readme",
+  "homepage": "https://github.com/primitivefinance/primitive-contracts#readme",
   "dependencies": {
     "@truffle/hdwallet-provider": "^1.0.32",
+    "@types/mathjs": "^6.0.5",
+    "@types/yup": "^0.26.36",
+    "bignumber.js": "^9.0.0",
     "dotenv": "^8.2.0",
+    "mathjs": "^6.6.4",
     "react": "^16.13.0",
     "truffle-assertions": "^0.9.2",
-    "truffle-hdwallet-provider": "^1.0.17"
+    "truffle-hdwallet-provider": "^1.0.17",
+    "yup": "^0.28.3"
   },
   "devDependencies": {
     "@openzeppelin/contracts": "^3.0.0-beta.0",
