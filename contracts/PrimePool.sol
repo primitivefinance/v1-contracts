@@ -34,7 +34,7 @@ interface ICDai {
 }
 
 interface AggregatorInterface {
-  function latestAnswer() external view returns (uint256);
+  function currentAnswer() external view returns (int256);
 }
 
 contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
@@ -125,9 +125,9 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
         // Assume this is the underlying asset of the series
         IERC20 underlying = IERC20(prime.getUnderlying());
         if(address(underlying) == address(prime)) {
-            require(msg.value == amount, "ERR_BAL_ETH");
+            require(msg.value == amount && msg.value > 0, "ERR_BAL_ETH");
         } else {
-            require(underlying.balanceOf(msg.sender) >= amount, "ERR_BAL_UNDERLYING");
+            require(underlying.balanceOf(msg.sender) >= amount && amount > 0, "ERR_BAL_UNDERLYING");
         }
         
 
@@ -136,7 +136,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
         // Mint LP tokens proportional to the Total LP Supply and Total Pool Balance
         uint256 amountToMint;
         uint256 totalSupply = totalSupply();
-        uint256 poolBalance = totalOptionSupply();
+        uint256 poolBalance = totalPoolBalance();
          
         // If liquidity is not intiialized, mint LP tokens equal to deposit
         if(poolBalance.mul(totalSupply) == 0) {
@@ -177,7 +177,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
 
         /* CHECKS */
         require(balanceOf(msg.sender) >= amount, "ERR_BAL_LPROVIDER");
-        require(maxInsuranceProviderTokenBurnAmount() >= amount, "ERR_BAL_RESERVE");
+        require(maxLiquidityWithdrawable() >= amount, "ERR_BAL_RESERVE");
 
         /* EFFECTS */
 
@@ -188,7 +188,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
         uint256 maxRedeem = redeem.balanceOf(address(this));
 
         // Price of Underlying, Assume ETH
-        uint256 price = _oracle.latestAnswer();
+        uint256 price = uint(_oracle.currentAnswer());
         
         // Total Strike Balance in Pool Contract
         uint256 strikeBalance = strike.balanceOf(address(this));
@@ -226,7 +226,6 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
     
 
         // Transfer the remainder in strike assets
-        assert(strike.balanceOf(address(this)) >= strikeToWithdraw);
         if(strikeToWithdraw > 0) {
             strike.transfer(msg.sender, strikeToWithdraw);
         }
@@ -253,23 +252,17 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
         nonReentrant
         returns (bool)
     {
-        // Assert the option is writable by the pool
+
         require(isValidOption[optionAddress], "ERR_INVALID_OPTION");
         IPrimeOption option = IPrimeOption(optionAddress);
 
-        // Need Amount of Option * qUnderlying of Option amount of underlying assets to be unutilized
-        uint256 minUnderlying = amount.mul(option.getQuantityUnderlying()).div(1 ether);
+        require(totalUnutilized() >= amount, "ERR_BAL_UNDERLYING");
 
-        // Check to see if there is available provider funds to mint the options
-        require(totalUnutilized() >= minUnderlying, "ERR_BAL_UNDERLYING");
 
-        // Check to see if User has enough ETH to pay the premium
-        // Ex. Buying 1 Option = 1 Option * 1 ETH = 1 ETH Minimum
-        // Premium Fee = 5%. Premium = 0.05 ETH. Extrinsic value.
-        uint256 premium = minUnderlying.div(FIVE_HUNDRED_BPS); // FIX
+        uint256 premium = amount.div(FIVE_HUNDRED_BPS); 
 
-        // Assume this is ETH's USD Price. Call Intrinsic Value = Market Price - Strike.
-        uint256 price = _oracle.latestAnswer();
+
+        uint256 price = uint(_oracle.currentAnswer());
 
         uint256 intrinsic;
         if(option.getQuantityStrike() > price) {
@@ -281,16 +274,18 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
         uint256 cost = premium.add(intrinsic);
 
         require(msg.value >= cost, "ERR_BAL_ETH");
+        if(msg.value > cost) {
+            uint256 refund = msg.value.sub(cost);
+            sendEther(msg.sender, refund);
+        }
 
-        // Update total option's minted by Pool
         _totalOptionSupply = _totalOptionSupply.add(amount);
-
-        // Mint the option using the Pool's unutilized balance
-        // Perpetual Should Have Approved Underlying Assets to Prime
-        option.deposit(minUnderlying);
-
-        // Send the options to the user
-        assert(option.balanceOf(address(this)) >= amount);
+        if(option.isEthCallOption()) {
+            option.deposit.value(amount)(amount);
+        } else {
+            option.deposit(amount);
+        }
+        
         return option.transfer(msg.sender, amount);
     }
 
@@ -319,10 +314,10 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
         _totalOptionSupply = _totalOptionSupply.sub(amountToRedeem);
 
         // Would be 5% of 1 ETH of 1 Redeemed Option = 0.05 ETH. FIX - NEEDS TO ACCOUNT FOR EXPIRATION
-        uint256 maxExtrinsic = amountToRedeem.mul(option.getQuantityUnderlying()).div(1 ether).div(ONE_HUNDRED_BPS);
+        uint256 maxExtrinsic = amountToRedeem.div(ONE_HUNDRED_BPS);
 
         // Assume this is ETH's USD Price. Call Intrinsic Value = Market Price - Strike.
-        uint256 price = _oracle.latestAnswer();
+        uint256 price = uint(_oracle.currentAnswer());
 
         // Assume qStrike is a stablecoin pegged to $1
         uint256 intrinsic;
@@ -342,6 +337,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
         option.close(amountToRedeem);
 
         // Send the premium to the redeemer (seller)
+        _test = maxEth;
         return sendEther(msg.sender, maxEth);
     }
 
@@ -364,20 +360,21 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
      * @dev Gets the Utilized asset balance of the Pool.
      * @notice Gets the total assets that are being utilized as underlying assets in Prime Options.
      */
-    function totalUtilized() public view returns (uint256) {
-        return totalOptionSupply();
+    function totalPoolBalance() public view returns (uint256) {
+        return totalOptionSupply().add(totalUnutilized());
     }
 
+
     /**
-     * @dev max amount of LP tokens that can be burned to withdraw underlying assets USDC
-     * @notice Max Burn = USDC Balance * Total Supply of IP Tokens / Total Dai + Total USDC
+     * @dev max amount of LP tokens that can be burned to withdraw underlying assets
+     * @notice Max Burn = Underlying Balance * Total Supply of LP Tokens / Total Underlying + Strike Assets denominated in the Underlying
      * @return uint256 max amount of tokens that can be burned to withdraw underlying assets
      */
-    function maxInsuranceProviderTokenBurnAmount() public returns (uint256) {
+    function maxLiquidityWithdrawable() public returns (uint256) {
         /* LP = (ET - L) * ST / ET where ST = Total Supply */
-        uint256 maxBurn = totalUnutilized().mul(totalSupply()).div(totalUtilized());
-        require(maxBurn <= totalUnutilized(), 'ERR_BAL_UNUTILIZED');
-        return maxBurn;
+        uint256 maxLiquidity = totalUnutilized().mul(totalSupply()).div(totalPoolBalance());
+        require(maxLiquidity <= totalUnutilized(), "ERR_BAL_UNUTILIZED");
+        return maxLiquidity;
     }
 
     /* CAPITAL MANAGEMENT FUNCTIONS */

@@ -52,6 +52,7 @@ interface IPrimeOption {
     function getUnderlying() external view returns (address);
     function getQuantityUnderlying() external view returns (uint256);
     function getQuantityStrike() external view returns (uint256);
+    function isEthCallOption() external view returns (bool);
 }
 
 interface IPrimeRedeem {
