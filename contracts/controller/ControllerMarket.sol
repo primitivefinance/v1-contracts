@@ -66,10 +66,9 @@ contract ControllerMarket is Ownable {
     function createMarket(
         string memory name,
         string memory symbol,
-        uint256 tokenQU,
         address tokenU,
-        uint256 tokenQS,
         address tokenS,
+        uint256 ratio,
         uint256 expiry
     ) public onlyOwner returns (uint256) {
         IControllerOption optionController = IControllerOption(_controllers.option);
@@ -78,10 +77,9 @@ contract ControllerMarket is Ownable {
         (address payable option, uint256 marketId) = optionController.addOption(
             name,
             symbol,
-            tokenQU,
             tokenU,
-            tokenQS,
             tokenS,
+            ratio,
             expiry
         );
 

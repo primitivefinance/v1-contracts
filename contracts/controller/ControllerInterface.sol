@@ -26,10 +26,9 @@ interface IControllerOption {
     function addOption(
         string calldata name,
         string calldata symbol,
-        uint256 tokenQU,
         address tokenU,
-        uint256 tokenQS,
         address tokenS,
+        uint256 ratio,
         uint256 expiry
     ) external returns (address payable, uint256);
 

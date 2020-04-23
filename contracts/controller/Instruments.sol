@@ -6,10 +6,9 @@ pragma solidity ^0.6.2;
  */
 library Instruments {
     struct PrimeOption {
-        uint256 tokenQU;
         address tokenU;
-        uint256 tokenQS;
         address tokenS;
+        uint256 ratio;
         uint256 expiry;
     }
 }

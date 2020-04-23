@@ -1,12 +1,10 @@
 const assert = require('assert').strict;
 const truffleAssert = require('truffle-assertions');
 const ControllerMarket = artifacts.require('ControllerMarket');
-const Usdc = artifacts.require("USDC");
-const Prime = artifacts.require("Prime");
 const PrimeOption = artifacts.require('PrimeOption.sol');
 const PrimePool = artifacts.require('PrimePool.sol');
 const PrimeRedeem = artifacts.require('PrimeRedeem');
-const PrimePerpetual = artifacts.require('PrimePerpetual');
+const Usdc = artifacts.require("USDC");
 
 contract('PrimeERC20', accounts => {
     const { toWei } = web3.utils;
@@ -95,8 +93,6 @@ contract('PrimeERC20', accounts => {
             isTokenOption,
         );
         
-        // Get the market contracts
-        _prime = await Prime.deployed();
         
         _pool = await PrimePool.at(await _controllerMarket.getMaker(firstMarket));
         _option = await PrimeOption.at(await _controllerMarket.getOption(firstMarket));

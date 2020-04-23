@@ -25,10 +25,9 @@ contract ControllerOption is Ownable {
     function addOption(
         string calldata name,
         string calldata symbol,
-        uint256 tokenQU,
         address tokenU,
-        uint256 tokenQS,
         address tokenS,
+        uint256 ratio,
         uint256 expiry
     )
         external
@@ -40,10 +39,9 @@ contract ControllerOption is Ownable {
             name,
             symbol,
             _marketNonce,
-            tokenQU,
             tokenU,
-            tokenQS,
             tokenS,
+            ratio,
             expiry
         );
         return (address(primeOption), _marketNonce);

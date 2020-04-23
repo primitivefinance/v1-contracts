@@ -29,10 +29,9 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         string memory name,
         string memory symbol,
         uint256 _marketId,
-        uint256 tokenQU,
         address tokenU,
-        uint256 tokenQS,
         address tokenS,
+        uint256 ratio,
         uint256 expiry
     ) 
         public
@@ -41,10 +40,9 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         marketId = _marketId;
         _instrumentController = msg.sender;
         option = Instruments.PrimeOption(
-            tokenQU,
             tokenU,
-            tokenQS,
             tokenS,
+            ratio,
             expiry
         );
     }
@@ -82,8 +80,7 @@ contract PrimeOption is ERC20, ReentrancyGuard {
             require(msg.value > 0 && msg.value == amount, "ERR_ZERO");
             (bool mintSuccess) = mintPrimeOptions(
                 amount,
-                option.tokenQS,
-                option.tokenQU,
+                option.ratio,
                 oPulpReceiver,
                 rPulpReceiver
             );
@@ -94,8 +91,7 @@ contract PrimeOption is ERC20, ReentrancyGuard {
             verifyBalance(underlying.balanceOf(rPulpReceiver), amount, "ERR_BAL_UNDERLYING");
             (bool mintSuccess) = mintPrimeOptions(
                 amount,
-                option.tokenQU,
-                option.tokenQS,
+                option.ratio,
                 oPulpReceiver,
                 rPulpReceiver
             );
@@ -110,12 +106,11 @@ contract PrimeOption is ERC20, ReentrancyGuard {
      */
     function mintPrimeOptions(
         uint256 qoPulp,
-        uint256 numerator,
-        uint256 denominator,
+        uint256 ratio,
         address oPulpReceiver,
         address rPulpReceiver
     ) internal returns (bool) {
-        uint256 qrPulp = qoPulp.mul(numerator).div(denominator);
+        uint256 qrPulp = qoPulp.mul(1 ether).div(ratio);
 
         _rPulp.mint(
             rPulpReceiver,
@@ -140,7 +135,7 @@ contract PrimeOption is ERC20, ReentrancyGuard {
      */
     function _swap(uint256 qUnderlying) internal returns (bool) {
         require(balanceOf(msg.sender) >= qUnderlying, "ERR_BAL_OPULP");
-        uint256 qStrike = qUnderlying.mul(option.tokenQS).div(option.tokenQU);
+        uint256 qStrike = qUnderlying.mul(option.ratio).div(1 ether);
         if(isEthPutOption()) {
             verifyBalance(msg.value, qStrike, "ERR_BAL_UNDERLYING");
             _burn(msg.sender, qUnderlying);
@@ -200,7 +195,7 @@ contract PrimeOption is ERC20, ReentrancyGuard {
     function close(uint256 qUnderlying) public returns(bool) {
 
         uint256 rPulpBalance = _rPulp.balanceOf(msg.sender);
-        uint256 qStrike = qUnderlying.mul(option.tokenQS).div(option.tokenQU);
+        uint256 qStrike = qUnderlying.mul(option.ratio).div(1 ether);
 
         verifyBalance(rPulpBalance, qStrike, "ERR_BAL_RPULP");
         verifyBalance(balanceOf(msg.sender), qUnderlying, "ERR_BAL_OPULP");
@@ -254,12 +249,8 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         return option.tokenU;
     }
 
-    function getQuantityUnderlying() public view returns (uint256) {
-        return option.tokenQU;
-    }
-
-    function getQuantityStrike() public view returns (uint256) {
-        return option.tokenQS;
+    function getRatio() public view returns (uint256) {
+        return option.ratio;
     }
 
 }
