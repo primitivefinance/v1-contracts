@@ -8,8 +8,10 @@ pragma solidity ^0.6.2;
 import "./ControllerInterface.sol";
 import { IPrimeOption } from "../PrimeInterface.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
 contract ControllerMarket is Ownable {
+    using SafeMath for uint256;
 
     struct Initialization {
         bool controllers;
@@ -19,7 +21,7 @@ contract ControllerMarket is Ownable {
 
     struct Market {
         address controller;
-        uint256 tokenId;
+        uint256 marketId;
         address option;
         address maker;
     }
@@ -33,6 +35,7 @@ contract ControllerMarket is Ownable {
 
     Initialization public _isInitialized;
     Controllers public _controllers;
+    uint256 public marketNonce;
 
     mapping(uint256 => Market) public _markets;
     address public _maker;
@@ -98,15 +101,16 @@ contract ControllerMarket is Ownable {
         IControllerPool pool = IControllerPool(_controllers.pool);
         pool.addMarket(option);
 
-        uint256 tokenId = IPrimeOption(option)._parentToken();
-        _markets[tokenId] = Market(
+        marketNonce = marketNonce.add(1);
+        uint256 marketId = marketNonce;
+        _markets[marketId] = Market(
             address(this),
-            tokenId,
+            marketId,
             option,
             _maker
         );
 
-        return tokenId;
+        return marketId;
     }
 
     function _addMarketMaker(
@@ -119,11 +123,11 @@ contract ControllerMarket is Ownable {
         return poolAddress;
     }
 
-    function getOption(uint256 tokenId) public view returns (address) {
-        return _markets[tokenId].option;
+    function getOption(uint256 marketId) public view returns (address) {
+        return _markets[marketId].option;
     }
 
-    function getMaker(uint256 tokenId) public view returns (address) {
-        return _markets[tokenId].maker;
+    function getMaker(uint256 marketId) public view returns (address) {
+        return _markets[marketId].maker;
     }
 }
