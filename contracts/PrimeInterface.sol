@@ -40,8 +40,6 @@ interface IPrimeOption {
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
     function transfer(address to, uint256 amount) external returns (bool);
     function deposit(uint256 amount) external payable returns (bool);
-    function depositAndMarketSell(uint256 amount) external payable returns (uint);
-    function depositAndLimitSell(uint256 amount, uint256 askPrice) external payable returns (uint);
     function swap(uint256 qUnderlying) external returns (bool);
     function withdraw(uint256 qUnderlying) external returns (uint);
     function close(uint256 qUnderlying) external returns (bool);
@@ -62,36 +60,4 @@ interface IPrimeRedeem {
     function isCallPulp() external view returns (bool);
     function approve(address spender, uint256 amount) external returns (bool);
     function redeem(uint256 amount) external returns (bool);
-}
-
-interface IPrimeExchange {
-    function addLiquidity(
-        uint256 minQLiquidity,
-        uint256 maxQTokens
-    ) external payable returns(uint256);
-    function removeLiquidity(
-        uint256 qLiquidity,
-        uint256 minQEth,
-        uint256 minQTokens
-    ) external returns (uint256, uint256);
-    function swapTokensToEth(
-        uint256 qTokens,
-        uint256 minQEth,
-        address payable receiver
-    ) external returns (uint);
-    function swapEthToTokens(
-        uint256 qTokens
-    ) external payable returns (uint256);
-    function getInputPrice(
-        uint256 qInput,
-        uint256 rInput,
-        uint256 rOutput
-    ) external view returns (uint256);
-    function getOutputPrice(
-        uint256 qOutput,
-        uint256 rInput,
-        uint256 rOutput
-    ) external view returns (uint256);
-    function tokenReserves() external view returns (uint256);
-    function etherReserves() external view returns (uint256);
 }

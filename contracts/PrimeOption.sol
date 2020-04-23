@@ -24,7 +24,6 @@ contract PrimeOption is ERC20Detailed, ERC20, ReentrancyGuard {
 
     IPrime public _prime;
     IPrimeRedeem public _rPulp;
-    IPrimeExchange public _ePulp;
 
     constructor(
         string memory name,
@@ -66,13 +65,6 @@ contract PrimeOption is ERC20Detailed, ERC20, ReentrancyGuard {
     function setRPulp(address rPulp) public returns (bool) {
         require(msg.sender == _instrumentController, 'ERR_NOT_OWNER'); // OWNER IS OPTIONS.sol
         _rPulp = IPrimeRedeem(rPulp);
-        return true;
-    }
-
-    function setPool(address ePool) public returns (bool) {
-        require(msg.sender == _instrumentController, 'ERR_NOT_OWNER'); // OWNER IS OPTIONS.sol
-        _ePulp = IPrimeExchange(ePool);
-        _approve(address(this), ePool, 2**255-1 ether);
         return true;
     }
 
@@ -144,41 +136,6 @@ contract PrimeOption is ERC20Detailed, ERC20, ReentrancyGuard {
         _mint(oPulpReceiver, qoPulp);
         emit Deposit(msg.sender, qoPulp, qrPulp);
         return (true);
-    }
-
-    /**
-     * @dev deposits underlying assets to mint prime options which are sold to exchange pool for a min price
-     * @notice mint msg.value amt of oPULP + rPULP. 
-     * oPULP is sold to exchange pool for ether which is sent to user.
-     * @param amount deposits qUnderlying assets and receives qUnderlying asset amount of oPULP and rPULP tokens
-     * @param askPrice minimum amount of ether to receive for selling prime oPulp options
-     * @return amount of ether premium received for selling oPULP
-     */
-    function depositAndLimitSell(uint256 amount, uint256 askPrice) public payable nonReentrant returns (uint) {
-        (bool depositSuccess) = _deposit(amount, address(this), msg.sender);
-        require(depositSuccess, "ERR_DEPOSIT");
-
-        uint256 minPrice = minEthPrice(amount);
-        verifyBalance(minPrice, askPrice, "ERR_ASK_PRICE");
-        
-        return _ePulp.swapTokensToEth(amount, minPrice, msg.sender);
-    }
-
-    /**
-     * @dev deposits underlying assets to mint prime options which are sold to exchange pool at the market price
-     * @notice mint msg.value amt of oPULP + rPULP. 
-     * oPULP is sold to exchange pool for ether which is sent to user.
-     * @param amount deposits qUnderlying assets and receives qUnderlying asset amount of oPULP and rPULP tokens
-     * @return amount of ether premium received for selling oPULP
-     */
-    function depositAndMarketSell(uint256 amount) public payable nonReentrant returns (uint) {
-        (bool depositSuccess) = _deposit(amount, address(this), msg.sender);
-        require(depositSuccess, "ERR_DEPOSIT");
-        
-        uint256 minPrice = minEthPrice(amount);
-        verifyBalance(minPrice, 0, "ERR_ASK_PRICE");
-        
-        return _ePulp.swapTokensToEth(amount, minPrice, msg.sender);
     }
 
     /**
@@ -284,17 +241,6 @@ contract PrimeOption is ERC20Detailed, ERC20, ReentrancyGuard {
 
     function isEthPutOption() public view returns (bool) {
         return (option.aStrike == address(this));
-    }
-
-    /**
-     * @dev returns the min ether returned after selling tokens in Exchange Pool
-     */
-    function minEthPrice(uint256 amount) public view returns (uint256) {
-        return _ePulp.getInputPrice(
-                    amount,
-                    _ePulp.tokenReserves(),
-                    _ePulp.etherReserves()
-                );
     }
 
     function verifyBalance(

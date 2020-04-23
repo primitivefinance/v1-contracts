@@ -5,20 +5,10 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 interface IControllerMarket {
     function _crRedeem() external view returns (address);
     function _prRedeem() external view returns (address);
-    function getExchange(uint256 tokenId) external view returns (address);
-}
-
-interface IControllerExchange {
-    function addExchange(address payable primeOption) external returns (address);
 }
 
 interface IControllerPool {
     function addPool(address compoundEther, address oracle) external returns (address);
-    function addMarket(address payable primeOption) external returns (address);
-}
-
-interface IControllerPerpetual {
-    function addPerpetual(address compoundDai) external returns (address);
     function addMarket(address payable primeOption) external returns (address);
 }
 
@@ -44,6 +34,5 @@ interface IControllerOption {
         bool isTokenOption
     ) external payable returns (address payable);
 
-    function setExchange(address exchange, address payable primeOption) external returns (bool);
     function setRedeem(address redeem, address payable primeOption) external returns (bool);
 }

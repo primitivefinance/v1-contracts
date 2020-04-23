@@ -14,7 +14,6 @@ contract ControllerMarket is Ownable {
     struct Initialization {
         bool controllers;
         bool maker;
-        bool perpetual;
         bool redeem;
     }
 
@@ -23,27 +22,24 @@ contract ControllerMarket is Ownable {
         uint256 tokenId;
         address option;
         address maker;
-        address perpetual;
     }
 
     struct Controllers {
         address controller;
         address option;
         address pool;
-        address perpetual;
         address redeem;
     }
 
     Initialization public _isInitialized;
     Controllers public _controllers;
+
     mapping(uint256 => Market) public _markets;
     address public _maker;
-    address public _perpetual;
 
     function initControllers(
         IControllerOption option,
         IControllerPool pool,
-        IControllerPerpetual perpetual,
         IControllerRedeem redeem
     ) public onlyOwner returns (bool) {
         require(!_isInitialized.controllers, "ERR_INITIALIZED");
@@ -51,7 +47,6 @@ contract ControllerMarket is Ownable {
             address(this),
             address(option),
             address(pool),
-            address(perpetual),
             address(redeem)
         );
         _isInitialized.controllers = true;
@@ -63,13 +58,6 @@ contract ControllerMarket is Ownable {
         address maker = _addMarketMaker(compoundContract, oracle);
         _isInitialized.maker = true;
         return maker;
-    }
-
-    function initPerpetual(address compoundContract) public onlyOwner returns (address) {
-        require(!_isInitialized.perpetual, "ERR_INITIALIZED");
-        address perpetual = _addPerpetualMarket(compoundContract);
-        _isInitialized.perpetual = true;
-        return perpetual;
     }
 
     function createMarket(
@@ -110,17 +98,12 @@ contract ControllerMarket is Ownable {
         IControllerPool pool = IControllerPool(_controllers.pool);
         pool.addMarket(option);
 
-        // For Testing
-        /* IControllerPerpetual perpetual = IControllerPerpetual(_controllers.perpetual);
-        perpetual.addMarket(option); */
-
         uint256 tokenId = IPrimeOption(option)._parentToken();
         _markets[tokenId] = Market(
             address(this),
             tokenId,
             option,
-            _maker,
-            _perpetual
+            _maker
         );
 
         return tokenId;
@@ -136,24 +119,11 @@ contract ControllerMarket is Ownable {
         return poolAddress;
     }
 
-    function _addPerpetualMarket(
-        address compoundEther
-    ) internal returns (address) {
-        IControllerPerpetual perpetual = IControllerPerpetual(_controllers.perpetual);
-        address perpetualAddress = perpetual.addPerpetual(compoundEther);
-        _perpetual = perpetualAddress;
-        return perpetualAddress;
-    }
-
     function getOption(uint256 tokenId) public view returns (address) {
         return _markets[tokenId].option;
     }
 
     function getMaker(uint256 tokenId) public view returns (address) {
         return _markets[tokenId].maker;
-    }
-
-    function getPerpetual(uint256 tokenId) public view returns (address) {
-        return _markets[tokenId].perpetual;
     }
 }

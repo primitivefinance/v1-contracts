@@ -92,11 +92,6 @@ contract ControllerOption is Ownable, ERC721Holder {
         return primeOption;
     }
 
-    function setExchange(address exchange, address payable primeOption) public onlyOwner returns (bool) {
-        PrimeOption option = PrimeOption(primeOption);
-        return option.setPool(exchange);
-    }
-
     function setRedeem(address redeem, address payable primeOption) public onlyOwner returns (bool) {
         PrimeOption option = PrimeOption(primeOption);
         return option.setRPulp(redeem);
