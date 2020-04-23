@@ -5,9 +5,9 @@ pragma solidity ^0.6.2;
  * @author Primitive
  */
 
-import './ControllerInterface.sol';
-import { IPrimeOption } from '../PrimeInterface.sol';
-import '@openzeppelin/contracts/ownership/Ownable.sol';
+import "./ControllerInterface.sol";
+import { IPrimeOption } from "../PrimeInterface.sol";
+import "@openzeppelin/contracts/ownership/Ownable.sol";
 
 contract ControllerMarket is Ownable {
 
@@ -40,10 +40,6 @@ contract ControllerMarket is Ownable {
     address public _maker;
     address public _perpetual;
 
-    constructor() public {
-
-    }
-
     function initControllers(
         IControllerOption option,
         IControllerPool pool,
@@ -75,7 +71,6 @@ contract ControllerMarket is Ownable {
         _isInitialized.perpetual = true;
         return perpetual;
     }
-    
 
     function createMarket(
         uint256 qUnderlying,
@@ -127,7 +122,7 @@ contract ControllerMarket is Ownable {
             _maker,
             _perpetual
         );
-        
+
         return tokenId;
     }
 

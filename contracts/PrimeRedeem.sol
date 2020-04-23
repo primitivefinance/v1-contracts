@@ -5,10 +5,10 @@ pragma solidity ^0.6.2;
  * @author Primitive
  */
 
-import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
-import '@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol';
-import '@openzeppelin/contracts/math/SafeMath.sol';
-import './controller/Instruments.sol';
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "./controller/Instruments.sol";
 
 
 contract PrimeRedeem is ERC20Detailed, ERC20 {
@@ -27,7 +27,7 @@ contract PrimeRedeem is ERC20Detailed, ERC20 {
         string memory symbol,
         address payable optionAddress,
         IERC20 strikeAddress
-    ) 
+    )
         public
         ERC20Detailed(name, symbol, 18)
     {
@@ -38,7 +38,7 @@ contract PrimeRedeem is ERC20Detailed, ERC20 {
     }
 
     function setValid(address valid) public returns(bool) {
-        require(msg.sender == _controller, 'ERR_NOT_OWNER');
+        require(msg.sender == _controller, "ERR_NOT_OWNER");
         _valid[valid] = true;
         return true;
     }
@@ -51,13 +51,13 @@ contract PrimeRedeem is ERC20Detailed, ERC20 {
 
 
     function mint(address user, uint256 amount) external returns(bool)  {
-        require(_valid[msg.sender], 'ERR_NOT_VALID');
+        require(_valid[msg.sender], "ERR_NOT_VALID");
         _mint(user, amount);
         return true;
     }
 
     function burn(address user, uint256 amount) external returns(bool)  {
-        require(_valid[msg.sender], 'ERR_NOT_VALID');
+        require(_valid[msg.sender], "ERR_NOT_VALID");
         _burn(user, amount);
         return true;
     }

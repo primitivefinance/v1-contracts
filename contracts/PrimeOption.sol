@@ -5,12 +5,12 @@ pragma solidity ^0.6.2;
  * @author Primitive
  */
 
-import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
-import '@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol';
-import '@openzeppelin/contracts/math/SafeMath.sol';
-import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
-import './PrimeInterface.sol';
-import './controller/Instruments.sol';
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "./PrimeInterface.sol";
+import "./controller/Instruments.sol";
 
 contract PrimeOption is ERC20Detailed, ERC20, ReentrancyGuard {
     using SafeMath for uint256;
@@ -43,15 +43,15 @@ contract PrimeOption is ERC20Detailed, ERC20, ReentrancyGuard {
         require(msg.sender == _instrumentController, "ERR_NOT_OWNER"); // OWNER IS OPTIONS.sol
         _parentToken = tokenId;
         (
-            address writer,
+             ,
             uint256 qUnderlying,
             address aUnderlying,
             uint256 qStrike,
             address aStrike,
             uint256 tExpiry,
-            address receiver,
-            bytes4 series,
-            bytes4 symbol
+             ,
+             ,
+            
         ) = _prime.getPrime(tokenId);
         option = Instruments.PrimeOption(
             qUnderlying,

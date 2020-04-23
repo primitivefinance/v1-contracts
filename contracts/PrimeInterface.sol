@@ -5,7 +5,7 @@ pragma solidity ^0.6.2;
  * @author Primitive
  */
 
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IPrime {
     function safeTransferFrom(address from, address to, uint256 tokenId) external;
@@ -94,12 +94,4 @@ interface IPrimeExchange {
     ) external view returns (uint256);
     function tokenReserves() external view returns (uint256);
     function etherReserves() external view returns (uint256);
-}
-
-interface IPrimePool {
-    
-}
-
-interface IPrimePerpetual {
-    
 }

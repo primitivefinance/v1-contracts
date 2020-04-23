@@ -5,8 +5,8 @@ pragma solidity ^0.6.2;
  * @author Primitive
  */
 
-import '../PrimePerpetual.sol';
-import '@openzeppelin/contracts/ownership/Ownable.sol';
+import "../PrimePerpetual.sol";
+import "@openzeppelin/contracts/ownership/Ownable.sol";
 
 contract ControllerPerpetual is Ownable {
 

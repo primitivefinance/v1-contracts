@@ -6,14 +6,14 @@ pragma solidity ^0.6.2;
  */
 
 
-import './PrimeInterface.sol';
-import './controller/Instruments.sol';
-import '@openzeppelin/contracts/math/SafeMath.sol';
-import '@openzeppelin/contracts/ownership/Ownable.sol';
-import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
-import '@openzeppelin/contracts/lifecycle/Pausable.sol';
-import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
-import '@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol';
+import "./PrimeInterface.sol";
+import "./controller/Instruments.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/lifecycle/Pausable.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol";
 
 interface ICDai {
 
@@ -370,7 +370,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
      * @notice Max Burn = Underlying Balance * Total Supply of LP Tokens / Total Underlying + Strike Assets denominated in the Underlying
      * @return uint256 max amount of tokens that can be burned to withdraw underlying assets
      */
-    function maxLiquidityWithdrawable() public returns (uint256) {
+    function maxLiquidityWithdrawable() public view returns (uint256) {
         /* LP = (ET - L) * ST / ET where ST = Total Supply */
         uint256 maxLiquidity = totalUnutilized().mul(totalSupply()).div(totalPoolBalance());
         require(maxLiquidity <= totalUnutilized(), "ERR_BAL_UNUTILIZED");

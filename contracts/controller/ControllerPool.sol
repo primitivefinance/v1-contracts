@@ -5,8 +5,8 @@ pragma solidity ^0.6.2;
  * @author Primitive
  */
 
-import '../PrimePool.sol';
-import '@openzeppelin/contracts/ownership/Ownable.sol';
+import "../PrimePool.sol";
+import "@openzeppelin/contracts/ownership/Ownable.sol";
 
 contract ControllerPool is Ownable {
 
