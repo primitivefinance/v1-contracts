@@ -18,7 +18,7 @@ contract ControllerRedeem is Ownable {
         string memory name,
         string memory symbol,
         address payable optionAddress,
-        IERC20 strikeAddress
+        address strikeAddress
     ) public onlyOwner returns (address) {
         PrimeRedeem primeRedeem = new PrimeRedeem(name, symbol, optionAddress, strikeAddress);
         return address(primeRedeem);

@@ -64,27 +64,25 @@ contract ControllerMarket is Ownable {
     }
 
     function createMarket(
-        uint256 qUnderlying,
-        IERC20 aUnderlying,
-        uint256 qStrike,
-        IERC20 aStrike,
-        uint256 tExpiry,
         string memory name,
-        bool isEthCallOption,
-        bool isTokenOption
+        string memory symbol,
+        uint256 tokenQU,
+        address tokenU,
+        uint256 tokenQS,
+        address tokenS,
+        uint256 expiry
     ) public onlyOwner returns (uint256) {
         IControllerOption optionController = IControllerOption(_controllers.option);
 
         // Deploys option contract and mints prime erc-721
-        address payable option = optionController.addOption(
-            qUnderlying,
-            aUnderlying,
-            qStrike,
-            aStrike,
-            tExpiry,
+        (address payable option, uint256 marketId) = optionController.addOption(
             name,
-            isEthCallOption,
-            isTokenOption
+            symbol,
+            tokenQU,
+            tokenU,
+            tokenQS,
+            tokenS,
+            expiry
         );
 
         // Deploys redeem contract
@@ -93,7 +91,7 @@ contract ControllerMarket is Ownable {
             "Redeem Primitive Underlying LP",
             "rPULP",
             option,
-            aStrike
+            tokenS
         );
         optionController.setRedeem(redeem, option);
 
@@ -101,8 +99,6 @@ contract ControllerMarket is Ownable {
         IControllerPool pool = IControllerPool(_controllers.pool);
         pool.addMarket(option);
 
-        marketNonce = marketNonce.add(1);
-        uint256 marketId = marketNonce;
         _markets[marketId] = Market(
             address(this),
             marketId,

@@ -17,22 +17,21 @@ interface IControllerRedeem {
         string calldata name,
         string calldata symbol,
         address payable optionAddress,
-        IERC20 strikeAddress
+        address strikeAddress
     ) external returns (address);
     function setValid(address primeOption, address redeemAddress) external returns (bool);
 }
 
 interface IControllerOption {
     function addOption(
-        uint256 qUnderlying,
-        IERC20 aUnderlying,
-        uint256 qStrike,
-        IERC20 aStrike,
-        uint256 tExpiry,
         string calldata name,
-        bool isEthCallOption,
-        bool isTokenOption
-    ) external payable returns (address payable);
+        string calldata symbol,
+        uint256 tokenQU,
+        address tokenU,
+        uint256 tokenQS,
+        address tokenS,
+        uint256 expiry
+    ) external returns (address payable, uint256);
 
     function setRedeem(address redeem, address payable primeOption) external returns (bool);
 }

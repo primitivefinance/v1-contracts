@@ -18,7 +18,7 @@ contract PrimeRedeem is ERC20Detailed, ERC20 {
     mapping(address => bool) public _valid;
     bool public _isCallPulp;
 
-    IERC20 public strike;
+    address public strike;
     address payable public option;
 
 
@@ -26,7 +26,7 @@ contract PrimeRedeem is ERC20Detailed, ERC20 {
         string memory name,
         string memory symbol,
         address payable optionAddress,
-        IERC20 strikeAddress
+        address strikeAddress
     )
         public
         ERC20Detailed(name, symbol, 18)
@@ -46,7 +46,7 @@ contract PrimeRedeem is ERC20Detailed, ERC20 {
     function redeem(uint256 amount) external returns (bool) {
         require(balanceOf(msg.sender) >= amount, "ERR_BAL_REDEEM");
         _burn(msg.sender, amount);
-        return strike.transfer(msg.sender, amount);
+        return IERC20(strike).transfer(msg.sender, amount);
     }
 
 

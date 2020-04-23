@@ -22,45 +22,35 @@ contract PrimeOption is ERC20Detailed, ERC20, ReentrancyGuard {
 
     Instruments.PrimeOption public option;
 
-    IPrime public _prime;
     IPrimeRedeem public _rPulp;
+
+    uint256 public marketId;
 
     constructor(
         string memory name,
-        address prime
+        string memory symbol,
+        uint256 _marketId,
+        uint256 tokenQU,
+        address tokenU,
+        uint256 tokenQS,
+        address tokenS,
+        uint256 expiry
     ) 
         public
-        ERC20Detailed(name, "oPULP", 18)
+        ERC20Detailed(name, symbol, 18)
     {
-        _prime = IPrime(prime);
+        marketId = _marketId;
         _instrumentController = msg.sender;
+        option = Instruments.PrimeOption(
+            tokenQU,
+            tokenU,
+            tokenQS,
+            tokenS,
+            expiry
+        );
     }
 
     receive() external payable {}
-
-    function setParentToken(uint256 tokenId) public returns(uint256) {
-        require(msg.sender == _instrumentController, "ERR_NOT_OWNER"); // OWNER IS OPTIONS.sol
-        _parentToken = tokenId;
-        (
-             ,
-            uint256 qUnderlying,
-            address aUnderlying,
-            uint256 qStrike,
-            address aStrike,
-            uint256 tExpiry,
-             ,
-             ,
-            
-        ) = _prime.getPrime(tokenId);
-        option = Instruments.PrimeOption(
-            qUnderlying,
-            aUnderlying,
-            qStrike,
-            aStrike,
-            tExpiry
-        );
-        return tokenId;
-    }
 
     function setRPulp(address rPulp) public returns (bool) {
         require(msg.sender == _instrumentController, 'ERR_NOT_OWNER'); // OWNER IS OPTIONS.sol
@@ -93,20 +83,20 @@ contract PrimeOption is ERC20Detailed, ERC20, ReentrancyGuard {
             require(msg.value > 0 && msg.value == amount, "ERR_ZERO");
             (bool mintSuccess) = mintPrimeOptions(
                 amount,
-                option.qStrike,
-                option.qUnderlying,
+                option.tokenQS,
+                option.tokenQU,
                 oPulpReceiver,
                 rPulpReceiver
             );
             require(mintSuccess, "ERR_MINT_OPTIONS");
             return mintSuccess;
         } else {
-            IERC20 underlying = IERC20(option.aUnderlying);
+            IERC20 underlying = IERC20(option.tokenU);
             verifyBalance(underlying.balanceOf(rPulpReceiver), amount, "ERR_BAL_UNDERLYING");
             (bool mintSuccess) = mintPrimeOptions(
                 amount,
-                option.qUnderlying,
-                option.qStrike,
+                option.tokenQU,
+                option.tokenQS,
                 oPulpReceiver,
                 rPulpReceiver
             );
@@ -151,14 +141,14 @@ contract PrimeOption is ERC20Detailed, ERC20, ReentrancyGuard {
      */
     function _swap(uint256 qUnderlying) internal returns (bool) {
         require(balanceOf(msg.sender) >= qUnderlying, "ERR_BAL_OPULP");
-        uint256 qStrike = qUnderlying.mul(option.qStrike).div(option.qUnderlying);
+        uint256 qStrike = qUnderlying.mul(option.tokenQS).div(option.tokenQU);
         if(isEthPutOption()) {
             verifyBalance(msg.value, qStrike, "ERR_BAL_UNDERLYING");
             _burn(msg.sender, qUnderlying);
-            IERC20 _underlying = IERC20(option.aUnderlying);
+            IERC20 _underlying = IERC20(option.tokenU);
             return _underlying.transferFrom(address(this), msg.sender, qStrike);
         } else {
-            IERC20 _strike = IERC20(option.aStrike);
+            IERC20 _strike = IERC20(option.tokenS);
             verifyBalance(_strike.balanceOf(msg.sender), qStrike, "ERR_BAL_STRIKE");
             _burn(msg.sender, qUnderlying);
             _strike.transferFrom(msg.sender, address(this), qStrike);
@@ -194,7 +184,7 @@ contract PrimeOption is ERC20Detailed, ERC20, ReentrancyGuard {
             return sendEther(receiver, amount);
         } else {
 
-            IERC20 _strike = IERC20(option.aStrike);
+            IERC20 _strike = IERC20(option.tokenS);
             verifyBalance(rPulpBalance, rPulpToBurn, "ERR_BAL_RPULP");
             verifyBalance(_strike.balanceOf(address(this)), amount, "ERR_BAL_STRIKE");
 
@@ -211,7 +201,7 @@ contract PrimeOption is ERC20Detailed, ERC20, ReentrancyGuard {
     function close(uint256 qUnderlying) public returns(bool) {
 
         uint256 rPulpBalance = _rPulp.balanceOf(msg.sender);
-        uint256 qStrike = qUnderlying.mul(option.qStrike).div(option.qUnderlying);
+        uint256 qStrike = qUnderlying.mul(option.tokenQS).div(option.tokenQU);
 
         verifyBalance(rPulpBalance, qStrike, "ERR_BAL_RPULP");
         verifyBalance(balanceOf(msg.sender), qUnderlying, "ERR_BAL_OPULP");
@@ -221,7 +211,7 @@ contract PrimeOption is ERC20Detailed, ERC20, ReentrancyGuard {
         if(isEthCallOption()) {
             return sendEther(msg.sender, qUnderlying);
         } else {
-            IERC20 _underlying = IERC20(option.aUnderlying);
+            IERC20 _underlying = IERC20(option.tokenU);
             return _underlying.transfer(msg.sender, qUnderlying);
         }
     }
@@ -236,11 +226,11 @@ contract PrimeOption is ERC20Detailed, ERC20, ReentrancyGuard {
     }
 
     function isEthCallOption() public view returns (bool) {
-        return (option.aUnderlying == address(this));
+        return (option.tokenU == address(this));
     }
 
     function isEthPutOption() public view returns (bool) {
-        return (option.aStrike == address(this));
+        return (option.tokenS == address(this));
     }
 
     function verifyBalance(
@@ -258,19 +248,19 @@ contract PrimeOption is ERC20Detailed, ERC20, ReentrancyGuard {
     }
 
     function getStrike() public view returns (address) {
-        return option.aStrike;
+        return option.tokenS;
     }
 
     function getUnderlying() public view returns (address) {
-        return option.aUnderlying;
+        return option.tokenU;
     }
 
     function getQuantityUnderlying() public view returns (uint256) {
-        return option.qUnderlying;
+        return option.tokenQU;
     }
 
     function getQuantityStrike() public view returns (uint256) {
-        return option.qStrike;
+        return option.tokenQS;
     }
 
 }
