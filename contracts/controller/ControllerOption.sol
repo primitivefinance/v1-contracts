@@ -7,10 +7,9 @@ pragma solidity ^0.6.2;
 
 import "../PrimeOption.sol";
 import { IControllerMarket } from "./ControllerInterface.sol";
-import "@openzeppelin/contracts/ownership/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC721/ERC721Holder.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract ControllerOption is Ownable, ERC721Holder {
+contract ControllerOption is Ownable {
     using SafeMath for uint256;
 
     uint256 public _marketNonce;

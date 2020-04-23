@@ -6,7 +6,7 @@ pragma solidity ^0.6.2;
  */
 
 import "../PrimePool.sol";
-import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract ControllerPool is Ownable {
 

@@ -9,11 +9,10 @@ pragma solidity ^0.6.2;
 import "./PrimeInterface.sol";
 import "./controller/Instruments.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/lifecycle/Pausable.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol";
 
 interface ICDai {
 
@@ -37,7 +36,7 @@ interface AggregatorInterface {
   function currentAnswer() external view returns (int256);
 }
 
-contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
+contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     using SafeMath for uint256;
 
     ICDai public _cDai;
@@ -67,10 +66,9 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
         address oracle
     ) 
         public
-        ERC20Detailed(
+        ERC20(
             "Market Maker Primitive Underlying LP",
-            "mPULP",
-            18
+            "mPULP"
         )
     {
         _cDai = ICDai(compoundDaiAddress);

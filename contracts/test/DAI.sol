@@ -1,10 +1,9 @@
 pragma solidity ^0.6.2;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol";
 
-contract DAI is ERC20, ERC20Detailed {
-    constructor(uint256 initialSupply) ERC20Detailed("Testnet DAI", "DAI", 18) public {
+contract DAI is ERC20 {
+    constructor(uint256 initialSupply) ERC20("Testnet DAI", "DAI") public {
         _mint(msg.sender, initialSupply);
     }
 

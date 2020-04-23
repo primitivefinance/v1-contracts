@@ -6,7 +6,7 @@ pragma solidity ^0.6.2;
  */
 
 import "../PrimeRedeem.sol";
-import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract ControllerRedeem is Ownable {
 

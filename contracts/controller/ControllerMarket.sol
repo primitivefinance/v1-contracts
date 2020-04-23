@@ -7,7 +7,7 @@ pragma solidity ^0.6.2;
 
 import "./ControllerInterface.sol";
 import { IPrimeOption } from "../PrimeInterface.sol";
-import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 contract ControllerMarket is Ownable {

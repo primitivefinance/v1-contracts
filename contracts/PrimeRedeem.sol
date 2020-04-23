@@ -6,12 +6,11 @@ pragma solidity ^0.6.2;
  */
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./controller/Instruments.sol";
 
 
-contract PrimeRedeem is ERC20Detailed, ERC20 {
+contract PrimeRedeem is ERC20 {
     using SafeMath for uint256;
 
     address public _controller;
@@ -29,7 +28,7 @@ contract PrimeRedeem is ERC20Detailed, ERC20 {
         address strikeAddress
     )
         public
-        ERC20Detailed(name, symbol, 18)
+        ERC20(name, symbol)
     {
         _controller = msg.sender;
         strike = strikeAddress;

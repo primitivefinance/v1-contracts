@@ -6,13 +6,12 @@ pragma solidity ^0.6.2;
  */
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./PrimeInterface.sol";
 import "./controller/Instruments.sol";
 
-contract PrimeOption is ERC20Detailed, ERC20, ReentrancyGuard {
+contract PrimeOption is ERC20, ReentrancyGuard {
     using SafeMath for uint256;
 
     event Deposit(address indexed user, uint256 qUnderlying, uint256 qStrike);
@@ -37,7 +36,7 @@ contract PrimeOption is ERC20Detailed, ERC20, ReentrancyGuard {
         uint256 expiry
     ) 
         public
-        ERC20Detailed(name, symbol, 18)
+        ERC20(name, symbol)
     {
         marketId = _marketId;
         _instrumentController = msg.sender;
