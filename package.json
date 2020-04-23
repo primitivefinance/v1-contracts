@@ -1,5 +1,5 @@
 {
-  "name": "Primitive",
+  "name": "primitive",
   "version": "0.1.0",
   "description": "On-chain options protocol",
   "main": "truffle-config.js",
@@ -24,17 +24,23 @@
   "dependencies": {
     "@truffle/hdwallet-provider": "^1.0.32",
     "@types/mathjs": "^6.0.5",
-    "@types/yup": "^0.26.36",
     "bignumber.js": "^9.0.0",
     "dotenv": "^8.2.0",
+    "ethlint": "^1.2.5",
     "mathjs": "^6.6.4",
+    "mocha": "^7.1.1",
     "react": "^16.13.0",
+    "solc": "^0.6.2",
+    "solhint": "^2.3.1",
+    "solium": "^1.2.5",
+    "solparse": "^2.2.8",
     "truffle-assertions": "^0.9.2",
-    "truffle-hdwallet-provider": "^1.0.17",
-    "yup": "^0.28.3"
+    "truffle-hdwallet-provider": "^1.0.17"
   },
   "devDependencies": {
     "@openzeppelin/contracts": "^3.0.0-beta.0",
+    "eth-gas-reporter": "^0.2.17",
+    "solidity-coverage": "^0.7.4",
     "truffle": "^5.1.14"
   }
 }

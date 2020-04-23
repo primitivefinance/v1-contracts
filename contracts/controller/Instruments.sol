@@ -1,11 +1,11 @@
 pragma solidity ^0.6.2;
 
-/** 
+/**
  * @title Primitive's Instruments
  * @author Primitive
  */
 library Instruments {
-     /** 
+     /**
      * @dev A Prime has these properties.
      * @param writer `msg.sender` of the createPrime function.
      * @param qUnderlying Quantity of underlying asset token.

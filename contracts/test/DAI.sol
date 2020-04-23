@@ -18,6 +18,4 @@ contract DAI is ERC20, ERC20Detailed {
         _mint(to, value);
         return true;
     }
-
-    
 }

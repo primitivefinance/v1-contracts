@@ -5,8 +5,8 @@ pragma solidity ^0.6.2;
  * @author Primitive
  */
 
-import '../PrimePool.sol';
-import '@openzeppelin/contracts/ownership/Ownable.sol';
+import "../PrimePool.sol";
+import "@openzeppelin/contracts/ownership/Ownable.sol";
 
 contract ControllerPool is Ownable {
 
@@ -16,8 +16,8 @@ contract ControllerPool is Ownable {
         transferOwnership(controller);
     }
 
-    function addPool(address compoundEther) public onlyOwner returns (address) {
-        PrimePool primePool = new PrimePool(compoundEther);
+    function addPool(address compoundEther, address oracle) public onlyOwner returns (address) {
+        PrimePool primePool = new PrimePool(compoundEther, oracle);
         _maker = primePool;
         return address(primePool);
     }

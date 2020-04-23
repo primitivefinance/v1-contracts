@@ -5,9 +5,9 @@ pragma solidity ^0.6.2;
  * @author Primitive
  */
 
-import './ControllerInterface.sol';
-import { IPrimeOption } from '../PrimeInterface.sol';
-import '@openzeppelin/contracts/ownership/Ownable.sol';
+import "./ControllerInterface.sol";
+import { IPrimeOption } from "../PrimeInterface.sol";
+import "@openzeppelin/contracts/ownership/Ownable.sol";
 
 contract ControllerMarket is Ownable {
 
@@ -22,14 +22,12 @@ contract ControllerMarket is Ownable {
         address controller;
         uint256 tokenId;
         address option;
-        address exchange;
         address maker;
         address perpetual;
     }
 
     struct Controllers {
         address controller;
-        address exchange;
         address option;
         address pool;
         address perpetual;
@@ -41,15 +39,8 @@ contract ControllerMarket is Ownable {
     mapping(uint256 => Market) public _markets;
     address public _maker;
     address public _perpetual;
-    address public _crRedeem;
-    address public _prRedeem;
-
-    constructor() public {
-
-    }
 
     function initControllers(
-        IControllerExchange exchange,
         IControllerOption option,
         IControllerPool pool,
         IControllerPerpetual perpetual,
@@ -58,7 +49,6 @@ contract ControllerMarket is Ownable {
         require(!_isInitialized.controllers, "ERR_INITIALIZED");
         _controllers = Controllers(
             address(this),
-            address(exchange),
             address(option),
             address(pool),
             address(perpetual),
@@ -68,9 +58,9 @@ contract ControllerMarket is Ownable {
         return true;
     }
 
-    function initMakerPool(address compoundContract) public onlyOwner returns (address) {
+    function initMakerPool(address compoundContract, address oracle) public onlyOwner returns (address) {
         require(!_isInitialized.maker, "ERR_INITIALIZED");
-        address maker = _addMarketMaker(compoundContract);
+        address maker = _addMarketMaker(compoundContract, oracle);
         _isInitialized.maker = true;
         return maker;
     }
@@ -82,18 +72,6 @@ contract ControllerMarket is Ownable {
         return perpetual;
     }
 
-    function initPrimeRedeem() public onlyOwner returns (address, address) {
-        require(!_isInitialized.redeem, "ERR_INITIALIZED");
-        IControllerRedeem redeem = IControllerRedeem(_controllers.redeem);
-        address crRedeem = redeem.addRedeem("Call Redeem Primitive Underlying LP", "crPulp", true);
-        address prRedeem = redeem.addRedeem("Put Redeem Primitive Underlying LP", "prPulp", false);
-        _crRedeem = crRedeem;
-        _prRedeem = prRedeem;
-        _isInitialized.redeem = true;
-        return (crRedeem, prRedeem);
-    }
-    
-
     function createMarket(
         uint256 qUnderlying,
         IERC20 aUnderlying,
@@ -103,9 +81,10 @@ contract ControllerMarket is Ownable {
         string memory name,
         bool isEthCallOption,
         bool isTokenOption
-        
     ) public onlyOwner returns (uint256) {
         IControllerOption optionController = IControllerOption(_controllers.option);
+
+        // Deploys option contract and mints prime erc-721
         address payable option = optionController.addOption(
             qUnderlying,
             aUnderlying,
@@ -117,53 +96,42 @@ contract ControllerMarket is Ownable {
             isTokenOption
         );
 
-        uint256 tokenId = IPrimeOption(option)._parentToken();
-        address exchange = _addExchange(option);
-        optionController.setExchange(exchange, option);
-        
-        IControllerRedeem redeem = IControllerRedeem(_controllers.redeem);
-        if(isEthCallOption) {
-            redeem.setValid(option, _crRedeem);
-        } else if (isTokenOption) {
-            // TESTING - PERPETUAL PUT SO SETTING TO PUT - FIX
-            redeem.setValid(option, _prRedeem);
-        } else {
-            redeem.setValid(option, _prRedeem);
-        }
-        
+        // Deploys redeem contract
+        IControllerRedeem redeemController = IControllerRedeem(_controllers.redeem);
+        address redeem = redeemController.addRedeem(
+            "Redeem Primitive Underlying LP",
+            "rPULP",
+            option,
+            aStrike
+        );
+        optionController.setRedeem(redeem, option);
 
+        // Adds option to pool contract
         IControllerPool pool = IControllerPool(_controllers.pool);
         pool.addMarket(option);
 
         // For Testing
-        IControllerPerpetual perpetual = IControllerPerpetual(_controllers.perpetual);
-        perpetual.addMarket(option);
+        /* IControllerPerpetual perpetual = IControllerPerpetual(_controllers.perpetual);
+        perpetual.addMarket(option); */
 
+        uint256 tokenId = IPrimeOption(option)._parentToken();
         _markets[tokenId] = Market(
             address(this),
             tokenId,
             option,
-            exchange,
             _maker,
             _perpetual
         );
-        
+
         return tokenId;
     }
 
-    function _addExchange(
-        address payable primeOption
-    ) internal returns (address) {
-        IControllerExchange exchange = IControllerExchange(_controllers.exchange);
-        address exchangeAddress = exchange.addExchange(primeOption);
-        return exchangeAddress;
-    }
-
     function _addMarketMaker(
-        address compoundEther
+        address compoundEther,
+        address oracle
     ) internal returns (address) {
         IControllerPool pool = IControllerPool(_controllers.pool);
-        address poolAddress = pool.addPool(compoundEther);
+        address poolAddress = pool.addPool(compoundEther, oracle);
         _maker = poolAddress;
         return poolAddress;
     }
@@ -179,10 +147,6 @@ contract ControllerMarket is Ownable {
 
     function getOption(uint256 tokenId) public view returns (address) {
         return _markets[tokenId].option;
-    }
-
-    function getExchange(uint256 tokenId) public view returns (address) {
-        return _markets[tokenId].exchange;
     }
 
     function getMaker(uint256 tokenId) public view returns (address) {

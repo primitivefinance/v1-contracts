@@ -5,10 +5,10 @@ pragma solidity ^0.6.2;
  * @author Primitive
  */
 
-import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
-import '@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol';
-import '@openzeppelin/contracts/math/SafeMath.sol';
-import './controller/Instruments.sol';
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "./controller/Instruments.sol";
 
 
 contract PrimeRedeem is ERC20Detailed, ERC20 {
@@ -18,34 +18,46 @@ contract PrimeRedeem is ERC20Detailed, ERC20 {
     mapping(address => bool) public _valid;
     bool public _isCallPulp;
 
+    IERC20 public strike;
+    address payable public option;
+
 
     constructor (
         string memory name,
         string memory symbol,
-        bool isCallPulp
-    ) 
+        address payable optionAddress,
+        IERC20 strikeAddress
+    )
         public
         ERC20Detailed(name, symbol, 18)
     {
         _controller = msg.sender;
-        _isCallPulp = isCallPulp;
+        strike = strikeAddress;
+        option = optionAddress;
+        _valid[option] = true;
     }
 
     function setValid(address valid) public returns(bool) {
-        require(msg.sender == _controller, 'ERR_NOT_OWNER');
+        require(msg.sender == _controller, "ERR_NOT_OWNER");
         _valid[valid] = true;
         return true;
     }
 
+    function redeem(uint256 amount) external returns (bool) {
+        require(balanceOf(msg.sender) >= amount, "ERR_BAL_REDEEM");
+        _burn(msg.sender, amount);
+        return strike.transfer(msg.sender, amount);
+    }
+
 
     function mint(address user, uint256 amount) external returns(bool)  {
-        require(_valid[msg.sender], 'ERR_NOT_VALID');
+        require(_valid[msg.sender], "ERR_NOT_VALID");
         _mint(user, amount);
         return true;
     }
 
     function burn(address user, uint256 amount) external returns(bool)  {
-        require(_valid[msg.sender], 'ERR_NOT_VALID');
+        require(_valid[msg.sender], "ERR_NOT_VALID");
         _burn(user, amount);
         return true;
     }

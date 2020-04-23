@@ -6,14 +6,14 @@ pragma solidity ^0.6.2;
  */
 
 
-import './controller/Instruments.sol';
-import './PrimeInterface.sol';
-import '@openzeppelin/contracts/math/SafeMath.sol';
-import '@openzeppelin/contracts/ownership/Ownable.sol';
-import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
-import '@openzeppelin/contracts/lifecycle/Pausable.sol';
-import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
-import '@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol';
+import "./controller/Instruments.sol";
+import "./PrimeInterface.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/lifecycle/Pausable.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol";
 
 interface ICDai {
 
@@ -255,13 +255,6 @@ contract PrimePerpetual is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detai
     }
 
     /**
-     * @dev user can exercise through this contract?
-     */
-    function exercise() public returns (bool) {
-        return true;
-    }
-
-    /**
      * @dev function to calculate premiums earned from net Dai deposits and cDai interest
      * @notice This is the difference between the total Dai owned by the pool and the total Dai
      * being insured. We can calculate the difference using the Prime Option Redeem Tokens as 
@@ -275,14 +268,13 @@ contract PrimePerpetual is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detai
         IPrimeOption prime = IPrimeOption(primeAddress);
 
         // Get the Prime Redeem Token
-        IERC20 redeem = IERC20(prime._rPulp());
+        IERC20 primeRedeem = IERC20(prime._rPulp());
 
         // Get the Redeem Token Balance of this Contract (corresponds to underwritten strike assets - Dai)
-        uint256 redeemBalance = redeem.balanceOf(address(this));
+        uint256 redeemBalance = primeRedeem.balanceOf(address(this));
 
         // Get the total Dai balance of the contract - includes interest accrued Dai
         /* uint256 daiBalance = _cDai.balanceOfUnderlying(address(this)); */
-        IERC20 strike = IERC20(prime.getStrike());
         uint256 daiBalance = totalDaiBalance();
 
         // Get the net difference of Total Dai - Insured Dai
