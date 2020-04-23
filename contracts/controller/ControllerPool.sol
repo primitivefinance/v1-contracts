@@ -16,8 +16,8 @@ contract ControllerPool is Ownable {
         transferOwnership(controller);
     }
 
-    function addPool(address compoundEther) public onlyOwner returns (address) {
-        PrimePool primePool = new PrimePool(compoundEther);
+    function addPool(address compoundEther, address oracle) public onlyOwner returns (address) {
+        PrimePool primePool = new PrimePool(compoundEther, oracle);
         _maker = primePool;
         return address(primePool);
     }

@@ -13,20 +13,26 @@ module.exports = async (deployer, network) => {
     const mainnetCompoundAddress = '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5';
     const mainnetCompoundDai = '0x5d3a536e4d6dbd6114cc1ead35777bab948e3643';
     const rinkebyCompoundDai = '0x6d7f0754ffeb405d23c51ce938289d4835be3b14';
+    const mainnetChainlink = '0x79fEbF6B9F76853EDBcBc913e6aAE8232cFB9De9';
+    const rinkebyChainlink = '0x0bF4e7bf3e1f6D6Dc29AA516A33134985cC3A5aA';
+
     let compound;
     let compoundDai;
+    let oracle;
     if (network === 'rinkeby') {
         compound = rinkebyCompoundAddress;
         compoundDai = rinkebyCompoundDai;
+        oracle = rinkebyChainlink;
     } else {
         compound = mainnetCompoundAddress;
         compoundDai = mainnetCompoundDai;
+        oracle = mainnetChainlink;
     }
 
     // Deploy Controllers
     await deployer.deploy(ControllerMarket);
     const controller = await ControllerMarket.deployed();
-    const exchange = await deployer.deploy(ControllerExchange, controller.address);
+/*     const exchange = await deployer.deploy(ControllerExchange, controller.address); */
     const pool = await deployer.deploy(ControllerPool, controller.address);
     const perpetual = await deployer.deploy(ControllerPerpetual, controller.address);
     const redeem = await deployer.deploy(ControllerRedeem, controller.address);
@@ -39,7 +45,6 @@ module.exports = async (deployer, network) => {
 
     // Initialize Controller Address to Main Controller
     await controller.initControllers(
-        exchange.address,
         option.address,
         pool.address,
         perpetual.address,
@@ -47,30 +52,8 @@ module.exports = async (deployer, network) => {
     );
 
     // Initialize New Maker Pool Contract with Compound Address
-    await controller.initMakerPool(compound);
+    await controller.initMakerPool(compoundDai, oracle);
 
     // Initialize New Perpetual Contract with Compound Address
     await controller.initPerpetual(compoundDai);
-
-    // Initialize Prime Redeem Token
-    await controller.initPrimeRedeem();
-    
-    // Get the Option Parameters
-    let _strike = await Usdc.deployed();
-    let qUnderlying = await web3.utils.toWei('0.1');
-    let qStrike = await web3.utils.toWei('1');
-    let aStrike = _strike.address;
-    let tExpiry = '1587607322'
-    let isEthCall = true;
-    let ethCallName = 'ETH201212C150USDC'
-
-    // Create a new Eth Option Market
-    /* await controller.createMarket(
-        qUnderlying,
-        qStrike,
-        aStrike,
-        tExpiry,
-        isEthCall,
-        ethCallName
-    ); */
 };

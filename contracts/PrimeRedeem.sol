@@ -19,25 +19,22 @@ contract PrimeRedeem is ERC20Detailed, ERC20 {
     bool public _isCallPulp;
 
     IERC20 public strike;
+    address payable public option;
 
 
     constructor (
         string memory name,
         string memory symbol,
-        bool isCallPulp
+        address payable optionAddress,
+        IERC20 strikeAddress
     ) 
         public
         ERC20Detailed(name, symbol, 18)
     {
         _controller = msg.sender;
-        _isCallPulp = isCallPulp;
-    }
-
-    
-    function addMarket(address payable strikeAddress) public returns (address) {
-        require(_valid[msg.sender], 'ERR_NOT_VALID');
-        strike = IERC20(strikeAddress);
-        return strikeAddress;
+        strike = strikeAddress;
+        option = optionAddress;
+        _valid[option] = true;
     }
 
     function setValid(address valid) public returns(bool) {

@@ -59,7 +59,6 @@ contract ControllerOption is Ownable, ERC721Holder {
                 tExpiry,
                 address(this)
             );
-            redeem = market._crRedeem();
         } else if(isTokenOption) {
             tokenId = _prime.createPrime(
                 qUnderlying,
@@ -69,7 +68,6 @@ contract ControllerOption is Ownable, ERC721Holder {
                 tExpiry,
                 address(this)
             );
-            redeem = market._prRedeem();
         } else {
             tokenId = _prime.createPrime(
                 qStrike,
@@ -79,11 +77,9 @@ contract ControllerOption is Ownable, ERC721Holder {
                 tExpiry,
                 address(this)
             );
-            redeem = market._prRedeem();
         }   
     
         primeOption.setParentToken(tokenId);
-        primeOption.setRPulp(redeem);
         return address(primeOption);
     }
 
@@ -100,6 +96,11 @@ contract ControllerOption is Ownable, ERC721Holder {
     function setExchange(address exchange, address payable primeOption) public onlyOwner returns (bool) {
         PrimeOption option = PrimeOption(primeOption);
         return option.setPool(exchange);
+    }
+
+    function setRedeem(address redeem, address payable primeOption) public onlyOwner returns (bool) {
+        PrimeOption option = PrimeOption(primeOption);
+        return option.setRPulp(redeem);
     }
 }
 

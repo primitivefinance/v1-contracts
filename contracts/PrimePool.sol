@@ -1,13 +1,13 @@
 pragma solidity ^0.6.2;
 
 /**
- * @title   Primitive's Market Maker Pool Contract
+ * @title   Primitive's Market Maker Pool
  * @author  Primitive
  */
 
 
-import './controller/Instruments.sol';
 import './PrimeInterface.sol';
+import './controller/Instruments.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@openzeppelin/contracts/ownership/Ownable.sol';
 import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
@@ -15,78 +15,101 @@ import '@openzeppelin/contracts/lifecycle/Pausable.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol';
 
-interface ICEther {
-    function mint() external payable;
+interface ICDai {
+
+    /*** User Interface ***/
+
+    function mint(uint mintAmount) external returns (uint);
     function redeem(uint redeemTokens) external returns (uint);
     function redeemUnderlying(uint redeemAmount) external returns (uint);
+    function borrow(uint borrowAmount) external returns (uint);
+    function repayBorrow(uint repayAmount) external returns (uint);
+    function repayBorrowBehalf(address borrower, uint repayAmount) external returns (uint);
+    function balanceOf(address owner) external view returns (uint);
+    function balanceOfUnderlying(address owner) external returns (uint);
     function transfer(address dst, uint amount) external returns (bool);
     function transferFrom(address src, address dst, uint amount) external returns (bool);
     function approve(address spender, uint amount) external returns (bool);
     function allowance(address owner, address spender) external view returns (uint);
-    function balanceOf(address owner) external view returns (uint);
-    function balanceOfUnderlying(address owner) external returns (uint);
-    function getAccountSnapshot(address account) external view returns (uint, uint, uint, uint);
-    function borrowRatePerBlock() external view returns (uint);
-    function supplyRatePerBlock() external view returns (uint);
-    function totalBorrowsCurrent() external returns (uint);
-    function borrowBalanceCurrent(address account) external returns (uint);
-    function getCash() external view returns (uint);
-    function seize(address liquidator, address borrower, uint seizeTokens) external returns (uint);
+}
+
+interface AggregatorInterface {
+  function latestAnswer() external view returns (uint256);
 }
 
 contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
     using SafeMath for uint256;
 
-    address public _exchangeAddress;
-
-    ICEther public _cEther;
-    IPrimeOption public _prime;
+    ICDai public _cDai;
+    IPrimeOption public prime;
+    AggregatorInterface public _oracle;
 
     address payable[]  public _optionMarkets;
+    mapping(address => bool) public isValidOption;
 
-    /* Ether liability */
-    uint256 public _liability;
+
+    // Total Options held in Pool. Each Option is 1:1 with Ether underlying.
+    uint256 public _totalOptionSupply;
+    
+
+    uint256 public _test;
 
     /* For testing */
-    uint256 public constant _premiumDenomination = 5; /* 20% = 0.2 = 1 / 5 */
+    uint256 public constant THOUSAND_BPS = 10;
+    uint256 public constant FIVE_HUNDRED_BPS = 20;
+    uint256 public constant ONE_HUNDRED_BPS = 100;
 
     event Deposit(uint256 deposit, address indexed user, uint256 minted);
     event Withdraw(uint256 withdraw, address indexed user, uint256 burned);
-    event PoolMint(uint256 nonce, uint256 qUnderlying, uint256 qStrike, uint256 indexed tExpiry);
-    event Exercise(uint256 amount, uint256 qStrike);
-    event Close(uint256 amountClosed, address indexed user, uint256 burned);
 
     constructor (
-        /* address primeOption, */
-        address compoundEthAddress
-        /* address exchangeAddress */
+        address compoundDaiAddress,
+        address oracle
     ) 
         public
         ERC20Detailed(
-            "Market Maker Primitive LP",
+            "Market Maker Primitive Underlying LP",
             "mPULP",
             18
         )
     {
-        /* _exchangeAddress = exchangeAddress; */
-        /* _prime = IPrimeOption(primeOption); */
-        _cEther = ICEther(compoundEthAddress);
+        _cDai = ICDai(compoundDaiAddress);
+        _oracle = AggregatorInterface(oracle);
     }
 
     function addMarket(address payable primeOption) public onlyOwner returns (address) {
+        // Assume the first option defines the series (strike and underlying assets + expiration)
+        if(_optionMarkets.length == 0) {
+            prime = IPrimeOption(primeOption);
+        }
+        isValidOption[primeOption] = true;
         _optionMarkets.push(primeOption);
+        IPrimeOption _prime = IPrimeOption(primeOption);
+
+        // Assume this is DAI
+        IERC20 strike = IERC20(_prime.getStrike());
+        strike.approve(primeOption, 1000000000 ether);
+        strike.approve(address(_cDai), 1000000000 ether);
+        
+        // Assume this is USDC
+        IERC20 underlying = IERC20(_prime.getUnderlying());
+        underlying.approve(primeOption, 1000000000 ether);
+
+        IPrimeRedeem rPulp = IPrimeRedeem(_prime._rPulp());
+        rPulp.approve(primeOption, 1000000000 ether);
         return primeOption;
     }
 
 
     receive() external payable {}
 
-    /* CAPITAL INPUT / OUTPUT FUNCTIONS*/
+
+    /* =========== MAKER FUNCTIONS =========== */
 
     /**
-     * @dev deposits funds to the liquidity pool
-     * @param amount amount of ether to deposit
-     * @return bool true if liquidity tokens were minted and ether deposit swapped to cETher
+     * @dev Adds liquidity by depositing underlying assets in exchange for liquidity tokens.
+     * @param amount The quantity of Underlying assets to deposit.
+     * @return bool True if the transaction suceeds.
      */
     function deposit(
         uint256 amount
@@ -94,16 +117,28 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
         external
         payable
         whenNotPaused
+        nonReentrant
         returns (bool)
     {
         /* CHECKS */
-        require(msg.value == amount, 'Deposit: Val < deposit');
+
+        // Assume this is the underlying asset of the series
+        IERC20 underlying = IERC20(prime.getUnderlying());
+        if(address(underlying) == address(prime)) {
+            require(msg.value == amount, "ERR_BAL_ETH");
+        } else {
+            require(underlying.balanceOf(msg.sender) >= amount, "ERR_BAL_UNDERLYING");
+        }
+        
 
         /* EFFECTS */
-        uint256 totalSupply = totalSupply();
-        uint256 poolBalance = getPoolBalance();
+
+        // Mint LP tokens proportional to the Total LP Supply and Total Pool Balance
         uint256 amountToMint;
-        
+        uint256 totalSupply = totalSupply();
+        uint256 poolBalance = totalOptionSupply();
+         
+        // If liquidity is not intiialized, mint LP tokens equal to deposit
         if(poolBalance.mul(totalSupply) == 0) {
             amountToMint = amount;
         } else {
@@ -111,202 +146,257 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20, ERC20Detailed {
         }
 
         /* INTERACTIONS */
+
         emit Deposit(amount, msg.sender, amountToMint);
         _mint(msg.sender, amountToMint);
 
-        // NEW DEPOSIT
-        address primeAddress = _optionMarkets[0];
-        IPrimeOption prime = IPrimeOption(primeAddress);
-        uint256 ethReturn = prime.depositAndMarketSell.value(amount)(amount);
-        return swapEtherToCompoundEther(ethReturn);
+        // Assume we hold the underlying asset until it is utilized in minting a Prime
+        if(address(underlying) == address(prime)) {
+            return true;
+        } else {
+            return underlying.transferFrom(msg.sender, address(this), amount);
+        }
+        
     }
 
+
+    //  REFACTOR
     /**
-     * @dev withdraw ether that is not utilized as collateral
-     * @notice withdrawing utilized collateral requires the debt to be paid using the close function
-     * @param amount amount of ether to withdraw
-     * @return bool true if liquidity tokens were burned, cEther was swapped to ether and sent
+     * @dev liquidity Provider burns their LP tokens in exchange for underlying or redeemed strike assets.
+     * @notice If the pool is fully utilized and there are no strike assets to redeem, the LP will have to wait.
+     * @param amount The quantity of liquidity tokens to burn.
+     * @return bool Returns true if liquidity tokens were burned and underlying or strike assets were sent to user.
      */
     function withdraw(
         uint256 amount
     ) 
-        public 
+        external 
         nonReentrant 
         returns (bool)
     {
+
         /* CHECKS */
-        require(balanceOf(msg.sender) >= amount, 'Withdraw: Bal < withdraw');
-        require(getMaxBurnAmount() >= amount, 'Withdraw: max burn < amt');
+        require(balanceOf(msg.sender) >= amount, "ERR_BAL_LPROVIDER");
+        require(maxInsuranceProviderTokenBurnAmount() >= amount, "ERR_BAL_RESERVE");
 
         /* EFFECTS */
 
+        IERC20 strike = IERC20(prime.getStrike());
+        IPrimeRedeem redeem = IPrimeRedeem(prime._rPulp());
+
+        // Total Redeem Balance = Strike Balance in Redeem Contract
+        uint256 maxRedeem = redeem.balanceOf(address(this));
+
+        // Price of Underlying, Assume ETH
+        uint256 price = _oracle.latestAnswer();
+        
+        // Total Strike Balance in Pool Contract
+        uint256 strikeBalance = strike.balanceOf(address(this));
+
+        // Total Strike balance across contracts
+        uint256 totalStrike = maxRedeem.add(strikeBalance);
+
+        // Convert the strike assets, assume a stablecoin, to their ETH value
+        uint256 strikeInEth = totalStrike.mul(1 ether).div(price).div(1 ether);
+
+        // Pool Balance in Ether is the Pool's Ether Balance + Strike Assets denominated in Ether
+        uint256 poolBalance = totalUnutilized().add(strikeInEth);
+
+        // Total Underlying, Assume ETH, that will be withdrawn using LP tokens
+        uint256 underlyingToWithdraw = amount.mul(poolBalance).div(totalSupply());
+        uint256 strikeToWithdraw;
+
+        // If the Pool does not have enough ETH, send the remainder denominated in strike assets (stablecoins)
+        if(underlyingToWithdraw > totalEtherBalance()) {
+            uint256 remainder = underlyingToWithdraw.sub(totalEtherBalance());
+            strikeToWithdraw = remainder.mul(price).div(1 ether);
+            // Redeem the strike assets
+            require(strike.balanceOf(address(redeem)) >= strikeToWithdraw, "ERR_BAL_STRIKE");
+            redeem.redeem(strikeToWithdraw);
+
+            // Set the underlying withdraw amount to the total ether pool balance
+            underlyingToWithdraw = underlyingToWithdraw.sub(remainder);
+        }
+
         /* INTERACTIONS */
+
+        // Burn The LP Tokens
         _burn(msg.sender, amount);
-        emit Withdraw(etherToCEther(amount), msg.sender, amount);
-        return swapCEtherToEtherThenSend(amount, msg.sender);
-    }
-
-    /* GET BALANCE SHEET ITEMS */
-
-    /**
-     * @dev get ether balance of this contract
-     * @return uint256 balance of this contract in ether
-     */
-    function getPoolBalance() public returns(uint256) {
-        return _cEther.balanceOfUnderlying(address(this));
-    }
+        emit Withdraw(underlyingToWithdraw, msg.sender, amount);
     
-    /**
-     * @dev gets the total assets that are not being utilized as underlying assets in Primes
-     * @notice Net Assets = Pool Assets - Pool Liabilities
-     * @return pool amount of available assets
-     */
-    function getAvailableAssets() public returns (uint256) {
-        uint256 poolBalance = getPoolBalance();
-        if(_liability > poolBalance) {
-            return 0;
+
+        // Transfer the remainder in strike assets
+        assert(strike.balanceOf(address(this)) >= strikeToWithdraw);
+        if(strikeToWithdraw > 0) {
+            strike.transfer(msg.sender, strikeToWithdraw);
         }
-        uint256 available = poolBalance.sub(_liability);
-        return available;
-    }
-
-    /**
-     * @dev returns Total Supply / Total Pool Assets
-     * @return pool returns 1 / Exchange Rate to use in LP token swaps
-     */
-    function totalSupplyDivTotalEther() public returns (uint256) {
-        if(totalSupply().mul(getPoolBalance()) == 0) {
-            return 1;
+    
+        // Transfer the underlying
+        IERC20 underlying = IERC20(prime.getUnderlying());
+        if(address(underlying) == address(prime)) {
+            return sendEther(msg.sender, underlyingToWithdraw);
+        } else {
+            return underlying.transfer(msg.sender, underlyingToWithdraw);
         }
-        return totalSupply().div(getPoolBalance());
     }
 
-    /**
-     * @dev tokens to burn to withdraw non-utilized pool assets
-     * @notice Max Burn = Net Assets * Total Supply / Total Pool Assets
-     * @return uint256 max amount of tokens that can be burned for ether
-     */
-    function getMaxBurnAmount() public returns (uint256) {
-        /* LP = (ET - L) * ST / ET where ST = Total Supply */
-        uint256 maxBurn = getAvailableAssets().mul(totalSupply()).div(getPoolBalance());
-        require(etherToCEther(maxBurn) <= getAvailableAssets(), 'Withdraw > net assets');
-        return maxBurn;
-    }
+
+    /* =========== TAKER FUNCTIONS =========== */
+
 
     /**
-     * @dev returns the amount of ETH returned from swapped amount of Liquidity tokens
-     * @notice Ether = Amount * Total Pool Assets / Total Supply
-     * @return uint256 amount of cTokens proportional to parameter amount
+     * @dev Purchases Prime Option ERC-20 Tokens from the Pool
      */
-    function etherToCEther(uint256 amount) public returns (uint256) {
-        if(totalSupply().mul(getPoolBalance()) == 0) {
-            return amount;
-        }
-        return amount.mul(getPoolBalance()).div(totalSupply());
-    }
-
-    /* PRIME INTERACTION FUNCTIONS */
-
-    /**
-     * @dev user mints a Prime option from the pool
-     * @param qUnderlying amount of ether (in wei)
-     * @return bool whether or not the Prime is minted
-     */
-    function mintPrimeAndSell(
-        uint256 qUnderlying
-    )
-        external
+    function buy(uint256 amount, address optionAddress)
+        public 
         payable
-        whenNotPaused
-        returns (bool) 
+        nonReentrant
+        returns (bool)
     {
-        require(getAvailableAssets() >= qUnderlying, 'Mint: available < amt');
-        uint256 ethReturn = _prime.depositAndMarketSell.value(qUnderlying)(qUnderlying);
-        return swapEtherToCompoundEther(ethReturn);
+        // Assert the option is writable by the pool
+        require(isValidOption[optionAddress], "ERR_INVALID_OPTION");
+        IPrimeOption option = IPrimeOption(optionAddress);
+
+        // Need Amount of Option * qUnderlying of Option amount of underlying assets to be unutilized
+        uint256 minUnderlying = amount.mul(option.getQuantityUnderlying()).div(1 ether);
+
+        // Check to see if there is available provider funds to mint the options
+        require(totalUnutilized() >= minUnderlying, "ERR_BAL_UNDERLYING");
+
+        // Check to see if User has enough ETH to pay the premium
+        // Ex. Buying 1 Option = 1 Option * 1 ETH = 1 ETH Minimum
+        // Premium Fee = 5%. Premium = 0.05 ETH. Extrinsic value.
+        uint256 premium = minUnderlying.div(FIVE_HUNDRED_BPS); // FIX
+
+        // Assume this is ETH's USD Price. Call Intrinsic Value = Market Price - Strike.
+        uint256 price = _oracle.latestAnswer();
+
+        uint256 intrinsic;
+        if(option.getQuantityStrike() > price) {
+            intrinsic = 0;
+        } else {
+            intrinsic = price.sub(option.getQuantityStrike());
+        }
+
+        uint256 cost = premium.add(intrinsic);
+
+        require(msg.value >= cost, "ERR_BAL_ETH");
+
+        // Update total option's minted by Pool
+        _totalOptionSupply = _totalOptionSupply.add(amount);
+
+        // Mint the option using the Pool's unutilized balance
+        // Perpetual Should Have Approved Underlying Assets to Prime
+        option.deposit(minUnderlying);
+
+        // Send the options to the user
+        assert(option.balanceOf(address(this)) >= amount);
+        return option.transfer(msg.sender, amount);
     }
 
     /**
-     * @dev Called ONLY from the Prime contract
-     * @param qUnderlying amount of collateral
+     * @dev User Redeems their Options for Premium.
+     * @param amountToRedeem Quantity of options to redeem.
+     * @param optionAddress The option's address to redeem from.
      */
     function redeem(
-        uint256 qUnderlying
+        uint256 amountToRedeem,
+        address optionAddress
     )
         external
-        payable
         whenNotPaused
         returns (bool) 
     {
         /* CHECKS */
-        require(balanceOf(msg.sender) >= qUnderlying, 'Swap: ether < collat'); 
-        uint256 qStrike = _prime.withdraw(qUnderlying);
-        ERC20 _strike = ERC20(_prime._strikeAddress());
-        _burn(msg.sender, qUnderlying);
-        return _strike.transfer(msg.sender, qStrike);
+
+        // Assert the option is valid in the pool
+        require(isValidOption[optionAddress] , "ERR_INVALID_OPTION");
+        IPrimeOption option = IPrimeOption(optionAddress);
+
+        
+        require(option.balanceOf(msg.sender) >= amountToRedeem, "ERR_BAL_OPTION");
+
+        _totalOptionSupply = _totalOptionSupply.sub(amountToRedeem);
+
+        // Would be 5% of 1 ETH of 1 Redeemed Option = 0.05 ETH. FIX - NEEDS TO ACCOUNT FOR EXPIRATION
+        uint256 maxExtrinsic = amountToRedeem.mul(option.getQuantityUnderlying()).div(1 ether).div(ONE_HUNDRED_BPS);
+
+        // Assume this is ETH's USD Price. Call Intrinsic Value = Market Price - Strike.
+        uint256 price = _oracle.latestAnswer();
+
+        // Assume qStrike is a stablecoin pegged to $1
+        uint256 intrinsic;
+        if(option.getQuantityStrike() > price) {
+            intrinsic = 0;
+        } else {
+            intrinsic = price.sub(option.getQuantityStrike());
+        }
+
+        uint256 maxEth = maxExtrinsic.add(intrinsic);
+        require(totalUnutilized() >= maxEth, "ERR_BAL_ETH");
+
+        // Transfer Options from User to Pool contract
+        option.transferFrom(msg.sender, address(this), amountToRedeem);
+
+        // Convert Options back into underlying assets (ETH) by closing the option
+        option.close(amountToRedeem);
+
+        // Send the premium to the redeemer (seller)
+        return sendEther(msg.sender, maxEth);
     }
 
     /**
-     * @dev buy debt, withdraw capital
-     * @notice user must purchase option and sell to pool, i.e. burn liability (Prime Token)
-     * @param amount size of position to close and withdraw in ether
-     * @return bool if the transaction suceeds
+     * @dev Gets the Unutilized asset balance of the Pool.
+     * @notice Gets the total assets that are not being utilized as underlying assets in Prime Options.
      */
-    function closePosition(uint256 amount) external payable returns (bool) {
-        /* CHECKS */
-        uint256 userEthBal = balanceOf(msg.sender);
-        require(userEthBal >= amount, 'Close: Eth Bal < amt');
-
-        uint256 poolBalance = getPoolBalance();
-        uint256 debt = amount.mul(_liability).div(poolBalance);
-        require(msg.value >= debt, 'Close: Value < debt');
-
-        /* EFFECTS */
-        uint256 refundEther = msg.value.sub(debt);
-
-        /* INTERACTIONS */
-        _burn(msg.sender, amount);
-        uint256 amountInCEther = etherToCEther(amount.add(refundEther));
-        emit Close(amountInCEther, msg.sender, amount);
-        return swapCEtherToEtherThenSend(amountInCEther, msg.sender);
+    function totalUnutilized() public view returns (uint256) {
+        IERC20 underlying = IERC20(prime.getUnderlying());
+        uint256 unutilized;
+        if(address(underlying) == address(prime)) {
+            unutilized = totalEtherBalance();
+        } else {
+            unutilized = underlying.balanceOf(address(this));
+        }
+        return unutilized;
     }
 
+    /**
+     * @dev Gets the Utilized asset balance of the Pool.
+     * @notice Gets the total assets that are being utilized as underlying assets in Prime Options.
+     */
+    function totalUtilized() public view returns (uint256) {
+        return totalOptionSupply();
+    }
+
+    /**
+     * @dev max amount of LP tokens that can be burned to withdraw underlying assets USDC
+     * @notice Max Burn = USDC Balance * Total Supply of IP Tokens / Total Dai + Total USDC
+     * @return uint256 max amount of tokens that can be burned to withdraw underlying assets
+     */
+    function maxInsuranceProviderTokenBurnAmount() public returns (uint256) {
+        /* LP = (ET - L) * ST / ET where ST = Total Supply */
+        uint256 maxBurn = totalUnutilized().mul(totalSupply()).div(totalUtilized());
+        require(maxBurn <= totalUnutilized(), 'ERR_BAL_UNUTILIZED');
+        return maxBurn;
+    }
 
     /* CAPITAL MANAGEMENT FUNCTIONS */
 
     /**
      @dev function to send ether with the most security
      */
-    function sendEther(uint256 amount, address payable user) internal returns (bool) {
+    function sendEther(address payable user, uint256 amount) internal returns (bool) {
         (bool success, ) = user.call.value(amount)("");
         require(success, "Send ether fail");
         return success;
     }
 
-    /* COMPOUND INTERFACE FUNCTIONS */
-
-    /**
-     @dev converts ether to interest bearing cEther (Compound Protocol)
-     @param amount ether that will be swapped to cEther
-     */
-    function swapEtherToCompoundEther(uint256 amount) internal returns (bool) {
-        _cEther.mint.value(amount).gas(250000)();
-        return true;
+    function totalOptionSupply() public view returns (uint256) {
+        return _totalOptionSupply;
     }
 
-    /**
-     @dev converts cEther back into Ether
-     @param amount ether that will be swapped to cEther
-     */
-    function swapCEtherToEtherThenSend(uint256 amount, address payable user) internal returns (bool) {
-        uint256 redeemResult = _cEther.redeemUnderlying(amount);
-        require(redeemResult == 0, 'redeem != 0');
-        (bool success, ) = user.call.value(amount)("");
-        require(success, 'Transfer fail.');
-        return success;
-    }
-
-    function getSnapshot() public view returns (uint, uint, uint, uint) {
-        return _cEther.getAccountSnapshot(msg.sender);
+    function totalEtherBalance() public view returns (uint256) {
+        return address(this).balance;
     }
 }
 

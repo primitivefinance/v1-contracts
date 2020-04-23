@@ -14,8 +14,8 @@ contract ControllerRedeem is Ownable {
         transferOwnership(controller);
     }
 
-    function addRedeem(string memory name, string memory symbol, bool isCallOption) public onlyOwner returns (address) {
-        PrimeRedeem primeRedeem = new PrimeRedeem(name, symbol, isCallOption);
+    function addRedeem(string memory name, string memory symbol, address payable optionAddress, IERC20 strikeAddress) public onlyOwner returns (address) {
+        PrimeRedeem primeRedeem = new PrimeRedeem(name, symbol, optionAddress, strikeAddress);
         return address(primeRedeem);
     }
 

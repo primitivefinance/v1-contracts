@@ -229,9 +229,6 @@ contract PrimeOption is ERC20Detailed, ERC20, ReentrancyGuard {
         uint256 rPulpBalance = _rPulp.balanceOf(receiver);
         uint256 rPulpToBurn = amount;
         if(isEthPutOption()) {
-            if(_rPulp.isCallPulp()) {
-                rPulpToBurn = amount.mul(option.qUnderlying).div(1 ether);
-            }
 
             verifyBalance(rPulpBalance, rPulpToBurn, "ERR_BAL_RPULP");
             verifyBalance(address(this).balance, amount, "ERR_BAL_STRIKE");
@@ -239,9 +236,6 @@ contract PrimeOption is ERC20Detailed, ERC20, ReentrancyGuard {
             _rPulp.burn(receiver, rPulpToBurn);
             return sendEther(receiver, amount);
         } else {
-            if(!_rPulp.isCallPulp()) {
-                rPulpToBurn = amount.mul(1 ether).div(option.qStrike);
-            }
 
             IERC20 _strike = IERC20(option.aStrike);
             verifyBalance(rPulpBalance, rPulpToBurn, "ERR_BAL_RPULP");
