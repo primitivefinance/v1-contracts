@@ -1,31 +1,42 @@
 pragma solidity ^0.6.2;
 
 /**
- * @title Primitive's ERC-20 Option
+ * @title Primitive's Base ERC-20 Option
  * @author Primitive
  */
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./PrimeInterface.sol";
 import "./controller/Instruments.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 contract PrimeOption is ERC20, ReentrancyGuard {
     using SafeMath for uint256;
 
-    event Deposit(address indexed user, uint256 qUnderlying, uint256 qStrike);
+    uint256 public constant DENOMINATOR = 1 ether;
 
-    uint256 public _parentToken;
-    address public _instrumentController;
-
-    Instruments.PrimeOption public option;
-
-    IPrimeRedeem public _rPulp;
+    address public factory;
+    address public tokenR;
 
     uint256 public marketId;
+    uint256 public cacheU;
+    uint256 public cacheS;
+    
+    Instruments.PrimeOption public option;
 
-    constructor(
+    function getCaches() public view returns (uint256 _cacheU, uint256 _cacheS) {
+        _cacheU = cacheU;
+        _cacheS = cacheS;
+    }
+
+    event Mint(address indexed from, uint256 amount);
+    event Swap(address indexed from, uint256 amount, uint256 strikes);
+    event Redeem(address indexed from, uint256 amount);
+    event Close(address indexed from, uint256 amount);
+    event Fund(uint256 cacheU, uint256 cacheS);
+
+    constructor (
         string memory name,
         string memory symbol,
         uint256 _marketId,
@@ -38,7 +49,7 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         ERC20(name, symbol)
     {
         marketId = _marketId;
-        _instrumentController = msg.sender;
+        factory = msg.sender;
         option = Instruments.PrimeOption(
             tokenU,
             tokenS,
@@ -49,208 +60,159 @@ contract PrimeOption is ERC20, ReentrancyGuard {
 
     receive() external payable {}
 
-    function setRPulp(address rPulp) public returns (bool) {
-        require(msg.sender == _instrumentController, 'ERR_NOT_OWNER'); // OWNER IS OPTIONS.sol
-        _rPulp = IPrimeRedeem(rPulp);
+    function setRPulp(address _redeem) public returns (bool) {
+        require(msg.sender == factory, 'ERR_NOT_OWNER'); // OWNER IS OPTIONS.sol
+        tokenR = _redeem;
         return true;
     }
 
-
     /**
-     * @dev deposits underlying assets to mint prime eth call or put options
-     * @notice deposits qUnderlying assets and receives qUnderlying asset amount of oPULP and rPULP tokens
-     * @return bool if the transaction succeeds
+     * @dev Sets the cache balances to new values.
      */
-    function deposit(uint256 amount) public payable nonReentrant returns (bool) {
-        return _deposit(amount, msg.sender, msg.sender);
+    function _fund(uint256 balanceU, uint256 balanceS) private {
+        cacheU = balanceU;
+        cacheS = balanceS;
+        emit Fund(balanceU, balanceS);
     }
 
     /**
-     * @dev internal function to handle deposits based on Call/Put type of option
-     * @param amount quantity of underlying assets to deposit
-     * @param oPulpReceiver address who receives prime oPulp option tokens
-     * @param rPulpReceiver address who receives redeeem rPulp tokens, the writer of the option
+     * @dev Mint Primes by depositing tokenU.
+     * @notice Also mints Prime Redeem tokens.
+     * @param amount Quantity of Prime options to mint.
+     * @return bool True if the mint succeeds and tokenU was deposited.
+     */
+    function mint(uint256 amount) external nonReentrant returns (bool) {
+        verifyBalance(IERC20(option.tokenU).balanceOf(msg.sender), amount, "ERR_BAL_UNDERLYING");
+        IERC20(option.tokenU).transferFrom(msg.sender, address(this), amount);
+        return _deposit(msg.sender, msg.sender);
+    }
+
+    /**
+     * @dev Private function to mint the Primes.
+     * @param optionReceiver address who receives prime option tokens
+     * @param redeemReceiver address who receives redeeem tokens, the writer of the option
      */
     function _deposit(
-        uint256 amount,
-        address oPulpReceiver,
-        address rPulpReceiver
-    ) internal returns (bool) {
-        if(isEthCallOption()) {
-            require(msg.value > 0 && msg.value == amount, "ERR_ZERO");
-            (bool mintSuccess) = mintPrimeOptions(
-                amount,
-                option.ratio,
-                oPulpReceiver,
-                rPulpReceiver
-            );
-            require(mintSuccess, "ERR_MINT_OPTIONS");
-            return mintSuccess;
-        } else {
-            IERC20 underlying = IERC20(option.tokenU);
-            verifyBalance(underlying.balanceOf(rPulpReceiver), amount, "ERR_BAL_UNDERLYING");
-            (bool mintSuccess) = mintPrimeOptions(
-                amount,
-                option.ratio,
-                oPulpReceiver,
-                rPulpReceiver
-            );
-            bool transferSuccess = underlying.transferFrom(rPulpReceiver, address(this), amount);
-            require(mintSuccess && transferSuccess, "ERR_MINT_OPTIONS");
-            return (mintSuccess && transferSuccess);
-        }
+        address optionReceiver,
+        address redeemReceiver
+    ) private returns (bool) {
+        uint256 balanceU = IERC20(option.tokenU).balanceOf(address(this));
+        uint256 primes = balanceU.sub(cacheU);
+        uint256 redeems = primes.mul(option.ratio).div(DENOMINATOR);
+        require(primes > 0 && redeems > 0, "ERR_ZERO");
+        IPrimeRedeem(tokenR).mint(redeemReceiver, redeems);
+        _mint(optionReceiver, primes);
+        _fund(balanceU, cacheS);
+        emit Mint(msg.sender, primes);
+        return true;
     }
 
     /**
-     * @dev mints oPulp + rPulp
+     * @dev Swaps tokenS to tokenU using Ratio as the exchange rate.
+     * @notice Burns Prime, contract receives tokenS, user receives tokenU.
+     * @param amount Quantity of Primes to use to swap.
      */
-    function mintPrimeOptions(
-        uint256 qoPulp,
-        uint256 ratio,
-        address oPulpReceiver,
-        address rPulpReceiver
-    ) internal returns (bool) {
-        uint256 qrPulp = qoPulp.mul(1 ether).div(ratio);
-
-        _rPulp.mint(
-            rPulpReceiver,
-            qrPulp
-        );
-        
-        _mint(oPulpReceiver, qoPulp);
-        emit Deposit(msg.sender, qoPulp, qrPulp);
-        return (true);
+    function swap(uint256 amount) external nonReentrant returns (bool) {
+        verifyBalance(balanceOf(msg.sender), amount, "ERR_BAL_PRIME");
+        uint256 strikes = amount.mul(option.ratio).div(DENOMINATOR);
+        IERC20(option.tokenS).transferFrom(msg.sender, address(this), strikes);
+        return _swap();
     }
 
     /**
-     * @dev swaps strike assets to underlying assets and burns prime options
-     * @notice burns oPULP, transfers strike asset to contract, sends underlying asset to user
+     * @dev Private function to update balances.
      */
-    function swap(uint256 qUnderlying) public nonReentrant returns (bool) {
-        return _swap(qUnderlying);
+    function _swap() private returns (bool) {
+        uint256 balanceS = IERC20(option.tokenS).balanceOf(address(this));
+        uint256 balanceU = IERC20(option.tokenU).balanceOf(address(this));
+        uint256 strikes = balanceS.sub(cacheS);
+        uint256 underlyings = strikes.mul(DENOMINATOR).div(option.ratio);
+
+        _burn(msg.sender, underlyings);
+        IERC20(option.tokenU).transfer(msg.sender, underlyings);
+
+        balanceS = IERC20(option.tokenS).balanceOf(address(this));
+        _fund(balanceU, balanceS);
+
+        emit Swap(msg.sender, underlyings, strikes);
+        return true;
     }
 
     /**
-     * @dev internal function to swap underlying assets for strike assets depending on option type call/put
+     * @dev Burns Prime Redeem tokens to withdraw available tokenS.
+     * @param amount Quantity of Prime Redeem to spend.
+     * @return bool True if burn and transfer succeeds.
      */
-    function _swap(uint256 qUnderlying) internal returns (bool) {
-        require(balanceOf(msg.sender) >= qUnderlying, "ERR_BAL_OPULP");
-        uint256 qStrike = qUnderlying.mul(option.ratio).div(1 ether);
-        if(isEthPutOption()) {
-            verifyBalance(msg.value, qStrike, "ERR_BAL_UNDERLYING");
-            _burn(msg.sender, qUnderlying);
-            IERC20 _underlying = IERC20(option.tokenU);
-            return _underlying.transferFrom(address(this), msg.sender, qStrike);
-        } else {
-            IERC20 _strike = IERC20(option.tokenS);
-            verifyBalance(_strike.balanceOf(msg.sender), qStrike, "ERR_BAL_STRIKE");
-            _burn(msg.sender, qUnderlying);
-            _strike.transferFrom(msg.sender, address(this), qStrike);
-            return sendEther(msg.sender, qUnderlying);
-        } 
-    }
-
-    /**
-     * @dev withdraws exercised strike assets by burning rPulp
-     * @notice burns rPULP to withdraw strike assets that are from exercised options
-     * @param amount quantity of strike assets to withdraw 
-     * @return bool if transfer of strike assets succeeds
-     */
-    function withdraw(uint256 amount) public nonReentrant returns (bool) {
+    function withdraw(uint256 amount) external nonReentrant returns (bool) {
         return _withdraw(amount, msg.sender);
     }
 
     /**
-     * @dev internal function to withdraw strike assets for different option types by burning c/p Pulp tokens
-     * @param amount quantity of strike assets to withdraw
-     * @param receiver address to burn rPulp from and send strike assets to
-     * @return bool if transfer of strike assets succeeds
+     * @dev Private function to burn tokenR and withdraw tokenS.
      */
-    function _withdraw(uint256 amount, address payable receiver) internal returns (bool) {
-        uint256 rPulpBalance = _rPulp.balanceOf(receiver);
-        uint256 rPulpToBurn = amount;
-        if(isEthPutOption()) {
+    function _withdraw(uint256 amount, address payable receiver) private returns (bool) {
+        uint256 balanceR = IPrimeRedeem(tokenR).balanceOf(receiver);
+        verifyBalance(balanceR, amount, "ERR_BAL_REDEEM");
 
-            verifyBalance(rPulpBalance, rPulpToBurn, "ERR_BAL_RPULP");
-            verifyBalance(address(this).balance, amount, "ERR_BAL_STRIKE");
-    
-            _rPulp.burn(receiver, rPulpToBurn);
-            return sendEther(receiver, amount);
-        } else {
+        uint256 balanceS = IERC20(option.tokenS).balanceOf(address(this));
+        verifyBalance(balanceS, amount, "ERR_BAL_STRIKE");
 
-            IERC20 _strike = IERC20(option.tokenS);
-            verifyBalance(rPulpBalance, rPulpToBurn, "ERR_BAL_RPULP");
-            verifyBalance(_strike.balanceOf(address(this)), amount, "ERR_BAL_STRIKE");
+        IPrimeRedeem(tokenR).burn(receiver, amount);
+        IERC20(option.tokenS).transfer(receiver, amount);
 
-            _rPulp.burn(receiver, rPulpToBurn);
-            return _strike.transfer(receiver, amount);
-        } 
+        balanceS = IERC20(option.tokenS).balanceOf(address(this));
+        _fund(cacheU, balanceS);
+
+        emit Redeem(msg.sender, amount);
+        return true;
     }
 
     /**
-     * @dev burn prime options to withdraw original underlying asset deposits
-     * @notice burns oPULP and rPULP to receive initial deposit amount (underlying asset)
+     * @dev Burn Prime and Prime Redeem tokens to withdraw tokenU.
+     * @param amount Quantity of Primes to burn.
      * @return bool if the transaction succeeds
      */
-    function close(uint256 qUnderlying) public returns(bool) {
+    function close(uint256 amount) external returns(bool) {
 
-        uint256 rPulpBalance = _rPulp.balanceOf(msg.sender);
-        uint256 qStrike = qUnderlying.mul(option.ratio).div(1 ether);
+        uint256 balanceR = IPrimeRedeem(tokenR).balanceOf(msg.sender);
+        uint256 redeems = amount.mul(option.ratio).div(DENOMINATOR);
 
-        verifyBalance(rPulpBalance, qStrike, "ERR_BAL_RPULP");
-        verifyBalance(balanceOf(msg.sender), qUnderlying, "ERR_BAL_OPULP");
+        verifyBalance(balanceR, redeems, "ERR_BAL_REDEEM");
+        verifyBalance(balanceOf(msg.sender), amount, "ERR_BAL_PRIME");
 
-        _rPulp.burn(msg.sender, qStrike);        
-        _burn(msg.sender, qUnderlying);
-        if(isEthCallOption()) {
-            return sendEther(msg.sender, qUnderlying);
-        } else {
-            IERC20 _underlying = IERC20(option.tokenU);
-            return _underlying.transfer(msg.sender, qUnderlying);
-        }
-    }
+        IPrimeRedeem(tokenR).burn(msg.sender, redeems);        
+        _burn(msg.sender, amount);
 
-    /**
-     @dev function to send ether with the most security
-     */
-    function sendEther(address payable user, uint256 amount) internal returns (bool) {
-        (bool success, ) = user.call.value(amount)("");
-        require(success, "Send ether fail");
-        return success;
-    }
-
-    function isEthCallOption() public view returns (bool) {
-        return (option.tokenU == address(this));
-    }
-
-    function isEthPutOption() public view returns (bool) {
-        return (option.tokenS == address(this));
+        IERC20(option.tokenU).transfer(msg.sender, amount);
+        uint256 balanceU = IERC20(option.tokenU).balanceOf(address(this));
+        _fund(balanceU, cacheS);
+        emit Close(msg.sender, amount);
+        return true;
     }
 
     function verifyBalance(
         uint256 balance,
         uint256 minBalance,
         string memory errorCode
-    ) internal pure returns (bool) {
-        if(minBalance == 0) {
-            require(balance > minBalance, errorCode);
-            return balance > minBalance;
-        } else {
+    ) internal pure {
+        minBalance == 0 ? 
+            require(balance > minBalance, errorCode) :
             require(balance >= minBalance, errorCode);
-            return balance >= minBalance;
-        }
     }
 
-    function getStrike() public view returns (address) {
+    function tokenS() public view returns (address) {
         return option.tokenS;
     }
 
-    function getUnderlying() public view returns (address) {
+    function tokenU() public view returns (address) {
         return option.tokenU;
     }
 
-    function getRatio() public view returns (uint256) {
+    function ratio() public view returns (uint256) {
         return option.ratio;
     }
 
+    function expiry() public view returns (uint256) {
+        return option.expiry;
+    }
 }
