@@ -92,6 +92,7 @@ contract ControllerMarket is Ownable {
             tokenS
         );
         optionController.setRedeem(redeem, option);
+        redeemController.setValid(option, redeem);
 
         // Adds option to pool contract
         IControllerPool pool = IControllerPool(_controllers.pool);

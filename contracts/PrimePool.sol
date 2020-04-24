@@ -85,15 +85,15 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         IPrimeOption _prime = IPrimeOption(primeOption);
 
         // Assume this is DAI
-        IERC20 strike = IERC20(_prime.getStrike());
+        IERC20 strike = IERC20(_prime.tokenS());
         strike.approve(primeOption, 1000000000 ether);
         strike.approve(address(_cDai), 1000000000 ether);
         
         // Assume this is USDC
-        IERC20 underlying = IERC20(_prime.getUnderlying());
+        IERC20 underlying = IERC20(_prime.tokenU());
         underlying.approve(primeOption, 1000000000 ether);
 
-        IPrimeRedeem rPulp = IPrimeRedeem(_prime._rPulp());
+        IPrimeRedeem rPulp = IPrimeRedeem(_prime.tokenR());
         rPulp.approve(primeOption, 1000000000 ether);
         return primeOption;
     }
@@ -121,7 +121,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         /* CHECKS */
 
         // Assume this is the underlying asset of the series
-        IERC20 underlying = IERC20(prime.getUnderlying());
+        IERC20 underlying = IERC20(prime.tokenU());
         if(address(underlying) == address(prime)) {
             require(msg.value == amount && msg.value > 0, "ERR_BAL_ETH");
         } else {
@@ -179,8 +179,8 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
 
         /* EFFECTS */
 
-        IERC20 strike = IERC20(prime.getStrike());
-        IPrimeRedeem redeem = IPrimeRedeem(prime._rPulp());
+        IERC20 strike = IERC20(prime.tokenS());
+        IPrimeRedeem redeem = IPrimeRedeem(prime.tokenR());
 
         // Total Redeem Balance = Strike Balance in Redeem Contract
         uint256 maxRedeem = redeem.balanceOf(address(this));
@@ -229,7 +229,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         }
     
         // Transfer the underlying
-        IERC20 underlying = IERC20(prime.getUnderlying());
+        IERC20 underlying = IERC20(prime.tokenU());
         if(address(underlying) == address(prime)) {
             return sendEther(msg.sender, underlyingToWithdraw);
         } else {
@@ -263,10 +263,10 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         uint256 price = uint(_oracle.currentAnswer());
 
         uint256 intrinsic;
-        if(option.getQuantityStrike() > price) {
+        if(option.ratio() > price) {
             intrinsic = 0;
         } else {
-            intrinsic = price.sub(option.getQuantityStrike());
+            intrinsic = price.sub(option.ratio());
         }
 
         uint256 cost = premium.add(intrinsic);
@@ -278,11 +278,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         }
 
         _totalOptionSupply = _totalOptionSupply.add(amount);
-        if(option.isEthCallOption()) {
-            option.deposit.value(amount)(amount);
-        } else {
-            option.deposit(amount);
-        }
+        option.mint(amount);
         
         return option.transfer(msg.sender, amount);
     }
@@ -319,10 +315,10 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
 
         // Assume qStrike is a stablecoin pegged to $1
         uint256 intrinsic;
-        if(option.getQuantityStrike() > price) {
+        if(option.ratio() > price) {
             intrinsic = 0;
         } else {
-            intrinsic = price.sub(option.getQuantityStrike());
+            intrinsic = price.sub(option.ratio());
         }
 
         uint256 maxEth = maxExtrinsic.add(intrinsic);
@@ -344,7 +340,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
      * @notice Gets the total assets that are not being utilized as underlying assets in Prime Options.
      */
     function totalUnutilized() public view returns (uint256) {
-        IERC20 underlying = IERC20(prime.getUnderlying());
+        IERC20 underlying = IERC20(prime.tokenU());
         uint256 unutilized;
         if(address(underlying) == address(prime)) {
             unutilized = totalEtherBalance();

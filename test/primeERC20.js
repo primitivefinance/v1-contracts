@@ -5,6 +5,7 @@ const PrimeOption = artifacts.require('PrimeOption.sol');
 const PrimePool = artifacts.require('PrimePool.sol');
 const PrimeRedeem = artifacts.require('PrimeRedeem');
 const Usdc = artifacts.require("USDC");
+const Dai = artifacts.require('DAI');
 
 contract('PrimeERC20', accounts => {
     const { toWei } = web3.utils;
@@ -21,11 +22,11 @@ contract('PrimeERC20', accounts => {
     const ERR_BAL_TOKENS = "ERR_BAL_TOKENS";
     const ERR_BAL_OPTIONS = "ERR_BAL_OPTIONS";
     const MAINNET_COMPOUND_ETH = '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5';
-    const oneEther = toWei('0.1');
-    const twoEther = toWei('0.2');
-    const fiveEther = toWei('0.5');
-    const tenEther = toWei('1');
-    const millionEther = toWei('1000000');
+    const ONE_ETHER = toWei('0.1');
+    const TWO_ETHER = toWei('0.2');
+    const FIVE_ETHER = toWei('0.5');
+    const TEN_ETHER = toWei('1');
+    const MILLION_ETHER = toWei('1000000');
 
 
     // User Accounts
@@ -48,16 +49,17 @@ contract('PrimeERC20', accounts => {
         qUnderlying,
         aUnderlying,
         qStrike,
-        aStrike,
-        tExpiry,
+        tokenS,
+        expiry,
         isEthCall,
-        ethCallName,
+        name,
         _redeem,
         _pool,
         _option,
         _exchange,
         totalLiquidity,
-        isTokenOption
+        isTokenOption,
+        symol
         ;
 
     async function getGas(func, name) {
@@ -69,13 +71,13 @@ contract('PrimeERC20', accounts => {
 
         // Get the Option Parameters
         _strike = await Usdc.deployed();
-        qUnderlying = oneEther;
-        qStrike = tenEther;
-        aStrike = _strike.address;
-        tExpiry = '1607774400'
-        isEthCall = true;
-        ethCallName = 'ETH201212C150USDC'
-        isTokenOption = false;
+        _underlying = await Dai.deployed();
+        tokenS = _strike.address;
+        tokenU = _underlying.address;
+        expiry = '1607774400';
+        ratio = TEN_ETHER;
+        name = 'ETH201212C150USDC';
+        symbol = 'PRIME';
 
         // Get the Market Controller Contract
         _controllerMarket = await ControllerMarket.deployed();
@@ -83,20 +85,22 @@ contract('PrimeERC20', accounts => {
         // Create a new Eth Option Market
         const firstMarket = 1;
         await _controllerMarket.createMarket(
-            qUnderlying,
-            aStrike,
-            qStrike,
-            aStrike,
-            tExpiry,
-            ethCallName,
-            isEthCall,
-            isTokenOption,
+            name,
+            symbol,
+            tokenU,
+            tokenS,
+            ratio,
+            expiry
         );
         
         
         _pool = await PrimePool.at(await _controllerMarket.getMaker(firstMarket));
         _option = await PrimeOption.at(await _controllerMarket.getOption(firstMarket));
-        _redeem = await PrimeRedeem.at(await _option._rPulp());
+        _redeem = await PrimeRedeem.at(await _option.tokenR());
+        await _strike.approve(_option.address, MILLION_ETHER, {from: Alice});
+        await _underlying.approve(_option.address, MILLION_ETHER, {from: Alice});
+        await _strike.approve(_option.address, MILLION_ETHER, {from: Bob});
+        await _underlying.approve(_option.address, MILLION_ETHER, {from: Bob});
 
         userA = Alice;
         userB = Bob;
@@ -107,16 +111,16 @@ contract('PrimeERC20', accounts => {
 
         });
 
-        it('should be a call option', async () => {
-            let isCall = await _option.isEthCallOption();
-            assert.strictEqual(isCall, true, 'Not Call but should be');
+        it('should have market id 1', async () => {
+            let marketId = await _option.marketId();
+            assert.strictEqual((marketId).toString(), '1', 'Not market id 1');
         });
 
-        describe('PrimeOption.deposit()', () => {
+        describe('PrimeOption.mint()', () => {
 
             it('revert if msg.value = 0', async () => {
                 await truffleAssert.reverts(
-                    _option.deposit(
+                    _option.mint(
                         0,
                         {from: userA,  value: 0}
                     ),
@@ -125,9 +129,9 @@ contract('PrimeERC20', accounts => {
             });
 
             it('mints rPulp and oPulp', async () => {
-                let rPulp = toWei('10');
-                let oPulp = (tenEther).toString();
-                await _option.deposit(tenEther, {from: userA, value: tenEther});
+                let rPulp = toWei('1');
+                let oPulp = (TEN_ETHER).toString();
+                await _option.mint(TEN_ETHER, {from: userA, value: 0});
                 let rPulpBal = (await _redeem.balanceOf(userA)).toString();
                 let oPulpBal = (await _option.balanceOf(userA)).toString();
                 assert.strictEqual(rPulpBal, rPulp, `${rPulpBal} != ${rPulp}`);
@@ -144,37 +148,25 @@ contract('PrimeERC20', accounts => {
             it('reverts if user doesnt have enough oPulp', async () => {
                 await truffleAssert.reverts(
                     _option.swap(
-                        millionEther,
+                        MILLION_ETHER,
                         {from: userA,  value: 0}
                     ),
-                    "ERR_BAL_OPULP"
-                );
-            });
-
-            it('reverts if user doesnt have enough strike assets', async () => {
-                await _option.deposit(oneEther, {from: userB, value: oneEther});
-                await truffleAssert.reverts(
-                    _option.swap(
-                        oneEther,
-                        {from: userB,  value: 0}
-                    ),
-                    "ERR_BAL_STRIKE"
+                    "ERR_BAL_PRIME"
                 );
             });
 
             it('swaps oPulp for underlying', async () => {
-                await _option.deposit(oneEther, {from: userA, value: oneEther});
-                let iEth = await getBalance(userA);
+                await _option.mint(ONE_ETHER, {from: userA});
+                let iEth = await _underlying.balanceOf(userA);
                 let ioPulp = await _option.balanceOf(userA);
                 let iStrike = await _strike.balanceOf(userA);
-                await _strike.approve(_option.address, millionEther, {from: userA});
-                await _option.swap(oneEther, {from: userA, value: 0});
-                let eEth = await getBalance(userA);
+                await _option.swap(ONE_ETHER, {from: userA, value: 0});
+                let eEth = await _underlying.balanceOf(userA);
                 let eoPulp = await _option.balanceOf(userA);
                 let eStrike = await _strike.balanceOf(userA);
-                assert.strictEqual((iEth*1 + oneEther*1 - eEth) <= ROUNDING_ERR, true, `expectedEth: ${eEth}, actual: ${iEth*1 + oneEther*1}`);
-                assert.strictEqual((eoPulp*1 - oneEther*1 - eoPulp) <= ROUNDING_ERR, true, `expectedoPulp: ${eoPulp}, actual: ${eoPulp*1 - oneEther*1}`);
-                assert.strictEqual((eStrike*1 - qStrike*1 - eStrike) <= ROUNDING_ERR, true, `expectedeStrike: ${eStrike}, actual: ${eStrike*1 - qStrike*1}`);
+                assert.strictEqual((iEth*1 + ONE_ETHER*1 - eEth) <= ROUNDING_ERR, true, `expectedEth: ${eEth}, actual: ${iEth*1 + ONE_ETHER*1}`);
+                assert.strictEqual((eoPulp*1 - ONE_ETHER*1 - eoPulp) <= ROUNDING_ERR, true, `expectedoPulp: ${eoPulp}, actual: ${eoPulp*1 - ONE_ETHER*1}`);
+                assert.strictEqual((eStrike*1 - ratio*1 - eStrike) <= ROUNDING_ERR, true, `expectedeStrike: ${eStrike}, actual: ${eStrike*1 - ratio*1}`);
             });
         });
 
@@ -187,30 +179,20 @@ contract('PrimeERC20', accounts => {
             it('reverts if rPulp is less than qStrike', async () => {
                 await truffleAssert.reverts(
                     _option.withdraw(
-                        millionEther,
+                        MILLION_ETHER,
                         {from: userA, value: 0}),
-                    "ERR_BAL_RPULP"
-                );
-            });
-
-            it('reverts if prime contract doesnt have strike assets', async () => {
-                await _option.deposit(twoEther, {from: userA, value: twoEther});
-                await truffleAssert.reverts(
-                    _option.withdraw(
-                        (toWei('2')).toString(),
-                        {from: userA, value: 0}),
-                    "ERR_BAL_STRIKE"
+                    "ERR_BAL_REDEEM"
                 );
             });
 
             it('withdraws strike assets', async () => {
                 let iStrike = await _strike.balanceOf(userA);
-                let beforeStrike = oneEther * qStrike / toWei('1');
-                await _option.withdraw((oneEther * qStrike / toWei('1')).toString(), {from: userA, value: 0});
+                let beforeStrike = ONE_ETHER * ratio / toWei('1');
+                await _option.withdraw((ONE_ETHER * ratio / toWei('1')).toString(), {from: userA, value: 0});
                 let erPulp = await _redeem.balanceOf(userA);
                 let eStrike = await _strike.balanceOf(userA);
                 assert.strictEqual((erPulp*1 - beforeStrike*1 - erPulp) <= ROUNDING_ERR, true, 'rPulp not equal');
-                assert.strictEqual((iStrike*1 + (oneEther * beforeStrike / toWei('1'))*1 - eStrike) <= ROUNDING_ERR, true, 'Strike not equal');
+                assert.strictEqual((iStrike*1 + (ONE_ETHER * beforeStrike / toWei('1'))*1 - eStrike) <= ROUNDING_ERR, true, 'Strike not equal');
             });
         });
 
@@ -220,40 +202,29 @@ contract('PrimeERC20', accounts => {
 
             });
 
-            it('reverts if rPulp is less than qStrike', async () => {
+            it('reverts if rPulp is less than ratio', async () => {
                 await truffleAssert.reverts(
                     _option.close(
-                        millionEther,
+                        MILLION_ETHER,
                         {from: userA, value: 0}),
-                    "ERR_BAL_RPULP"
+                    "ERR_BAL_REDEEM"
                 );
             });
 
-            it('reverts if user doesnt have enough oPulp', async () => {
-                let oPulpBal = await _option.balanceOf(userB);
-                await _option.transfer(userA, oPulpBal, {from: userB});
-                await truffleAssert.reverts(
-                    _option.close(
-                        oneEther,
-                        {from: userB,  value: 0}
-                    ),
-                    "ERR_BAL_OPULP"
-                );
-            });
 
             it('closes position', async () => {
                 let irPulp = await _redeem.balanceOf(userA);
                 let ioPulp = await _option.balanceOf(userA);
-                let iEth = await getBalance(userA);
-                let ratio = await _option.option();
-                let strikeBefore = oneEther*1 * qStrike*1 / toWei('1');
-                await _option.close(oneEther, {from: userA, value: 0});
+                let iEth = await _underlying.balanceOf(userA);
+                let ratio = await _option.ratio();
+                let strikeBefore = ONE_ETHER*1 * ratio*1 / toWei('1');
+                await _option.close(ONE_ETHER, {from: userA, value: 0});
                 let erPulp = await _redeem.balanceOf(userA);
                 let eoPulp = await _option.balanceOf(userA);
-                let eEth = await getBalance(userA);
-                assert.strictEqual((erPulp*1 - strikeBefore*1 - erPulp) <= ROUNDING_ERR, true, 'rPulp not equal');
-                assert.strictEqual((eoPulp*1 - oneEther*1 - eoPulp) <= ROUNDING_ERR, true, 'oPulp not equal');
-                assert.strictEqual((iEth*1 + oneEther*1 - eEth) <= ROUNDING_ERR, true, `expectedEth: ${eEth} actual: ${iEth*1 + oneEther*1 - eEth}`);
+                let eEth = await _underlying.balanceOf(userA);
+                assert.strictEqual((erPulp*1 - strikeBefore*1 - erPulp) <= ROUNDING_ERR, true, `expected redeem ${erPulp}, actual: ${erPulp*1 + strikeBefore*1 - erPulp}`);
+                assert.strictEqual((eoPulp*1 - ONE_ETHER*1 - eoPulp) <= ROUNDING_ERR, true, 'oPulp not equal');
+                assert.strictEqual((iEth*1 + ONE_ETHER*1 - eEth) <= ROUNDING_ERR, true, `expectedEth: ${eEth} actual: ${iEth*1 + ONE_ETHER*1 - eEth}`);
             });
         });
     });
@@ -277,8 +248,8 @@ contract('PrimeERC20', accounts => {
 
             it('mints rPulp and oPulp', async () => {
                 let rPulp = toWei('10');
-                let oPulp = (tenEther).toString();
-                await _option.deposit(tenEther, {from: userA, value: tenEther});
+                let oPulp = (TEN_ETHER).toString();
+                await _option.deposit(TEN_ETHER, {from: userA, value: TEN_ETHER});
                 let rPulpBal = (await _redeem.balanceOf(userA)).toString();
                 let oPulpBal = (await _option.balanceOf(userA)).toString();
                 assert.strictEqual(rPulpBal, rPulp, `${rPulpBal} != ${rPulp}`);
@@ -295,7 +266,7 @@ contract('PrimeERC20', accounts => {
             it('reverts if user doesnt have enough oPulp', async () => {
                 await truffleAssert.reverts(
                     _option.swap(
-                        millionEther,
+                        MILLION_ETHER,
                         {from: userA,  value: 0}
                     ),
                     "ERR_BAL_OPULP"
@@ -303,10 +274,10 @@ contract('PrimeERC20', accounts => {
             });
 
             it('reverts if user doesnt have enough strike assets', async () => {
-                await _option.deposit(oneEther, {from: userB, value: oneEther});
+                await _option.deposit(ONE_ETHER, {from: userB, value: ONE_ETHER});
                 await truffleAssert.reverts(
                     _option.swap(
-                        oneEther,
+                        ONE_ETHER,
                         {from: userB,  value: 0}
                     ),
                     "ERR_BAL_STRIKE"
@@ -314,18 +285,18 @@ contract('PrimeERC20', accounts => {
             });
 
             it('swaps oPulp for underlying', async () => {
-                await _option.deposit(oneEther, {from: userA, value: oneEther});
+                await _option.deposit(ONE_ETHER, {from: userA, value: ONE_ETHER});
                 let iEth = await getBalance(userA);
                 let ioPulp = await _option.balanceOf(userA);
                 let iStrike = await _strike.balanceOf(userA);
-                await _strike.approve(_option.address, millionEther, {from: userA});
-                await _option.swap(oneEther, {from: userA, value: 0});
+                await _strike.approve(_option.address, MILLION_ETHER, {from: userA});
+                await _option.swap(ONE_ETHER, {from: userA, value: 0});
                 let eEth = await getBalance(userA);
                 let eoPulp = await _option.balanceOf(userA);
                 let eStrike = await _strike.balanceOf(userA);
-                assert.strictEqual((iEth*1 + oneEther*1 - eEth) <= ROUNDING_ERR, true, `expectedEth: ${eEth}, actual: ${iEth*1 + oneEther*1}`);
-                assert.strictEqual((eoPulp*1 - oneEther*1 - eoPulp) <= ROUNDING_ERR, true, `expectedoPulp: ${eoPulp}, actual: ${eoPulp*1 - oneEther*1}`);
-                assert.strictEqual((eStrike*1 - qStrike*1 - eStrike) <= ROUNDING_ERR, true, `expectedeStrike: ${eStrike}, actual: ${eStrike*1 - qStrike*1}`);
+                assert.strictEqual((iEth*1 + ONE_ETHER*1 - eEth) <= ROUNDING_ERR, true, `expectedEth: ${eEth}, actual: ${iEth*1 + ONE_ETHER*1}`);
+                assert.strictEqual((eoPulp*1 - ONE_ETHER*1 - eoPulp) <= ROUNDING_ERR, true, `expectedoPulp: ${eoPulp}, actual: ${eoPulp*1 - ONE_ETHER*1}`);
+                assert.strictEqual((eStrike*1 - ratio*1 - eStrike) <= ROUNDING_ERR, true, `expectedeStrike: ${eStrike}, actual: ${eStrike*1 - qStrike*1}`);
             });
         });
 
@@ -338,14 +309,14 @@ contract('PrimeERC20', accounts => {
             it('reverts if rPulp is less than qStrike', async () => {
                 await truffleAssert.reverts(
                     _option.withdraw(
-                        millionEther,
+                        MILLION_ETHER,
                         {from: userA, value: 0}),
                     "ERR_BAL_RPULP"
                 );
             });
 
             it('reverts if prime contract doesnt have strike assets', async () => {
-                await _option.deposit(twoEther, {from: userA, value: twoEther});
+                await _option.deposit(TWO_ETHER, {from: userA, value: TWO_ETHER});
                 await truffleAssert.reverts(
                     _option.withdraw(
                         (toWei('2')).toString(),
@@ -356,12 +327,12 @@ contract('PrimeERC20', accounts => {
 
             it('withdraws strike assets', async () => {
                 let iStrike = await _strike.balanceOf(userA);
-                let beforeStrike = oneEther * qStrike / toWei('1');
-                await _option.withdraw((oneEther * qStrike / toWei('1')).toString(), {from: userA, value: 0});
+                let beforeStrike = ONE_ETHER * qStrike / toWei('1');
+                await _option.withdraw((ONE_ETHER * qStrike / toWei('1')).toString(), {from: userA, value: 0});
                 let erPulp = await _redeem.balanceOf(userA);
                 let eStrike = await _strike.balanceOf(userA);
                 assert.strictEqual((erPulp*1 - beforeStrike*1 - erPulp) <= ROUNDING_ERR, true, 'rPulp not equal');
-                assert.strictEqual((iStrike*1 + (oneEther * beforeStrike / toWei('1'))*1 - eStrike) <= ROUNDING_ERR, true, 'Strike not equal');
+                assert.strictEqual((iStrike*1 + (ONE_ETHER * beforeStrike / toWei('1'))*1 - eStrike) <= ROUNDING_ERR, true, 'Strike not equal');
             });
         });
 
@@ -374,7 +345,7 @@ contract('PrimeERC20', accounts => {
             it('reverts if rPulp is less than qStrike', async () => {
                 await truffleAssert.reverts(
                     _option.close(
-                        millionEther,
+                        MILLION_ETHER,
                         {from: userA, value: 0}),
                     "ERR_BAL_RPULP"
                 );
@@ -385,7 +356,7 @@ contract('PrimeERC20', accounts => {
                 await _option.transfer(userA, oPulpBal, {from: userB});
                 await truffleAssert.reverts(
                     _option.close(
-                        oneEther,
+                        ONE_ETHER,
                         {from: userB,  value: 0}
                     ),
                     "ERR_BAL_OPULP"
@@ -397,14 +368,14 @@ contract('PrimeERC20', accounts => {
                 let ioPulp = await _option.balanceOf(userA);
                 let iEth = await getBalance(userA);
                 let ratio = await _option.option();
-                let strikeBefore = oneEther*1 * qStrike*1 / toWei('1');
-                await _option.close(oneEther, {from: userA, value: 0});
+                let strikeBefore = ONE_ETHER*1 * qStrike*1 / toWei('1');
+                await _option.close(ONE_ETHER, {from: userA, value: 0});
                 let erPulp = await _redeem.balanceOf(userA);
                 let eoPulp = await _option.balanceOf(userA);
                 let eEth = await getBalance(userA);
                 assert.strictEqual((erPulp*1 - strikeBefore*1 - erPulp) <= ROUNDING_ERR, true, 'rPulp not equal');
-                assert.strictEqual((eoPulp*1 - oneEther*1 - eoPulp) <= ROUNDING_ERR, true, 'oPulp not equal');
-                assert.strictEqual((iEth*1 + oneEther*1 - eEth) <= ROUNDING_ERR, true, `expectedEth: ${eEth} actual: ${iEth*1 + oneEther*1 - eEth}`);
+                assert.strictEqual((eoPulp*1 - ONE_ETHER*1 - eoPulp) <= ROUNDING_ERR, true, 'oPulp not equal');
+                assert.strictEqual((iEth*1 + ONE_ETHER*1 - eEth) <= ROUNDING_ERR, true, `expectedEth: ${eEth} actual: ${iEth*1 + ONE_ETHER*1 - eEth}`);
             });
         });
     }); */
