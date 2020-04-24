@@ -60,18 +60,4 @@ contract PrimeRedeem is ERC20 {
         _burn(user, amount);
         return true;
     }
-
-    /**
-     @dev function to send ether with the most security
-     */
-    function sendEther(address payable user, uint256 amount) internal returns (bool) {
-        (bool success, ) = user.call.value(amount)("");
-        require(success, "Send ether fail");
-        return success;
-    }
-
-    function isCallPulp() public view returns (bool) {
-        return _isCallPulp;
-    }
-
 }
