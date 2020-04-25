@@ -61,7 +61,7 @@ contract PrimeOption is ERC20, ReentrancyGuard {
     receive() external payable {}
 
     function setRPulp(address _redeem) public returns (bool) {
-        require(msg.sender == factory, 'ERR_NOT_OWNER'); // OWNER IS OPTIONS.sol
+        require(msg.sender == factory, 'ERR_NOT_OWNER');
         tokenR = _redeem;
         return true;
     }
@@ -80,27 +80,22 @@ contract PrimeOption is ERC20, ReentrancyGuard {
      * @notice Also mints Prime Redeem tokens.
      * @param amount Quantity of Prime options to mint.
      */
-    function mint(uint256 amount) external nonReentrant returns (uint256 primes, uint256 redeems) {
+    function safeMint(uint256 amount) external nonReentrant returns (uint256 primes, uint256 redeems) {
         verifyBalance(IERC20(option.tokenU).balanceOf(msg.sender), amount, "ERR_BAL_UNDERLYING");
         IERC20(option.tokenU).transferFrom(msg.sender, address(this), amount);
-        (primes, redeems) = _deposit(msg.sender, msg.sender);
+        (primes, redeems) = mint();
     }
 
     /**
-     * @dev Private function to mint the Primes.
-     * @param optionReceiver address who receives prime option tokens
-     * @param redeemReceiver address who receives redeeem tokens, the writer of the option
+     * @dev Core function to mint the Primes.
      */
-    function _deposit(
-        address optionReceiver,
-        address redeemReceiver
-    ) private returns (uint256 primes, uint256 redeems) {
+    function mint() public returns (uint256 primes, uint256 redeems) {
         uint256 balanceU = IERC20(option.tokenU).balanceOf(address(this));
         primes = balanceU.sub(cacheU);
         redeems = primes.mul(option.ratio).div(DENOMINATOR);
         require(primes > 0 && redeems > 0, "ERR_ZERO");
-        IPrimeRedeem(tokenR).mint(redeemReceiver, redeems);
-        _mint(optionReceiver, primes);
+        IPrimeRedeem(tokenR).mint(msg.sender, redeems);
+        _mint(msg.sender, primes);
         _fund(balanceU, cacheS);
         emit Mint(msg.sender, primes);
     }
@@ -110,17 +105,17 @@ contract PrimeOption is ERC20, ReentrancyGuard {
      * @notice Burns Prime, contract receives tokenS, user receives tokenU.
      * @param amount Quantity of Primes to use to swap.
      */
-    function swap(uint256 amount) external nonReentrant returns (bool) {
+    function safeSwap(uint256 amount) external nonReentrant returns (bool) {
         verifyBalance(balanceOf(msg.sender), amount, "ERR_BAL_PRIME");
         uint256 strikes = amount.mul(option.ratio).div(DENOMINATOR);
         IERC20(option.tokenS).transferFrom(msg.sender, address(this), strikes);
-        return _swap();
+        return swap();
     }
 
     /**
      * @dev Private function to update balances.
      */
-    function _swap() private returns (bool) {
+    function swap() public returns (bool) {
         uint256 balanceS = IERC20(option.tokenS).balanceOf(address(this));
         uint256 balanceU = IERC20(option.tokenU).balanceOf(address(this));
         uint256 strikes = balanceS.sub(cacheS);

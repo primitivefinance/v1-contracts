@@ -12,10 +12,12 @@ interface IPrime {
     function transfer(address to, uint256 amount) external returns (bool);
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
 
-    function mint(uint256 amount) external returns (uint256 primes, uint256 redeems);
-    function swap(uint256 amount) external returns (bool);
+    function swap() external returns (bool);
+    function mint() external returns (uint256 primes, uint256 redeems);
     function close(uint256 amount) external returns (bool);
     function withdraw(uint256 amount) external returns (uint);
+    function safeSwap(uint256 amount) external returns (bool);
+    function safeMint(uint256 amount) external returns (uint256 primes, uint256 redeems);
 
     function tokenR() external view returns (address);
     function tokenS() external view returns (address);

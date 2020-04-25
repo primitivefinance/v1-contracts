@@ -274,7 +274,8 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
             sendEther(msg.sender, refund);
         }
 
-        (uint256 primes, uint256 redeems) = option.mint(amount);
+        IERC20(option.tokenU()).transfer(address(option), amount);
+        (uint256 primes, uint256 redeems) = option.mint();
         _fund(primes, cacheS, redeems);
         
         return option.transfer(msg.sender, amount);

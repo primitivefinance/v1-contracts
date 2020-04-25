@@ -134,7 +134,7 @@ contract('PrimeERC20', accounts => {
 
             it('revert if msg.value = 0', async () => {
                 await truffleAssert.reverts(
-                    _option.mint(
+                    _option.safeMint(
                         0,
                         {from: userA,  value: 0}
                     ),
@@ -145,7 +145,7 @@ contract('PrimeERC20', accounts => {
             it('mints rPulp and oPulp', async () => {
                 let rPulp = toWei('1');
                 let oPulp = (TEN_ETHER).toString();
-                await _option.mint(TEN_ETHER, {from: userA, value: 0});
+                await _option.safeMint(TEN_ETHER, {from: userA, value: 0});
                 let rPulpBal = (await _redeem.balanceOf(userA)).toString();
                 let oPulpBal = (await _option.balanceOf(userA)).toString();
                 assert.strictEqual(rPulpBal, rPulp, `${rPulpBal} != ${rPulp}`);
@@ -161,7 +161,7 @@ contract('PrimeERC20', accounts => {
 
             it('reverts if user doesnt have enough oPulp', async () => {
                 await truffleAssert.reverts(
-                    _option.swap(
+                    _option.safeSwap(
                         MILLION_ETHER,
                         {from: userA,  value: 0}
                     ),
@@ -170,11 +170,11 @@ contract('PrimeERC20', accounts => {
             });
 
             it('swaps oPulp for underlying', async () => {
-                await _option.mint(ONE_ETHER, {from: userA});
+                await _option.safeMint(ONE_ETHER, {from: userA});
                 let iEth = await _underlying.methods.balanceOf(userA).call();
                 let ioPulp = await _option.balanceOf(userA);
                 let iStrike = await _strike.balanceOf(userA);
-                await _option.swap(ONE_ETHER, {from: userA, value: 0});
+                await _option.safeSwap(ONE_ETHER, {from: userA, value: 0});
                 let eEth = await _underlying.methods.balanceOf(userA).call();
                 let eoPulp = await _option.balanceOf(userA);
                 let eStrike = await _strike.balanceOf(userA);
@@ -342,7 +342,7 @@ contract('PrimeERC20', accounts => {
                 console.log('[TOTAL POOL BALANCE]', fromWei(await _pool.juice()));
                 console.log('[TOTAL OPTION SUPPLY]', fromWei(await _pool.cacheU()));
                 console.log('[TOTAL REDEEM BALANCE]', fromWei(await _redeem.balanceOf(_pool.address)));
-                await _option.swap(ONE_ETHER, {from: userA});
+                await _option.safeSwap(ONE_ETHER, {from: userA});
                 await _pool.withdraw(ONE_ETHER, {from: userA, value: 0});
                 let eLP = await _pool.balanceOf(userA);
                 console.log('[LP BALANCES]', 'BEFORE', fromWei(iLP), 'AFTER', fromWei(eLP));
