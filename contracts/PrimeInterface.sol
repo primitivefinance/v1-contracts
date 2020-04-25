@@ -12,31 +12,18 @@ interface IPrime {
     function transfer(address to, uint256 amount) external returns (bool);
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
 
-    function swap() external returns (
+    function swap(address receiver) external returns (
         uint256 inTokenS,
         uint256 outTokenU
     );
-    function mint() external returns (
+    function mint(address receiver) external returns (
         uint256 primes,
         uint256 redeems
     );
-    function close(uint256 amount) external returns (
-        uint256 inTokenR,
-        uint256 inTokenP,
-        uint256 outTokenU
-    );
-    function safeRedeem(uint256 amount) external returns (
+    function redeem(address receiver) external returns (
         uint256 inTokenR
     );
-    function safeSwap(uint256 amount) external returns (
-        uint256 inTokenS,
-        uint256 outTokenU
-    );
-    function safeMint(uint256 amount) external returns (
-        uint256 primes,
-        uint256 redeems
-    );
-    function safeClose(uint256 amount) external returns (
+    function close(address receiver) external returns (
         uint256 inTokenR,
         uint256 inTokenP,
         uint256 outTokenU
@@ -54,6 +41,25 @@ interface IPrime {
     function maxDraw() external view returns (uint256 draw);
     function getCaches() external view returns (uint256 _cacheU, uint256 _cacheS);
     function getTokens() external view returns (address _tokenU, address _tokenS, address _tokenR);
+}
+
+interface ITrader {
+    function safeRedeem(address tokenP, uint256 amount, address receiver) external returns (
+        uint256 inTokenR
+    );
+    function safeSwap(address tokenP, uint256 amount, address receiver) external returns (
+        uint256 inTokenS,
+        uint256 outTokenU
+    );
+    function safeMint(address tokenP, uint256 amount, address receiver) external returns (
+        uint256 primes,
+        uint256 redeems
+    );
+    function safeClose(address tokenP, uint256 amount, address receiver) external returns (
+        uint256 inTokenR,
+        uint256 inTokenP,
+        uint256 outTokenU
+    );
 }
 
 interface IPrimeRedeem {

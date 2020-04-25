@@ -202,7 +202,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
             for(uint8 i = 0; i < _optionMarkets.length; i++) {
                 IPrime option = IPrime(_optionMarkets[i]);
                 (uint256 draw) = option.maxDraw();
-                option.safeRedeem(draw);
+                safeRedeem(address(option), draw, address(this));
 
                 // Subtract the amount drawn from the redeem cache
                 redeems.sub(draw);
@@ -298,7 +298,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         }
 
         IERC20(option.tokenU()).transfer(address(option), amount);
-        (uint256 primes, uint256 redeems) = option.mint();
+        (uint256 primes, uint256 redeems) = option.mint(msg.sender);
         _fund(primes, cacheS, redeems);
         
         return option.transfer(msg.sender, amount);
@@ -317,6 +317,67 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
             return option.transfer(msg.sender, amount);
         }
     }  */
+    /**
+     * @dev Mint Primes by depositing tokenU.
+     * @notice Also mints Prime Redeem tokens. Calls msg.sender with transferFrom.
+     * @param tokenP The address of the Prime Option to trade with.
+     * @param amount Quantity of Prime options to mint and tokenU to deposit.
+     * @param receiver The newly minted tokens are sent to the receiver address.
+     */
+    function safeMint(
+        address tokenP,
+        uint256 amount,
+        address receiver
+    )
+        external
+        nonReentrant
+        returns (uint256 primes, uint256 redeems)
+    {
+        IPrime _tokenP = IPrime(tokenP);
+        address _tokenU = _tokenP.tokenU();
+        verifyBalance(
+            IERC20(_tokenU).balanceOf(msg.sender),
+            amount,
+            "ERR_BAL_UNDERLYING"
+        );
+        IERC20(_tokenU).transferFrom(msg.sender, tokenP, amount);
+        (primes, redeems) = _tokenP.mint(receiver);
+    }
+
+    /**
+     * @dev Burns Prime Redeem tokens to withdraw available tokenS.
+     * @param amount Quantity of Prime Redeem to spend.
+     */
+    function safeRedeem(
+        address tokenP,
+        uint256 amount,
+        address receiver
+    )
+        public
+        nonReentrant
+        returns (uint256 inTokenR)
+    {
+        IPrime _tokenP = IPrime(tokenP);
+        address _tokenS = _tokenP.tokenS();
+        address _tokenR = _tokenP.tokenR();
+
+        verifyBalance(
+            IERC20(_tokenR).balanceOf(msg.sender),
+            amount,
+            "ERR_BAL_REDEEM"
+        );
+
+        // There can be the case there is no available tokenS to redeem.
+        // This is the first verification of a tokenS balance to draw from.
+        // There is a second verification in the redeem() function.
+        verifyBalance(
+            IERC20(_tokenS).balanceOf(tokenP),
+            amount,
+            "ERR_BAL_STRIKE"
+        );
+        IERC20(_tokenR).transferFrom(msg.sender, tokenP, amount);
+        (inTokenR) = _tokenP.redeem(receiver);
+    }
 
     /**
      * @dev Gets the Unutilized asset balance of the Pool.
@@ -353,6 +414,16 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
 
     function totalEtherBalance() public view returns (uint256) {
         return address(this).balance;
+    }
+
+    function verifyBalance(
+        uint256 balance,
+        uint256 minBalance,
+        string memory errorCode
+    ) internal pure {
+        minBalance == 0 ? 
+            require(balance > minBalance, errorCode) :
+            require(balance >= minBalance, errorCode);
     }
 }
 
