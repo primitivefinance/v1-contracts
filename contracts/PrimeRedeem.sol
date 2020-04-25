@@ -36,27 +36,14 @@ contract PrimeRedeem is ERC20 {
         _valid[option] = true;
     }
 
-    function setValid(address valid) public returns(bool) {
-        require(msg.sender == _controller, "ERR_NOT_OWNER");
-        _valid[valid] = true;
-        return true;
-    }
-
-    function redeem(uint256 amount) external returns (bool) {
-        require(balanceOf(msg.sender) >= amount, "ERR_BAL_REDEEM");
-        _burn(msg.sender, amount);
-        return IERC20(strike).transfer(msg.sender, amount);
-    }
-
-
     function mint(address user, uint256 amount) external returns(bool)  {
-        require(_valid[msg.sender], "ERR_NOT_VALID");
+        require(msg.sender == option, "ERR_NOT_VALID");
         _mint(user, amount);
         return true;
     }
 
     function burn(address user, uint256 amount) external returns(bool)  {
-        require(_valid[msg.sender], "ERR_NOT_VALID");
+        require(msg.sender == option, "ERR_NOT_VALID");
         _burn(user, amount);
         return true;
     }

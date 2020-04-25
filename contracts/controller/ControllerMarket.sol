@@ -6,7 +6,7 @@ pragma solidity ^0.6.2;
  */
 
 import "./ControllerInterface.sol";
-import { IPrimeOption } from "../PrimeInterface.sol";
+import { IPrime } from "../PrimeInterface.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
@@ -92,7 +92,6 @@ contract ControllerMarket is Ownable {
             tokenS
         );
         optionController.setRedeem(redeem, option);
-        redeemController.setValid(option, redeem);
 
         // Adds option to pool contract
         IControllerPool pool = IControllerPool(_controllers.pool);

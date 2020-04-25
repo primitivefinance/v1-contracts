@@ -19,7 +19,6 @@ interface IControllerRedeem {
         address payable optionAddress,
         address strikeAddress
     ) external returns (address);
-    function setValid(address primeOption, address redeemAddress) external returns (bool);
 }
 
 interface IControllerOption {

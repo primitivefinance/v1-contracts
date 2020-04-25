@@ -10,24 +10,29 @@ module.exports = async (deployer, network) => {
     const rinkebyCompoundDai = '0x6d7f0754ffeb405d23c51ce938289d4835be3b14';
     const mainnetChainlink = '0x79fEbF6B9F76853EDBcBc913e6aAE8232cFB9De9';
     const rinkebyChainlink = '0x0bF4e7bf3e1f6D6Dc29AA516A33134985cC3A5aA';
+    const rinkebyWeth = '0xc778417e063141139fce010982780140aa0cd5ab';
+    const mainnetWeth = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
 
     let compound;
     let compoundDai;
     let oracle;
+    let weth;
     if (network === 'rinkeby') {
         compound = rinkebyCompoundAddress;
         compoundDai = rinkebyCompoundDai;
         oracle = rinkebyChainlink;
+        weth = rinkebyWeth;
     } else {
         compound = mainnetCompoundAddress;
         compoundDai = mainnetCompoundDai;
         oracle = mainnetChainlink;
+        weth = mainnetWeth;
     }
 
     // Deploy Controllers
     await deployer.deploy(ControllerMarket);
     const controller = await ControllerMarket.deployed();
-    const pool = await deployer.deploy(ControllerPool, controller.address);
+    const pool = await deployer.deploy(ControllerPool, controller.address, weth);
     const redeem = await deployer.deploy(ControllerRedeem, controller.address);
 
     await deployer.deploy(ControllerOption, controller.address);

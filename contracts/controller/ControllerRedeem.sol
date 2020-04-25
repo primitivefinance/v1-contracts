@@ -23,9 +23,4 @@ contract ControllerRedeem is Ownable {
         PrimeRedeem primeRedeem = new PrimeRedeem(name, symbol, optionAddress, strikeAddress);
         return address(primeRedeem);
     }
-
-    function setValid(address primeOption, address redeemAddress) public onlyOwner returns (bool) {
-        PrimeRedeem primeRedeem = PrimeRedeem(redeemAddress);
-        return primeRedeem.setValid(primeOption);
-    }
 }

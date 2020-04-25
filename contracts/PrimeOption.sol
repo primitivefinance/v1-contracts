@@ -79,12 +79,11 @@ contract PrimeOption is ERC20, ReentrancyGuard {
      * @dev Mint Primes by depositing tokenU.
      * @notice Also mints Prime Redeem tokens.
      * @param amount Quantity of Prime options to mint.
-     * @return bool True if the mint succeeds and tokenU was deposited.
      */
-    function mint(uint256 amount) external nonReentrant returns (bool) {
+    function mint(uint256 amount) external nonReentrant returns (uint256 primes, uint256 redeems) {
         verifyBalance(IERC20(option.tokenU).balanceOf(msg.sender), amount, "ERR_BAL_UNDERLYING");
         IERC20(option.tokenU).transferFrom(msg.sender, address(this), amount);
-        return _deposit(msg.sender, msg.sender);
+        (primes, redeems) = _deposit(msg.sender, msg.sender);
     }
 
     /**
@@ -95,16 +94,15 @@ contract PrimeOption is ERC20, ReentrancyGuard {
     function _deposit(
         address optionReceiver,
         address redeemReceiver
-    ) private returns (bool) {
+    ) private returns (uint256 primes, uint256 redeems) {
         uint256 balanceU = IERC20(option.tokenU).balanceOf(address(this));
-        uint256 primes = balanceU.sub(cacheU);
-        uint256 redeems = primes.mul(option.ratio).div(DENOMINATOR);
+        primes = balanceU.sub(cacheU);
+        redeems = primes.mul(option.ratio).div(DENOMINATOR);
         require(primes > 0 && redeems > 0, "ERR_ZERO");
         IPrimeRedeem(tokenR).mint(redeemReceiver, redeems);
         _mint(optionReceiver, primes);
         _fund(balanceU, cacheS);
         emit Mint(msg.sender, primes);
-        return true;
     }
 
     /**
@@ -172,7 +170,7 @@ contract PrimeOption is ERC20, ReentrancyGuard {
      * @param amount Quantity of Primes to burn.
      * @return bool if the transaction succeeds
      */
-    function close(uint256 amount) external returns(bool) {
+    function close(uint256 amount) external returns (bool) {
 
         uint256 balanceR = IPrimeRedeem(tokenR).balanceOf(msg.sender);
         uint256 redeems = amount.mul(option.ratio).div(DENOMINATOR);
@@ -214,5 +212,12 @@ contract PrimeOption is ERC20, ReentrancyGuard {
 
     function expiry() public view returns (uint256) {
         return option.expiry;
+    }
+
+    function maxDraw() public view returns (uint256 draw) {
+        uint256 bal = IPrimeRedeem(tokenR).balanceOf(msg.sender);
+        cacheU > bal ?
+            draw = bal :
+            draw = cacheU;
     }
 }
