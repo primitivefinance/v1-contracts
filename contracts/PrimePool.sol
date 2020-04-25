@@ -34,9 +34,10 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     uint256 public constant FIVE_HUNDRED_BPS = 20;
     uint256 public constant ONE_HUNDRED_BPS = 100;
 
-    IPrime public prime;
     AggregatorInterface public oracle;
 
+    address public tokenU;
+    address public tokenS;
     address payable public weth;
     address payable[] public _optionMarkets;
 
@@ -56,18 +57,25 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     event Buy(address indexed user, uint256 amount, uint256 premium);
 
     constructor (
-        address compoundDaiAddress,
+        address payable _weth,
         address _oracle,
-        address payable _weth
+        string memory name,
+        string memory symbol,
+        address _tokenU,
+        address _tokenS
     ) 
         public
-        ERC20(
-            "Market Maker Primitive Underlying LP",
-            "mPULP"
-        )
+        ERC20(name, symbol)
     {
         oracle = AggregatorInterface(_oracle);
         weth = _weth;
+        tokenU = _tokenU;
+        tokenS = _tokenS;
+    }
+
+    function assets() public view returns (address _tokenU, address _tokenS) {
+        _tokenU = tokenU;
+        _tokenS = tokenS;
     }
 
     function _fund(uint256 _cacheU, uint256 _cacheS, uint256 _cacheR) private {
@@ -77,24 +85,20 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     }
 
     function addMarket(address payable primeOption) public onlyOwner returns (address) {
-        // Assume the first option defines the series (strike and underlying assets + expiration)
-        if(_optionMarkets.length == 0) {
-            prime = IPrime(primeOption);
-        }
         isValidOption[primeOption] = true;
         _optionMarkets.push(primeOption);
         IPrime _prime = IPrime(primeOption);
 
         // Assume this is DAI
-        IERC20 strike = IERC20(_prime.tokenS());
+        IERC20 strike = IERC20(tokenS);
         strike.approve(primeOption, 1000000000 ether);
         
         // Assume this is USDC
-        IERC20 underlying = IERC20(_prime.tokenU());
+        IERC20 underlying = IERC20(tokenU);
         underlying.approve(primeOption, 1000000000 ether);
 
-        IPrimeRedeem rPulp = IPrimeRedeem(_prime.tokenR());
-        rPulp.approve(primeOption, 1000000000 ether);
+        IPrimeRedeem redeem = IPrimeRedeem(_prime.tokenR());
+        redeem.approve(primeOption, 1000000000 ether);
         return primeOption;
     }
 
@@ -121,18 +125,18 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         /* CHECKS */
 
         // Assume this is the underlying asset of the series
-        IERC20 underlying = IERC20(prime.tokenU());
-        if(address(underlying) == weth) {
+        IERC20 _tokenU = IERC20(tokenU);
+        if(address(_tokenU) == weth) {
             require(msg.value == amount && msg.value > 0, "ERR_BAL_ETH");
         } else {
-            require(underlying.balanceOf(msg.sender) >= amount && amount > 0, "ERR_BAL_UNDERLYING");
+            require(_tokenU.balanceOf(msg.sender) >= amount && amount > 0, "ERR_BAL__tokenU");
         }
         
         /* EFFECTS */
 
         // Mint LP tokens proportional to the Total LP Supply and Total Pool Balance
         uint256 pulp;
-        uint256 juice = juice();
+        uint256 juice = cacheU;
         uint256 totalSupply = totalSupply();
          
         // If liquidity is not intiialized, mint LP tokens equal to deposit
@@ -148,12 +152,12 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         _fund(amount, cacheS, cacheR);
         emit Deposit(amount, msg.sender, pulp);
 
-        // Assume we hold the underlying asset until it is utilized in minting a Prime
-        if(address(underlying) == weth) {
+        // Assume we hold the _tokenU asset until it is utilized in minting a Prime
+        if(address(_tokenU) == weth) {
             IWETH(weth).deposit.value(msg.value)();
             return true;
         } else {
-            return underlying.transferFrom(msg.sender, address(this), amount);
+            return _tokenU.transferFrom(msg.sender, address(this), amount);
         }
         
     }
@@ -177,23 +181,38 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
 
         /* EFFECTS */
 
-        IERC20 tokenS = IERC20(prime.tokenS());
-        IERC20 tokenU = IERC20(prime.tokenU());
+        IERC20 _tokenS = IERC20(tokenS);
+        IERC20 _tokenU = IERC20(tokenU);
 
+        // Local variable for cache balances
         uint256 redeems = cacheR;
-        uint256 strikes = tokenS.balanceOf(address(this));
-        uint256 underlyings = tokenU.balanceOf(address(this));
+        uint256 deposits = cacheU;
+
+        uint256 strikes = _tokenS.balanceOf(address(this));
+        uint256 underlyings = _tokenU.balanceOf(address(this));
 
         uint256 withdrawU = amount.mul(cacheU).div(totalSupply());
         uint256 withdrawR = amount.mul(cacheR).div(totalSupply());
 
+        // If there is not enough underlying liquidity to draw from, draw from strike assets
         if(withdrawU > underlyings) {
             uint256 remainder = withdrawR;
             for(uint8 i = 0; i < _optionMarkets.length; i++) {
                 IPrime option = IPrime(_optionMarkets[i]);
                 (uint256 draw) = option.maxDraw();
                 option.withdraw(draw);
+
+                // Subtract the amount drawn from the redeem cache
                 redeems.sub(draw);
+
+                // Subtract the underlying exercised from the underlying cache
+                deposits.sub(
+                    draw.mul(1 ether)
+                        .div(option.ratio())
+                        .div(1 ether)
+                );
+
+                // If we have enough strike assets to pay the rest of the draw, break
                 if(draw > remainder) {
                     break;
                 } else {
@@ -201,8 +220,10 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
                 }
             }
 
-            strikes = tokenS.balanceOf(address(this));
+            strikes = _tokenS.balanceOf(address(this));
             require(strikes >= withdrawR, "ERR_BAL_STRIKE");
+
+            // New underlying to withdraw is proportional to balance currently in contract
             withdrawU = amount.mul(underlyings).div(totalSupply()); 
         } else {
             withdrawR = 0;
@@ -215,22 +236,22 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         
         
         if(withdrawR > 0) {
-            tokenS.transfer(msg.sender, withdrawR);
+            _tokenS.transfer(msg.sender, withdrawR);
         }
         
         _fund(
-            underlyings.sub(withdrawU),
+            deposits,
             strikes.sub(withdrawR),
             redeems
         );
 
         emit Withdraw(withdrawU, msg.sender, amount);
     
-        if(address(tokenU) == weth) {
+        if(address(_tokenU) == weth) {
             IWETH(weth).withdraw(withdrawU);
             return sendEther(msg.sender, withdrawU);
         } else {
-            return tokenU.transfer(msg.sender, withdrawU);
+            return _tokenU.transfer(msg.sender, withdrawU);
         }
     }
 
@@ -286,24 +307,10 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
      * @notice Gets the total assets that are not being utilized as underlying assets in Prime Options.
      */
     function totalUnutilized() public view returns (uint256) {
-        IERC20 underlying = IERC20(prime.tokenU());
-        uint256 unutilized;
-        if(address(underlying) == address(prime)) {
-            unutilized = totalEtherBalance();
-        } else {
-            unutilized = underlying.balanceOf(address(this));
-        }
+        IERC20 underlying = IERC20(tokenU);
+        uint256 unutilized = underlying.balanceOf(address(this));
         return unutilized;
     }
-
-    /**
-     * @dev Gets the Utilized asset balance of the Pool.
-     * @notice Gets the total assets that are being utilized as underlying assets in Prime Options.
-     */
-    function juice() public view returns (uint256) {
-        return cacheU;
-    }
-
 
     /**
      * @dev max amount of LP tokens that can be burned to withdraw underlying assets
@@ -312,7 +319,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
      */
     function maxLiquidityWithdrawable() public view returns (uint256) {
         /* LP = (ET - L) * ST / ET where ST = Total Supply */
-        uint256 maxLiquidity = totalUnutilized().mul(totalSupply()).div(juice());
+        uint256 maxLiquidity = totalUnutilized().mul(totalSupply()).div(cacheU);
         require(maxLiquidity <= totalUnutilized(), "ERR_BAL_UNUTILIZED");
         return maxLiquidity;
     }

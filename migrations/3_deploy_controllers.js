@@ -46,5 +46,5 @@ module.exports = async (deployer, network) => {
     );
 
     // Initialize New Maker Pool Contract with Compound Address
-    await controller.initMakerPool(compoundDai, oracle);
+    /* await controller.initMakerPool(compoundDai, oracle); */
 };

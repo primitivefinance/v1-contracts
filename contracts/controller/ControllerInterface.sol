@@ -8,8 +8,15 @@ interface IControllerMarket {
 }
 
 interface IControllerPool {
-    function addPool(address compoundEther, address oracle) external returns (address);
-    function addMarket(address payable primeOption) external returns (address);
+    function makerFor(address tokenU, address tokenS) external view returns (address payable);
+    function addPool(
+        address oracle,
+        string calldata name,
+        string calldata symbol,
+        address tokenU,
+        address tokenS
+    ) external returns (address payable);
+    function addMarket(address maker, address payable primeOption) external returns (address);
 }
 
 interface IControllerRedeem {

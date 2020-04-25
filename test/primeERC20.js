@@ -25,6 +25,7 @@ contract('PrimeERC20', accounts => {
     const ERR_BAL_TOKENS = "ERR_BAL_TOKENS";
     const ERR_BAL_OPTIONS = "ERR_BAL_OPTIONS";
     const MAINNET_COMPOUND_ETH = '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5';
+    const MAINNET_ORACLE = '0x79fEbF6B9F76853EDBcBc913e6aAE8232cFB9De9';
     const ONE_ETHER = toWei('0.1');
     const TWO_ETHER = toWei('0.2');
     const FIVE_ETHER = toWei('0.5');
@@ -72,7 +73,7 @@ contract('PrimeERC20', accounts => {
         gas.push([name + ' gas: ', spent])
     }
 
-    beforeEach(async () => {
+    before(async () => {
         // Get the Market Controller Contract
         _controllerMarket = await ControllerMarket.deployed();
         _controllerPool = await ControllerPool.deployed();
@@ -92,6 +93,14 @@ contract('PrimeERC20', accounts => {
 
         // Create a new Eth Option Market
         const firstMarket = 1;
+        await _controllerMarket.createMaker(
+            MAINNET_ORACLE,
+            "ETH Short Put Dai Pool",
+            "spmPULP",
+            tokenU,
+            tokenS
+        );
+
         await _controllerMarket.createMarket(
             name,
             symbol,
@@ -101,8 +110,10 @@ contract('PrimeERC20', accounts => {
             expiry
         );
         
-        
-        _pool = await PrimePool.at(await _controllerMarket.getMaker(firstMarket));
+        console.log('[TOKEN U AND TOKEN S]', tokenU, tokenS);
+        console.log('[MAKER FOR 1]', await _controllerMarket.getMaker(1));
+        console.log('[MAKER FOR U AND S]', await _controllerPool.makerFor(tokenU, tokenS));
+        _pool = await PrimePool.at(await _controllerMarket.getMaker(1));
         _option = await PrimeOption.at(await _controllerMarket.getOption(firstMarket));
         _redeem = await PrimeRedeem.at(await _option.tokenR());
         await _underlying.methods.deposit().send({from: Alice, value: TEN_ETHER});
@@ -286,6 +297,10 @@ contract('PrimeERC20', accounts => {
             });
 
             it('reverts if pool doesnt have enough underlying assets', async () => {
+                console.log('[OPTION ADDRESS]', _option.address);
+                console.log('[OPTION ADDRESS ACTUAL]',  await _controllerMarket.getOption(1));
+                console.log('[OPTION ADDRESSES]', await _controllerMarket.makers(0));
+                console.log('[OPTION MAKER]', await _controllerMarket.getMaker(1));
                 await truffleAssert.reverts(
                     _pool.buy(
                         MILLION_ETHER,
@@ -339,7 +354,6 @@ contract('PrimeERC20', accounts => {
                 console.log('[TOTAL UNUTILIZED]', fromWei(await _pool.totalUnutilized()));
                 console.log('[TOTAL SUPPLY]', fromWei(await _pool.totalSupply()));
                 console.log('[TOTAL ETHER]', fromWei(await _pool.totalEtherBalance()));
-                console.log('[TOTAL POOL BALANCE]', fromWei(await _pool.juice()));
                 console.log('[TOTAL OPTION SUPPLY]', fromWei(await _pool.cacheU()));
                 console.log('[TOTAL REDEEM BALANCE]', fromWei(await _redeem.balanceOf(_pool.address)));
                 await _option.safeSwap(ONE_ETHER, {from: userA});

@@ -12,20 +12,34 @@ contract ControllerPool is Ownable {
 
     PrimePool public _maker;
     address payable public weth;
+    mapping(address => mapping(address => address payable)) public makerFor;
 
     constructor(address controller, address payable _weth) public {
         transferOwnership(controller);
         weth = _weth;
     }
 
-    function addPool(address compoundEther, address oracle) public onlyOwner returns (address) {
-        PrimePool primePool = new PrimePool(compoundEther, oracle, weth);
-        _maker = primePool;
+    function addPool(
+        address oracle,
+        string memory name,
+        string memory symbol,
+        address tokenU,
+        address tokenS
+    ) public onlyOwner returns (address payable) {
+        PrimePool primePool = new PrimePool(
+            weth,
+            oracle,
+            name,
+            symbol,
+            tokenU,
+            tokenS
+        );
+        makerFor[tokenU][tokenS] = address(primePool);
         return address(primePool);
     }
 
-    function addMarket(address payable primeOption) public onlyOwner returns (address) {
-        _maker.addMarket(primeOption);
+    function addMarket(address payable maker, address payable primeOption) public onlyOwner returns (address) {
+        PrimePool(maker).addMarket(primeOption);
         return primeOption;
     }
 }

@@ -39,6 +39,7 @@ contract ControllerMarket is Ownable {
 
     mapping(uint256 => Market) public _markets;
     address public _maker;
+    address payable[] public makers;
 
     function initControllers(
         IControllerOption option,
@@ -56,12 +57,30 @@ contract ControllerMarket is Ownable {
         return true;
     }
 
-    function initMakerPool(address compoundContract, address oracle) public onlyOwner returns (address) {
+    /* function initMakerPool(address compoundContract, address oracle) public onlyOwner returns (address) {
         require(!_isInitialized.maker, "ERR_INITIALIZED");
         address maker = _addMarketMaker(compoundContract, oracle);
         _isInitialized.maker = true;
         return maker;
-    }
+    } */
+
+    function createMaker(
+        address oracle,
+        string memory name,
+        string memory symbol,
+        address tokenU,
+        address tokenS
+    ) public onlyOwner returns (address payable maker) {
+        IControllerPool pool = IControllerPool(_controllers.pool);
+        maker = pool.addPool(
+            oracle,
+            name,
+            symbol,
+            tokenU,
+            tokenS
+        );
+        makers.push(maker);
+    } 
 
     function createMarket(
         string memory name,
@@ -95,27 +114,30 @@ contract ControllerMarket is Ownable {
 
         // Adds option to pool contract
         IControllerPool pool = IControllerPool(_controllers.pool);
-        pool.addMarket(option);
+        address payable maker = pool.makerFor(tokenU, tokenS);
+        if(maker != address(0)) {
+            pool.addMarket(maker, option);
+        }
 
         _markets[marketId] = Market(
             address(this),
             marketId,
             option,
-            _maker
+            maker
         );
 
         return marketId;
     }
 
-    function _addMarketMaker(
+    /* function _addMarketMaker(
         address compoundEther,
         address oracle
     ) internal returns (address) {
         IControllerPool pool = IControllerPool(_controllers.pool);
-        address poolAddress = pool.addPool(compoundEther, oracle);
+        address poolAddress = pool.addPool(oracle);
         _maker = poolAddress;
         return poolAddress;
-    }
+    } */
 
     function getOption(uint256 marketId) public view returns (address) {
         return _markets[marketId].option;
