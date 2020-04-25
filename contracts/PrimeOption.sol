@@ -125,17 +125,6 @@ contract PrimeOption is ERC20, ReentrancyGuard {
     }
 
     /**
-     * @dev Mint Primes by depositing tokenU.
-     * @notice Also mints Prime Redeem tokens. Calls msg.sender with transferFrom.
-     * @param amount Quantity of Prime options to mint.
-     */
-    /* function safeMint(uint256 amount) external nonReentrant returns (uint256 primes, uint256 redeems) {
-        verifyBalance(IERC20(option.tokenU).balanceOf(msg.sender), amount, "ERR_BAL_UNDERLYING");
-        IERC20(option.tokenU).transferFrom(msg.sender, address(this), amount);
-        (primes, redeems) = mint();
-    } */
-
-    /**
      * @dev Core function to mint new Prime ERC-20 Options.
      * @notice inTokenU = outTokenP, inTokenU * ratio = outTokenR
      * Checks the balance of the contract against the token's 'cache',
@@ -168,19 +157,6 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         _fund(balanceU, cacheS, cacheR);
         emit Mint(receiver, primes, redeems);
     }
-
-    /**
-     * @dev Swaps tokenS to tokenU using ratio as the exchange rate.
-     * @notice Burns Prime, contract receives tokenS, user receives tokenU.
-     * Calls msg.sender with transferFrom.
-     * @param amount Quantity of Primes to use to swap.
-     */
-    /* function safeSwap(uint256 amount) external nonReentrant returns (uint256 inTokenS, uint256 outTokenU) {
-        verifyBalance(balanceOf(msg.sender), amount, "ERR_BAL_PRIME");
-        uint256 strikes = amount.mul(option.ratio).div(DENOMINATOR);
-        IERC20(option.tokenS).transferFrom(msg.sender, address(this), strikes);
-        (inTokenS, outTokenU) = swap();
-    } */
 
     /**
      * @dev Swap tokenS to tokenU at a rate of tokenS / ratio = tokenU.
@@ -226,17 +202,6 @@ contract PrimeOption is ERC20, ReentrancyGuard {
     }
 
     /**
-     * @dev Burns Prime Redeem tokens to withdraw available tokenS.
-     * @param amount Quantity of Prime Redeem to spend.
-     */
-    /* function safeRedeem(uint256 amount) external nonReentrant returns (uint256 inTokenR) {
-        uint256 balanceR = IPrimeRedeem(tokenR).balanceOf(msg.sender);
-        verifyBalance(balanceR, amount, "ERR_BAL_REDEEM");
-        IPrimeRedeem(tokenR).transferFrom(msg.sender, address(this), amount);
-        (inTokenR) = redeem();
-    } */
-
-    /**
      * @dev Burns tokenR to withdraw tokenS at a ratio of 1:1.
      * @notice inTokenR = outTokenS
      * Should only be called by a contract that checks the balanaces to be sent correctly.
@@ -270,29 +235,6 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         _fund(cacheU, balanceS, balanceR);
         emit Redeem(receiver, inTokenR);
     }
-
-    /**
-     * @dev Burn Prime and Prime Redeem tokens to withdraw tokenU.
-     * @notice Takes paramter for quantity of Primes to burn.
-     * The Prime Redeems to burn is equal to the Primes * ratio.
-     * @param amount Quantity of Primes to burn.
-     */
-    /* function safeClose(
-        uint256 amount
-    )
-        external
-        nonReentrant
-        returns (uint256 inTokenR, uint256 inTokenP, uint256 outTokenU)
-    {
-        uint256 balanceR = IPrimeRedeem(tokenR).balanceOf(msg.sender);
-        uint256 balanceP = balanceOf(msg.sender);
-        uint256 strikes = amount.mul(option.ratio).div(DENOMINATOR);
-        verifyBalance(balanceR, strikes, "ERR_BAL_REDEEM");
-        verifyBalance(balanceP, amount, "ERR_BAL_PRIME");
-        IPrimeRedeem(tokenR).transferFrom(msg.sender, address(this), strikes);
-        transferFrom(msg.sender, address(this), amount);
-        (inTokenR, inTokenP, outTokenU) = close();
-    } */
 
     /**
      * @dev Burn Prime and Prime Redeem tokens to withdraw tokenU.
