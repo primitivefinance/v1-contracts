@@ -17,10 +17,10 @@ contract ControllerRedeem is Ownable {
     function addRedeem(
         string memory name,
         string memory symbol,
-        address optionAddress,
-        address strikeAddress
+        address tokenP,
+        address tokenS
     ) public onlyOwner returns (address) {
-        PrimeRedeem primeRedeem = new PrimeRedeem(name, symbol, optionAddress, strikeAddress);
+        PrimeRedeem primeRedeem = new PrimeRedeem(name, symbol, tokenP, tokenS);
         return address(primeRedeem);
     }
 }

@@ -104,13 +104,13 @@ contract ControllerMarket is Ownable {
 
         // Deploys redeem contract
         IControllerRedeem redeemController = IControllerRedeem(_controllers.redeem);
-        address redeem = redeemController.addRedeem(
+        address tokenR = redeemController.addRedeem(
             "Redeem Primitive Underlying LP",
             "rPULP",
             option,
             tokenS
         );
-        optionController.setRedeem(redeem, option);
+        optionController.setRedeem(tokenR, option);
 
         // Adds option to pool contract
         IControllerPool pool = IControllerPool(_controllers.pool);

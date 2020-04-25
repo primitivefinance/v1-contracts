@@ -7,19 +7,18 @@ pragma solidity ^0.6.2;
 
 import "../PrimeOption.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import { IControllerMarket } from "./ControllerInterface.sol";
 
 contract ControllerOption is Ownable {
     using SafeMath for uint256;
 
     uint256 public _marketNonce;
-    IControllerMarket public market;
+    address public controller;
 
     constructor(
-        address controller
+        address _controller
     ) public {
-        transferOwnership(controller);
-        market = IControllerMarket(controller);
+        transferOwnership(_controller);
+        controller = _controller;
     }
 
     function addOption(
@@ -35,7 +34,7 @@ contract ControllerOption is Ownable {
         returns (address, uint256)
     {
         _marketNonce = _marketNonce.add(1);
-        PrimeOption primeOption = new PrimeOption(
+        PrimeOption tokenP = new PrimeOption(
             name,
             symbol,
             _marketNonce,
@@ -44,12 +43,12 @@ contract ControllerOption is Ownable {
             ratio,
             expiry
         );
-        return (address(primeOption), _marketNonce);
+        return (address(tokenP), _marketNonce);
     }
 
-    function setRedeem(address redeem, address payable primeOption) public onlyOwner returns (bool) {
-        PrimeOption option = PrimeOption(primeOption);
-        return option.setRPulp(redeem);
+    function setRedeem(address tokenR, address tokenP) public onlyOwner returns (bool) {
+        PrimeOption option = PrimeOption(tokenP);
+        return option.setRPulp(tokenR);
     }
 }
 

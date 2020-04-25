@@ -38,8 +38,8 @@ contract ControllerPool is Ownable {
         return address(primePool);
     }
 
-    function addMarket(address payable maker, address primeOption) public onlyOwner returns (address) {
-        PrimePool(maker).addMarket(primeOption);
-        return primeOption;
+    function addMarket(address payable maker, address tokenP) public onlyOwner returns (address) {
+        PrimePool(maker).addMarket(tokenP);
+        return tokenP;
     }
 }

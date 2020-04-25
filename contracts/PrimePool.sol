@@ -103,7 +103,9 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     }
 
 
-    receive() external payable {}
+    receive() external payable {
+        assert(msg.sender == weth);
+    }
 
 
     /* =========== MAKER FUNCTIONS =========== */

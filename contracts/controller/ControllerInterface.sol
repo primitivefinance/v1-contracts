@@ -2,11 +2,6 @@ pragma solidity ^0.6.2;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface IControllerMarket {
-    function _crRedeem() external view returns (address);
-    function _prRedeem() external view returns (address);
-}
-
 interface IControllerPool {
     function makerFor(address tokenU, address tokenS) external view returns (address payable);
     function addPool(
@@ -16,15 +11,15 @@ interface IControllerPool {
         address tokenU,
         address tokenS
     ) external returns (address payable);
-    function addMarket(address maker, address primeOption) external returns (address);
+    function addMarket(address maker, address tokenP) external returns (address);
 }
 
 interface IControllerRedeem {
     function addRedeem(
         string calldata name,
         string calldata symbol,
-        address optionAddress,
-        address strikeAddress
+        address tokenP,
+        address tokenS
     ) external returns (address);
 }
 
@@ -38,5 +33,5 @@ interface IControllerOption {
         uint256 expiry
     ) external returns (address, uint256);
 
-    function setRedeem(address redeem, address primeOption) external returns (bool);
+    function setRedeem(address tokenR, address tokenP) external returns (bool);
 }
