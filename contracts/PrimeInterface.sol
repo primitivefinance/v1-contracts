@@ -14,11 +14,12 @@ interface IPrime {
 
     function swap(address receiver) external returns (
         uint256 inTokenS,
+        uint256 inTokenP,
         uint256 outTokenU
     );
     function mint(address receiver) external returns (
-        uint256 primes,
-        uint256 redeems
+        uint256 inTokenU,
+        uint256 outTokenR
     );
     function redeem(address receiver) external returns (
         uint256 inTokenR
@@ -43,17 +44,18 @@ interface IPrime {
     function getTokens() external view returns (address _tokenU, address _tokenS, address _tokenR);
 }
 
-interface ITrader {
+interface IPrimeTrader {
     function safeRedeem(address tokenP, uint256 amount, address receiver) external returns (
         uint256 inTokenR
     );
     function safeSwap(address tokenP, uint256 amount, address receiver) external returns (
         uint256 inTokenS,
+        uint256 inTokenP,
         uint256 outTokenU
     );
     function safeMint(address tokenP, uint256 amount, address receiver) external returns (
-        uint256 primes,
-        uint256 redeems
+        uint256 inTokenU,
+        uint256 outTokenR
     );
     function safeClose(address tokenP, uint256 amount, address receiver) external returns (
         uint256 inTokenR,

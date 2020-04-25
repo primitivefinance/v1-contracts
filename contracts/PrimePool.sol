@@ -331,7 +331,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     )
         external
         nonReentrant
-        returns (uint256 primes, uint256 redeems)
+        returns (uint256 inTokenU, uint256 outTokenR)
     {
         IPrime _tokenP = IPrime(tokenP);
         address _tokenU = _tokenP.tokenU();
@@ -341,7 +341,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
             "ERR_BAL_UNDERLYING"
         );
         IERC20(_tokenU).transferFrom(msg.sender, tokenP, amount);
-        (primes, redeems) = _tokenP.mint(receiver);
+        (inTokenU, outTokenR) = _tokenP.mint(receiver);
     }
 
     /**

@@ -48,7 +48,7 @@ contract ControllerOption is Ownable {
 
     function setRedeem(address tokenR, address tokenP) public onlyOwner returns (bool) {
         PrimeOption option = PrimeOption(tokenP);
-        return option.setRPulp(tokenR);
+        return option.initTokenR(tokenR);
     }
 }
 

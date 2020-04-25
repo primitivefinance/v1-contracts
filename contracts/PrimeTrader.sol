@@ -36,7 +36,7 @@ contract PrimeTrader is ReentrancyGuard {
     )
         external
         nonReentrant
-        returns (uint256 primes, uint256 redeems)
+        returns (uint256 inTokenU, uint256 outTokenR)
     {
         IPrime _tokenP = IPrime(tokenP);
         address _tokenU = _tokenP.tokenU();
@@ -46,7 +46,7 @@ contract PrimeTrader is ReentrancyGuard {
             "ERR_BAL_UNDERLYING"
         );
         IERC20(_tokenU).transferFrom(msg.sender, tokenP, amount);
-        (primes, redeems) = _tokenP.mint(receiver);
+        (inTokenU, outTokenR) = _tokenP.mint(receiver);
     }
 
     /**
@@ -62,7 +62,7 @@ contract PrimeTrader is ReentrancyGuard {
     )
         external
         nonReentrant
-        returns (uint256 inTokenS, uint256 outTokenU)
+        returns (uint256 inTokenS, uint256 inTokenP, uint256 outTokenU)
     {
         IPrime _tokenP = IPrime(tokenP);
         address _tokenS = _tokenP.tokenS();
@@ -80,7 +80,8 @@ contract PrimeTrader is ReentrancyGuard {
             "ERR_BAL_STRIKE"
         );
         IERC20(_tokenS).transferFrom(msg.sender, tokenP, inTokenS);
-        (inTokenS, outTokenU) = _tokenP.swap(receiver);
+        _tokenP.transferFrom(msg.sender, tokenP, amount);
+        (inTokenS, inTokenP, outTokenU) = _tokenP.swap(receiver);
     }
 
     /**
