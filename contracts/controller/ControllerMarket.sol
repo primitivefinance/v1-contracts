@@ -1,7 +1,7 @@
 pragma solidity ^0.6.2;
 
 /**
- * @title Primitive's Exchange Pool Creator Contract
+ * @title Primitive's Instrument Controller
  * @author Primitive
  */
 
@@ -80,7 +80,7 @@ contract ControllerMarket is Ownable {
             tokenS
         );
         makers.push(maker);
-    } 
+    }
 
     function createMarket(
         string memory name,

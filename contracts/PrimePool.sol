@@ -200,7 +200,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
             for(uint8 i = 0; i < _optionMarkets.length; i++) {
                 IPrime option = IPrime(_optionMarkets[i]);
                 (uint256 draw) = option.maxDraw();
-                option.withdraw(draw);
+                option.safeRedeem(draw);
 
                 // Subtract the amount drawn from the redeem cache
                 redeems.sub(draw);
@@ -301,6 +301,20 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         
         return option.transfer(msg.sender, amount);
     }
+
+    // SAMPLE SYNTHETIC LONG STRATEGY
+    /* function settle(
+        IPrime option,
+        uint256 premium,
+        uint256 amount
+    ) private returns (bool) {
+        if(name() == "shortput") {
+            return option.transfer(msg.sender, amount);
+        } else if (name() == "syntheticlong") {
+            IPrimePool(scMaker).buy(getPrice(amount), callOption);
+            return option.transfer(msg.sender, amount);
+        }
+    }  */
 
     /**
      * @dev Gets the Unutilized asset balance of the Pool.

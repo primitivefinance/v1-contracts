@@ -1,7 +1,7 @@
 pragma solidity ^0.6.2;
 
 /**
- * @title Primitive's ERC-20 Option
+ * @title Primitive's Strike Redeem ERC-20 for Prime Options
  * @author Primitive
  */
 
