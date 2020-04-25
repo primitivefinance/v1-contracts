@@ -39,7 +39,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     address public tokenU;
     address public tokenS;
     address payable public weth;
-    address payable[] public _optionMarkets;
+    address[] public _optionMarkets;
 
     mapping(address => bool) public isValidOption;
 
@@ -84,7 +84,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         cacheR = _cacheR;
     }
 
-    function addMarket(address payable primeOption) public onlyOwner returns (address) {
+    function addMarket(address primeOption) public onlyOwner returns (address) {
         isValidOption[primeOption] = true;
         _optionMarkets.push(primeOption);
         IPrime _prime = IPrime(primeOption);

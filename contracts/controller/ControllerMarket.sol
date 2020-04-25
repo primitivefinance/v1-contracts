@@ -93,7 +93,7 @@ contract ControllerMarket is Ownable {
         IControllerOption optionController = IControllerOption(_controllers.option);
 
         // Deploys option contract and mints prime erc-721
-        (address payable option, uint256 marketId) = optionController.addOption(
+        (address option, uint256 marketId) = optionController.addOption(
             name,
             symbol,
             tokenU,

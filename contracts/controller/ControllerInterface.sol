@@ -16,14 +16,14 @@ interface IControllerPool {
         address tokenU,
         address tokenS
     ) external returns (address payable);
-    function addMarket(address maker, address payable primeOption) external returns (address);
+    function addMarket(address maker, address primeOption) external returns (address);
 }
 
 interface IControllerRedeem {
     function addRedeem(
         string calldata name,
         string calldata symbol,
-        address payable optionAddress,
+        address optionAddress,
         address strikeAddress
     ) external returns (address);
 }
@@ -36,7 +36,7 @@ interface IControllerOption {
         address tokenS,
         uint256 ratio,
         uint256 expiry
-    ) external returns (address payable, uint256);
+    ) external returns (address, uint256);
 
-    function setRedeem(address redeem, address payable primeOption) external returns (bool);
+    function setRedeem(address redeem, address primeOption) external returns (bool);
 }

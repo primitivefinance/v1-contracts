@@ -17,7 +17,7 @@ contract ControllerRedeem is Ownable {
     function addRedeem(
         string memory name,
         string memory symbol,
-        address payable optionAddress,
+        address optionAddress,
         address strikeAddress
     ) public onlyOwner returns (address) {
         PrimeRedeem primeRedeem = new PrimeRedeem(name, symbol, optionAddress, strikeAddress);

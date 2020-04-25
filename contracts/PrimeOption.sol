@@ -16,15 +16,21 @@ contract PrimeOption is ERC20, ReentrancyGuard {
 
     uint256 public constant DENOMINATOR = 1 ether;
 
-    address public factory;
     address public tokenR;
+    address public factory;
 
-    uint256 public marketId;
     uint256 public cacheU;
     uint256 public cacheS;
     uint256 public cacheR;
+    uint256 public marketId;
     
     Instruments.PrimeOption public option;
+
+    event Mint(address indexed from, uint256 primes, uint256 redeems);
+    event Swap(address indexed from, uint256 amount, uint256 strikes);
+    event Redeem(address indexed from, uint256 amount);
+    event Close(address indexed from, uint256 amount);
+    event Fund(uint256 cacheU, uint256 cacheS, uint256 cacheR);
 
     function getCaches() public view returns (uint256 _cacheU, uint256 _cacheS, uint256 _cacheR) {
         _cacheU = cacheU;
@@ -32,11 +38,50 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         _cacheR = cacheR;
     }
 
-    event Mint(address indexed from, uint256 primes, uint256 redeems);
-    event Swap(address indexed from, uint256 amount, uint256 strikes);
-    event Redeem(address indexed from, uint256 amount);
-    event Close(address indexed from, uint256 amount);
-    event Fund(uint256 cacheU, uint256 cacheS, uint256 cacheR);
+    function getTokens() public view returns (address _tokenU, address _tokenS, address _tokenR) {
+        _tokenU = option.tokenU;
+        _tokenS = option.tokenS;
+        _tokenR = tokenR;
+    }
+
+    /**
+     * @dev Updates the cached balances to the actual current balances.
+     */
+    function update() external nonReentrant {
+        _fund(
+            IERC20(option.tokenU).balanceOf(address(this)),
+            IERC20(option.tokenS).balanceOf(address(this)),
+            IERC20(tokenR).balanceOf(address(this))
+        );
+    }
+
+    /**
+     * @dev Difference between balances and caches is sent out so balances == caches.
+     * Fixes tokenU, tokenS, tokenR, and tokenP.
+     */
+    function take() external nonReentrant {
+        (
+            address _tokenU,
+            address _tokenS,
+            address _tokenR
+        ) = getTokens();
+        IERC20(_tokenU).transfer(msg.sender, 
+            IERC20(_tokenU).balanceOf(address(this))
+                .sub(cacheU)
+        );
+        IERC20(_tokenS).transfer(msg.sender, 
+            IERC20(_tokenS).balanceOf(address(this))
+                .sub(cacheS)
+        );
+        IERC20(_tokenR).transfer(msg.sender, 
+            IERC20(_tokenR).balanceOf(address(this))
+                .sub(cacheR)
+        );
+
+        transfer(msg.sender, 
+            balanceOf(address(this))
+        );
+    }
 
     constructor (
         string memory name,
@@ -64,8 +109,6 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         require(option.expiry >= block.timestamp, "ERR_EXPIRED");
         _;
     }
-
-    receive() external payable {}
 
     function setRPulp(address _redeem) public returns (bool) {
         require(msg.sender == factory, 'ERR_NOT_OWNER');
@@ -123,7 +166,7 @@ contract PrimeOption is ERC20, ReentrancyGuard {
     }
 
     /**
-     * @dev Swaps tokenS to tokenU using Ratio as the exchange rate.
+     * @dev Swaps tokenS to tokenU using ratio as the exchange rate.
      * @notice Burns Prime, contract receives tokenS, user receives tokenU. 
      * Calls msg.sender with transferFrom. 
      * @param amount Quantity of Primes to use to swap.

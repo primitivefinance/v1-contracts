@@ -53,6 +53,7 @@ interface IPrime {
     function marketId() external view returns (uint256);
     function maxDraw() external view returns (uint256 draw);
     function getCaches() external view returns (uint256 _cacheU, uint256 _cacheS);
+    function getTokens() external view returns (address _tokenU, address _tokenS, address _tokenR);
 }
 
 interface IPrimeRedeem {

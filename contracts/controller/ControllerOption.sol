@@ -32,7 +32,7 @@ contract ControllerOption is Ownable {
     )
         external
         onlyOwner
-        returns (address payable, uint256)
+        returns (address, uint256)
     {
         _marketNonce = _marketNonce.add(1);
         PrimeOption primeOption = new PrimeOption(
