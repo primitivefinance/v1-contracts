@@ -2,6 +2,7 @@ const assert = require('assert').strict;
 const truffleAssert = require('truffle-assertions');
 const ControllerMarket = artifacts.require('ControllerMarket');
 const ControllerPool = artifacts.require('ControllerPool');
+const ControllerOption = artifacts.require('ControllerOption');
 const PrimeOption = artifacts.require('PrimeOption.sol');
 const PrimeRedeem = artifacts.require('PrimeRedeem');
 const Usdc = artifacts.require("USDC");
@@ -45,8 +46,11 @@ contract('PrimeERC20', accounts => {
 
     let _controllerMarket,
         _controllerPool,
+        _controllerOption,
 
         WETH,
+        tokenP,
+        tokenR,
         _tokenP,
         _tokenR,
         _tokenU,
@@ -64,6 +68,7 @@ contract('PrimeERC20', accounts => {
         // Get the Market Controller Contract
         _controllerMarket = await ControllerMarket.deployed();
         _controllerPool = await ControllerPool.deployed();
+        _controllerOption = await ControllerOption.deployed();
 
         WETH = new web3.eth.Contract(Weth.abi, await _controllerPool.weth());
 
@@ -90,6 +95,9 @@ contract('PrimeERC20', accounts => {
 
         _tokenP = await PrimeOption.at(await _controllerMarket.getOption(firstMarket));
         _tokenR = await PrimeRedeem.at(await _tokenP.tokenR());
+        tokenP = _tokenP.address;
+        tokenR = _tokenR.address;
+
         await _tokenU.methods.deposit().send({from: Alice, value: TEN_ETHER});
         await _tokenU.methods.deposit().send({from: Bob, value: TEN_ETHER});
         await _tokenS.approve(_tokenP.address, MILLION_ETHER, {from: Alice});
@@ -103,31 +111,104 @@ contract('PrimeERC20', accounts => {
 
         });
 
-        it('should have market id 1', async () => {
+        it('Should initialize with the correct values', async () => {
             let marketId = await _tokenP.marketId();
-            assert.strictEqual((marketId).toString(), '1', 'Not market id 1');
+            assert.strictEqual(
+                (await _tokenP.name()).toString(),
+                name,
+                'Incorrect name'
+            );
+            assert.strictEqual(
+                (await _tokenP.symbol()).toString(),
+                symbol,
+                'Incorrect symbol'
+            );
+            assert.strictEqual(
+                (await _tokenP.factory()).toString(),
+                _controllerOption.address,
+                'Incorrect factory'
+            );
+            assert.strictEqual(
+                (await _tokenP.marketId()).toString(),
+                firstMarket,
+                'Incorrect market id'
+            );
+            assert.strictEqual(
+                (await _tokenP.tokenU()).toString(),
+                tokenU,
+                'Incorrect tokenU'
+            );
+            assert.strictEqual(
+                (await _tokenP.tokenS()).toString(),
+                tokenS,
+                'Incorrect tokenS'
+            );
+            assert.strictEqual(
+                (await _tokenP.ratio()).toString(),
+                ratio,
+                'Incorrect ratio'
+            );
+            assert.strictEqual(
+                (await _tokenP.expiry()).toString(),
+                expiry,
+                'Incorrect expiry'
+            );
+            const tokens = await _tokenP.getTokens();
+            assert.strictEqual(
+                (tokens._tokenU).toString(),
+                tokenU,
+                'Incorrect tokenU'
+            );
+            assert.strictEqual(
+                (tokens._tokenS).toString(),
+                tokenS,
+                'Incorrect tokenS'
+            );
+            assert.strictEqual(
+                (tokens._tokenR).toString(),
+                _tokenR.address,
+                'Incorrect tokenR'
+            );
+            assert.strictEqual(
+                (await _tokenP.maxDraw()).toString(),
+                '0',
+                'CacheS should be 0'
+            );
         });
 
         describe('PrimeOption.mint()', () => {
 
-            it('revert if msg.value = 0', async () => {
+            it('revert if no tokens were sent to contract', async () => {
                 await truffleAssert.reverts(
-                    _tokenP.safeMint(
-                        0,
-                        {from: Alice,  value: 0}
+                    _tokenP.mint(
+                        Alice,
+                        {from: Alice}
                     ),
                     "ERR_ZERO"
                 );
             });
 
-            it('mints rPulp and oPulp', async () => {
-                let rPulp = toWei('1');
-                let oPulp = (TEN_ETHER).toString();
-                await _tokenP.safeMint(TEN_ETHER, {from: Alice, value: 0});
-                let rPulpBal = (await _tokenR.balanceOf(Alice)).toString();
-                let oPulpBal = (await _tokenP.balanceOf(Alice)).toString();
-                assert.strictEqual(rPulpBal, rPulp, `${rPulpBal} != ${rPulp}`);
-                assert.strictEqual(oPulpBal, oPulp, `${oPulpBal} != ${oPulp}`);
+            it('mint tokenP and tokenR to Alice', async () => {
+                let inTokenU = TEN_ETHER;
+                let balance00 = (inTokenU*1 * ratio*1).toString();
+                let balance01 = (TEN_ETHER).toString();
+
+                await _tokenU.methods.transfer(tokenP, inTokenU).send({from: Alice});
+                let mint = await _tokenP.mint(Alice, {from: Alice});
+
+                let balance10 = (await _tokenR.balanceOf(Alice)).toString();
+                let balance11 = (await _tokenP.balanceOf(Alice)).toString();
+
+                assert.strictEqual(balance10, balance00, `${balance10} != ${balance00}`);
+                assert.strictEqual(balance11, balance01, `${balance11} != ${balance01}`);
+
+                let balanceU = (await _tokenU.methods.balanceOf(tokenP).call()).toString();
+                let cacheU = (await _tokenP.cacheU()).toString();
+                assert.strictEqual(balanceU, inTokenU, `${balanceU} != ${inTokenU}`)
+                assert.strictEqual(cacheU, inTokenU, `${cacheU} != ${inTokenU}`)
+
+                truffleAssert.eventEmitted(mint, "Mint");
+                truffleAssert.eventEmitted(mint, "Fund");
             });
         });
 
@@ -141,7 +222,7 @@ contract('PrimeERC20', accounts => {
                 await truffleAssert.reverts(
                     _tokenP.safeSwap(
                         MILLION_ETHER,
-                        {from: Alice,  value: 0}
+                        {from: Alice}
                     ),
                     "ERR_BAL_PRIME"
                 );
@@ -163,7 +244,7 @@ contract('PrimeERC20', accounts => {
         });
 
         
-        describe('PrimeOption.withdraw()', () => {
+        describe('PrimeOption.redeem()', () => {
             beforeEach(async () => {
 
             });
