@@ -22,18 +22,18 @@ contract PrimeOption is ERC20, ReentrancyGuard {
     uint256 public cacheU;
     uint256 public cacheS;
     uint256 public cacheR;
+
     uint256 public marketId;
 
     Instruments.PrimeOption public option;
 
-    uint256 public 
+    uint256 public test;
 
-    event Mint(address indexed from, uint256 primes, uint256 redeems);
-    event Swap(address indexed from, uint256 amount, uint256 strikes);
-    event Redeem(address indexed from, uint256 amount);
-    event Close(address indexed from, uint256 amount);
+    event Mint(address indexed from, uint256 outTokenP, uint256 outTokenR);
+    event Swap(address indexed from, uint256 outTokenU, uint256 inTokenS);
+    event Redeem(address indexed from, uint256 inTokenR);
+    event Close(address indexed from, uint256 inTokenP);
     event Fund(uint256 cacheU, uint256 cacheS, uint256 cacheR);
-
 
     constructor (
         string memory name,
@@ -214,10 +214,15 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         inTokenP = balanceP;
 
         // inTokenS / ratio = outTokenU
-        outTokenU = inTokenP.mul(inTokenS).div(option.ratio);
+        /* outTokenU = inTokenP.mul(inTokenS).div(option.ratio); */
+        outTokenU = inTokenS.mul(DENOMINATOR).div(option.ratio);
 
         require(inTokenS > 0 && inTokenP > 0, "ERR_ZERO");
-        require(inTokenP >= outTokenU && balanceU >= outTokenU, "ERR_BAL_UNDERLYING");
+        require(
+            inTokenP >= outTokenU && 
+            balanceU >= outTokenU,
+            "ERR_BAL_UNDERLYING"
+        );
 
         // Burn the Prime options at a 1:1 ratio to outTokenU.
         _burn(address(this), inTokenP);
@@ -308,7 +313,7 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         // inTokenP must be greater than or equal to outTokenU.
         // balanceP must be greater than or equal to outTokenU.
         // Neither inTokenR or inTokenP can be zero.
-        outTokenU = inTokenP.mul(DENOMINATOR).div(option.ratio);
+        outTokenU = inTokenR.mul(DENOMINATOR).div(option.ratio);
         require(inTokenR > 0 && inTokenP > 0, "ERR_ZERO");
         require(inTokenP >= outTokenU && balanceU >= outTokenU, "ERR_BAL_UNDERLYING");
 

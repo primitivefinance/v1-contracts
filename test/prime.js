@@ -67,7 +67,8 @@ contract('PrimeERC20', accounts => {
         tokenU,
         tokenS,
         ratio,
-        expiry
+        expiry,
+        strikePrice
         ;
 
     async function sendWeth(weth, to, from, amount) {
@@ -90,7 +91,7 @@ contract('PrimeERC20', accounts => {
         tokenS = _tokenS.address;
         tokenU = _tokenU._address;
         expiry = '1607774400';
-        ratio = TEN_ETHER;
+        ratio = toWei('10');
 
         // Create a new Eth Option Market
         firstMarket = 1;
@@ -296,7 +297,7 @@ contract('PrimeERC20', accounts => {
                 await _tokenP.take();
                 await _tokenP.update();
 
-                let inTokenS = ratio;
+                let inTokenS = ratio*1 * ONE_ETHER*1 / toWei('1');
                 let inTokenP = ONE_ETHER;
                 let outTokenU = ONE_ETHER;
 
@@ -307,12 +308,10 @@ contract('PrimeERC20', accounts => {
                 let balance0SC = await _tokenS.balanceOf(tokenP);
                 let balance0UC = await _tokenU.methods.balanceOf(tokenP).call();
 
-                await _tokenS.transfer(tokenP, inTokenS);
+                await _tokenS.transfer(tokenP, (inTokenS).toString());
                 await _tokenP.transfer(tokenP, inTokenP);
-                console.log('[TOKEN U]', fromWei(await _tokenU.methods.balanceOf(tokenP).call()));
-                console.log('[TOKEN P]', fromWei(await _tokenP.balanceOf(tokenP)));
-                console.log('[TOKEN S]', fromWei(await _tokenS.balanceOf(tokenP)));
-                await _tokenP.swap(Alice);
+                let swap = await _tokenP.swap(Alice);
+                truffleAssert.prettyPrintEmittedEvents(swap);
 
                 let balance1S = await _tokenS.balanceOf(Alice);
                 let balance1P = await _tokenP.balanceOf(Alice);
@@ -327,69 +326,185 @@ contract('PrimeERC20', accounts => {
                 let deltaSC = balance1SC - balance0SC;
                 let deltaUC = balance1UC - balance0UC;
 
-                expect(deltaS).to.be.eq(inTokens);
-                expect(deltaP).to.be.eq(inTokenP);
-                expect(deltaU).to.be.eq(outTokenU);
-                expect(deltaSC).to.be.eq(-inTokenS);
+                expect(deltaS).to.be.eq(-inTokenS);
+                expect(deltaP).to.be.eq(-inTokenP);
+                expect(deltaU).to.be.eq(+outTokenU);
+                expect(deltaSC).to.be.eq(+inTokenS);
                 expect(deltaUC).to.be.eq(-outTokenU);
+
+                truffleAssert.eventEmitted(swap, "Swap", (ev) => {
+                    return ev.outTokenU == inTokenP && ev.inTokenS == inTokenS;
+                });
+                truffleAssert.eventEmitted(swap, "Fund");
             });
         });
 
         
         describe('PrimeOption.redeem()', () => {
-            beforeEach(async () => {
-
-            });
-
-            it('reverts if rPulp is less than qStrike', async () => {
+            it('reverts if not enough withdrawable strike', async () => {
+                let inTokenU = TEN_ETHER;
+                await _tokenU.methods.transfer(tokenP, inTokenU).send({from: Alice});
+                await _tokenP.mint(Alice, {from: Alice});
+                await _tokenR.transfer(tokenP, (ratio*1 * inTokenU*1 / toWei('1')).toString());
                 await truffleAssert.reverts(
-                    _tokenP.withdraw(
-                        MILLION_ETHER,
+                    _tokenP.redeem(
+                        Alice,
                         {from: Alice, value: 0}),
-                    "ERR_BAL_REDEEM"
+                    "ERR_BAL_STRIKE"
                 );
             });
 
-            it('withdraws strike assets', async () => {
-                let iStrike = await _tokenS.balanceOf(Alice);
-                let beforeStrike = ONE_ETHER * ratio / toWei('1');
-                await _tokenP.withdraw((ONE_ETHER * ratio / toWei('1')).toString(), {from: Alice, value: 0});
-                let erPulp = await _tokenR.balanceOf(Alice);
-                let eStrike = await _tokenS.balanceOf(Alice);
-                assert.equal((erPulp*1 - beforeStrike*1 - erPulp) <= ROUNDING_ERR, true, 'rPulp not equal');
-                assert.equal((iStrike*1 + (ONE_ETHER * beforeStrike / toWei('1'))*1 - eStrike) <= ROUNDING_ERR, true, 'Strike not equal');
+            it('withdraws strike assets using redeem tokens', async () => {
+                let inTokenU = ONE_ETHER;
+                await _tokenU.methods.transfer(tokenP, inTokenU).send({from: Alice});
+                await _tokenP.mint(Alice, {from: Alice});
+                await _tokenP.take();
+                await _tokenP.update();
+
+                let inTokenS = ratio*1 * ONE_ETHER*1 / toWei('1');
+                let inTokenP = ONE_ETHER;
+                let outTokenU = ONE_ETHER;
+                let inTokenR = TEN_ETHER;
+                let outTokenS = inTokenR;
+
+                let balance0S = await _tokenS.balanceOf(Alice);
+                let balance0P = await _tokenP.balanceOf(Alice);
+                let balance0U = await _tokenU.methods.balanceOf(Alice).call();
+                let balance0R = await _tokenR.balanceOf(Alice);
+
+                let balance0SC = await _tokenS.balanceOf(tokenP);
+                let balance0UC = await _tokenU.methods.balanceOf(tokenP).call();
+
+                await _tokenR.transfer(tokenP, (inTokenS).toString());
+                let redeem = await _tokenP.redeem(Alice);
+                truffleAssert.prettyPrintEmittedEvents(redeem);
+
+                let balance1S = await _tokenS.balanceOf(Alice);
+                let balance1P = await _tokenP.balanceOf(Alice);
+                let balance1U = await _tokenU.methods.balanceOf(Alice).call();
+                let balance1R = await _tokenR.balanceOf(Alice);
+
+                let balance1SC = await _tokenS.balanceOf(tokenP);
+                let balance1UC = await _tokenU.methods.balanceOf(tokenP).call();
+
+                let deltaS = balance1S - balance0S;
+                let deltaP = balance1P - balance0P;
+                let deltaU = balance1U - balance0U;
+                let deltaR = balance1R - balance0R;
+                let deltaSC = balance1SC - balance0SC;
+                let deltaUC = balance1UC - balance0UC;
+
+                expect(deltaS).to.be.eq(+outTokenS);
+                expect(deltaP).to.be.eq(+0);
+                expect(deltaU).to.be.eq(+0);
+                expect(deltaR).to.be.eq(-inTokenR);
+                expect(deltaSC).to.be.eq(-outTokenS);
+                expect(deltaUC).to.be.eq(+0);
+
+                truffleAssert.eventEmitted(redeem, "Redeem", (ev) => {
+                    return ev.inTokenR == inTokenR && ev.inTokenR == outTokenS;
+                });
+                truffleAssert.eventEmitted(redeem, "Fund");
             });
         });
 
         
         describe('PrimeOption.close()', () => {
-            beforeEach(async () => {
-
-            });
-
-            it('reverts if rPulp is less than ratio', async () => {
+            it('reverts if inTokenR is 0', async () => {
+                await _tokenP.take();
+                await _tokenP.update();
+                let inTokenP = ONE_ETHER;
+                await _tokenP.transfer(tokenP, inTokenP);
                 await truffleAssert.reverts(
                     _tokenP.close(
-                        MILLION_ETHER,
+                        Alice,
                         {from: Alice, value: 0}),
-                    "ERR_BAL_REDEEM"
+                    "ERR_ZERO"
                 );
+                await _tokenP.take();
+            });
+
+            it('reverts if inTokenP is 0', async () => {
+                await _tokenP.take();
+                await _tokenP.update();
+                let inTokenR = TEN_ETHER;
+                await _tokenR.transfer(tokenP, inTokenR);
+                await truffleAssert.reverts(
+                    _tokenP.close(
+                        Alice,
+                        {from: Alice, value: 0}),
+                    "ERR_ZERO"
+                );
+                await _tokenP.take();
+            });
+
+            it('reverts if outTokenU > inTokenP', async () => {
+                await _tokenP.transfer(tokenP, toWei('0.01'));
+                await _tokenR.transfer(tokenP, ratio);
+                await truffleAssert.reverts(
+                    _tokenP.close(
+                        Alice,
+                        {from: Alice}
+                    ),
+                    "ERR_BAL_UNDERLYING"
+                );
+                await _tokenP.take();
             });
 
 
             it('closes position', async () => {
-                let irPulp = await _tokenR.balanceOf(Alice);
-                let ioPulp = await _tokenP.balanceOf(Alice);
-                let iEth = await _tokenU.methods.balanceOf(Alice).call();
-                let ratio = await _tokenP.ratio();
-                let strikeBefore = ONE_ETHER*1 * ratio*1 / toWei('1');
-                await _tokenP.close(ONE_ETHER, {from: Alice, value: 0});
-                let erPulp = await _tokenR.balanceOf(Alice);
-                let eoPulp = await _tokenP.balanceOf(Alice);
-                let eEth = await _tokenU.methods.balanceOf(Alice).call();
-                assert.equal((erPulp*1 - strikeBefore*1 - erPulp) <= ROUNDING_ERR, true, `expected redeem ${erPulp}, actual: ${erPulp*1 + strikeBefore*1 - erPulp}`);
-                assert.equal((eoPulp*1 - ONE_ETHER*1 - eoPulp) <= ROUNDING_ERR, true, 'oPulp not equal');
-                assert.equal((iEth*1 + ONE_ETHER*1 - eEth) <= ROUNDING_ERR, true, `expectedEth: ${eEth} actual: ${iEth*1 + ONE_ETHER*1 - eEth}`);
+                let inTokenU = ONE_ETHER;
+                await _tokenU.methods.transfer(tokenP, inTokenU).send({from: Alice});
+                await _tokenP.mint(Alice, {from: Alice});
+                await _tokenP.take();
+                await _tokenP.update();
+
+                let inTokenS = 0;
+                let inTokenP = ONE_ETHER;
+                let inTokenR = ratio*1 * ONE_ETHER*1 / toWei('1');
+                let outTokenU = ONE_ETHER;
+                let outTokenS = 0;
+
+                let balance0S = await _tokenS.balanceOf(Alice);
+                let balance0P = await _tokenP.balanceOf(Alice);
+                let balance0U = await _tokenU.methods.balanceOf(Alice).call();
+                let balance0R = await _tokenR.balanceOf(Alice);
+
+                let balance0SC = await _tokenS.balanceOf(tokenP);
+                let balance0UC = await _tokenU.methods.balanceOf(tokenP).call();
+
+                await _tokenR.transfer(tokenP, (inTokenR).toString());
+                await _tokenP.transfer(tokenP, (inTokenP).toString());
+                let close = await _tokenP.close(Alice);
+                truffleAssert.prettyPrintEmittedEvents(close);
+
+                let balance1S = await _tokenS.balanceOf(Alice);
+                let balance1P = await _tokenP.balanceOf(Alice);
+                let balance1U = await _tokenU.methods.balanceOf(Alice).call();
+                let balance1R = await _tokenR.balanceOf(Alice);
+
+                let balance1SC = await _tokenS.balanceOf(tokenP);
+                let balance1UC = await _tokenU.methods.balanceOf(tokenP).call();
+
+                let deltaS = balance1S - balance0S;
+                let deltaP = balance1P - balance0P;
+                let deltaU = balance1U - balance0U;
+                let deltaR = balance1R - balance0R;
+                let deltaSC = balance1SC - balance0SC;
+                let deltaUC = balance1UC - balance0UC;
+
+                expect(deltaS).to.be.eq(+outTokenS);
+                expect(deltaP).to.be.eq(-inTokenP);
+                expect(deltaU).to.be.eq(+outTokenU);
+                expect(deltaR).to.be.eq(-inTokenR);
+
+                expect(deltaSC).to.be.eq(-outTokenS);
+                expect(deltaUC).to.be.eq(-outTokenU);
+
+                truffleAssert.eventEmitted(close, "Close", (ev) => {
+                    return ev.inTokenP == +outTokenU && ev.inTokenP == +inTokenP;
+                });
+                truffleAssert.eventEmitted(close, "Fund");
             });
         });
     }); 
