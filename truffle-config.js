@@ -5,7 +5,8 @@ const ropsten = process.env.ROPSTEN;
 const mnemonic = process.env.TEST_MNEMONIC;
 
 module.exports = {
-  contracts_build_directory: './client/app/src/abi/',
+  /* contracts_build_directory: './client/app/src/abi/', */
+  contracts_build_directory: './build/contracts',
   networks: {
     development: {
      host: "127.0.0.1",  

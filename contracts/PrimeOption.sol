@@ -26,6 +26,8 @@ contract PrimeOption is ERC20, ReentrancyGuard {
 
     Instruments.PrimeOption public option;
 
+    uint256 public 
+
     event Mint(address indexed from, uint256 primes, uint256 redeems);
     event Swap(address indexed from, uint256 amount, uint256 strikes);
     event Redeem(address indexed from, uint256 amount);
@@ -120,8 +122,12 @@ contract PrimeOption is ERC20, ReentrancyGuard {
             IERC20(_tokenR).balanceOf(address(this))
                 .sub(cacheR)
         );
+        IERC20(address(this)).transfer(msg.sender,
+            IERC20(address(this)).balanceOf(address(this))
+        );
 
-        transfer(msg.sender, balanceOf(address(this)));
+        /* transfer(msg.sender, balanceOf(address(this)).sub(1)); */ 
+        // FIX, DOES NOT TRANSFER: EXCEEDS BALANCE
     }
 
     /**
@@ -208,7 +214,7 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         inTokenP = balanceP;
 
         // inTokenS / ratio = outTokenU
-        outTokenU = inTokenS.mul(DENOMINATOR).div(option.ratio);
+        outTokenU = inTokenP.mul(inTokenS).div(option.ratio);
 
         require(inTokenS > 0 && inTokenP > 0, "ERR_ZERO");
         require(inTokenP >= outTokenU && balanceU >= outTokenU, "ERR_BAL_UNDERLYING");
@@ -302,7 +308,7 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         // inTokenP must be greater than or equal to outTokenU.
         // balanceP must be greater than or equal to outTokenU.
         // Neither inTokenR or inTokenP can be zero.
-        outTokenU = inTokenR.mul(DENOMINATOR).div(option.ratio);
+        outTokenU = inTokenP.mul(DENOMINATOR).div(option.ratio);
         require(inTokenR > 0 && inTokenP > 0, "ERR_ZERO");
         require(inTokenP >= outTokenU && balanceU >= outTokenU, "ERR_BAL_UNDERLYING");
 

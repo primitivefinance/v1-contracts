@@ -1,4 +1,9 @@
-const assert = require('assert').strict;
+const assert = require('chai').assert;
+const chai = require('chai');
+const BN = require('bn.js');
+// Enable and inject BN dependency
+chai.use(require('chai-bn')(BN));
+const expect = require('chai').expect;
 const truffleAssert = require('truffle-assertions');
 const ControllerMarket = artifacts.require('ControllerMarket');
 const ControllerPool = artifacts.require('ControllerPool');
@@ -13,7 +18,7 @@ contract('PrimeERC20', accounts => {
     const { toWei } = web3.utils;
     const { fromWei } = web3.utils;
     const { getBalance } = web3.eth;
-    const ROUNDING_ERR = 10**16;
+    const ROUNDING_ERR = 10**5;
     const ERR_ZERO = "ERR_ZERO";
     const ERR_NOT_OWNER = "ERR_NOT_OWNER";
     const ERR_OPTION_TYPE = "ERR_OPTION_TYPE";
@@ -29,6 +34,7 @@ contract('PrimeERC20', accounts => {
     const TWO_ETHER = toWei('0.2');
     const FIVE_ETHER = toWei('0.5');
     const TEN_ETHER = toWei('1');
+    const FIFTY_ETHER = toWei('50');
     const MILLION_ETHER = toWei('1000000');
 
 
@@ -44,10 +50,11 @@ contract('PrimeERC20', accounts => {
     const Olga = accounts[8]
     const Treasury = accounts[9]
 
+    let firstMarket;
+
     let _controllerMarket,
         _controllerPool,
         _controllerOption,
-
         WETH,
         tokenP,
         tokenR,
@@ -55,14 +62,17 @@ contract('PrimeERC20', accounts => {
         _tokenR,
         _tokenU,
         _tokenS,
-
         name,
         symbol,
-        tokenU
+        tokenU,
         tokenS,
         ratio,
         expiry
         ;
+
+    async function sendWeth(weth, to, from, amount) {
+        await weth.methods.transfer(to, amount).send({from: from});
+    }
 
     before(async () => {
         // Get the Market Controller Contract
@@ -83,7 +93,7 @@ contract('PrimeERC20', accounts => {
         ratio = TEN_ETHER;
 
         // Create a new Eth Option Market
-        const firstMarket = 1;
+        firstMarket = 1;
         await _controllerMarket.createMarket(
             name,
             symbol,
@@ -107,69 +117,65 @@ contract('PrimeERC20', accounts => {
     });
 
     describe('PrimeOption.sol', () => {
-        beforeEach(async () => {
-
-        });
-
         it('Should initialize with the correct values', async () => {
             let marketId = await _tokenP.marketId();
-            assert.strictEqual(
+            assert.equal(
                 (await _tokenP.name()).toString(),
                 name,
                 'Incorrect name'
             );
-            assert.strictEqual(
+            assert.equal(
                 (await _tokenP.symbol()).toString(),
                 symbol,
                 'Incorrect symbol'
             );
-            assert.strictEqual(
+            assert.equal(
                 (await _tokenP.factory()).toString(),
                 _controllerOption.address,
                 'Incorrect factory'
             );
-            assert.strictEqual(
+            assert.equal(
                 (await _tokenP.marketId()).toString(),
-                firstMarket,
+                (firstMarket).toString(),
                 'Incorrect market id'
             );
-            assert.strictEqual(
+            assert.equal(
                 (await _tokenP.tokenU()).toString(),
                 tokenU,
                 'Incorrect tokenU'
             );
-            assert.strictEqual(
+            assert.equal(
                 (await _tokenP.tokenS()).toString(),
                 tokenS,
                 'Incorrect tokenS'
             );
-            assert.strictEqual(
+            assert.equal(
                 (await _tokenP.ratio()).toString(),
                 ratio,
                 'Incorrect ratio'
             );
-            assert.strictEqual(
+            assert.equal(
                 (await _tokenP.expiry()).toString(),
                 expiry,
                 'Incorrect expiry'
             );
             const tokens = await _tokenP.getTokens();
-            assert.strictEqual(
+            assert.equal(
                 (tokens._tokenU).toString(),
                 tokenU,
                 'Incorrect tokenU'
             );
-            assert.strictEqual(
+            assert.equal(
                 (tokens._tokenS).toString(),
                 tokenS,
                 'Incorrect tokenS'
             );
-            assert.strictEqual(
+            assert.equal(
                 (tokens._tokenR).toString(),
                 _tokenR.address,
                 'Incorrect tokenR'
             );
-            assert.strictEqual(
+            assert.equal(
                 (await _tokenP.maxDraw()).toString(),
                 '0',
                 'CacheS should be 0'
@@ -189,23 +195,55 @@ contract('PrimeERC20', accounts => {
             });
 
             it('mint tokenP and tokenR to Alice', async () => {
-                let inTokenU = TEN_ETHER;
-                let balance00 = (inTokenU*1 * ratio*1).toString();
-                let balance01 = (TEN_ETHER).toString();
+                let inTokenU = ONE_ETHER;
+                let balanceER = inTokenU*1 * ratio*1 / toWei('1');
+                let balanceEP = ONE_ETHER;
 
                 await _tokenU.methods.transfer(tokenP, inTokenU).send({from: Alice});
                 let mint = await _tokenP.mint(Alice, {from: Alice});
 
-                let balance10 = (await _tokenR.balanceOf(Alice)).toString();
-                let balance11 = (await _tokenP.balanceOf(Alice)).toString();
+                let balanceAR = await _tokenR.balanceOf(Alice);
+                let balanceAP = await _tokenP.balanceOf(Alice);
 
-                assert.strictEqual(balance10, balance00, `${balance10} != ${balance00}`);
-                assert.strictEqual(balance11, balance01, `${balance11} != ${balance01}`);
+                assert.equal(balanceAR, balanceER, `${balanceAR} != ${balanceER}`);
+                assert.equal(balanceAP, balanceEP, `${balanceAP} != ${balanceEP}`);
+
+                let balanceU = await _tokenU.methods.balanceOf(tokenP).call();
+                let cacheU = await _tokenP.cacheU();
+
+                assert.equal(balanceU, inTokenU, `${balanceU} != ${inTokenU}`)
+                assert.equal(cacheU, inTokenU, `${cacheU} != ${inTokenU}`)
+
+                truffleAssert.eventEmitted(mint, "Mint");
+                truffleAssert.eventEmitted(mint, "Fund");
+            });
+
+            it('send 1 wei of tokenU to tokenP and call mint', async () => {
+                let inTokenU = '1';
+                let differenceE = (inTokenU*1 * ratio*1 / toWei('1')).toString();
+                let balanceER = (await _tokenR.balanceOf(Alice)).toString();
+                let balanceEP = (await _tokenP.balanceOf(Alice)).toString();
+                let balanceEU = (await _tokenU.methods.balanceOf(tokenP).call()).toString();
+                let cacheEU = (await _tokenP.cacheU()).toString();
+
+                await _tokenU.methods.transfer(tokenP, inTokenU).send({from: Alice});
+                let mint = await _tokenP.mint(Alice, {from: Alice});
+
+                let balanceAR = (await _tokenR.balanceOf(Alice)).toString();
+                let balanceAP = (await _tokenP.balanceOf(Alice)).toString();
+
+                let differenceR = balanceAR*1 - balanceER*1;
+                let differenceP = balanceAP*1 - balanceEP*1;
+                
+                assert.equal(differenceR <= ROUNDING_ERR, true, `${balanceAR} != ${balanceER}`);
+                assert.equal(differenceP <= ROUNDING_ERR, true, `${balanceAP} != ${balanceEP}`);
 
                 let balanceU = (await _tokenU.methods.balanceOf(tokenP).call()).toString();
                 let cacheU = (await _tokenP.cacheU()).toString();
-                assert.strictEqual(balanceU, inTokenU, `${balanceU} != ${inTokenU}`)
-                assert.strictEqual(cacheU, inTokenU, `${cacheU} != ${inTokenU}`)
+
+                assert.isAtMost(balanceU*1 - balanceEU*1, ROUNDING_ERR);
+                assert.equal((balanceU*1 - balanceEU*1) <= ROUNDING_ERR, true, `${balanceU*1 - balanceEU*1} != ${inTokenU}`)
+                assert.equal((cacheU*1 - cacheEU*1) <= ROUNDING_ERR, true, `${cacheU*1 - cacheEU*1} != ${inTokenU}`)
 
                 truffleAssert.eventEmitted(mint, "Mint");
                 truffleAssert.eventEmitted(mint, "Fund");
@@ -214,32 +252,86 @@ contract('PrimeERC20', accounts => {
 
         
         describe('PrimeOption.swap()', () => {
-            beforeEach(async () => {
-
-            });
-
-            it('reverts if user doesnt have enough oPulp', async () => {
+            it('reverts if inTokenS is 0', async () => {
+                await _tokenP.transfer(tokenP, ONE_ETHER);
                 await truffleAssert.reverts(
-                    _tokenP.safeSwap(
-                        MILLION_ETHER,
+                    _tokenP.swap(
+                        Alice,
                         {from: Alice}
                     ),
-                    "ERR_BAL_PRIME"
+                    "ERR_ZERO"
                 );
+                await _tokenP.take();
             });
 
-            it('swaps oPulp for underlying', async () => {
-                await _tokenP.safeMint(ONE_ETHER, {from: Alice});
-                let iEth = await _tokenU.methods.balanceOf(Alice).call();
-                let ioPulp = await _tokenP.balanceOf(Alice);
-                let iStrike = await _tokenS.balanceOf(Alice);
-                await _tokenP.safeSwap(ONE_ETHER, {from: Alice, value: 0});
-                let eEth = await _tokenU.methods.balanceOf(Alice).call();
-                let eoPulp = await _tokenP.balanceOf(Alice);
-                let eStrike = await _tokenS.balanceOf(Alice);
-                assert.strictEqual((iEth*1 + ONE_ETHER*1 - eEth) <= ROUNDING_ERR, true, `expectedEth: ${eEth}, actual: ${iEth*1 + ONE_ETHER*1}`);
-                assert.strictEqual((eoPulp*1 - ONE_ETHER*1 - eoPulp) <= ROUNDING_ERR, true, `expectedoPulp: ${eoPulp}, actual: ${eoPulp*1 - ONE_ETHER*1}`);
-                assert.strictEqual((eStrike*1 - ratio*1 - eStrike) <= ROUNDING_ERR, true, `expectedeStrike: ${eStrike}, actual: ${eStrike*1 - ratio*1}`);
+            it('reverts if inTokenP is 0', async () => {
+                await _tokenS.transfer(tokenP, ONE_ETHER);
+                await truffleAssert.reverts(
+                    _tokenP.swap(
+                        Alice,
+                        {from: Alice}
+                    ),
+                    "ERR_ZERO"
+                );
+                await _tokenP.take();
+            });
+
+            it('reverts if outTokenU > inTokenP', async () => {
+                await _tokenP.transfer(tokenP, toWei('0.01'));
+                await _tokenS.transfer(tokenP, ratio);
+                await truffleAssert.reverts(
+                    _tokenP.swap(
+                        Alice,
+                        {from: Alice}
+                    ),
+                    "ERR_BAL_UNDERLYING"
+                );
+                await _tokenP.take();
+            });
+
+            it('swaps tokenS + tokenP for tokenU', async () => {
+                let inTokenU = ONE_ETHER;
+                await _tokenU.methods.transfer(tokenP, inTokenU).send({from: Alice});
+                await _tokenP.mint(Alice, {from: Alice});
+                await _tokenP.take();
+                await _tokenP.update();
+
+                let inTokenS = ratio;
+                let inTokenP = ONE_ETHER;
+                let outTokenU = ONE_ETHER;
+
+                let balance0S = await _tokenS.balanceOf(Alice);
+                let balance0P = await _tokenP.balanceOf(Alice);
+                let balance0U = await _tokenU.methods.balanceOf(Alice).call();
+
+                let balance0SC = await _tokenS.balanceOf(tokenP);
+                let balance0UC = await _tokenU.methods.balanceOf(tokenP).call();
+
+                await _tokenS.transfer(tokenP, inTokenS);
+                await _tokenP.transfer(tokenP, inTokenP);
+                console.log('[TOKEN U]', fromWei(await _tokenU.methods.balanceOf(tokenP).call()));
+                console.log('[TOKEN P]', fromWei(await _tokenP.balanceOf(tokenP)));
+                console.log('[TOKEN S]', fromWei(await _tokenS.balanceOf(tokenP)));
+                await _tokenP.swap(Alice);
+
+                let balance1S = await _tokenS.balanceOf(Alice);
+                let balance1P = await _tokenP.balanceOf(Alice);
+                let balance1U = await _tokenU.methods.balanceOf(Alice).call();
+
+                let balance1SC = await _tokenS.balanceOf(tokenP);
+                let balance1UC = await _tokenU.methods.balanceOf(tokenP).call();
+
+                let deltaS = balance1S - balance0S;
+                let deltaP = balance1P - balance0P;
+                let deltaU = balance1U - balance0U;
+                let deltaSC = balance1SC - balance0SC;
+                let deltaUC = balance1UC - balance0UC;
+
+                expect(deltaS).to.be.eq(inTokens);
+                expect(deltaP).to.be.eq(inTokenP);
+                expect(deltaU).to.be.eq(outTokenU);
+                expect(deltaSC).to.be.eq(-inTokenS);
+                expect(deltaUC).to.be.eq(-outTokenU);
             });
         });
 
@@ -264,8 +356,8 @@ contract('PrimeERC20', accounts => {
                 await _tokenP.withdraw((ONE_ETHER * ratio / toWei('1')).toString(), {from: Alice, value: 0});
                 let erPulp = await _tokenR.balanceOf(Alice);
                 let eStrike = await _tokenS.balanceOf(Alice);
-                assert.strictEqual((erPulp*1 - beforeStrike*1 - erPulp) <= ROUNDING_ERR, true, 'rPulp not equal');
-                assert.strictEqual((iStrike*1 + (ONE_ETHER * beforeStrike / toWei('1'))*1 - eStrike) <= ROUNDING_ERR, true, 'Strike not equal');
+                assert.equal((erPulp*1 - beforeStrike*1 - erPulp) <= ROUNDING_ERR, true, 'rPulp not equal');
+                assert.equal((iStrike*1 + (ONE_ETHER * beforeStrike / toWei('1'))*1 - eStrike) <= ROUNDING_ERR, true, 'Strike not equal');
             });
         });
 
@@ -295,9 +387,9 @@ contract('PrimeERC20', accounts => {
                 let erPulp = await _tokenR.balanceOf(Alice);
                 let eoPulp = await _tokenP.balanceOf(Alice);
                 let eEth = await _tokenU.methods.balanceOf(Alice).call();
-                assert.strictEqual((erPulp*1 - strikeBefore*1 - erPulp) <= ROUNDING_ERR, true, `expected redeem ${erPulp}, actual: ${erPulp*1 + strikeBefore*1 - erPulp}`);
-                assert.strictEqual((eoPulp*1 - ONE_ETHER*1 - eoPulp) <= ROUNDING_ERR, true, 'oPulp not equal');
-                assert.strictEqual((iEth*1 + ONE_ETHER*1 - eEth) <= ROUNDING_ERR, true, `expectedEth: ${eEth} actual: ${iEth*1 + ONE_ETHER*1 - eEth}`);
+                assert.equal((erPulp*1 - strikeBefore*1 - erPulp) <= ROUNDING_ERR, true, `expected redeem ${erPulp}, actual: ${erPulp*1 + strikeBefore*1 - erPulp}`);
+                assert.equal((eoPulp*1 - ONE_ETHER*1 - eoPulp) <= ROUNDING_ERR, true, 'oPulp not equal');
+                assert.equal((iEth*1 + ONE_ETHER*1 - eEth) <= ROUNDING_ERR, true, `expectedEth: ${eEth} actual: ${iEth*1 + ONE_ETHER*1 - eEth}`);
             });
         });
     }); 

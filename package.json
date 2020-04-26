@@ -25,6 +25,7 @@
     "@types/mathjs": "^6.0.5",
     "bignumber.js": "^9.0.0",
     "canonical-weth": "^1.4.0",
+    "chai": "^4.2.0",
     "dotenv": "^8.2.0",
     "ethlint": "^1.2.5",
     "mathjs": "^6.6.4",
@@ -40,6 +41,8 @@
   },
   "devDependencies": {
     "@openzeppelin/contracts": "^3.0.0",
+    "bn.js": "^5.1.1",
+    "chai-bn": "^0.2.1",
     "eth-gas-reporter": "^0.2.17",
     "solidity-coverage": "^0.7.4",
     "truffle": "^5.1.14"

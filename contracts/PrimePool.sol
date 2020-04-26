@@ -202,7 +202,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
             for(uint8 i = 0; i < _optionMarkets.length; i++) {
                 IPrime option = IPrime(_optionMarkets[i]);
                 (uint256 draw) = option.maxDraw();
-                safeRedeem(address(option), draw, address(this));
+                // safeRedeem(address(option), draw, address(this)); FIX
 
                 // Subtract the amount drawn from the redeem cache
                 redeems.sub(draw);
@@ -298,7 +298,9 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         }
 
         IERC20(option.tokenU()).transfer(address(option), amount);
+
         (uint256 primes, uint256 redeems) = option.mint(msg.sender);
+
         _fund(primes, cacheS, redeems);
         
         return option.transfer(msg.sender, amount);
@@ -324,7 +326,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
      * @param amount Quantity of Prime options to mint and tokenU to deposit.
      * @param receiver The newly minted tokens are sent to the receiver address.
      */
-    function safeMint(
+    /* function safeMint(
         address tokenP,
         uint256 amount,
         address receiver
@@ -342,13 +344,13 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         );
         IERC20(_tokenU).transferFrom(msg.sender, tokenP, amount);
         (inTokenU, outTokenR) = _tokenP.mint(receiver);
-    }
+    } */
 
     /**
      * @dev Burns Prime Redeem tokens to withdraw available tokenS.
      * @param amount Quantity of Prime Redeem to spend.
      */
-    function safeRedeem(
+    /* function safeRedeem(
         address tokenP,
         uint256 amount,
         address receiver
@@ -377,7 +379,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         );
         IERC20(_tokenR).transferFrom(msg.sender, tokenP, amount);
         (inTokenR) = _tokenP.redeem(receiver);
-    }
+    } */
 
     /**
      * @dev Gets the Unutilized asset balance of the Pool.
