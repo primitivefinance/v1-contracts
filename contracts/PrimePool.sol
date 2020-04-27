@@ -263,7 +263,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         uint256 balanceU = IERC20(_tokenU).balanceOf(address(this));
 
         // ex. 0.99*10^18 ETH * 100*10^18 DAI / 10^18 = 0.99*10^18 * 100 = 99*10^18 DAI = outTokenU
-        uint256 outTokenU = amount.mul(IPrime(_tokenP).ratio()).div(1 ether); 
+        uint256 outTokenU = amount.mul(IPrime(_tokenP).price()).div(IPrime(_tokenP).base()); 
 
         // Transfer tokenU (assume DAI) to option contract using Pool funds.
         require(balanceU >= outTokenU, "ERR_BAL_UNDERLYING");
@@ -284,6 +284,11 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         _fund(balanceU, balanceS, balanceR);
         emit Buy(msg.sender, amount, outTokenU, premium);
         return true;
+    }
+
+    function calculatePremium(uint256 amount) public returns (uint256 premium) {
+        uint256 price = uint(oracle.currentAnswer()); // FIX ONLY WORKS ON MAINNET Assume price of ETHER
+
     }
 
     /* CAPITAL MANAGEMENT FUNCTIONS */

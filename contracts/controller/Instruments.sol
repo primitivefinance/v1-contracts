@@ -8,7 +8,8 @@ library Instruments {
     struct PrimeOption {
         address tokenU;
         address tokenS;
-        uint256 ratio;
+        uint256 base;
+        uint256 price;
         uint256 expiry;
     }
 }

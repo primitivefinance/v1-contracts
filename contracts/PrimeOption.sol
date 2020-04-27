@@ -41,7 +41,8 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         uint256 _marketId,
         address tokenU,
         address tokenS,
-        uint256 ratio,
+        uint256 base,
+        uint256 price,
         uint256 expiry
     )
         public
@@ -52,7 +53,8 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         option = Instruments.PrimeOption(
             tokenU,
             tokenS,
-            ratio,
+            base,
+            price,
             expiry
         );
     }
@@ -165,8 +167,8 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         // Mint inTokenU equal to the difference between current balance and previous balance of tokenU.
         inTokenU = balanceU.sub(cacheU);
 
-        // Mint outTokenR equal to tokenU * ratio
-        outTokenR = inTokenU.mul(option.ratio).div(DENOMINATOR);
+        // Mint outTokenR equal to tokenU * ratio FIX - FURTHER CHECKS
+        outTokenR = inTokenU.mul(option.price).div(option.base);
 
         // Mint the tokens.
         require(inTokenU > 0, "ERR_ZERO");
@@ -214,8 +216,7 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         inTokenP = balanceP;
 
         // inTokenS / ratio = outTokenU
-        /* outTokenU = inTokenP.mul(inTokenS).div(option.ratio); */
-        outTokenU = inTokenS.mul(DENOMINATOR).div(option.ratio);
+        outTokenU = inTokenS.mul(option.base).div(option.price); // FIX
 
         require(inTokenS > 0 && inTokenP > 0, "ERR_ZERO");
         require(
@@ -313,7 +314,7 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         // inTokenP must be greater than or equal to outTokenU.
         // balanceP must be greater than or equal to outTokenU.
         // Neither inTokenR or inTokenP can be zero.
-        outTokenU = inTokenR.mul(DENOMINATOR).div(option.ratio);
+        outTokenU = inTokenR.mul(option.base).div(option.price);
         require(inTokenR > 0 && inTokenP > 0, "ERR_ZERO");
         require(inTokenP >= outTokenU && balanceU >= outTokenU, "ERR_BAL_UNDERLYING");
 
@@ -352,8 +353,11 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         return option.tokenU;
     }
 
-    function ratio() public view returns (uint256) {
-        return option.ratio;
+    function base() public view returns (uint256) {
+        return option.base;
+    }
+    function price() public view returns (uint256) {
+        return option.price;
     }
 
     function expiry() public view returns (uint256) {

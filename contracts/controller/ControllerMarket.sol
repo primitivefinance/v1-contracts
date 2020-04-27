@@ -87,7 +87,8 @@ contract ControllerMarket is Ownable {
         string memory symbol,
         address tokenU,
         address tokenS,
-        uint256 ratio,
+        uint256 base,
+        uint256 price,
         uint256 expiry
     ) public onlyOwner returns (uint256) {
         IControllerOption optionController = IControllerOption(_controllers.option);
@@ -98,7 +99,8 @@ contract ControllerMarket is Ownable {
             symbol,
             tokenU,
             tokenS,
-            ratio,
+            base,
+            price,
             expiry
         );
 

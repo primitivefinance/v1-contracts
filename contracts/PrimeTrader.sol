@@ -78,7 +78,7 @@ contract PrimeTrader is ReentrancyGuard {
             "ERR_BAL_PRIME"
         );
 
-        inTokenS = amount.mul(IPrime(tokenP).ratio()).div(DENOMINATOR);
+        inTokenS = amount.mul(IPrime(tokenP).price()).div(IPrime(tokenP).base());
         verifyBalance(
             IERC20(tokenS).balanceOf(msg.sender),
             inTokenS,
@@ -143,9 +143,8 @@ contract PrimeTrader is ReentrancyGuard {
     {
         require(amount > 0, "ERR_ZERO");
         address tokenR = IPrime(tokenP).tokenR();
-        uint256 ratio = IPrime(tokenP).ratio();
 
-        inTokenR = amount.mul(ratio).div(DENOMINATOR);
+        inTokenR = amount.mul(IPrime(tokenP).price()).div(IPrime(tokenP).base());
 
         verifyBalance(
             IERC20(tokenR).balanceOf(msg.sender),

@@ -33,7 +33,8 @@ interface IPrime {
     function tokenR() external view returns (address);
     function tokenS() external view returns (address);
     function tokenU() external view returns (address);
-    function ratio() external view returns (uint256);
+    function base() external view returns (uint256);
+    function price() external view returns (uint256);
     function expiry() external view returns (address);
     function cacheU() external view returns (uint256);
     function cacheS() external view returns (uint256);

@@ -29,7 +29,8 @@ interface IControllerOption {
         string calldata symbol,
         address tokenU,
         address tokenS,
-        uint256 ratio,
+        uint256 base,
+        uint256 price,
         uint256 expiry
     ) external returns (address, uint256);
 

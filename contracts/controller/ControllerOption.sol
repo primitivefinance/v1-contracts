@@ -26,7 +26,8 @@ contract ControllerOption is Ownable {
         string calldata symbol,
         address tokenU,
         address tokenS,
-        uint256 ratio,
+        uint256 base,
+        uint256 price,
         uint256 expiry
     )
         external
@@ -40,7 +41,8 @@ contract ControllerOption is Ownable {
             _marketNonce,
             tokenU,
             tokenS,
-            ratio,
+            base,
+            price,
             expiry
         );
         return (address(tokenP), _marketNonce);

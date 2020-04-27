@@ -67,7 +67,8 @@ contract('PrimeTrader.sol', accounts => {
         symbol,
         tokenU,
         tokenS,
-        ratio,
+        base,
+        price,
         expiry,
         strikePrice,
         trader
@@ -96,7 +97,8 @@ contract('PrimeTrader.sol', accounts => {
         tokenS = _tokenS.address;
         tokenU = _tokenU._address;
         expiry = '1607774400';
-        ratio = toWei('10');
+        base = toWei('1');
+        price = toWei('10');
 
         // Create a new Eth Option Market
         firstMarket = 1;
@@ -105,7 +107,8 @@ contract('PrimeTrader.sol', accounts => {
             symbol,
             tokenU,
             tokenS,
-            ratio,
+            base,
+            price,
             expiry
         );
 
@@ -174,7 +177,7 @@ contract('PrimeTrader.sol', accounts => {
 
             it('mint tokenP and tokenR to Alice', async () => {
                 let inTokenU = ONE_ETHER;
-                let balanceER = inTokenU*1 * ratio*1 / toWei('1');
+                let balanceER = inTokenU*1 * price*1 / toWei('1');
                 let balanceEP = ONE_ETHER;
 
                 let mint = await trader.safeMint(tokenP, inTokenU, Alice, {from: Alice});
@@ -196,7 +199,7 @@ contract('PrimeTrader.sol', accounts => {
 
             it('send 1 wei of tokenU to tokenP and call mint', async () => {
                 let inTokenU = '1';
-                let differenceE = (inTokenU*1 * ratio*1 / toWei('1')).toString();
+                let differenceE = (inTokenU*1 * price*1 / toWei('1')).toString();
                 let balanceER = (await _tokenR.balanceOf(Alice)).toString();
                 let balanceEP = (await _tokenP.balanceOf(Alice)).toString();
                 let balanceEU = (await _tokenU.methods.balanceOf(tokenP).call()).toString();
@@ -269,7 +272,7 @@ contract('PrimeTrader.sol', accounts => {
                 await _tokenP.take();
                 await _tokenP.update();
 
-                let inTokenS = ratio*1 * ONE_ETHER*1 / toWei('1');
+                let inTokenS = price*1 * ONE_ETHER*1 / toWei('1');
                 let inTokenP = ONE_ETHER;
                 let outTokenU = ONE_ETHER;
 
@@ -330,7 +333,7 @@ contract('PrimeTrader.sol', accounts => {
                 await truffleAssert.reverts(
                     trader.safeRedeem(
                         tokenP,
-                        (ratio*1 * inTokenU*1 / toWei('1')).toString(),
+                        (price*1 * inTokenU*1 / toWei('1')).toString(),
                         Alice,
                         {from: Alice, value: 0}),
                     "ERR_BAL_STRIKE"
@@ -344,7 +347,7 @@ contract('PrimeTrader.sol', accounts => {
                 await _tokenP.take();
                 await _tokenP.update();
 
-                let inTokenS = ratio*1 * ONE_ETHER*1 / toWei('1');
+                let inTokenS = price*1 * ONE_ETHER*1 / toWei('1');
                 let inTokenP = ONE_ETHER;
                 let outTokenU = ONE_ETHER;
                 let inTokenR = TEN_ETHER;
@@ -444,7 +447,7 @@ contract('PrimeTrader.sol', accounts => {
 
                 let inTokenS = 0;
                 let inTokenP = ONE_ETHER;
-                let inTokenR = ratio*1 * ONE_ETHER*1 / toWei('1');
+                let inTokenR = price*1 * ONE_ETHER*1 / toWei('1');
                 let outTokenU = ONE_ETHER;
                 let outTokenS = 0;
 
