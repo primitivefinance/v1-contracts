@@ -18,6 +18,11 @@ contract PrimeTrader is ReentrancyGuard {
 
     address payable public weth;
 
+    event Mint(address indexed from, uint256 outTokenP, uint256 outTokenR);
+    event Swap(address indexed from, uint256 outTokenU, uint256 inTokenS);
+    event Redeem(address indexed from, uint256 inTokenR);
+    event Close(address indexed from, uint256 inTokenP);
+
     constructor (address payable _weth) public {
         weth = _weth;
     }
@@ -38,15 +43,16 @@ contract PrimeTrader is ReentrancyGuard {
         nonReentrant
         returns (uint256 inTokenU, uint256 outTokenR)
     {
-        IPrime _tokenP = IPrime(tokenP);
-        address _tokenU = _tokenP.tokenU();
+        require(amount > 0, "ERR_ZERO");
+        address tokenU = IPrime(tokenP).tokenU();
         verifyBalance(
-            IERC20(_tokenU).balanceOf(msg.sender),
+            IERC20(tokenU).balanceOf(msg.sender),
             amount,
             "ERR_BAL_UNDERLYING"
         );
-        IERC20(_tokenU).transferFrom(msg.sender, tokenP, amount);
-        (inTokenU, outTokenR) = _tokenP.mint(receiver);
+        IERC20(tokenU).transferFrom(msg.sender, tokenP, amount);
+        (inTokenU, outTokenR) = IPrime(tokenP).mint(receiver);
+        emit Mint(msg.sender, inTokenU, outTokenR);
     }
 
     /**
@@ -64,24 +70,24 @@ contract PrimeTrader is ReentrancyGuard {
         nonReentrant
         returns (uint256 inTokenS, uint256 inTokenP, uint256 outTokenU)
     {
-        IPrime _tokenP = IPrime(tokenP);
-        address _tokenS = _tokenP.tokenS();
-
+        require(amount > 0, "ERR_ZERO");
+        address tokenS = IPrime(tokenP).tokenS();
         verifyBalance(
-            _tokenP.balanceOf(msg.sender),
+            IPrime(tokenP).balanceOf(msg.sender),
             amount,
             "ERR_BAL_PRIME"
         );
 
-        inTokenS = amount.mul(_tokenP.ratio()).div(DENOMINATOR);
+        inTokenS = amount.mul(IPrime(tokenP).ratio()).div(DENOMINATOR);
         verifyBalance(
-            IERC20(_tokenS).balanceOf(msg.sender),
+            IERC20(tokenS).balanceOf(msg.sender),
             inTokenS,
             "ERR_BAL_STRIKE"
         );
-        IERC20(_tokenS).transferFrom(msg.sender, tokenP, inTokenS);
-        _tokenP.transferFrom(msg.sender, tokenP, amount);
-        (inTokenS, inTokenP, outTokenU) = _tokenP.swap(receiver);
+        IERC20(tokenS).transferFrom(msg.sender, tokenP, inTokenS);
+        IPrime(tokenP).transferFrom(msg.sender, tokenP, amount);
+        (inTokenS, inTokenP, outTokenU) = IPrime(tokenP).swap(receiver);
+        emit Swap(msg.sender, outTokenU, inTokenS);
     }
 
     /**
@@ -97,12 +103,12 @@ contract PrimeTrader is ReentrancyGuard {
         nonReentrant
         returns (uint256 inTokenR)
     {
-        IPrime _tokenP = IPrime(tokenP);
-        address _tokenS = _tokenP.tokenS();
-        address _tokenR = _tokenP.tokenR();
+        require(amount > 0, "ERR_ZERO");
+        address tokenS = IPrime(tokenP).tokenS();
+        address tokenR = IPrime(tokenP).tokenR();
 
         verifyBalance(
-            IERC20(_tokenR).balanceOf(msg.sender),
+            IERC20(tokenR).balanceOf(msg.sender),
             amount,
             "ERR_BAL_REDEEM"
         );
@@ -111,12 +117,13 @@ contract PrimeTrader is ReentrancyGuard {
         // This is the first verification of a tokenS balance to draw from.
         // There is a second verification in the redeem() function.
         verifyBalance(
-            IERC20(_tokenS).balanceOf(tokenP),
+            IERC20(tokenS).balanceOf(tokenP),
             amount,
             "ERR_BAL_STRIKE"
         );
-        IERC20(_tokenR).transferFrom(msg.sender, tokenP, amount);
-        (inTokenR) = _tokenP.redeem(receiver);
+        IERC20(tokenR).transferFrom(msg.sender, tokenP, amount);
+        (inTokenR) = IPrime(tokenP).redeem(receiver);
+        emit Redeem(msg.sender, inTokenR);
     }
 
     /**
@@ -134,27 +141,28 @@ contract PrimeTrader is ReentrancyGuard {
         nonReentrant
         returns (uint256 inTokenR, uint256 inTokenP, uint256 outTokenU)
     {
-        IPrime _tokenP = IPrime(tokenP);
-        address _tokenR = _tokenP.tokenR();
-        uint256 ratio = _tokenP.ratio();
+        require(amount > 0, "ERR_ZERO");
+        address tokenR = IPrime(tokenP).tokenR();
+        uint256 ratio = IPrime(tokenP).ratio();
 
         inTokenR = amount.mul(ratio).div(DENOMINATOR);
 
         verifyBalance(
-            IERC20(_tokenR).balanceOf(msg.sender),
+            IERC20(tokenR).balanceOf(msg.sender),
             inTokenR,
             "ERR_BAL_REDEEM"
         );
 
         verifyBalance(
-            _tokenP.balanceOf(msg.sender),
+            IPrime(tokenP).balanceOf(msg.sender),
             amount,
             "ERR_BAL_PRIME"
         );
 
-        IERC20(_tokenR).transferFrom(msg.sender, address(this), inTokenR);
-        _tokenP.transferFrom(msg.sender, address(this), amount);
-        (inTokenR, inTokenP, outTokenU) = _tokenP.close(receiver);
+        IERC20(tokenR).transferFrom(msg.sender, tokenP, inTokenR);
+        IPrime(tokenP).transferFrom(msg.sender, tokenP, amount);
+        (inTokenR, inTokenP, outTokenU) = IPrime(tokenP).close(receiver);
+        emit Close(msg.sender, inTokenP);
     }
 
     function verifyBalance(

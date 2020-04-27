@@ -10,33 +10,34 @@ const ControllerPool = artifacts.require('ControllerPool');
 const ControllerOption = artifacts.require('ControllerOption');
 const PrimeOption = artifacts.require('PrimeOption.sol');
 const PrimeRedeem = artifacts.require('PrimeRedeem');
+const PrimeTrader = artifacts.require("PrimeTrader.sol");
 const Usdc = artifacts.require("USDC");
 const Dai = artifacts.require('DAI');
 const Weth = require('../build/contracts/WETH9.json');
 
-contract('PrimeOption.sol', accounts => {
+contract('PrimeTrader.sol', accounts => {
     const { toWei } = web3.utils;
     const { fromWei } = web3.utils;
     const { getBalance } = web3.eth;
-    const ROUNDING_ERR = 10**5;
     const ERR_ZERO = "ERR_ZERO";
-    const ERR_NOT_OWNER = "ERR_NOT_OWNER";
-    const ERR_OPTION_TYPE = "ERR_OPTION_TYPE";
-    const ERR_BAL_STRIKE = "ERR_BAL_STRIKE";
-    const ERR_BAL_PRIME = "ERR_BAL_PRIME";
-    const ERR_BAL_REDEEM = "ERR_BAL_REDEEM";
     const ERR_BAL_ETH = "ERR_BAL_ETH";
+    const ERR_NOT_OWNER = "ERR_NOT_OWNER";
+    const ERR_BAL_PRIME = "ERR_BAL_PRIME";
+    const ERR_BAL_STRIKE = "ERR_BAL_STRIKE";
+    const ERR_BAL_REDEEM = "ERR_BAL_REDEEM";
     const ERR_BAL_TOKENS = "ERR_BAL_TOKENS";
     const ERR_BAL_OPTIONS = "ERR_BAL_OPTIONS";
-    const MAINNET_COMPOUND_ETH = '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5';
-    const MAINNET_ORACLE = '0x79fEbF6B9F76853EDBcBc913e6aAE8232cFB9De9';
+    const ERR_OPTION_TYPE = "ERR_OPTION_TYPE";
+    const ROUNDING_ERR = 10**5;
     const ONE_ETHER = toWei('0.1');
     const TWO_ETHER = toWei('0.2');
     const FIVE_ETHER = toWei('0.5');
     const TEN_ETHER = toWei('1');
     const FIFTY_ETHER = toWei('50');
     const MILLION_ETHER = toWei('1000000');
-
+    const MAINNET_ORACLE = '0x79fEbF6B9F76853EDBcBc913e6aAE8232cFB9De9';
+    const MAINNET_COMPOUND_ETH = '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5';
+    
 
     // User Accounts
     const Alice = accounts[0]
@@ -68,7 +69,8 @@ contract('PrimeOption.sol', accounts => {
         tokenS,
         ratio,
         expiry,
-        strikePrice
+        strikePrice,
+        trader
         ;
 
     async function sendWeth(weth, to, from, amount) {
@@ -76,6 +78,9 @@ contract('PrimeOption.sol', accounts => {
     }
 
     before(async () => {
+        // trader
+        trader = await PrimeTrader.deployed();
+
         // Get the Market Controller Contract
         _controllerMarket = await ControllerMarket.deployed();
         _controllerPool = await ControllerPool.deployed();
@@ -111,98 +116,59 @@ contract('PrimeOption.sol', accounts => {
 
         await _tokenU.methods.deposit().send({from: Alice, value: TEN_ETHER});
         await _tokenU.methods.deposit().send({from: Bob, value: TEN_ETHER});
+
         await _tokenS.approve(_tokenP.address, MILLION_ETHER, {from: Alice});
         await _tokenU.methods.approve(_tokenP.address, MILLION_ETHER).send({from: Alice});
+
         await _tokenS.approve(_tokenP.address, MILLION_ETHER, {from: Bob});
         await _tokenU.methods.approve(_tokenP.address, MILLION_ETHER).send({from: Bob});
+
+        await _tokenS.approve(trader.address, MILLION_ETHER, {from: Alice});
+        await _tokenU.methods.approve(trader.address, MILLION_ETHER).send({from: Alice});
+
+        await _tokenS.approve(trader.address, MILLION_ETHER, {from: Bob});
+        await _tokenU.methods.approve(trader.address, MILLION_ETHER).send({from: Bob});
+
+        await _tokenP.approve(trader.address, MILLION_ETHER, {from: Alice});
+        await _tokenP.approve(trader.address, MILLION_ETHER, {from: Bob});
+
+        await _tokenR.approve(trader.address, MILLION_ETHER, {from: Alice});
+        await _tokenR.approve(trader.address, MILLION_ETHER, {from: Bob});
     });
 
-    describe('PrimeOption.sol', () => {
-        it('Should deploy a new market', async () => {
-            await _controllerMarket.createMarket(
-                name,
-                symbol,
-                tokenU,
-                tokenS,
-                ratio,
-                expiry
-            );
-        });
-
+    describe('PrimeTrader.sol', () => {
         it('Should initialize with the correct values', async () => {
-            let marketId = await _tokenP.marketId();
+            let wethAddress = _tokenU._address;
             assert.equal(
-                (await _tokenP.name()).toString(),
-                name,
-                'Incorrect name'
-            );
-            assert.equal(
-                (await _tokenP.symbol()).toString(),
-                symbol,
-                'Incorrect symbol'
-            );
-            assert.equal(
-                (await _tokenP.factory()).toString(),
-                _controllerOption.address,
-                'Incorrect factory'
-            );
-            assert.equal(
-                (await _tokenP.marketId()).toString(),
-                (firstMarket).toString(),
-                'Incorrect market id'
-            );
-            assert.equal(
-                (await _tokenP.tokenU()).toString(),
-                tokenU,
-                'Incorrect tokenU'
-            );
-            assert.equal(
-                (await _tokenP.tokenS()).toString(),
-                tokenS,
-                'Incorrect tokenS'
-            );
-            assert.equal(
-                (await _tokenP.ratio()).toString(),
-                ratio,
-                'Incorrect ratio'
-            );
-            assert.equal(
-                (await _tokenP.expiry()).toString(),
-                expiry,
-                'Incorrect expiry'
-            );
-            const tokens = await _tokenP.getTokens();
-            assert.equal(
-                (tokens._tokenU).toString(),
-                tokenU,
-                'Incorrect tokenU'
-            );
-            assert.equal(
-                (tokens._tokenS).toString(),
-                tokenS,
-                'Incorrect tokenS'
-            );
-            assert.equal(
-                (tokens._tokenR).toString(),
-                _tokenR.address,
-                'Incorrect tokenR'
-            );
-            assert.equal(
-                (await _tokenP.maxDraw()).toString(),
-                '0',
-                'CacheS should be 0'
+                (await trader.weth()),
+                (wethAddress),
+                `Incorrect WETH Address ${await trader.weth()} != ${wethAddress}`
             );
         });
 
-        describe('PrimeOption.mint()', () => {
+        describe('PrimeTrader.safeMint()', () => {
 
-            it('revert if no tokens were sent to contract', async () => {
+            it('revert if zero was the input for the amount parameter', async () => {
                 await truffleAssert.reverts(
-                    _tokenP.mint(
+                    trader.safeMint(
+                        tokenP,
+                        0,
                         Alice,
                         {from: Alice}
                     ),
                     "ERR_ZERO"
+                );
+            });
+
+            it('reverts if msg.sender does not have enough tokenU', async () => {
+                await truffleAssert.reverts(
+                    trader.safeMint(
+                        tokenP,
+                        MILLION_ETHER,
+                        Alice,
+                        {from: Alice}
+                    ),
+                    "ERR_BAL_UNDERLYING"
                 );
             });
 
@@ -211,8 +177,7 @@ contract('PrimeOption.sol', accounts => {
                 let balanceER = inTokenU*1 * ratio*1 / toWei('1');
                 let balanceEP = ONE_ETHER;
 
-                await _tokenU.methods.transfer(tokenP, inTokenU).send({from: Alice});
-                let mint = await _tokenP.mint(Alice, {from: Alice});
+                let mint = await trader.safeMint(tokenP, inTokenU, Alice, {from: Alice});
 
                 let balanceAR = await _tokenR.balanceOf(Alice);
                 let balanceAP = await _tokenP.balanceOf(Alice);
@@ -227,7 +192,6 @@ contract('PrimeOption.sol', accounts => {
                 assert.equal(cacheU, inTokenU, `${cacheU} != ${inTokenU}`)
 
                 truffleAssert.eventEmitted(mint, "Mint");
-                truffleAssert.eventEmitted(mint, "Fund");
             });
 
             it('send 1 wei of tokenU to tokenP and call mint', async () => {
@@ -238,8 +202,7 @@ contract('PrimeOption.sol', accounts => {
                 let balanceEU = (await _tokenU.methods.balanceOf(tokenP).call()).toString();
                 let cacheEU = (await _tokenP.cacheU()).toString();
 
-                await _tokenU.methods.transfer(tokenP, inTokenU).send({from: Alice});
-                let mint = await _tokenP.mint(Alice, {from: Alice});
+                let mint = await trader.safeMint(tokenP, inTokenU, Alice, {from: Alice});
 
                 let balanceAR = (await _tokenR.balanceOf(Alice)).toString();
                 let balanceAP = (await _tokenP.balanceOf(Alice)).toString();
@@ -258,48 +221,46 @@ contract('PrimeOption.sol', accounts => {
                 assert.equal((cacheU*1 - cacheEU*1) <= ROUNDING_ERR, true, `${cacheU*1 - cacheEU*1} != ${inTokenU}`)
 
                 truffleAssert.eventEmitted(mint, "Mint");
-                truffleAssert.eventEmitted(mint, "Fund");
             });
         });
 
         
-        describe('PrimeOption.swap()', () => {
+        describe('PrimeTrader.safeSwap()', () => {
             it('reverts if inTokenS is 0', async () => {
-                await _tokenP.transfer(tokenP, ONE_ETHER);
                 await truffleAssert.reverts(
-                    _tokenP.swap(
+                    trader.safeSwap(
+                        tokenP,
+                        0,
                         Alice,
                         {from: Alice}
                     ),
                     "ERR_ZERO"
                 );
-                await _tokenP.take();
             });
 
-            it('reverts if inTokenP is 0', async () => {
-                await _tokenS.transfer(tokenP, ONE_ETHER);
+            it('reverts if user does not have enough tokenP', async () => {
                 await truffleAssert.reverts(
-                    _tokenP.swap(
+                    trader.safeSwap(
+                        tokenP,
+                        MILLION_ETHER,
                         Alice,
                         {from: Alice}
                     ),
-                    "ERR_ZERO"
+                    "ERR_BAL_PRIME"
                 );
-                await _tokenP.take();
             });
 
-            it('reverts if outTokenU > inTokenP', async () => {
-                await _tokenP.transfer(tokenP, toWei('0.01'));
-                await _tokenS.transfer(tokenP, ratio);
+            /* it('reverts if user does not have enough strike assets', async () => {
                 await truffleAssert.reverts(
-                    _tokenP.swap(
+                    trader.safeSwap(
+                        tokenP,
+                        ONE_ETHER,
                         Alice,
                         {from: Alice}
                     ),
-                    "ERR_BAL_UNDERLYING"
+                    "ERR_BAL_STRIKE"
                 );
-                await _tokenP.take();
-            });
+            }); */
 
             it('swaps tokenS + tokenP for tokenU', async () => {
                 let inTokenU = ONE_ETHER;
@@ -319,9 +280,7 @@ contract('PrimeOption.sol', accounts => {
                 let balance0SC = await _tokenS.balanceOf(tokenP);
                 let balance0UC = await _tokenU.methods.balanceOf(tokenP).call();
 
-                await _tokenS.transfer(tokenP, (inTokenS).toString());
-                await _tokenP.transfer(tokenP, inTokenP);
-                let swap = await _tokenP.swap(Alice);
+                let swap = await trader.safeSwap(tokenP, (inTokenP).toString(), Alice);
                 truffleAssert.prettyPrintEmittedEvents(swap);
 
                 let balance1S = await _tokenS.balanceOf(Alice);
@@ -346,20 +305,32 @@ contract('PrimeOption.sol', accounts => {
                 truffleAssert.eventEmitted(swap, "Swap", (ev) => {
                     return ev.outTokenU == inTokenP && ev.inTokenS == inTokenS;
                 });
-                truffleAssert.eventEmitted(swap, "Fund");
             });
         });
 
         
-        describe('PrimeOption.redeem()', () => {
+        describe('PrimeTrader.safeRedeem()', () => {
+            it('reverts if inTokenR is 0', async () => {
+                await truffleAssert.reverts(
+                    trader.safeRedeem(
+                        tokenP,
+                        0,
+                        Alice,
+                        {from: Alice}
+                    ),
+                    "ERR_ZERO"
+                );
+            });
+
             it('reverts if not enough withdrawable strike', async () => {
                 let inTokenU = TEN_ETHER;
                 await _tokenU.methods.deposit().send({from: Alice, value: inTokenU});
                 await _tokenU.methods.transfer(tokenP, inTokenU).send({from: Alice});
                 await _tokenP.mint(Alice, {from: Alice});
-                await _tokenR.transfer(tokenP, (ratio*1 * inTokenU*1 / toWei('1')).toString());
                 await truffleAssert.reverts(
-                    _tokenP.redeem(
+                    trader.safeRedeem(
+                        tokenP,
+                        (ratio*1 * inTokenU*1 / toWei('1')).toString(),
                         Alice,
                         {from: Alice, value: 0}),
                     "ERR_BAL_STRIKE"
@@ -387,8 +358,7 @@ contract('PrimeOption.sol', accounts => {
                 let balance0SC = await _tokenS.balanceOf(tokenP);
                 let balance0UC = await _tokenU.methods.balanceOf(tokenP).call();
 
-                await _tokenR.transfer(tokenP, (inTokenS).toString());
-                let redeem = await _tokenP.redeem(Alice);
+                let redeem = await trader.safeRedeem(tokenP, (inTokenS).toString(), Alice);
                 truffleAssert.prettyPrintEmittedEvents(redeem);
 
                 let balance1S = await _tokenS.balanceOf(Alice);
@@ -416,19 +386,19 @@ contract('PrimeOption.sol', accounts => {
                 truffleAssert.eventEmitted(redeem, "Redeem", (ev) => {
                     return ev.inTokenR == inTokenR && ev.inTokenR == outTokenS;
                 });
-                truffleAssert.eventEmitted(redeem, "Fund");
             });
         });
 
         
-        describe('PrimeOption.close()', () => {
+        describe('PrimeTrader.safeClose()', () => {
             it('reverts if inTokenR is 0', async () => {
                 await _tokenP.take();
                 await _tokenP.update();
                 let inTokenP = ONE_ETHER;
-                await _tokenP.transfer(tokenP, inTokenP);
                 await truffleAssert.reverts(
-                    _tokenP.close(
+                    trader.safeClose(
+                        tokenP,
+                        0,
                         Alice,
                         {from: Alice, value: 0}),
                     "ERR_ZERO"
@@ -436,32 +406,33 @@ contract('PrimeOption.sol', accounts => {
                 await _tokenP.take();
             });
 
-            it('reverts if inTokenP is 0', async () => {
+            it('reverts if user does not have enough redeem', async () => {
                 await _tokenP.take();
                 await _tokenP.update();
-                let inTokenR = TEN_ETHER;
-                await _tokenR.transfer(tokenP, inTokenR);
+                let inTokenR = MILLION_ETHER;
                 await truffleAssert.reverts(
-                    _tokenP.close(
+                    trader.safeClose(
+                        tokenP,
+                        inTokenR,
                         Alice,
                         {from: Alice, value: 0}),
-                    "ERR_ZERO"
+                    "ERR_BAL_REDEEM"
                 );
                 await _tokenP.take();
             });
 
-            it('reverts if outTokenU > inTokenP', async () => {
-                await _tokenP.transfer(tokenP, toWei('0.01'));
-                await _tokenR.transfer(tokenP, ratio);
+            /* it('reverts if user does not have enough primes', async () => {
                 await truffleAssert.reverts(
-                    _tokenP.close(
+                    trader.safeClose(
+                        tokenP,
+                        toWei('0.01'),
                         Alice,
                         {from: Alice}
                     ),
-                    "ERR_BAL_UNDERLYING"
+                    "ERR_BAL_PRIME"
                 );
                 await _tokenP.take();
-            });
+            }); */
 
 
             it('closes position', async () => {
@@ -485,9 +456,7 @@ contract('PrimeOption.sol', accounts => {
                 let balance0SC = await _tokenS.balanceOf(tokenP);
                 let balance0UC = await _tokenU.methods.balanceOf(tokenP).call();
 
-                await _tokenR.transfer(tokenP, (inTokenR).toString());
-                await _tokenP.transfer(tokenP, (inTokenP).toString());
-                let close = await _tokenP.close(Alice);
+                let close = await trader.safeClose(tokenP, (inTokenP).toString(), Alice);
                 truffleAssert.prettyPrintEmittedEvents(close);
 
                 let balance1S = await _tokenS.balanceOf(Alice);
@@ -516,7 +485,6 @@ contract('PrimeOption.sol', accounts => {
                 truffleAssert.eventEmitted(close, "Close", (ev) => {
                     return ev.inTokenP == +outTokenU && ev.inTokenP == +inTokenP;
                 });
-                truffleAssert.eventEmitted(close, "Fund");
             });
         });
     }); 

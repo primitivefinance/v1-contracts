@@ -14,6 +14,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
+
 interface IWETH {
     function deposit() external payable;
     function withdraw(uint wad) external;
@@ -27,6 +28,7 @@ interface AggregatorInterface {
   function currentAnswer() external view returns (int256);
 }
 
+
 contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     using SafeMath for uint256;
 
@@ -38,23 +40,21 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
 
     address public tokenU;
     address public tokenS;
+    address public tokenR;
     address payable public weth;
     address[] public _optionMarkets;
 
-    mapping(address => bool) public isValidOption;
-
-    // Total Options held in Pool. Each Option is 1:1 with Ether underlying.
     uint256 public cacheR;
     uint256 public cacheU;
     uint256 public cacheS;
-    
 
-    uint256 public _test;
-    
+    mapping(address => bool) public isValidOption;
 
-    event Deposit(uint256 deposit, address indexed user, uint256 minted);
-    event Withdraw(uint256 withdraw, address indexed user, uint256 burned);
-    event Buy(address indexed user, uint256 amount, uint256 premium);
+    event Deposit(address indexed user, uint256 inTokenU, uint256 outTokenPULP);
+    event Withdraw(address indexed user, uint256 outTokenU, uint256 inTokenR);
+    event Buy(address indexed user, uint256 inTokenS, uint256 outTokenU, uint256 premium);
+    event Fund(uint256 cacheU, uint256 cacheS, uint256 cacheR);
+    event Market(address tokenP);
 
     constructor (
         address payable _weth,
@@ -82,24 +82,20 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         cacheU = _cacheU;
         cacheS = _cacheS;
         cacheR = _cacheR;
+        emit Fund(cacheU, cacheS, cacheR);
     }
 
-    function addMarket(address primeOption) public onlyOwner returns (address) {
-        isValidOption[primeOption] = true;
-        _optionMarkets.push(primeOption);
-        IPrime _prime = IPrime(primeOption);
+    function addMarket(address tokenP) public onlyOwner returns (address) {
+        isValidOption[tokenP] = true;
+        _optionMarkets.push(tokenP);
+        address _tokenR = IPrime(tokenP).tokenR();
+        tokenR = _tokenR;
 
-        // Assume this is DAI
-        IERC20 strike = IERC20(tokenS);
-        strike.approve(primeOption, 1000000000 ether);
-        
-        // Assume this is USDC
-        IERC20 underlying = IERC20(tokenU);
-        underlying.approve(primeOption, 1000000000 ether);
-
-        IPrimeRedeem redeem = IPrimeRedeem(_prime.tokenR());
-        redeem.approve(primeOption, 1000000000 ether);
-        return primeOption;
+        IERC20(tokenS).approve(tokenP, 1000000000 ether);
+        IERC20(tokenU).approve(tokenP, 1000000000 ether);
+        IERC20(_tokenR).approve(tokenP, 1000000000 ether);
+        emit Market(tokenP);
+        return tokenP;
     }
 
 
@@ -111,8 +107,8 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     /* =========== MAKER FUNCTIONS =========== */
 
     /**
-     * @dev Adds liquidity by depositing underlying assets in exchange for liquidity tokens.
-     * @param amount The quantity of Underlying assets to deposit.
+     * @dev Adds liquidity by depositing tokenU. Receives tokenPULP.
+     * @param amount The quantity of tokenU to deposit.
      * @return bool True if the transaction suceeds.
      */
     function deposit(
@@ -124,136 +120,110 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         nonReentrant
         returns (bool)
     {
-        /* CHECKS */
 
-        // Assume this is the underlying asset of the series
-        IERC20 _tokenU = IERC20(tokenU);
-        if(address(_tokenU) == weth) {
-            require(msg.value == amount && msg.value > 0, "ERR_BAL_ETH");
+        // Store locally for gas savings.
+        address _tokenU = tokenU;
+        if(_tokenU == weth) {
+            require(msg.value == amount && amount > 0, "ERR_BAL_ETH");
         } else {
-            require(_tokenU.balanceOf(msg.sender) >= amount && amount > 0, "ERR_BAL_UNDERLYING");
+            require(IERC20(_tokenU).balanceOf(msg.sender) >= amount && amount > 0, "ERR_BAL_UNDERLYING");
         }
         
-        /* EFFECTS */
 
         // Mint LP tokens proportional to the Total LP Supply and Total Pool Balance
-        uint256 pulp;
-        uint256 _cache = cacheU;
+        uint256 outTokenPULP;
+        uint256 _cacheU = cacheU;
         uint256 totalSupply = totalSupply();
          
         // If liquidity is not intiialized, mint LP tokens equal to deposit
-        if(_cache.mul(totalSupply) == 0) {
-            pulp = amount;
+        if(_cacheU.mul(totalSupply) == 0) {
+            outTokenPULP = amount;
         } else {
-            pulp = amount.mul(totalSupply).div(_cache);
+            require(amount.mul(totalSupply) >= _cacheU, "ERR_ZERO");
+            outTokenPULP = amount.mul(totalSupply).div(_cacheU);
         }
 
-        /* INTERACTIONS */
 
-        _mint(msg.sender, pulp);
+        _mint(msg.sender, outTokenPULP);
         _fund(amount, cacheS, cacheR);
-        emit Deposit(amount, msg.sender, pulp);
+        emit Deposit(msg.sender, amount, outTokenPULP);
 
         // Assume we hold the _tokenU asset until it is utilized in minting a Prime
-        if(address(_tokenU) == weth) {
+        if(_tokenU == weth) {
             IWETH(weth).deposit.value(msg.value)();
             return true;
         } else {
-            return _tokenU.transferFrom(msg.sender, address(this), amount);
+            return IERC20(_tokenU).transferFrom(msg.sender, address(this), amount);
         }
-        
     }
 
     /**
-     * @dev liquidity Provider burns their LP tokens in exchange for underlying or redeemed strike assets.
-     * @notice If the pool is fully utilized and there are no strike assets to redeem, the LP will have to wait.
+     * @dev liquidity Provider burns their tokenPULP for proportional amount of tokenU + tokenS.
+     * @notice  outTokenU = inTokenPULP * cacheU / total supply tokenPULP, 
+     *          outTokenS = inTokenPULP * cacheR / total supply tokenPULP 
+     *          If the pool is fully utilized and there are no strike assets to redeem,
+     *          the LPs will have to wait.
      * @param amount The quantity of liquidity tokens to burn.
-     * @return bool Returns true if liquidity tokens were burned and underlying or strike assets were sent to user.
+     * @return bool Returns true if liquidity tokens were burned both tokenU + tokenS were sent to user.
      */
     function withdraw(
-        uint256 amount
+        uint256 amount,
+        address tokenP
     ) 
         external 
         nonReentrant 
         returns (bool)
     {
-
-        /* CHECKS */
-        require(balanceOf(msg.sender) >= amount, "ERR_BAL_LPROVIDER");
-
-        /* EFFECTS */
-
-        IERC20 _tokenS = IERC20(tokenS);
-        IERC20 _tokenU = IERC20(tokenU);
-
-        // Local variable for cache balances
-        uint256 redeems = cacheR;
-        uint256 deposits = cacheU;
-
-        uint256 strikes = _tokenS.balanceOf(address(this));
-        uint256 underlyings = _tokenU.balanceOf(address(this));
-
-        uint256 withdrawU = amount.mul(cacheU).div(totalSupply());
-        uint256 withdrawR = amount.mul(cacheR).div(totalSupply());
-
-        // If there is not enough underlying liquidity to draw from, draw from strike assets
-        if(withdrawU > underlyings) {
-            uint256 remainder = withdrawR;
-            for(uint8 i = 0; i < _optionMarkets.length; i++) {
-                IPrime option = IPrime(_optionMarkets[i]);
-                (uint256 draw) = option.maxDraw();
-                // safeRedeem(address(option), draw, address(this)); FIX
-
-                // Subtract the amount drawn from the redeem cache
-                redeems.sub(draw);
-
-                // Subtract the underlying exercised from the underlying cache
-                deposits.sub(
-                    draw.mul(1 ether)
-                        .div(option.ratio())
-                        .div(1 ether)
-                );
-
-                // If we have enough strike assets to pay the rest of the draw, break
-                if(draw > remainder) {
-                    break;
-                } else {
-                    remainder.sub(draw);
-                }
-            }
-
-            strikes = _tokenS.balanceOf(address(this));
-            require(strikes >= withdrawR, "ERR_BAL_STRIKE");
-
-            // New underlying to withdraw is proportional to balance currently in contract
-            withdrawU = amount.mul(underlyings).div(totalSupply()); 
-        } else {
-            withdrawR = 0;
-        }
-
+        // Check tokenPULP balance.
+        require(balanceOf(msg.sender) >= amount && amount > 0, "ERR_BAL_PULP");
         
-
-        /* INTERACTIONS */
+        // Burn tokenPULP.
         _burn(msg.sender, amount);
-        
-        
-        if(withdrawR > 0) {
-            _tokenS.transfer(msg.sender, withdrawR);
-        }
-        
-        _fund(
-            deposits,
-            strikes.sub(withdrawR),
-            redeems
-        );
 
-        emit Withdraw(withdrawU, msg.sender, amount);
+        // Store locally for gas savings.
+        address _tokenU = tokenU;
+        address _tokenS = tokenS;
+        address _tokenR = tokenR;
+        uint256 totalSupply = totalSupply();
+
+        // Current balance.
+        uint256 balanceU = IERC20(_tokenU).balanceOf(address(this));
+
+        // outTokenU = inTokenPULP * cached balance of tokenU / Total Supply of tokenPULP
+        uint256 outTokenU = amount.mul(cacheU).div(totalSupply);
+
+        // outTokenR = inTokenPULP * cached balance of tokenR / Total Supply of tokenPULP
+        // tokenR is redeemable for 1:1 of tokenS.
+        // Redeem outTokenS amount of tokenR.
+        // Send redeemed tokenS to msg.sender.
+        uint256 outTokenR = amount.mul(cacheR).div(totalSupply);
+
+        // Cached balance of tokenS in tokenP must be >= outTokenR.
+        (uint256 maxDraw) = IPrime(tokenP).maxDraw();
+        require(maxDraw >= outTokenR, "ERR_BAL_STRIKE");
+
+        // Send tokenR to tokenP so we can call redeem() later to tokenP.
+        IERC20(_tokenR).transfer(tokenP, outTokenR);
+
+        // Current balances.
+        balanceU = IERC20(_tokenU).balanceOf(address(this));
+        uint256 balanceS = IERC20(_tokenS).balanceOf(address(this));
+        uint256 balanceR = IERC20(_tokenR).balanceOf(address(this));
+
+        // Update cached balances.
+        _fund(balanceU, balanceS, balanceR);
+        emit Withdraw(msg.sender, outTokenU, outTokenR);
     
-        if(address(_tokenU) == weth) {
-            IWETH(weth).withdraw(withdrawU);
-            return sendEther(msg.sender, withdrawU);
+        // Call redeem.
+        (uint256 inTokenR) = IPrime(tokenP).redeem(msg.sender);
+        assert(inTokenR == outTokenR);
+
+        // Send outTokenU to msg.sender.
+        if(_tokenU == weth) {
+            IWETH(weth).withdraw(outTokenU);
+            return sendEther(msg.sender, outTokenU);
         } else {
-            return _tokenU.transfer(msg.sender, withdrawU);
+            return IERC20(_tokenU).transfer(msg.sender, outTokenU);
         }
     }
 
@@ -262,145 +232,58 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
 
 
     /**
-     * @dev Purchases Prime Option ERC-20 Tokens from the Pool
+     * @dev Purchase ETH Put -> tokenU is DAI and tokenS is WETH. Pool holds tokenU.
      */
-    function buy(uint256 amount, address optionAddress)
+    function buy(
+        uint256 amount,
+        address tokenP
+    )
         public 
         payable
         nonReentrant
         returns (bool)
     {
+        // Store locally for gas savings.
+        address _tokenP = tokenP; // Assume Option
+        address _tokenU = tokenU; // Assume DAI
+        address _tokenS = tokenS; // Assume ETH
 
-        require(isValidOption[optionAddress], "ERR_INVALID_OPTION");
-        IPrime option = IPrime(optionAddress);
+        // Premium is 1% - FIX
+        uint256 premium = amount.div(ONE_HUNDRED_BPS);
 
-        require(totalUnutilized() >= amount, "ERR_BAL_UNDERLYING");
-
-
-        uint256 premium = amount.div(FIVE_HUNDRED_BPS); 
-
-
-        uint256 price = uint(oracle.currentAnswer());
-
-        uint256 intrinsic;
-        if(option.ratio() > price) {
-            intrinsic = 0;
+        // Premium is paid in tokenS. If tokenS is WETH, its paid with ETH.
+        if(_tokenS == weth) {
+            require(msg.value >= premium && premium > 0, "ERR_BAL_ETH");
+            IWETH(weth).deposit.value(premium)();
         } else {
-            intrinsic = price.sub(option.ratio());
+            require(IERC20(_tokenS).balanceOf(msg.sender) >= amount && amount > 0, "ERR_BAL_STRIKE");
         }
 
-        uint256 cost = premium.add(intrinsic);
+        // Current balance.
+        uint256 balanceU = IERC20(_tokenU).balanceOf(address(this));
 
-        require(msg.value >= cost, "ERR_BAL_ETH");
-        if(msg.value > cost) {
-            uint256 refund = msg.value.sub(cost);
-            sendEther(msg.sender, refund);
-        }
+        // ex. 0.99*10^18 ETH * 100*10^18 DAI / 10^18 = 0.99*10^18 * 100 = 99*10^18 DAI = outTokenU
+        uint256 outTokenU = amount.mul(IPrime(_tokenP).ratio()).div(1 ether); 
 
-        IERC20(option.tokenU()).transfer(address(option), amount);
+        // Transfer tokenU (assume DAI) to option contract using Pool funds.
+        require(balanceU >= outTokenU, "ERR_BAL_UNDERLYING");
+        IERC20(_tokenU).transfer(_tokenP, outTokenU);
 
-        (uint256 primes, uint256 redeems) = option.mint(msg.sender);
+        // Mint Prime.
+        (uint256 inTokenU,) = IPrime(_tokenP).mint(address(this)); // MAYBE FIX MINT FUNC
 
-        _fund(primes, cacheS, redeems);
-        
-        return option.transfer(msg.sender, amount);
-    }
+        // Send Prime to msg.sender.
+        IPrime(_tokenP).transfer(msg.sender, inTokenU);
 
-    // SAMPLE SYNTHETIC LONG STRATEGY
-    /* function settle(
-        IPrime option,
-        uint256 premium,
-        uint256 amount
-    ) private returns (bool) {
-        if(name() == "shortput") {
-            return option.transfer(msg.sender, amount);
-        } else if (name() == "syntheticlong") {
-            IPrimePool(scMaker).buy(getPrice(amount), callOption);
-            return option.transfer(msg.sender, amount);
-        }
-    }  */
-    /**
-     * @dev Mint Primes by depositing tokenU.
-     * @notice Also mints Prime Redeem tokens. Calls msg.sender with transferFrom.
-     * @param tokenP The address of the Prime Option to trade with.
-     * @param amount Quantity of Prime options to mint and tokenU to deposit.
-     * @param receiver The newly minted tokens are sent to the receiver address.
-     */
-    /* function safeMint(
-        address tokenP,
-        uint256 amount,
-        address receiver
-    )
-        external
-        nonReentrant
-        returns (uint256 inTokenU, uint256 outTokenR)
-    {
-        IPrime _tokenP = IPrime(tokenP);
-        address _tokenU = _tokenP.tokenU();
-        verifyBalance(
-            IERC20(_tokenU).balanceOf(msg.sender),
-            amount,
-            "ERR_BAL_UNDERLYING"
-        );
-        IERC20(_tokenU).transferFrom(msg.sender, tokenP, amount);
-        (inTokenU, outTokenR) = _tokenP.mint(receiver);
-    } */
+        // Current balances.
+        balanceU = IERC20(_tokenU).balanceOf(address(this));
+        uint256 balanceS = IERC20(_tokenS).balanceOf(address(this));
+        uint256 balanceR = IERC20(tokenR).balanceOf(address(this));
 
-    /**
-     * @dev Burns Prime Redeem tokens to withdraw available tokenS.
-     * @param amount Quantity of Prime Redeem to spend.
-     */
-    /* function safeRedeem(
-        address tokenP,
-        uint256 amount,
-        address receiver
-    )
-        public
-        nonReentrant
-        returns (uint256 inTokenR)
-    {
-        IPrime _tokenP = IPrime(tokenP);
-        address _tokenS = _tokenP.tokenS();
-        address _tokenR = _tokenP.tokenR();
-
-        verifyBalance(
-            IERC20(_tokenR).balanceOf(msg.sender),
-            amount,
-            "ERR_BAL_REDEEM"
-        );
-
-        // There can be the case there is no available tokenS to redeem.
-        // This is the first verification of a tokenS balance to draw from.
-        // There is a second verification in the redeem() function.
-        verifyBalance(
-            IERC20(_tokenS).balanceOf(tokenP),
-            amount,
-            "ERR_BAL_STRIKE"
-        );
-        IERC20(_tokenR).transferFrom(msg.sender, tokenP, amount);
-        (inTokenR) = _tokenP.redeem(receiver);
-    } */
-
-    /**
-     * @dev Gets the Unutilized asset balance of the Pool.
-     * @notice Gets the total assets that are not being utilized as underlying assets in Prime Options.
-     */
-    function totalUnutilized() public view returns (uint256) {
-        IERC20 underlying = IERC20(tokenU);
-        uint256 unutilized = underlying.balanceOf(address(this));
-        return unutilized;
-    }
-
-    /**
-     * @dev max amount of LP tokens that can be burned to withdraw underlying assets
-     * @notice Max Burn = Underlying Balance * Total Supply of LP Tokens / Total Underlying + Strike Assets denominated in the Underlying
-     * @return uint256 max amount of tokens that can be burned to withdraw underlying assets
-     */
-    function maxLiquidityWithdrawable() public view returns (uint256) {
-        /* LP = (ET - L) * ST / ET where ST = Total Supply */
-        uint256 maxLiquidity = totalUnutilized().mul(totalSupply()).div(cacheU);
-        require(maxLiquidity <= totalUnutilized(), "ERR_BAL_UNUTILIZED");
-        return maxLiquidity;
+        // Update cached balances.
+        _fund(balanceU, balanceS, balanceR);
+        emit Buy(msg.sender, amount, outTokenU, premium);
+        return true;
     }
 
     /* CAPITAL MANAGEMENT FUNCTIONS */
@@ -412,20 +295,6 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         (bool success, ) = user.call.value(amount)("");
         require(success, "Send ether fail");
         return success;
-    }
-
-    function totalEtherBalance() public view returns (uint256) {
-        return address(this).balance;
-    }
-
-    function verifyBalance(
-        uint256 balance,
-        uint256 minBalance,
-        string memory errorCode
-    ) internal pure {
-        minBalance == 0 ? 
-            require(balance > minBalance, errorCode) :
-            require(balance >= minBalance, errorCode);
     }
 }
 
