@@ -118,6 +118,17 @@ contract('PrimeERC20', accounts => {
     });
 
     describe('PrimeOption.sol', () => {
+        it('Should deploy a new market', async () => {
+            await _controllerMarket.createMarket(
+                name,
+                symbol,
+                tokenU,
+                tokenS,
+                ratio,
+                expiry
+            );
+        });
+
         it('Should initialize with the correct values', async () => {
             let marketId = await _tokenP.marketId();
             assert.equal(
@@ -343,6 +354,7 @@ contract('PrimeERC20', accounts => {
         describe('PrimeOption.redeem()', () => {
             it('reverts if not enough withdrawable strike', async () => {
                 let inTokenU = TEN_ETHER;
+                await _tokenU.methods.deposit().send({from: Alice, value: inTokenU});
                 await _tokenU.methods.transfer(tokenP, inTokenU).send({from: Alice});
                 await _tokenP.mint(Alice, {from: Alice});
                 await _tokenR.transfer(tokenP, (ratio*1 * inTokenU*1 / toWei('1')).toString());

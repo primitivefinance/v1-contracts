@@ -42,7 +42,8 @@ module.exports = {
     reporterOptions: {
       showTimeSpent: true,
       outputFiile: 'gas-used.log',
-      currency: 'USD'
+      currency: 'USD',
+      url: "http://localhost:8545"
     }
   },
   compilers: {

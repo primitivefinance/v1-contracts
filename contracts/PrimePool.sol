@@ -131,21 +131,21 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         if(address(_tokenU) == weth) {
             require(msg.value == amount && msg.value > 0, "ERR_BAL_ETH");
         } else {
-            require(_tokenU.balanceOf(msg.sender) >= amount && amount > 0, "ERR_BAL__tokenU");
+            require(_tokenU.balanceOf(msg.sender) >= amount && amount > 0, "ERR_BAL_UNDERLYING");
         }
         
         /* EFFECTS */
 
         // Mint LP tokens proportional to the Total LP Supply and Total Pool Balance
         uint256 pulp;
-        uint256 juice = cacheU;
+        uint256 _cache = cacheU;
         uint256 totalSupply = totalSupply();
          
         // If liquidity is not intiialized, mint LP tokens equal to deposit
-        if(juice.mul(totalSupply) == 0) {
+        if(_cache.mul(totalSupply) == 0) {
             pulp = amount;
         } else {
-            pulp = amount.mul(totalSupply).div(juice);
+            pulp = amount.mul(totalSupply).div(_cache);
         }
 
         /* INTERACTIONS */

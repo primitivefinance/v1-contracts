@@ -4,22 +4,22 @@
   "metadata": "{\"compiler\":{\"version\":\"0.6.2+commit.bacdbe57\"},\"language\":\"Solidity\",\"output\":{\"abi\":[],\"devdoc\":{\"author\":\"Primitive\",\"methods\":{},\"title\":\"Primitive's Instruments\"},\"userdoc\":{\"methods\":{}}},\"settings\":{\"compilationTarget\":{\"/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/controller/Instruments.sol\":\"Instruments\"},\"evmVersion\":\"constantinople\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/controller/Instruments.sol\":{\"keccak256\":\"0x659a161c1c7232230ac4c3fae84e1ca07eb8ff93e9c9f2f7ff3794c130289c77\",\"urls\":[\"bzz-raw://cde1462dc4afc04c6aae9ffe848e83c7278c84becc7087a4ce16387387cc2a2a\",\"dweb:/ipfs/QmNkcVjYH2JdtBdqEQJGHUCFCDp68Dp7AbsSKRVH8TKt7j\"]}},\"version\":1}",
   "bytecode": "0x60566023600b82828239805160001a607314601657fe5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea2646970667358221220ed783a670f2d2756adefbd648d910fd5fd68011393df9a287eb55d6305357ff264736f6c63430006020033",
   "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600080fdfea2646970667358221220ed783a670f2d2756adefbd648d910fd5fd68011393df9a287eb55d6305357ff264736f6c63430006020033",
-  "sourceMap": "94:156:11:-:0;;132:2:-1;166:7;155:9;146:7;137:37;255:7;249:14;246:1;241:23;235:4;232:33;222:2;;269:9;222:2;293:9;290:1;283:20;323:4;314:7;306:22;347:7;338;331:24",
-  "deployedSourceMap": "94:156:11:-:0;;;;;;;;",
+  "sourceMap": "94:156:12:-:0;;132:2:-1;166:7;155:9;146:7;137:37;255:7;249:14;246:1;241:23;235:4;232:33;222:2;;269:9;222:2;293:9;290:1;283:20;323:4;314:7;306:22;347:7;338;331:24",
+  "deployedSourceMap": "94:156:12:-:0;;;;;;;;",
   "source": "pragma solidity ^0.6.2;\r\n\r\n/**\r\n * @title Primitive's Instruments\r\n * @author Primitive\r\n */\r\nlibrary Instruments {\r\n    struct PrimeOption {\r\n        address tokenU;\r\n        address tokenS;\r\n        uint256 ratio;\r\n        uint256 expiry;\r\n    }\r\n}",
   "sourcePath": "C:\\Users\\alexa\\OneDrive\\Documents\\Master\\Blockchain\\Projects\\carbon\\contracts\\controller\\Instruments.sol",
   "ast": {
     "absolutePath": "/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/controller/Instruments.sol",
     "exportedSymbols": {
       "Instruments": [
-        3255
+        4125
       ]
     },
-    "id": 3256,
+    "id": 4126,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 3245,
+        "id": 4115,
         "literals": [
           "solidity",
           "^",
@@ -27,7 +27,7 @@
           ".2"
         ],
         "nodeType": "PragmaDirective",
-        "src": "0:23:11"
+        "src": "0:23:12"
       },
       {
         "abstract": false,
@@ -36,25 +36,25 @@
         "contractKind": "library",
         "documentation": "@title Primitive's Instruments\n@author Primitive",
         "fullyImplemented": true,
-        "id": 3255,
+        "id": 4125,
         "linearizedBaseContracts": [
-          3255
+          4125
         ],
         "name": "Instruments",
         "nodeType": "ContractDefinition",
         "nodes": [
           {
             "canonicalName": "Instruments.PrimeOption",
-            "id": 3254,
+            "id": 4124,
             "members": [
               {
                 "constant": false,
-                "id": 3247,
+                "id": 4117,
                 "name": "tokenU",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 3254,
-                "src": "151:14:11",
+                "scope": 4124,
+                "src": "151:14:12",
                 "stateVariable": false,
                 "storageLocation": "default",
                 "typeDescriptions": {
@@ -62,10 +62,10 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 3246,
+                  "id": 4116,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
-                  "src": "151:7:11",
+                  "src": "151:7:12",
                   "stateMutability": "nonpayable",
                   "typeDescriptions": {
                     "typeIdentifier": "t_address",
@@ -77,12 +77,12 @@
               },
               {
                 "constant": false,
-                "id": 3249,
+                "id": 4119,
                 "name": "tokenS",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 3254,
-                "src": "176:14:11",
+                "scope": 4124,
+                "src": "176:14:12",
                 "stateVariable": false,
                 "storageLocation": "default",
                 "typeDescriptions": {
@@ -90,10 +90,10 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 3248,
+                  "id": 4118,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
-                  "src": "176:7:11",
+                  "src": "176:7:12",
                   "stateMutability": "nonpayable",
                   "typeDescriptions": {
                     "typeIdentifier": "t_address",
@@ -105,12 +105,12 @@
               },
               {
                 "constant": false,
-                "id": 3251,
+                "id": 4121,
                 "name": "ratio",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 3254,
-                "src": "201:13:11",
+                "scope": 4124,
+                "src": "201:13:12",
                 "stateVariable": false,
                 "storageLocation": "default",
                 "typeDescriptions": {
@@ -118,10 +118,10 @@
                   "typeString": "uint256"
                 },
                 "typeName": {
-                  "id": 3250,
+                  "id": 4120,
                   "name": "uint256",
                   "nodeType": "ElementaryTypeName",
-                  "src": "201:7:11",
+                  "src": "201:7:12",
                   "typeDescriptions": {
                     "typeIdentifier": "t_uint256",
                     "typeString": "uint256"
@@ -132,12 +132,12 @@
               },
               {
                 "constant": false,
-                "id": 3253,
+                "id": 4123,
                 "name": "expiry",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 3254,
-                "src": "225:14:11",
+                "scope": 4124,
+                "src": "225:14:12",
                 "stateVariable": false,
                 "storageLocation": "default",
                 "typeDescriptions": {
@@ -145,10 +145,10 @@
                   "typeString": "uint256"
                 },
                 "typeName": {
-                  "id": 3252,
+                  "id": 4122,
                   "name": "uint256",
                   "nodeType": "ElementaryTypeName",
-                  "src": "225:7:11",
+                  "src": "225:7:12",
                   "typeDescriptions": {
                     "typeIdentifier": "t_uint256",
                     "typeString": "uint256"
@@ -160,29 +160,29 @@
             ],
             "name": "PrimeOption",
             "nodeType": "StructDefinition",
-            "scope": 3255,
-            "src": "121:126:11",
+            "scope": 4125,
+            "src": "121:126:12",
             "visibility": "public"
           }
         ],
-        "scope": 3256,
-        "src": "94:156:11"
+        "scope": 4126,
+        "src": "94:156:12"
       }
     ],
-    "src": "0:250:11"
+    "src": "0:250:12"
   },
   "legacyAST": {
     "absolutePath": "/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/controller/Instruments.sol",
     "exportedSymbols": {
       "Instruments": [
-        3255
+        4125
       ]
     },
-    "id": 3256,
+    "id": 4126,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 3245,
+        "id": 4115,
         "literals": [
           "solidity",
           "^",
@@ -190,7 +190,7 @@
           ".2"
         ],
         "nodeType": "PragmaDirective",
-        "src": "0:23:11"
+        "src": "0:23:12"
       },
       {
         "abstract": false,
@@ -199,25 +199,25 @@
         "contractKind": "library",
         "documentation": "@title Primitive's Instruments\n@author Primitive",
         "fullyImplemented": true,
-        "id": 3255,
+        "id": 4125,
         "linearizedBaseContracts": [
-          3255
+          4125
         ],
         "name": "Instruments",
         "nodeType": "ContractDefinition",
         "nodes": [
           {
             "canonicalName": "Instruments.PrimeOption",
-            "id": 3254,
+            "id": 4124,
             "members": [
               {
                 "constant": false,
-                "id": 3247,
+                "id": 4117,
                 "name": "tokenU",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 3254,
-                "src": "151:14:11",
+                "scope": 4124,
+                "src": "151:14:12",
                 "stateVariable": false,
                 "storageLocation": "default",
                 "typeDescriptions": {
@@ -225,10 +225,10 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 3246,
+                  "id": 4116,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
-                  "src": "151:7:11",
+                  "src": "151:7:12",
                   "stateMutability": "nonpayable",
                   "typeDescriptions": {
                     "typeIdentifier": "t_address",
@@ -240,12 +240,12 @@
               },
               {
                 "constant": false,
-                "id": 3249,
+                "id": 4119,
                 "name": "tokenS",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 3254,
-                "src": "176:14:11",
+                "scope": 4124,
+                "src": "176:14:12",
                 "stateVariable": false,
                 "storageLocation": "default",
                 "typeDescriptions": {
@@ -253,10 +253,10 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 3248,
+                  "id": 4118,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
-                  "src": "176:7:11",
+                  "src": "176:7:12",
                   "stateMutability": "nonpayable",
                   "typeDescriptions": {
                     "typeIdentifier": "t_address",
@@ -268,12 +268,12 @@
               },
               {
                 "constant": false,
-                "id": 3251,
+                "id": 4121,
                 "name": "ratio",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 3254,
-                "src": "201:13:11",
+                "scope": 4124,
+                "src": "201:13:12",
                 "stateVariable": false,
                 "storageLocation": "default",
                 "typeDescriptions": {
@@ -281,10 +281,10 @@
                   "typeString": "uint256"
                 },
                 "typeName": {
-                  "id": 3250,
+                  "id": 4120,
                   "name": "uint256",
                   "nodeType": "ElementaryTypeName",
-                  "src": "201:7:11",
+                  "src": "201:7:12",
                   "typeDescriptions": {
                     "typeIdentifier": "t_uint256",
                     "typeString": "uint256"
@@ -295,12 +295,12 @@
               },
               {
                 "constant": false,
-                "id": 3253,
+                "id": 4123,
                 "name": "expiry",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 3254,
-                "src": "225:14:11",
+                "scope": 4124,
+                "src": "225:14:12",
                 "stateVariable": false,
                 "storageLocation": "default",
                 "typeDescriptions": {
@@ -308,10 +308,10 @@
                   "typeString": "uint256"
                 },
                 "typeName": {
-                  "id": 3252,
+                  "id": 4122,
                   "name": "uint256",
                   "nodeType": "ElementaryTypeName",
-                  "src": "225:7:11",
+                  "src": "225:7:12",
                   "typeDescriptions": {
                     "typeIdentifier": "t_uint256",
                     "typeString": "uint256"
@@ -323,16 +323,16 @@
             ],
             "name": "PrimeOption",
             "nodeType": "StructDefinition",
-            "scope": 3255,
-            "src": "121:126:11",
+            "scope": 4125,
+            "src": "121:126:12",
             "visibility": "public"
           }
         ],
-        "scope": 3256,
-        "src": "94:156:11"
+        "scope": 4126,
+        "src": "94:156:12"
       }
     ],
-    "src": "0:250:11"
+    "src": "0:250:12"
   },
   "compiler": {
     "name": "solc",
@@ -340,7 +340,7 @@
   },
   "networks": {},
   "schemaVersion": "3.0.23",
-  "updatedAt": "2020-04-26T02:18:33.895Z",
+  "updatedAt": "2020-04-27T04:08:24.504Z",
   "devdoc": {
     "author": "Primitive",
     "methods": {},
