@@ -167,11 +167,13 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         // Mint inTokenU equal to the difference between current balance and previous balance of tokenU.
         inTokenU = balanceU.sub(cacheU);
 
+        // Make sure outToken is not 0.
+        require(inTokenU.mul(option.price) > 0, "ERR_ZERO");
+
         // Mint outTokenR equal to tokenU * ratio FIX - FURTHER CHECKS
         outTokenR = inTokenU.mul(option.price).div(option.base);
 
         // Mint the tokens.
-        require(inTokenU > 0, "ERR_ZERO");
         IPrimeRedeem(tokenR).mint(receiver, outTokenR);
         _mint(receiver, inTokenU);
 
