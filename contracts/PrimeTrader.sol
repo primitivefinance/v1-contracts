@@ -50,7 +50,10 @@ contract PrimeTrader is ReentrancyGuard {
             amount,
             "ERR_BAL_UNDERLYING"
         );
-        IERC20(tokenU).transferFrom(msg.sender, tokenP, amount);
+        require(
+            IERC20(tokenU).transferFrom(msg.sender, tokenP, amount),
+            "ERR_TRANSFER_IN_FAIL"
+        );
         (inTokenU, outTokenR) = IPrime(tokenP).mint(receiver);
         emit Mint(msg.sender, inTokenU, outTokenR);
     }
@@ -84,8 +87,9 @@ contract PrimeTrader is ReentrancyGuard {
             inTokenS,
             "ERR_BAL_STRIKE"
         );
-        IERC20(tokenS).transferFrom(msg.sender, tokenP, inTokenS);
-        IPrime(tokenP).transferFrom(msg.sender, tokenP, amount);
+        (bool inTransferS) = IERC20(tokenS).transferFrom(msg.sender, tokenP, inTokenS);
+        (bool inTransferP) = IPrime(tokenP).transferFrom(msg.sender, tokenP, amount);
+        require(inTransferS && inTransferP, "ERR_TRANSFER_IN_FAIL");
         (inTokenS, inTokenP, outTokenU) = IPrime(tokenP).swap(receiver);
         emit Swap(msg.sender, outTokenU, inTokenS);
     }
@@ -121,7 +125,10 @@ contract PrimeTrader is ReentrancyGuard {
             amount,
             "ERR_BAL_STRIKE"
         );
-        IERC20(tokenR).transferFrom(msg.sender, tokenP, amount);
+        require(
+            IERC20(tokenR).transferFrom(msg.sender, tokenP, amount),
+            "ERR_TRANSFER_IN_FAIL"
+        );
         (inTokenR) = IPrime(tokenP).redeem(receiver);
         emit Redeem(msg.sender, inTokenR);
     }
@@ -158,8 +165,9 @@ contract PrimeTrader is ReentrancyGuard {
             "ERR_BAL_PRIME"
         );
 
-        IERC20(tokenR).transferFrom(msg.sender, tokenP, inTokenR);
-        IPrime(tokenP).transferFrom(msg.sender, tokenP, amount);
+        (bool inTransferR) = IERC20(tokenR).transferFrom(msg.sender, tokenP, inTokenR);
+        (bool inTransferP) = IPrime(tokenP).transferFrom(msg.sender, tokenP, amount);
+        require(inTransferR && inTransferP, "ERR_TRANSFER_IN_FAIL");
         (inTokenR, inTokenP, outTokenU) = IPrime(tokenP).close(receiver);
         emit Close(msg.sender, inTokenP);
     }

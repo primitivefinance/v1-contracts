@@ -112,7 +112,8 @@ contract ControllerMarket is Ownable {
             option,
             tokenS
         );
-        optionController.setRedeem(tokenR, option);
+        (bool setRedeem) = optionController.setRedeem(tokenR, option);
+        require(setRedeem, "ERR_SET_REDEEM");
 
         // Adds option to pool contract
         IControllerPool pool = IControllerPool(_controllers.pool);

@@ -205,7 +205,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         require(maxDraw >= outTokenR, "ERR_BAL_STRIKE");
 
         // Send tokenR to tokenP so we can call redeem() later to tokenP.
-        IERC20(_tokenR).transfer(tokenP, outTokenR);
+        (bool success) = IERC20(_tokenR).transfer(tokenP, outTokenR);
 
         // Current balances.
         balanceU = IERC20(_tokenU).balanceOf(address(this));
@@ -218,12 +218,14 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     
         // Call redeem.
         (uint256 inTokenR) = IPrime(tokenP).redeem(msg.sender);
-        assert(inTokenR == outTokenR);
+        assert(inTokenR == outTokenR && success);
 
         // Send outTokenU to msg.sender.
         if(_tokenU == weth) {
             IWETH(weth).withdraw(outTokenU);
-            return sendEther(msg.sender, outTokenU);
+            (bool success, ) = msg.sender.call.value(outTokenU)("");
+            require(success, "Send ether fail");
+            return success;
         } else {
             return IERC20(_tokenU).transfer(msg.sender, outTokenU);
         }
@@ -241,7 +243,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         uint256 amount,
         address tokenP
     )
-        public 
+        external 
         payable
         nonReentrant
         returns (bool)
@@ -270,13 +272,16 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
 
         // Transfer tokenU (assume DAI) to option contract using Pool funds.
         require(balanceU >= outTokenU, "ERR_BAL_UNDERLYING");
-        IERC20(_tokenU).transfer(_tokenP, outTokenU);
+        (bool transferU) = IERC20(_tokenU).transfer(_tokenP, outTokenU);
 
         // Mint Prime.
         (uint256 inTokenU,) = IPrime(_tokenP).mint(address(this)); // MAYBE FIX MINT FUNC
 
         // Send Prime to msg.sender.
-        IPrime(_tokenP).transfer(msg.sender, inTokenU);
+        (bool transferP) = IPrime(_tokenP).transfer(msg.sender, inTokenU);
+
+        // Assert transfers were successful
+        require(transferU && transferP, "ERR_TRANSFER_FAIL");
 
         // Current balances.
         balanceU = IERC20(_tokenU).balanceOf(address(this));
@@ -291,18 +296,6 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
 
     function calculatePremium(uint256 amount) public returns (uint256 premium) {
         uint256 price = uint(oracle.currentAnswer()); // FIX ONLY WORKS ON MAINNET Assume price of ETHER
-
-    }
-
-    /* CAPITAL MANAGEMENT FUNCTIONS */
-
-    /**
-     @dev function to send ether with the most security
-     */
-    function sendEther(address payable user, uint256 amount) internal returns (bool) {
-        (bool success, ) = user.call.value(amount)("");
-        require(success, "Send ether fail");
-        return success;
     }
 }
 

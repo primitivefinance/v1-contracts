@@ -48,6 +48,7 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         public
         ERC20(name, symbol)
     {
+        require(tokenU != address(this) && tokenS != address(this), "ERR_SELF");
         marketId = _marketId;
         factory = msg.sender;
         option = Instruments.PrimeOption(
@@ -127,9 +128,6 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         IERC20(address(this)).transfer(msg.sender,
             IERC20(address(this)).balanceOf(address(this))
         );
-
-        /* transfer(msg.sender, balanceOf(address(this)).sub(1)); */ 
-        // FIX, DOES NOT TRANSFER: EXCEEDS BALANCE
     }
 
     /**
@@ -174,7 +172,7 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         outTokenR = inTokenU.mul(option.price).div(option.base);
 
         // Mint the tokens.
-        IPrimeRedeem(tokenR).mint(receiver, outTokenR);
+        require(IPrimeRedeem(tokenR).mint(receiver, outTokenR), "ERR_BURN_FAIL");
         _mint(receiver, inTokenU);
 
         // Update the caches.
@@ -222,7 +220,7 @@ contract PrimeOption is ERC20, ReentrancyGuard {
 
         require(inTokenS > 0 && inTokenP > 0, "ERR_ZERO");
         require(
-            inTokenP >= outTokenU && 
+            inTokenP >= outTokenU &&
             balanceU >= outTokenU,
             "ERR_BAL_UNDERLYING"
         );
@@ -231,7 +229,10 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         _burn(address(this), inTokenP);
 
         // Transfer the swapped tokenU to receiver.
-        IERC20(_tokenU).transfer(receiver, outTokenU);
+        require(
+            IERC20(_tokenU).transfer(receiver, outTokenU),
+            "ERR_TRANSFER_OUT_FAIL"
+        );
 
         // Current balances.
         balanceS = IERC20(_tokenS).balanceOf(address(this));
@@ -265,8 +266,11 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         verifyBalance(balanceS, inTokenR, "ERR_BAL_STRIKE");
 
         // Burn tokenR in the contract. Send tokenS to msg.sender.
-        IPrimeRedeem(_tokenR).burn(address(this), inTokenR);
-        IERC20(_tokenS).transfer(receiver, inTokenR);
+        require(
+            IPrimeRedeem(_tokenR).burn(address(this), inTokenR) &&
+            IERC20(_tokenS).transfer(receiver, inTokenR),
+            "ERR_TRANSFER_OUT_FAIL"
+        );
 
         // Current balances.
         balanceS = IERC20(_tokenS).balanceOf(address(this));
@@ -321,7 +325,6 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         require(inTokenP >= outTokenU && balanceU >= outTokenU, "ERR_BAL_UNDERLYING");
 
         // Burn inTokenR and inTokenP.
-        IPrimeRedeem(_tokenR).burn(address(this), inTokenR);
         _burn(address(this), inTokenP);
 
         // Send outTokenU to user.
@@ -332,7 +335,11 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         // a user could send only tokenR and receive the proportional amount of tokenU,
         // as long as the amount of outTokenU is less than or equal to
         // the balance of tokenU and tokenP.
-        IERC20(_tokenU).transfer(receiver, outTokenU);
+        require(
+            IPrimeRedeem(_tokenR).burn(address(this), inTokenR) &&
+            IERC20(_tokenU).transfer(receiver, outTokenU),
+            "ERR_TRANSFER_OUT_FAIL"
+        );
 
         // Current balances of tokenU and tokenR.
         balanceU = IERC20(_tokenU).balanceOf(address(this));
