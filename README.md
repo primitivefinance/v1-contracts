@@ -123,7 +123,7 @@ _Withdrawn Underlying = Liquidity Tokens Burned _ Total Pool Balance / Total Liq
 
 ## Testing Smart Contracts
 
-See [contracts/README.md](contracts/README.md)
+See [contracts/README.md#testing](contracts/README.md#testing)
 
 # Etherscan Addresses
 
