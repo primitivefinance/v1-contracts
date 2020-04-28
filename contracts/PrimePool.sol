@@ -177,6 +177,9 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         // Check tokenPULP balance.
         require(balanceOf(msg.sender) >= amount && amount > 0, "ERR_BAL_PULP");
         
+        // Store total supply before we burn
+        uint256 totalSupply = totalSupply();
+
         // Burn tokenPULP.
         _burn(msg.sender, amount);
 
@@ -184,8 +187,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         address _tokenU = tokenU;
         address _tokenS = tokenS;
         address _tokenR = tokenR;
-        uint256 totalSupply = totalSupply();
-
+        
         // Current balance.
         uint256 balanceU = IERC20(_tokenU).balanceOf(address(this));
 
@@ -233,6 +235,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
 
     /**
      * @dev Purchase ETH Put -> tokenU is DAI and tokenS is WETH. Pool holds tokenU.
+     * @param amount The quantity of tokenU to 'cover' with an option. Denominated in tokenS.
      */
     function buy(
         uint256 amount,
@@ -262,8 +265,8 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         // Current balance.
         uint256 balanceU = IERC20(_tokenU).balanceOf(address(this));
 
-        // ex. 0.99*10^18 ETH * 100*10^18 DAI / 10^18 = 0.99*10^18 * 100 = 99*10^18 DAI = outTokenU
-        uint256 outTokenU = amount.mul(IPrime(_tokenP).price()).div(IPrime(_tokenP).base()); 
+        // ex. 1-0.1=0.9, 0.9 * 200 / 1 = 180.
+        uint256 outTokenU = amount.mul(IPrime(_tokenP).base()).div(IPrime(_tokenP).price()); 
 
         // Transfer tokenU (assume DAI) to option contract using Pool funds.
         require(balanceU >= outTokenU, "ERR_BAL_UNDERLYING");
