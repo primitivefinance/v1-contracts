@@ -304,10 +304,13 @@ contract('PrimePool.sol', accounts => {
 
                 let balance0UC = await _tokenU.balanceOf(tokenP);
                 let balance0SC = await WETH.methods.balanceOf(tokenP).call();
-                console.log('[TOKEN R BALANCE', fromWei(await _tokenR.balanceOf(_pool.address)));
-                console.log('[Utilized]', fromWei(await _pool.utilized(base, price)));
+                console.log('[TOKEN R BALANCE]', fromWei(await _tokenR.balanceOf(_pool.address)));
+                console.log('[Utilized]', fromWei(await _pool.poolUtilized(base, price)));
                 console.log('[VOLATILITY]', (await _pool.calculateVolatilityProxy(base, price)).toString());
                 let buy = await _pool.buy(inTokenS, tokenP, {from: Alice, value: inTokenS});
+                console.log('[TOKEN R BALANCE]', fromWei(await _tokenR.balanceOf(_pool.address)));
+                console.log('[Utilized]', fromWei(await _pool.poolUtilized(base, price)));
+                console.log('[VOLATILITY]', (await _pool.calculateVolatilityProxy(base, price)).toString());
                 truffleAssert.prettyPrintEmittedEvents(buy);
 
                 let balance1S = await getBalance(Alice);
