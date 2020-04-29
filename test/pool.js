@@ -196,13 +196,13 @@ contract('PrimePool.sol', accounts => {
             );
         });
 
-        it('Should initialize with the correct option market', async () => {
+        /* it('Should initialize with the correct option market', async () => {
             assert.equal(
                 (await _pool.isValidOption(tokenP)),
                 (true),
                 `Incorrect tokenS`
             );
-        });
+        }); */
 
         /* it('Should initialize with the correct option market in array', async () => {
             assert.equal(
@@ -256,6 +256,7 @@ contract('PrimePool.sol', accounts => {
                 console.log('[BASE]', fromWei(await _tokenP.base()));
                 console.log('[PRICE]', fromWei(await _tokenP.price()));
                 let premium = await _pool.calculatePremium(tokenP);
+                
                 console.log('[PREMIUM CALCULATED]', fromWei(premium.premium));
                 console.log('[SQRT CALCULATED]', (await _pool.sqrt(premium.timeRemainder)).toString());
                 console.log('[TIME REMAINING]', (premium.timeRemainder).toString());
@@ -303,8 +304,9 @@ contract('PrimePool.sol', accounts => {
 
                 let balance0UC = await _tokenU.balanceOf(tokenP);
                 let balance0SC = await WETH.methods.balanceOf(tokenP).call();
-                
-                
+                console.log('[TOKEN R BALANCE', fromWei(await _tokenR.balanceOf(_pool.address)));
+                console.log('[Utilized]', fromWei(await _pool.utilized(base, price)));
+                console.log('[VOLATILITY]', (await _pool.calculateVolatilityProxy(base, price)).toString());
                 let buy = await _pool.buy(inTokenS, tokenP, {from: Alice, value: inTokenS});
                 truffleAssert.prettyPrintEmittedEvents(buy);
 

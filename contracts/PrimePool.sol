@@ -62,16 +62,15 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     address payable public weth;
     address[] public _optionMarkets;
 
-    uint256 public cacheR;
+    /* uint256 public cacheR;
     uint256 public cacheU;
-    uint256 public cacheS;
+    uint256 public cacheS; */
 
-    mapping(address => bool) public isValidOption;
+    /* mapping(address => bool) public isValidOption; */
 
     event Deposit(address indexed user, uint256 inTokenU, uint256 outTokenPULP);
     event Withdraw(address indexed user, uint256 outTokenU, uint256 inTokenR);
     event Buy(address indexed user, uint256 inTokenS, uint256 outTokenU, uint256 premium);
-    event Fund(uint256 cacheU, uint256 cacheS, uint256 cacheR);
     event Market(address tokenP);
 
     constructor (
@@ -96,15 +95,8 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         _tokenS = tokenS;
     }
 
-    function _fund(uint256 _cacheU, uint256 _cacheS, uint256 _cacheR) private {
-        cacheU = _cacheU;
-        cacheS = _cacheS;
-        cacheR = _cacheR;
-        emit Fund(cacheU, cacheS, cacheR);
-    }
-
     function addMarket(address tokenP) public onlyOwner returns (address) {
-        isValidOption[tokenP] = true;
+        /* isValidOption[tokenP] = true; */
         _optionMarkets.push(tokenP);
         address _tokenR = IPrime(tokenP).tokenR();
         tokenR = _tokenR;
@@ -347,6 +339,23 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
                                 .div(SECONDS_IN_DAY);
         // Total Premium in ETH.
         premium = (extrinsic.add(intrinsic)).mul(market).div(ONE_ETHER);
+    }
+
+    function calculateVolatilityProxy(uint256 base, uint256 price) public view returns (uint256 volatility) {
+        uint256 utilized = utilized(base, price);
+        uint256 balanceU = IERC20(tokenU).balanceOf(address(this));
+        volatility = utilized
+                        .mul(1000)
+                        .div(balanceU.add(utilized));
+
+    }
+
+    function utilized(uint256 base, uint256 price) public view returns (uint256 utilized) {
+        utilized = IERC20(tokenR).balanceOf(address(this))
+                    .mul(price)
+                    .mul(ONE_ETHER)
+                    .div(base)
+                    .div(ONE_ETHER);
     }
 
     function sqrt(uint256 y) public pure returns (uint256 z) {
