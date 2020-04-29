@@ -86,11 +86,6 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         volatility = 100;
     }
 
-    /* function assets() public view returns (address _tokenU, address _tokenS) {
-        _tokenU = tokenU;
-        _tokenS = tokenS;
-    } */
-
     function addMarket(address tokenP) public onlyOwner returns (address) {
         /* isValidOption[tokenP] = true; */
         _optionMarkets.push(tokenP);
