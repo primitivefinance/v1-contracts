@@ -110,14 +110,14 @@
     "absolutePath": "/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/controller/ControllerRedeem.sol",
     "exportedSymbols": {
       "ControllerRedeem": [
-        3375
+        3659
       ]
     },
-    "id": 3376,
+    "id": 3660,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 3329,
+        "id": 3613,
         "literals": [
           "solidity",
           "^",
@@ -130,10 +130,10 @@
       {
         "absolutePath": "/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/PrimeRedeem.sol",
         "file": "../PrimeRedeem.sol",
-        "id": 3330,
+        "id": 3614,
         "nodeType": "ImportDirective",
-        "scope": 3376,
-        "sourceUnit": 2258,
+        "scope": 3660,
+        "sourceUnit": 2544,
         "src": "108:28:10",
         "symbolAliases": [],
         "unitAlias": ""
@@ -141,10 +141,10 @@
       {
         "absolutePath": "@openzeppelin/contracts/access/Ownable.sol",
         "file": "@openzeppelin/contracts/access/Ownable.sol",
-        "id": 3331,
+        "id": 3615,
         "nodeType": "ImportDirective",
-        "scope": 3376,
-        "sourceUnit": 3637,
+        "scope": 3660,
+        "sourceUnit": 3921,
         "src": "138:52:10",
         "symbolAliases": [],
         "unitAlias": ""
@@ -156,41 +156,41 @@
             "arguments": null,
             "baseName": {
               "contractScope": null,
-              "id": 3332,
+              "id": 3616,
               "name": "Ownable",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 3636,
+              "referencedDeclaration": 3920,
               "src": "223:7:10",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_Ownable_$3636",
+                "typeIdentifier": "t_contract$_Ownable_$3920",
                 "typeString": "contract Ownable"
               }
             },
-            "id": 3333,
+            "id": 3617,
             "nodeType": "InheritanceSpecifier",
             "src": "223:7:10"
           }
         ],
         "contractDependencies": [
-          2257,
-          3533,
-          3636
+          2543,
+          3817,
+          3920
         ],
         "contractKind": "contract",
         "documentation": null,
         "fullyImplemented": true,
-        "id": 3375,
+        "id": 3659,
         "linearizedBaseContracts": [
-          3375,
-          3636,
-          3533
+          3659,
+          3920,
+          3817
         ],
         "name": "ControllerRedeem",
         "nodeType": "ContractDefinition",
         "nodes": [
           {
             "body": {
-              "id": 3342,
+              "id": 3626,
               "nodeType": "Block",
               "src": "279:48:10",
               "statements": [
@@ -200,11 +200,11 @@
                     "arguments": [
                       {
                         "argumentTypes": null,
-                        "id": 3339,
+                        "id": 3623,
                         "name": "controller",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3335,
+                        "referencedDeclaration": 3619,
                         "src": "308:10:10",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
@@ -219,18 +219,18 @@
                           "typeString": "address"
                         }
                       ],
-                      "id": 3338,
+                      "id": 3622,
                       "name": "transferOwnership",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 3635,
+                      "referencedDeclaration": 3919,
                       "src": "290:17:10",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_nonpayable$_t_address_$returns$__$",
                         "typeString": "function (address)"
                       }
                     },
-                    "id": 3340,
+                    "id": 3624,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -245,14 +245,14 @@
                       "typeString": "tuple()"
                     }
                   },
-                  "id": 3341,
+                  "id": 3625,
                   "nodeType": "ExpressionStatement",
                   "src": "290:29:10"
                 }
               ]
             },
             "documentation": null,
-            "id": 3343,
+            "id": 3627,
             "implemented": true,
             "kind": "constructor",
             "modifiers": [],
@@ -260,16 +260,16 @@
             "nodeType": "FunctionDefinition",
             "overrides": null,
             "parameters": {
-              "id": 3336,
+              "id": 3620,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3335,
+                  "id": 3619,
                   "name": "controller",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3343,
+                  "scope": 3627,
                   "src": "252:18:10",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -278,7 +278,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3334,
+                    "id": 3618,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "252:7:10",
@@ -295,12 +295,12 @@
               "src": "251:20:10"
             },
             "returnParameters": {
-              "id": 3337,
+              "id": 3621,
               "nodeType": "ParameterList",
               "parameters": [],
               "src": "279:0:10"
             },
-            "scope": 3375,
+            "scope": 3659,
             "src": "240:87:10",
             "stateMutability": "nonpayable",
             "virtual": false,
@@ -308,38 +308,38 @@
           },
           {
             "body": {
-              "id": 3373,
+              "id": 3657,
               "nodeType": "Block",
               "src": "506:128:10",
               "statements": [
                 {
                   "assignments": [
-                    3359
+                    3643
                   ],
                   "declarations": [
                     {
                       "constant": false,
-                      "id": 3359,
+                      "id": 3643,
                       "name": "primeRedeem",
                       "nodeType": "VariableDeclaration",
                       "overrides": null,
-                      "scope": 3373,
+                      "scope": 3657,
                       "src": "517:23:10",
                       "stateVariable": false,
                       "storageLocation": "default",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_contract$_PrimeRedeem_$2257",
+                        "typeIdentifier": "t_contract$_PrimeRedeem_$2543",
                         "typeString": "contract PrimeRedeem"
                       },
                       "typeName": {
                         "contractScope": null,
-                        "id": 3358,
+                        "id": 3642,
                         "name": "PrimeRedeem",
                         "nodeType": "UserDefinedTypeName",
-                        "referencedDeclaration": 2257,
+                        "referencedDeclaration": 2543,
                         "src": "517:11:10",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_contract$_PrimeRedeem_$2257",
+                          "typeIdentifier": "t_contract$_PrimeRedeem_$2543",
                           "typeString": "contract PrimeRedeem"
                         }
                       },
@@ -347,17 +347,17 @@
                       "visibility": "internal"
                     }
                   ],
-                  "id": 3367,
+                  "id": 3651,
                   "initialValue": {
                     "argumentTypes": null,
                     "arguments": [
                       {
                         "argumentTypes": null,
-                        "id": 3362,
+                        "id": 3646,
                         "name": "name",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3345,
+                        "referencedDeclaration": 3629,
                         "src": "559:4:10",
                         "typeDescriptions": {
                           "typeIdentifier": "t_string_memory_ptr",
@@ -366,11 +366,11 @@
                       },
                       {
                         "argumentTypes": null,
-                        "id": 3363,
+                        "id": 3647,
                         "name": "symbol",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3347,
+                        "referencedDeclaration": 3631,
                         "src": "565:6:10",
                         "typeDescriptions": {
                           "typeIdentifier": "t_string_memory_ptr",
@@ -379,11 +379,11 @@
                       },
                       {
                         "argumentTypes": null,
-                        "id": 3364,
+                        "id": 3648,
                         "name": "tokenP",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3349,
+                        "referencedDeclaration": 3633,
                         "src": "573:6:10",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
@@ -392,11 +392,11 @@
                       },
                       {
                         "argumentTypes": null,
-                        "id": 3365,
+                        "id": 3649,
                         "name": "tokenS",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3351,
+                        "referencedDeclaration": 3635,
                         "src": "581:6:10",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
@@ -423,7 +423,7 @@
                           "typeString": "address"
                         }
                       ],
-                      "id": 3361,
+                      "id": 3645,
                       "isConstant": false,
                       "isLValue": false,
                       "isPure": false,
@@ -431,23 +431,23 @@
                       "nodeType": "NewExpression",
                       "src": "543:15:10",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_function_creation_nonpayable$_t_string_memory_ptr_$_t_string_memory_ptr_$_t_address_$_t_address_$returns$_t_contract$_PrimeRedeem_$2257_$",
+                        "typeIdentifier": "t_function_creation_nonpayable$_t_string_memory_ptr_$_t_string_memory_ptr_$_t_address_$_t_address_$returns$_t_contract$_PrimeRedeem_$2543_$",
                         "typeString": "function (string memory,string memory,address,address) returns (contract PrimeRedeem)"
                       },
                       "typeName": {
                         "contractScope": null,
-                        "id": 3360,
+                        "id": 3644,
                         "name": "PrimeRedeem",
                         "nodeType": "UserDefinedTypeName",
-                        "referencedDeclaration": 2257,
+                        "referencedDeclaration": 2543,
                         "src": "547:11:10",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_contract$_PrimeRedeem_$2257",
+                          "typeIdentifier": "t_contract$_PrimeRedeem_$2543",
                           "typeString": "contract PrimeRedeem"
                         }
                       }
                     },
-                    "id": 3366,
+                    "id": 3650,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -458,7 +458,7 @@
                     "src": "543:45:10",
                     "tryCall": false,
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_PrimeRedeem_$2257",
+                      "typeIdentifier": "t_contract$_PrimeRedeem_$2543",
                       "typeString": "contract PrimeRedeem"
                     }
                   },
@@ -471,14 +471,14 @@
                     "arguments": [
                       {
                         "argumentTypes": null,
-                        "id": 3370,
+                        "id": 3654,
                         "name": "primeRedeem",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3359,
+                        "referencedDeclaration": 3643,
                         "src": "614:11:10",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_contract$_PrimeRedeem_$2257",
+                          "typeIdentifier": "t_contract$_PrimeRedeem_$2543",
                           "typeString": "contract PrimeRedeem"
                         }
                       }
@@ -486,11 +486,11 @@
                     "expression": {
                       "argumentTypes": [
                         {
-                          "typeIdentifier": "t_contract$_PrimeRedeem_$2257",
+                          "typeIdentifier": "t_contract$_PrimeRedeem_$2543",
                           "typeString": "contract PrimeRedeem"
                         }
                       ],
-                      "id": 3369,
+                      "id": 3653,
                       "isConstant": false,
                       "isLValue": false,
                       "isPure": true,
@@ -502,7 +502,7 @@
                         "typeString": "type(address)"
                       },
                       "typeName": {
-                        "id": 3368,
+                        "id": 3652,
                         "name": "address",
                         "nodeType": "ElementaryTypeName",
                         "src": "606:7:10",
@@ -512,7 +512,7 @@
                         }
                       }
                     },
-                    "id": 3371,
+                    "id": 3655,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -527,8 +527,8 @@
                       "typeString": "address"
                     }
                   },
-                  "functionReturnParameters": 3357,
-                  "id": 3372,
+                  "functionReturnParameters": 3641,
+                  "id": 3656,
                   "nodeType": "Return",
                   "src": "599:27:10"
                 }
@@ -536,20 +536,20 @@
             },
             "documentation": null,
             "functionSelector": "796bc0e6",
-            "id": 3374,
+            "id": 3658,
             "implemented": true,
             "kind": "function",
             "modifiers": [
               {
                 "arguments": null,
-                "id": 3354,
+                "id": 3638,
                 "modifierName": {
                   "argumentTypes": null,
-                  "id": 3353,
+                  "id": 3637,
                   "name": "onlyOwner",
                   "nodeType": "Identifier",
                   "overloadedDeclarations": [],
-                  "referencedDeclaration": 3587,
+                  "referencedDeclaration": 3871,
                   "src": "478:9:10",
                   "typeDescriptions": {
                     "typeIdentifier": "t_modifier$__$",
@@ -564,16 +564,16 @@
             "nodeType": "FunctionDefinition",
             "overrides": null,
             "parameters": {
-              "id": 3352,
+              "id": 3636,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3345,
+                  "id": 3629,
                   "name": "name",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3374,
+                  "scope": 3658,
                   "src": "364:18:10",
                   "stateVariable": false,
                   "storageLocation": "memory",
@@ -582,7 +582,7 @@
                     "typeString": "string"
                   },
                   "typeName": {
-                    "id": 3344,
+                    "id": 3628,
                     "name": "string",
                     "nodeType": "ElementaryTypeName",
                     "src": "364:6:10",
@@ -596,11 +596,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 3347,
+                  "id": 3631,
                   "name": "symbol",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3374,
+                  "scope": 3658,
                   "src": "393:20:10",
                   "stateVariable": false,
                   "storageLocation": "memory",
@@ -609,7 +609,7 @@
                     "typeString": "string"
                   },
                   "typeName": {
-                    "id": 3346,
+                    "id": 3630,
                     "name": "string",
                     "nodeType": "ElementaryTypeName",
                     "src": "393:6:10",
@@ -623,11 +623,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 3349,
+                  "id": 3633,
                   "name": "tokenP",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3374,
+                  "scope": 3658,
                   "src": "424:14:10",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -636,7 +636,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3348,
+                    "id": 3632,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "424:7:10",
@@ -651,11 +651,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 3351,
+                  "id": 3635,
                   "name": "tokenS",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3374,
+                  "scope": 3658,
                   "src": "449:14:10",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -664,7 +664,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3350,
+                    "id": 3634,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "449:7:10",
@@ -681,16 +681,16 @@
               "src": "353:117:10"
             },
             "returnParameters": {
-              "id": 3357,
+              "id": 3641,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3356,
+                  "id": 3640,
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3374,
+                  "scope": 3658,
                   "src": "497:7:10",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -699,7 +699,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3355,
+                    "id": 3639,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "497:7:10",
@@ -715,14 +715,14 @@
               ],
               "src": "496:9:10"
             },
-            "scope": 3375,
+            "scope": 3659,
             "src": "335:299:10",
             "stateMutability": "nonpayable",
             "virtual": false,
             "visibility": "public"
           }
         ],
-        "scope": 3376,
+        "scope": 3660,
         "src": "194:443:10"
       }
     ],
@@ -732,14 +732,14 @@
     "absolutePath": "/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/controller/ControllerRedeem.sol",
     "exportedSymbols": {
       "ControllerRedeem": [
-        3375
+        3659
       ]
     },
-    "id": 3376,
+    "id": 3660,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 3329,
+        "id": 3613,
         "literals": [
           "solidity",
           "^",
@@ -752,10 +752,10 @@
       {
         "absolutePath": "/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/PrimeRedeem.sol",
         "file": "../PrimeRedeem.sol",
-        "id": 3330,
+        "id": 3614,
         "nodeType": "ImportDirective",
-        "scope": 3376,
-        "sourceUnit": 2258,
+        "scope": 3660,
+        "sourceUnit": 2544,
         "src": "108:28:10",
         "symbolAliases": [],
         "unitAlias": ""
@@ -763,10 +763,10 @@
       {
         "absolutePath": "@openzeppelin/contracts/access/Ownable.sol",
         "file": "@openzeppelin/contracts/access/Ownable.sol",
-        "id": 3331,
+        "id": 3615,
         "nodeType": "ImportDirective",
-        "scope": 3376,
-        "sourceUnit": 3637,
+        "scope": 3660,
+        "sourceUnit": 3921,
         "src": "138:52:10",
         "symbolAliases": [],
         "unitAlias": ""
@@ -778,41 +778,41 @@
             "arguments": null,
             "baseName": {
               "contractScope": null,
-              "id": 3332,
+              "id": 3616,
               "name": "Ownable",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 3636,
+              "referencedDeclaration": 3920,
               "src": "223:7:10",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_Ownable_$3636",
+                "typeIdentifier": "t_contract$_Ownable_$3920",
                 "typeString": "contract Ownable"
               }
             },
-            "id": 3333,
+            "id": 3617,
             "nodeType": "InheritanceSpecifier",
             "src": "223:7:10"
           }
         ],
         "contractDependencies": [
-          2257,
-          3533,
-          3636
+          2543,
+          3817,
+          3920
         ],
         "contractKind": "contract",
         "documentation": null,
         "fullyImplemented": true,
-        "id": 3375,
+        "id": 3659,
         "linearizedBaseContracts": [
-          3375,
-          3636,
-          3533
+          3659,
+          3920,
+          3817
         ],
         "name": "ControllerRedeem",
         "nodeType": "ContractDefinition",
         "nodes": [
           {
             "body": {
-              "id": 3342,
+              "id": 3626,
               "nodeType": "Block",
               "src": "279:48:10",
               "statements": [
@@ -822,11 +822,11 @@
                     "arguments": [
                       {
                         "argumentTypes": null,
-                        "id": 3339,
+                        "id": 3623,
                         "name": "controller",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3335,
+                        "referencedDeclaration": 3619,
                         "src": "308:10:10",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
@@ -841,18 +841,18 @@
                           "typeString": "address"
                         }
                       ],
-                      "id": 3338,
+                      "id": 3622,
                       "name": "transferOwnership",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 3635,
+                      "referencedDeclaration": 3919,
                       "src": "290:17:10",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_nonpayable$_t_address_$returns$__$",
                         "typeString": "function (address)"
                       }
                     },
-                    "id": 3340,
+                    "id": 3624,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -867,14 +867,14 @@
                       "typeString": "tuple()"
                     }
                   },
-                  "id": 3341,
+                  "id": 3625,
                   "nodeType": "ExpressionStatement",
                   "src": "290:29:10"
                 }
               ]
             },
             "documentation": null,
-            "id": 3343,
+            "id": 3627,
             "implemented": true,
             "kind": "constructor",
             "modifiers": [],
@@ -882,16 +882,16 @@
             "nodeType": "FunctionDefinition",
             "overrides": null,
             "parameters": {
-              "id": 3336,
+              "id": 3620,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3335,
+                  "id": 3619,
                   "name": "controller",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3343,
+                  "scope": 3627,
                   "src": "252:18:10",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -900,7 +900,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3334,
+                    "id": 3618,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "252:7:10",
@@ -917,12 +917,12 @@
               "src": "251:20:10"
             },
             "returnParameters": {
-              "id": 3337,
+              "id": 3621,
               "nodeType": "ParameterList",
               "parameters": [],
               "src": "279:0:10"
             },
-            "scope": 3375,
+            "scope": 3659,
             "src": "240:87:10",
             "stateMutability": "nonpayable",
             "virtual": false,
@@ -930,38 +930,38 @@
           },
           {
             "body": {
-              "id": 3373,
+              "id": 3657,
               "nodeType": "Block",
               "src": "506:128:10",
               "statements": [
                 {
                   "assignments": [
-                    3359
+                    3643
                   ],
                   "declarations": [
                     {
                       "constant": false,
-                      "id": 3359,
+                      "id": 3643,
                       "name": "primeRedeem",
                       "nodeType": "VariableDeclaration",
                       "overrides": null,
-                      "scope": 3373,
+                      "scope": 3657,
                       "src": "517:23:10",
                       "stateVariable": false,
                       "storageLocation": "default",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_contract$_PrimeRedeem_$2257",
+                        "typeIdentifier": "t_contract$_PrimeRedeem_$2543",
                         "typeString": "contract PrimeRedeem"
                       },
                       "typeName": {
                         "contractScope": null,
-                        "id": 3358,
+                        "id": 3642,
                         "name": "PrimeRedeem",
                         "nodeType": "UserDefinedTypeName",
-                        "referencedDeclaration": 2257,
+                        "referencedDeclaration": 2543,
                         "src": "517:11:10",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_contract$_PrimeRedeem_$2257",
+                          "typeIdentifier": "t_contract$_PrimeRedeem_$2543",
                           "typeString": "contract PrimeRedeem"
                         }
                       },
@@ -969,17 +969,17 @@
                       "visibility": "internal"
                     }
                   ],
-                  "id": 3367,
+                  "id": 3651,
                   "initialValue": {
                     "argumentTypes": null,
                     "arguments": [
                       {
                         "argumentTypes": null,
-                        "id": 3362,
+                        "id": 3646,
                         "name": "name",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3345,
+                        "referencedDeclaration": 3629,
                         "src": "559:4:10",
                         "typeDescriptions": {
                           "typeIdentifier": "t_string_memory_ptr",
@@ -988,11 +988,11 @@
                       },
                       {
                         "argumentTypes": null,
-                        "id": 3363,
+                        "id": 3647,
                         "name": "symbol",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3347,
+                        "referencedDeclaration": 3631,
                         "src": "565:6:10",
                         "typeDescriptions": {
                           "typeIdentifier": "t_string_memory_ptr",
@@ -1001,11 +1001,11 @@
                       },
                       {
                         "argumentTypes": null,
-                        "id": 3364,
+                        "id": 3648,
                         "name": "tokenP",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3349,
+                        "referencedDeclaration": 3633,
                         "src": "573:6:10",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
@@ -1014,11 +1014,11 @@
                       },
                       {
                         "argumentTypes": null,
-                        "id": 3365,
+                        "id": 3649,
                         "name": "tokenS",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3351,
+                        "referencedDeclaration": 3635,
                         "src": "581:6:10",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
@@ -1045,7 +1045,7 @@
                           "typeString": "address"
                         }
                       ],
-                      "id": 3361,
+                      "id": 3645,
                       "isConstant": false,
                       "isLValue": false,
                       "isPure": false,
@@ -1053,23 +1053,23 @@
                       "nodeType": "NewExpression",
                       "src": "543:15:10",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_function_creation_nonpayable$_t_string_memory_ptr_$_t_string_memory_ptr_$_t_address_$_t_address_$returns$_t_contract$_PrimeRedeem_$2257_$",
+                        "typeIdentifier": "t_function_creation_nonpayable$_t_string_memory_ptr_$_t_string_memory_ptr_$_t_address_$_t_address_$returns$_t_contract$_PrimeRedeem_$2543_$",
                         "typeString": "function (string memory,string memory,address,address) returns (contract PrimeRedeem)"
                       },
                       "typeName": {
                         "contractScope": null,
-                        "id": 3360,
+                        "id": 3644,
                         "name": "PrimeRedeem",
                         "nodeType": "UserDefinedTypeName",
-                        "referencedDeclaration": 2257,
+                        "referencedDeclaration": 2543,
                         "src": "547:11:10",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_contract$_PrimeRedeem_$2257",
+                          "typeIdentifier": "t_contract$_PrimeRedeem_$2543",
                           "typeString": "contract PrimeRedeem"
                         }
                       }
                     },
-                    "id": 3366,
+                    "id": 3650,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -1080,7 +1080,7 @@
                     "src": "543:45:10",
                     "tryCall": false,
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_PrimeRedeem_$2257",
+                      "typeIdentifier": "t_contract$_PrimeRedeem_$2543",
                       "typeString": "contract PrimeRedeem"
                     }
                   },
@@ -1093,14 +1093,14 @@
                     "arguments": [
                       {
                         "argumentTypes": null,
-                        "id": 3370,
+                        "id": 3654,
                         "name": "primeRedeem",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3359,
+                        "referencedDeclaration": 3643,
                         "src": "614:11:10",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_contract$_PrimeRedeem_$2257",
+                          "typeIdentifier": "t_contract$_PrimeRedeem_$2543",
                           "typeString": "contract PrimeRedeem"
                         }
                       }
@@ -1108,11 +1108,11 @@
                     "expression": {
                       "argumentTypes": [
                         {
-                          "typeIdentifier": "t_contract$_PrimeRedeem_$2257",
+                          "typeIdentifier": "t_contract$_PrimeRedeem_$2543",
                           "typeString": "contract PrimeRedeem"
                         }
                       ],
-                      "id": 3369,
+                      "id": 3653,
                       "isConstant": false,
                       "isLValue": false,
                       "isPure": true,
@@ -1124,7 +1124,7 @@
                         "typeString": "type(address)"
                       },
                       "typeName": {
-                        "id": 3368,
+                        "id": 3652,
                         "name": "address",
                         "nodeType": "ElementaryTypeName",
                         "src": "606:7:10",
@@ -1134,7 +1134,7 @@
                         }
                       }
                     },
-                    "id": 3371,
+                    "id": 3655,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -1149,8 +1149,8 @@
                       "typeString": "address"
                     }
                   },
-                  "functionReturnParameters": 3357,
-                  "id": 3372,
+                  "functionReturnParameters": 3641,
+                  "id": 3656,
                   "nodeType": "Return",
                   "src": "599:27:10"
                 }
@@ -1158,20 +1158,20 @@
             },
             "documentation": null,
             "functionSelector": "796bc0e6",
-            "id": 3374,
+            "id": 3658,
             "implemented": true,
             "kind": "function",
             "modifiers": [
               {
                 "arguments": null,
-                "id": 3354,
+                "id": 3638,
                 "modifierName": {
                   "argumentTypes": null,
-                  "id": 3353,
+                  "id": 3637,
                   "name": "onlyOwner",
                   "nodeType": "Identifier",
                   "overloadedDeclarations": [],
-                  "referencedDeclaration": 3587,
+                  "referencedDeclaration": 3871,
                   "src": "478:9:10",
                   "typeDescriptions": {
                     "typeIdentifier": "t_modifier$__$",
@@ -1186,16 +1186,16 @@
             "nodeType": "FunctionDefinition",
             "overrides": null,
             "parameters": {
-              "id": 3352,
+              "id": 3636,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3345,
+                  "id": 3629,
                   "name": "name",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3374,
+                  "scope": 3658,
                   "src": "364:18:10",
                   "stateVariable": false,
                   "storageLocation": "memory",
@@ -1204,7 +1204,7 @@
                     "typeString": "string"
                   },
                   "typeName": {
-                    "id": 3344,
+                    "id": 3628,
                     "name": "string",
                     "nodeType": "ElementaryTypeName",
                     "src": "364:6:10",
@@ -1218,11 +1218,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 3347,
+                  "id": 3631,
                   "name": "symbol",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3374,
+                  "scope": 3658,
                   "src": "393:20:10",
                   "stateVariable": false,
                   "storageLocation": "memory",
@@ -1231,7 +1231,7 @@
                     "typeString": "string"
                   },
                   "typeName": {
-                    "id": 3346,
+                    "id": 3630,
                     "name": "string",
                     "nodeType": "ElementaryTypeName",
                     "src": "393:6:10",
@@ -1245,11 +1245,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 3349,
+                  "id": 3633,
                   "name": "tokenP",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3374,
+                  "scope": 3658,
                   "src": "424:14:10",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -1258,7 +1258,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3348,
+                    "id": 3632,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "424:7:10",
@@ -1273,11 +1273,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 3351,
+                  "id": 3635,
                   "name": "tokenS",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3374,
+                  "scope": 3658,
                   "src": "449:14:10",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -1286,7 +1286,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3350,
+                    "id": 3634,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "449:7:10",
@@ -1303,16 +1303,16 @@
               "src": "353:117:10"
             },
             "returnParameters": {
-              "id": 3357,
+              "id": 3641,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3356,
+                  "id": 3640,
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3374,
+                  "scope": 3658,
                   "src": "497:7:10",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -1321,7 +1321,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3355,
+                    "id": 3639,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "497:7:10",
@@ -1337,14 +1337,14 @@
               ],
               "src": "496:9:10"
             },
-            "scope": 3375,
+            "scope": 3659,
             "src": "335:299:10",
             "stateMutability": "nonpayable",
             "virtual": false,
             "visibility": "public"
           }
         ],
-        "scope": 3376,
+        "scope": 3660,
         "src": "194:443:10"
       }
     ],
@@ -1383,7 +1383,7 @@
     }
   },
   "schemaVersion": "3.0.23",
-  "updatedAt": "2020-04-28T18:00:30.260Z",
+  "updatedAt": "2020-04-29T01:19:47.889Z",
   "devdoc": {
     "methods": {
       "owner()": {

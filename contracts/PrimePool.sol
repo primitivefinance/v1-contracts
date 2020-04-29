@@ -24,20 +24,38 @@ interface IWETH {
     function transferFrom(address src, address dst, uint wad) external returns (bool);
 }
 
-interface AggregatorInterface {
-  function currentAnswer() external view returns (int256);
+interface ICDai {
+
+    /*** User Interface ***/
+
+    function mint(uint mintAmount) external returns (uint);
+    function redeem(uint redeemTokens) external returns (uint);
+    function redeemUnderlying(uint redeemAmount) external returns (uint);
+    function borrow(uint borrowAmount) external returns (uint);
+    function repayBorrow(uint repayAmount) external returns (uint);
+    function repayBorrowBehalf(address borrower, uint repayAmount) external returns (uint);
+    function balanceOf(address owner) external view returns (uint);
+    function balanceOfUnderlying(address owner) external returns (uint);
+    function transfer(address dst, uint amount) external returns (bool);
+    function transferFrom(address src, address dst, uint amount) external returns (bool);
+    function approve(address spender, uint amount) external returns (bool);
+    function allowance(address owner, address spender) external view returns (uint);
 }
 
+interface PriceOracleProxy {
+    function getUnderlyingPrice(ICDai cToken) external view returns (uint);
+}
 
 contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     using SafeMath for uint256;
 
-    uint256 public constant THOUSAND_BPS = 10;
-    uint256 public constant FIVE_HUNDRED_BPS = 20;
-    uint256 public constant ONE_HUNDRED_BPS = 100;
+    address public COMPOUND_DAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
+    uint256 public constant VOLATILITY = 870; // 87% * 1000
+    uint256 public constant SECONDS_IN_DAY = 86400;
+    uint256 public constant MILLISECONDS_TO_SECONDS = 1000;
+    uint256 public constant ONE_ETHER = 1 ether;
 
-    AggregatorInterface public oracle;
-
+    address public oracle;
     address public tokenU;
     address public tokenS;
     address public tokenR;
@@ -67,8 +85,8 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         public
         ERC20(name, symbol)
     {
-        oracle = AggregatorInterface(_oracle);
         weth = _weth;
+        oracle = _oracle;
         tokenU = _tokenU;
         tokenS = _tokenS;
     }
@@ -143,9 +161,10 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
             outTokenPULP = amount.mul(totalSupply).div(_cacheU);
         }
 
+        uint256 balanceU = IERC20(_tokenU).balanceOf(address(this));
 
         _mint(msg.sender, outTokenPULP);
-        _fund(amount, cacheS, cacheR);
+        _fund(balanceU, cacheS, cacheR);
         emit Deposit(msg.sender, amount, outTokenPULP);
 
         // Assume we hold the _tokenU asset until it is utilized in minting a Prime
@@ -223,7 +242,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         // Send outTokenU to msg.sender.
         if(_tokenU == weth) {
             IWETH(weth).withdraw(outTokenU);
-            (bool success, ) = msg.sender.call.value(outTokenU)("");
+            (success, ) = msg.sender.call.value(outTokenU)("");
             require(success, "Send ether fail");
             return success;
         } else {
@@ -237,6 +256,9 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
 
     /**
      * @dev Purchase ETH Put -> tokenU is DAI and tokenS is WETH. Pool holds tokenU.
+     * @notice an eth put is 200 DAI / 1 ETH. Swap 1 ETH (tokenS) for 200 Dai (tokenU).
+     * As a user, you want to cover ETH, so you pay in ETH. Every 1 Q of ETH covers 200 DAI.
+     * A user specifies the amount of ETH they want covered, i.e. the amount of ETH they can sell.
      * @param amount The quantity of tokenU to 'cover' with an option. Denominated in tokenS.
      */
     function buy(
@@ -254,7 +276,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         address _tokenS = tokenS; // Assume ETH
 
         // Premium is 1% - FIX
-        uint256 premium = amount.div(ONE_HUNDRED_BPS);
+        uint256 premium = amount.mul(calculatePremium(tokenP));
 
         // Premium is paid in tokenS. If tokenS is WETH, its paid with ETH.
         if(_tokenS == weth) {
@@ -280,9 +302,6 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         // Send Prime to msg.sender.
         (bool transferP) = IPrime(_tokenP).transfer(msg.sender, inTokenU);
 
-        // Assert transfers were successful
-        require(transferU && transferP, "ERR_TRANSFER_FAIL");
-
         // Current balances.
         balanceU = IERC20(_tokenU).balanceOf(address(this));
         uint256 balanceS = IERC20(_tokenS).balanceOf(address(this));
@@ -291,11 +310,58 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         // Update cached balances.
         _fund(balanceU, balanceS, balanceR);
         emit Buy(msg.sender, amount, outTokenU, premium);
-        return true;
+        return transferP && transferU;
     }
 
-    function calculatePremium(uint256 amount) public returns (uint256 premium) {
-        uint256 price = uint(oracle.currentAnswer()); // FIX ONLY WORKS ON MAINNET Assume price of ETHER
+    /**
+     * @dev Calculates the intrinsic + extrinsic value of the option.
+     * @notice Strike / Market * (Volatility * 1000) * sqrt(T in seconds remaining) / Seconds in a Day
+     */
+    function calculatePremium(address tokenP) public view returns (uint256 premium) {
+        // Assume the oracle gets the Price of ETH using compound's oracle for Dai per ETH.
+        // Price = ETH per DAI.
+        uint256 market = PriceOracleProxy(oracle).getUnderlyingPrice(ICDai(COMPOUND_DAI)); // FIX ONLY WORKS ON MAINNET Assume price of ETHER
+
+        // Quantity of DAI.
+        uint256 base = IPrime(tokenP).base();
+        // Quantity of Ether.
+        uint256 price = IPrime(tokenP).price();
+        // Expiration Date.
+        uint256 expiry = IPrime(tokenP).expiry();
+        // Strike price of DAI per ETH. ETH / DAI = price of dai per eth, then scaled to 10^18 units.
+        uint256 strike = price.mul(ONE_ETHER).div(base);
+        // Difference = Base * market price / strike price = new Base.
+        uint256 difference = base.mul(market).div(strike);
+        // Intrinsic value in DAI.
+        uint256 intrinsic = difference >= base ? difference.sub(base) : 0;
+        // Time left in seconds
+        uint256 timeRemainder = (expiry.sub(block.timestamp)).mul(MILLISECONDS_TO_SECONDS);
+        // Strike / market scaled to 1e18
+        uint256 moneyness = strike.mul(ONE_ETHER).div(market);
+        // Extrinsic value in DAI.
+        uint256 extrinsic = moneyness
+                            .mul(ONE_ETHER)
+                            .mul(VOLATILITY)
+                            .mul(sqrt(timeRemainder))
+                                .div(ONE_ETHER)
+                                .div(SECONDS_IN_DAY);
+        // Total Premium in DAI
+        premium = extrinsic.add(intrinsic);
+        // Total Premium in ETH.
+        premium = premium.mul(market).div(ONE_ETHER);
+    }
+
+    function sqrt(uint256 y) internal pure returns (uint256 z) {
+        if (y > 3) {
+            uint256 x = (y + 1) / 2;
+            z = y;
+            while (x < z) {
+                z = x;
+                x = (y / x + x) / 2;
+            }
+        } else if (y != 0) {
+            z = 1;
+        }
     }
 }
 

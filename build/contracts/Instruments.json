@@ -12,14 +12,14 @@
     "absolutePath": "/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/controller/Instruments.sol",
     "exportedSymbols": {
       "Instruments": [
-        3389
+        3673
       ]
     },
-    "id": 3390,
+    "id": 3674,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 3377,
+        "id": 3661,
         "literals": [
           "solidity",
           "^",
@@ -36,24 +36,24 @@
         "contractKind": "library",
         "documentation": "@title Primitive's Instruments\n@author Primitive",
         "fullyImplemented": true,
-        "id": 3389,
+        "id": 3673,
         "linearizedBaseContracts": [
-          3389
+          3673
         ],
         "name": "Instruments",
         "nodeType": "ContractDefinition",
         "nodes": [
           {
             "canonicalName": "Instruments.PrimeOption",
-            "id": 3388,
+            "id": 3672,
             "members": [
               {
                 "constant": false,
-                "id": 3379,
+                "id": 3663,
                 "name": "tokenU",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 3388,
+                "scope": 3672,
                 "src": "151:14:11",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -62,7 +62,7 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 3378,
+                  "id": 3662,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
                   "src": "151:7:11",
@@ -77,11 +77,11 @@
               },
               {
                 "constant": false,
-                "id": 3381,
+                "id": 3665,
                 "name": "tokenS",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 3388,
+                "scope": 3672,
                 "src": "176:14:11",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -90,7 +90,7 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 3380,
+                  "id": 3664,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
                   "src": "176:7:11",
@@ -105,11 +105,11 @@
               },
               {
                 "constant": false,
-                "id": 3383,
+                "id": 3667,
                 "name": "base",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 3388,
+                "scope": 3672,
                 "src": "201:12:11",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -118,7 +118,7 @@
                   "typeString": "uint256"
                 },
                 "typeName": {
-                  "id": 3382,
+                  "id": 3666,
                   "name": "uint256",
                   "nodeType": "ElementaryTypeName",
                   "src": "201:7:11",
@@ -132,11 +132,11 @@
               },
               {
                 "constant": false,
-                "id": 3385,
+                "id": 3669,
                 "name": "price",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 3388,
+                "scope": 3672,
                 "src": "224:13:11",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -145,7 +145,7 @@
                   "typeString": "uint256"
                 },
                 "typeName": {
-                  "id": 3384,
+                  "id": 3668,
                   "name": "uint256",
                   "nodeType": "ElementaryTypeName",
                   "src": "224:7:11",
@@ -159,11 +159,11 @@
               },
               {
                 "constant": false,
-                "id": 3387,
+                "id": 3671,
                 "name": "expiry",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 3388,
+                "scope": 3672,
                 "src": "248:14:11",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -172,7 +172,7 @@
                   "typeString": "uint256"
                 },
                 "typeName": {
-                  "id": 3386,
+                  "id": 3670,
                   "name": "uint256",
                   "nodeType": "ElementaryTypeName",
                   "src": "248:7:11",
@@ -187,12 +187,12 @@
             ],
             "name": "PrimeOption",
             "nodeType": "StructDefinition",
-            "scope": 3389,
+            "scope": 3673,
             "src": "121:149:11",
             "visibility": "public"
           }
         ],
-        "scope": 3390,
+        "scope": 3674,
         "src": "94:179:11"
       }
     ],
@@ -202,14 +202,14 @@
     "absolutePath": "/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/controller/Instruments.sol",
     "exportedSymbols": {
       "Instruments": [
-        3389
+        3673
       ]
     },
-    "id": 3390,
+    "id": 3674,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 3377,
+        "id": 3661,
         "literals": [
           "solidity",
           "^",
@@ -226,24 +226,24 @@
         "contractKind": "library",
         "documentation": "@title Primitive's Instruments\n@author Primitive",
         "fullyImplemented": true,
-        "id": 3389,
+        "id": 3673,
         "linearizedBaseContracts": [
-          3389
+          3673
         ],
         "name": "Instruments",
         "nodeType": "ContractDefinition",
         "nodes": [
           {
             "canonicalName": "Instruments.PrimeOption",
-            "id": 3388,
+            "id": 3672,
             "members": [
               {
                 "constant": false,
-                "id": 3379,
+                "id": 3663,
                 "name": "tokenU",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 3388,
+                "scope": 3672,
                 "src": "151:14:11",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -252,7 +252,7 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 3378,
+                  "id": 3662,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
                   "src": "151:7:11",
@@ -267,11 +267,11 @@
               },
               {
                 "constant": false,
-                "id": 3381,
+                "id": 3665,
                 "name": "tokenS",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 3388,
+                "scope": 3672,
                 "src": "176:14:11",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -280,7 +280,7 @@
                   "typeString": "address"
                 },
                 "typeName": {
-                  "id": 3380,
+                  "id": 3664,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
                   "src": "176:7:11",
@@ -295,11 +295,11 @@
               },
               {
                 "constant": false,
-                "id": 3383,
+                "id": 3667,
                 "name": "base",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 3388,
+                "scope": 3672,
                 "src": "201:12:11",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -308,7 +308,7 @@
                   "typeString": "uint256"
                 },
                 "typeName": {
-                  "id": 3382,
+                  "id": 3666,
                   "name": "uint256",
                   "nodeType": "ElementaryTypeName",
                   "src": "201:7:11",
@@ -322,11 +322,11 @@
               },
               {
                 "constant": false,
-                "id": 3385,
+                "id": 3669,
                 "name": "price",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 3388,
+                "scope": 3672,
                 "src": "224:13:11",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -335,7 +335,7 @@
                   "typeString": "uint256"
                 },
                 "typeName": {
-                  "id": 3384,
+                  "id": 3668,
                   "name": "uint256",
                   "nodeType": "ElementaryTypeName",
                   "src": "224:7:11",
@@ -349,11 +349,11 @@
               },
               {
                 "constant": false,
-                "id": 3387,
+                "id": 3671,
                 "name": "expiry",
                 "nodeType": "VariableDeclaration",
                 "overrides": null,
-                "scope": 3388,
+                "scope": 3672,
                 "src": "248:14:11",
                 "stateVariable": false,
                 "storageLocation": "default",
@@ -362,7 +362,7 @@
                   "typeString": "uint256"
                 },
                 "typeName": {
-                  "id": 3386,
+                  "id": 3670,
                   "name": "uint256",
                   "nodeType": "ElementaryTypeName",
                   "src": "248:7:11",
@@ -377,12 +377,12 @@
             ],
             "name": "PrimeOption",
             "nodeType": "StructDefinition",
-            "scope": 3389,
+            "scope": 3673,
             "src": "121:149:11",
             "visibility": "public"
           }
         ],
-        "scope": 3390,
+        "scope": 3674,
         "src": "94:179:11"
       }
     ],
@@ -394,7 +394,7 @@
   },
   "networks": {},
   "schemaVersion": "3.0.23",
-  "updatedAt": "2020-04-28T18:00:30.262Z",
+  "updatedAt": "2020-04-29T01:19:47.890Z",
   "devdoc": {
     "author": "Primitive",
     "methods": {},

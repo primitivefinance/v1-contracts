@@ -146,12 +146,12 @@
       "type": "function"
     }
   ],
-  "metadata": "{\"compiler\":{\"version\":\"0.6.2+commit.bacdbe57\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"approve\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"burn\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"mint\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"transfer\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"methods\":{}},\"userdoc\":{\"methods\":{}}},\"settings\":{\"compilationTarget\":{\"/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/PrimeInterface.sol\":\"IPrimeRedeem\"},\"evmVersion\":\"constantinople\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/PrimeInterface.sol\":{\"keccak256\":\"0x4e5ba6e29e8762adf08db2ff1cfd1f49f3a898720a116a9e50738329fa7c370d\",\"urls\":[\"bzz-raw://2951958a9d9e16e3fda7eae964363d943a852f372a096e0ae9d80c8b31370ae9\",\"dweb:/ipfs/QmR1h2KZCinLzE81Wo8ehF32scjd5bMsn7UM2Dn39ogvhy\"]},\"@openzeppelin/contracts/token/ERC20/IERC20.sol\":{\"keccak256\":\"0x6cc1cb934a3ac2137a7dcaed018af9e235392236ceecfd3687259702b9c767ad\",\"urls\":[\"bzz-raw://0055fa88138cd1c3c6440370f8580f85857f8fe9dec41c99af9eafbeb8d9c3ce\",\"dweb:/ipfs/QmX1xDh8vwGLLCH8ti45eXjQ7Wcxv1FEGTR3jkFnd5Nv6F\"]}},\"version\":1}",
+  "metadata": "{\"compiler\":{\"version\":\"0.6.2+commit.bacdbe57\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"approve\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"burn\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"mint\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"transfer\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"methods\":{}},\"userdoc\":{\"methods\":{}}},\"settings\":{\"compilationTarget\":{\"/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/PrimeInterface.sol\":\"IPrimeRedeem\"},\"evmVersion\":\"constantinople\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/PrimeInterface.sol\":{\"keccak256\":\"0xb4dd26e5c65d9f49f9579c70b1fafc69c28df359f52af4b577e36b446969508b\",\"urls\":[\"bzz-raw://aabe1ca25387e6cd2f61e2ad7720dd64dbbf24a3781e7b2f1cee3547d3209d15\",\"dweb:/ipfs/Qme2ofuj2oYsXndqcA2DCaKDoCX8E9RrhNvwhJWHyXBoMi\"]},\"@openzeppelin/contracts/token/ERC20/IERC20.sol\":{\"keccak256\":\"0x6cc1cb934a3ac2137a7dcaed018af9e235392236ceecfd3687259702b9c767ad\",\"urls\":[\"bzz-raw://0055fa88138cd1c3c6440370f8580f85857f8fe9dec41c99af9eafbeb8d9c3ce\",\"dweb:/ipfs/QmX1xDh8vwGLLCH8ti45eXjQ7Wcxv1FEGTR3jkFnd5Nv6F\"]}},\"version\":1}",
   "bytecode": "0x",
   "deployedBytecode": "0x",
   "sourceMap": "",
   "deployedSourceMap": "",
-  "source": "pragma solidity ^0.6.2;\r\n\r\n/**\r\n * @title Primitive's Contract Interfaces\r\n * @author Primitive\r\n */\r\n\r\nimport \"@openzeppelin/contracts/token/ERC20/IERC20.sol\";\r\n\r\ninterface IPrime {\r\n    function balanceOf(address user) external view returns (uint);\r\n    function transfer(address to, uint256 amount) external returns (bool);\r\n    function transferFrom(address from, address to, uint256 amount) external returns (bool);\r\n\r\n    function swap(address receiver) external returns (\r\n        uint256 inTokenS,\r\n        uint256 inTokenP,\r\n        uint256 outTokenU\r\n    );\r\n    function mint(address receiver) external returns (\r\n        uint256 inTokenU,\r\n        uint256 outTokenR\r\n    );\r\n    function redeem(address receiver) external returns (\r\n        uint256 inTokenR\r\n    );\r\n    function close(address receiver) external returns (\r\n        uint256 inTokenR,\r\n        uint256 inTokenP,\r\n        uint256 outTokenU\r\n    );\r\n\r\n    function tokenR() external view returns (address);\r\n    function tokenS() external view returns (address);\r\n    function tokenU() external view returns (address);\r\n    function base() external view returns (uint256);\r\n    function price() external view returns (uint256);\r\n    function expiry() external view returns (address);\r\n    function cacheU() external view returns (uint256);\r\n    function cacheS() external view returns (uint256);\r\n    function factory() external view returns (address);\r\n    function marketId() external view returns (uint256);\r\n    function maxDraw() external view returns (uint256 draw);\r\n    function getCaches() external view returns (uint256 _cacheU, uint256 _cacheS);\r\n    function getTokens() external view returns (address _tokenU, address _tokenS, address _tokenR);\r\n}\r\n\r\ninterface IPrimeTrader {\r\n    function safeRedeem(address tokenP, uint256 amount, address receiver) external returns (\r\n        uint256 inTokenR\r\n    );\r\n    function safeSwap(address tokenP, uint256 amount, address receiver) external returns (\r\n        uint256 inTokenS,\r\n        uint256 inTokenP,\r\n        uint256 outTokenU\r\n    );\r\n    function safeMint(address tokenP, uint256 amount, address receiver) external returns (\r\n        uint256 inTokenU,\r\n        uint256 outTokenR\r\n    );\r\n    function safeClose(address tokenP, uint256 amount, address receiver) external returns (\r\n        uint256 inTokenR,\r\n        uint256 inTokenP,\r\n        uint256 outTokenU\r\n    );\r\n}\r\n\r\ninterface IPrimeRedeem {\r\n    function balanceOf(address user) external view returns (uint);\r\n    function mint(address user, uint256 amount) external payable returns (bool);\r\n    function burn(address user, uint256 amount) external payable returns (bool);\r\n    function approve(address spender, uint256 amount) external returns (bool);\r\n    function transfer(address to, uint256 amount) external returns (bool);\r\n    function transferFrom(address from, address to, uint256 amount) external returns (bool);\r\n}\r\n",
+  "source": "pragma solidity ^0.6.2;\r\n\r\n/**\r\n * @title Primitive's Contract Interfaces\r\n * @author Primitive\r\n */\r\n\r\nimport \"@openzeppelin/contracts/token/ERC20/IERC20.sol\";\r\n\r\ninterface IPrime {\r\n    function balanceOf(address user) external view returns (uint);\r\n    function transfer(address to, uint256 amount) external returns (bool);\r\n    function transferFrom(address from, address to, uint256 amount) external returns (bool);\r\n\r\n    function swap(address receiver) external returns (\r\n        uint256 inTokenS,\r\n        uint256 inTokenP,\r\n        uint256 outTokenU\r\n    );\r\n    function mint(address receiver) external returns (\r\n        uint256 inTokenU,\r\n        uint256 outTokenR\r\n    );\r\n    function redeem(address receiver) external returns (\r\n        uint256 inTokenR\r\n    );\r\n    function close(address receiver) external returns (\r\n        uint256 inTokenR,\r\n        uint256 inTokenP,\r\n        uint256 outTokenU\r\n    );\r\n\r\n    function tokenR() external view returns (address);\r\n    function tokenS() external view returns (address);\r\n    function tokenU() external view returns (address);\r\n    function base() external view returns (uint256);\r\n    function price() external view returns (uint256);\r\n    function expiry() external view returns (uint256);\r\n    function cacheU() external view returns (uint256);\r\n    function cacheS() external view returns (uint256);\r\n    function factory() external view returns (address);\r\n    function marketId() external view returns (uint256);\r\n    function maxDraw() external view returns (uint256 draw);\r\n    function getCaches() external view returns (uint256 _cacheU, uint256 _cacheS);\r\n    function getTokens() external view returns (address _tokenU, address _tokenS, address _tokenR);\r\n}\r\n\r\ninterface IPrimeTrader {\r\n    function safeRedeem(address tokenP, uint256 amount, address receiver) external returns (\r\n        uint256 inTokenR\r\n    );\r\n    function safeSwap(address tokenP, uint256 amount, address receiver) external returns (\r\n        uint256 inTokenS,\r\n        uint256 inTokenP,\r\n        uint256 outTokenU\r\n    );\r\n    function safeMint(address tokenP, uint256 amount, address receiver) external returns (\r\n        uint256 inTokenU,\r\n        uint256 outTokenR\r\n    );\r\n    function safeClose(address tokenP, uint256 amount, address receiver) external returns (\r\n        uint256 inTokenR,\r\n        uint256 inTokenP,\r\n        uint256 outTokenU\r\n    );\r\n}\r\n\r\ninterface IPrimeRedeem {\r\n    function balanceOf(address user) external view returns (uint);\r\n    function mint(address user, uint256 amount) external payable returns (bool);\r\n    function burn(address user, uint256 amount) external payable returns (bool);\r\n    function approve(address spender, uint256 amount) external returns (bool);\r\n    function transfer(address to, uint256 amount) external returns (bool);\r\n    function transferFrom(address from, address to, uint256 amount) external returns (bool);\r\n}\r\n",
   "sourcePath": "C:\\Users\\alexa\\OneDrive\\Documents\\Master\\Blockchain\\Projects\\carbon\\contracts\\PrimeInterface.sol",
   "ast": {
     "absolutePath": "/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/PrimeInterface.sol",
@@ -186,7 +186,7 @@
         "id": 39,
         "nodeType": "ImportDirective",
         "scope": 287,
-        "sourceUnit": 4381,
+        "sourceUnit": 4665,
         "src": "104:56:1",
         "symbolAliases": [],
         "unitAlias": ""
@@ -1344,18 +1344,17 @@
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_address",
-                    "typeString": "address"
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
                   },
                   "typeName": {
                     "id": 131,
-                    "name": "address",
+                    "name": "uint256",
                     "nodeType": "ElementaryTypeName",
                     "src": "1249:7:1",
-                    "stateMutability": "nonpayable",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_address",
-                      "typeString": "address"
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
                     }
                   },
                   "value": null,
@@ -3308,7 +3307,7 @@
         "id": 39,
         "nodeType": "ImportDirective",
         "scope": 287,
-        "sourceUnit": 4381,
+        "sourceUnit": 4665,
         "src": "104:56:1",
         "symbolAliases": [],
         "unitAlias": ""
@@ -4466,18 +4465,17 @@
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_address",
-                    "typeString": "address"
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
                   },
                   "typeName": {
                     "id": 131,
-                    "name": "address",
+                    "name": "uint256",
                     "nodeType": "ElementaryTypeName",
                     "src": "1249:7:1",
-                    "stateMutability": "nonpayable",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_address",
-                      "typeString": "address"
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
                     }
                   },
                   "value": null,
@@ -6403,7 +6401,7 @@
   },
   "networks": {},
   "schemaVersion": "3.0.23",
-  "updatedAt": "2020-04-28T18:00:30.165Z",
+  "updatedAt": "2020-04-29T01:19:47.789Z",
   "devdoc": {
     "methods": {}
   },

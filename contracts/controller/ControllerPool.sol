@@ -10,7 +10,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract ControllerPool is Ownable {
 
-    PrimePool public _maker;
     address payable public weth;
     mapping(address => mapping(address => address payable)) public makerFor;
 
