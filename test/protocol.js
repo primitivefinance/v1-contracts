@@ -36,7 +36,7 @@ contract('Primitive', accounts => {
     const TEN_ETHER = toWei('1');
     const FIFTY_ETHER = toWei('50');
     const MILLION_ETHER = toWei('1000000');
-    const MAINNET_ORACLE = '0x79fEbF6B9F76853EDBcBc913e6aAE8232cFB9De9';
+    const MAINNET_ORACLE = '0xdA17fbEdA95222f331Cb1D252401F4b44F49f7A0';
     const MAINNET_COMPOUND_ETH = '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5';
     
 
@@ -973,34 +973,34 @@ contract('Primitive', accounts => {
 
             await WETH.methods.deposit().send({from: Alice, value: TEN_ETHER});
             await WETH.methods.deposit().send({from: Bob, value: TEN_ETHER});
-            
+
             await _tokenU.approve(_tokenP.address, MILLION_ETHER, {from: Alice});
             await WETH.methods.approve(_tokenP.address, MILLION_ETHER).send({from: Alice});
-            
+
             await _tokenU.approve(_tokenP.address, MILLION_ETHER, {from: Bob});
             await WETH.methods.approve(_tokenP.address, MILLION_ETHER).send({from: Bob});
-            
+
             await _tokenU.approve(_pool.address, MILLION_ETHER, {from: Alice});
             await WETH.methods.approve(_pool.address, MILLION_ETHER).send({from: Alice});
-            
+
             await _tokenU.approve(_pool.address, MILLION_ETHER, {from: Bob});
             await WETH.methods.approve(_pool.address, MILLION_ETHER).send({from: Bob});
-            
+
             await _tokenP.approve(_pool.address, MILLION_ETHER, {from: Alice});
             await _tokenP.approve(_pool.address, MILLION_ETHER, {from: Bob});
-            
+
             await _tokenR.approve(_pool.address, MILLION_ETHER, {from: Alice});
             await _tokenR.approve(_pool.address, MILLION_ETHER, {from: Bob});
-            
+
             await _tokenU.approve(trader.address, MILLION_ETHER, {from: Alice});
             await _tokenS.methods.approve(trader.address, MILLION_ETHER).send({from: Alice});
-            
+
             await _tokenU.approve(trader.address, MILLION_ETHER, {from: Bob});
             await _tokenS.methods.approve(trader.address, MILLION_ETHER).send({from: Bob});
-            
+
             await _tokenP.approve(trader.address, MILLION_ETHER, {from: Alice});
             await _tokenP.approve(trader.address, MILLION_ETHER, {from: Bob});
-            
+
             await _tokenR.approve(trader.address, MILLION_ETHER, {from: Alice});
             await _tokenR.approve(trader.address, MILLION_ETHER, {from: Bob});
         });
@@ -1098,7 +1098,6 @@ contract('Primitive', accounts => {
                 expect(deltaUC).to.be.eq(+inTokenU);
 
                 truffleAssert.eventEmitted(deposit, "Deposit");
-                truffleAssert.eventEmitted(deposit, "Fund");
             });
         });
 

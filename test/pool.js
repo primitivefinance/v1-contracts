@@ -29,14 +29,14 @@ contract('PrimePool.sol', accounts => {
     const ERR_BAL_TOKENS = "ERR_BAL_TOKENS";
     const ERR_BAL_OPTIONS = "ERR_BAL_OPTIONS";
     const ERR_OPTION_TYPE = "ERR_OPTION_TYPE";
-    const ROUNDING_ERR = 10**5;
+    const ROUNDING_ERR = 10**8;
     const ONE_ETHER = toWei('0.1');
     const TWO_ETHER = toWei('0.2');
     const FIVE_ETHER = toWei('0.5');
     const TEN_ETHER = toWei('1');
     const FIFTY_ETHER = toWei('50');
     const MILLION_ETHER = toWei('1000000');
-    const MAINNET_ORACLE = '0x79fEbF6B9F76853EDBcBc913e6aAE8232cFB9De9';
+    const MAINNET_ORACLE = '0xdA17fbEdA95222f331Cb1D252401F4b44F49f7A0';
     const MAINNET_COMPOUND_ETH = '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5';
     
 
@@ -96,9 +96,9 @@ contract('PrimePool.sol', accounts => {
         symbol = 'PRIME';
         tokenU = _tokenU.address; // USDC
         tokenS = WETH._address; // WETH
-        expiry = '1607774400';
-        base = toWei('15');
-        price = toWei('0.1');
+        expiry = '1588334400';
+        base = toWei('200');
+        price = toWei('1');
 
         // Create a new Eth Option Market
         firstMarket = 1;
@@ -253,7 +253,12 @@ contract('PrimePool.sol', accounts => {
                 expect(deltaUC).to.be.eq(+inTokenU);
 
                 truffleAssert.eventEmitted(deposit, "Deposit");
-                truffleAssert.eventEmitted(deposit, "Fund");
+                console.log('[BASE]', fromWei(await _tokenP.base()));
+                console.log('[PRICE]', fromWei(await _tokenP.price()));
+                let premium = await _pool.calculatePremium(tokenP);
+                console.log('[PREMIUM CALCULATED]', fromWei(premium.premium));
+                console.log('[SQRT CALCULATED]', (await _pool.sqrt(premium.timeRemainder)).toString());
+                console.log('[TIME REMAINING]', (premium.timeRemainder).toString());
             });
         });
 
@@ -281,6 +286,7 @@ contract('PrimePool.sol', accounts => {
             });
 
             it('purchases Prime option for a premium', async () => {
+                await _tokenU.mint(Alice, MILLION_ETHER);
                 await _pool.deposit(await _tokenP.base());
 
                 let inTokenS = await _tokenP.price();
@@ -369,8 +375,8 @@ contract('PrimePool.sol', accounts => {
                 // tokenS out = tokenPULP * cacheS / total tokenPULP
                 await trader.safeSwap(tokenP, await _tokenP.balanceOf(Alice), Alice, {from: Alice});
                 let inTokenPULP = await _pool.balanceOf(Alice);
-                let outTokenU = inTokenPULP*1 * await _pool.cacheU() / await _pool.totalSupply();
-                let outTokenS = inTokenPULP*1 * await _pool.cacheR() / await _pool.totalSupply();
+                let outTokenU = inTokenPULP*1 * await _tokenU.balanceOf(_pool.address) / await _pool.totalSupply();
+                let outTokenS = inTokenPULP*1 * await _tokenR.balanceOf(_pool.address) / await _pool.totalSupply();
                 let outTokenR = outTokenS; // FIX
 
                 let balance0U = await _tokenU.balanceOf(Alice); 
@@ -398,7 +404,7 @@ contract('PrimePool.sol', accounts => {
 
                 expect(deltaS).to.be.eq(+outTokenS);
                 expect(deltaP).to.be.eq(-inTokenPULP);
-                expect(deltaU).to.be.eq(+outTokenU);
+                assert.isAtMost(deltaU, +outTokenU + ROUNDING_ERR);
                 expect(deltaSC).to.be.eq(-outTokenS);
                 expect(deltaUC).to.be.eq(+0);
 

@@ -43,7 +43,7 @@ interface ICDai {
 }
 
 interface PriceOracleProxy {
-    function getUnderlyingPrice(ICDai cToken) external view returns (uint);
+    function getUnderlyingPrice(address cToken) external view returns (uint);
 }
 
 contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
@@ -150,21 +150,24 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
 
         // Mint LP tokens proportional to the Total LP Supply and Total Pool Balance
         uint256 outTokenPULP;
-        uint256 _cacheU = cacheU;
+        uint256 balanceU = IERC20(_tokenU).balanceOf(address(this));
+        /* uint256 _cacheU = cacheU; */
         uint256 totalSupply = totalSupply();
          
         // If liquidity is not intiialized, mint LP tokens equal to deposit
-        if(_cacheU.mul(totalSupply) == 0) {
+        if(balanceU.mul(totalSupply) == 0) {
             outTokenPULP = amount;
         } else {
-            require(amount.mul(totalSupply) >= _cacheU, "ERR_ZERO");
-            outTokenPULP = amount.mul(totalSupply).div(_cacheU);
+            require(amount.mul(totalSupply) >= balanceU, "ERR_ZERO");
+            outTokenPULP = amount.mul(totalSupply).div(balanceU);
         }
 
-        uint256 balanceU = IERC20(_tokenU).balanceOf(address(this));
+        /* uint256 balanceU = IERC20(_tokenU).balanceOf(address(this)); */
 
         _mint(msg.sender, outTokenPULP);
-        _fund(balanceU, cacheS, cacheR);
+
+        /* _fund(balanceU, cacheS, cacheR); */
+
         emit Deposit(msg.sender, amount, outTokenPULP);
 
         // Assume we hold the _tokenU asset until it is utilized in minting a Prime
@@ -209,15 +212,16 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         
         // Current balance.
         uint256 balanceU = IERC20(_tokenU).balanceOf(address(this));
+        uint256 balanceR = IERC20(_tokenR).balanceOf(address(this));
 
         // outTokenU = inTokenPULP * cached balance of tokenU / Total Supply of tokenPULP
-        uint256 outTokenU = amount.mul(cacheU).div(totalSupply);
+        uint256 outTokenU = amount.mul(balanceU).div(totalSupply);
 
         // outTokenR = inTokenPULP * cached balance of tokenR / Total Supply of tokenPULP
         // tokenR is redeemable for 1:1 of tokenS.
         // Redeem outTokenS amount of tokenR.
         // Send redeemed tokenS to msg.sender.
-        uint256 outTokenR = amount.mul(cacheR).div(totalSupply);
+        uint256 outTokenR = amount.mul(balanceR).div(totalSupply);
 
         // Cached balance of tokenS in tokenP must be >= outTokenR.
         (uint256 maxDraw) = IPrime(tokenP).maxDraw();
@@ -227,12 +231,11 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         (bool success) = IERC20(_tokenR).transfer(tokenP, outTokenR);
 
         // Current balances.
-        balanceU = IERC20(_tokenU).balanceOf(address(this));
-        uint256 balanceS = IERC20(_tokenS).balanceOf(address(this));
-        uint256 balanceR = IERC20(_tokenR).balanceOf(address(this));
+        /* balanceU = IERC20(_tokenU).balanceOf(address(this));
+        balanceR = IERC20(_tokenR).balanceOf(address(this)); */
 
         // Update cached balances.
-        _fund(balanceU, balanceS, balanceR);
+        /* _fund(balanceU, balanceS, balanceR); */
         emit Withdraw(msg.sender, outTokenU, outTokenR);
     
         // Call redeem.
@@ -276,7 +279,8 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         address _tokenS = tokenS; // Assume ETH
 
         // Premium is 1% - FIX
-        uint256 premium = amount.mul(calculatePremium(tokenP));
+        (uint256 premium, ) = calculatePremium(tokenP);
+        premium = amount.mul(premium).div(ONE_ETHER);
 
         // Premium is paid in tokenS. If tokenS is WETH, its paid with ETH.
         if(_tokenS == weth) {
@@ -303,12 +307,12 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         (bool transferP) = IPrime(_tokenP).transfer(msg.sender, inTokenU);
 
         // Current balances.
-        balanceU = IERC20(_tokenU).balanceOf(address(this));
+        /* balanceU = IERC20(_tokenU).balanceOf(address(this));
         uint256 balanceS = IERC20(_tokenS).balanceOf(address(this));
-        uint256 balanceR = IERC20(tokenR).balanceOf(address(this));
+        uint256 balanceR = IERC20(tokenR).balanceOf(address(this)); */
 
         // Update cached balances.
-        _fund(balanceU, balanceS, balanceR);
+        /* _fund(balanceU, balanceS, balanceR); */
         emit Buy(msg.sender, amount, outTokenU, premium);
         return transferP && transferU;
     }
@@ -317,25 +321,21 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
      * @dev Calculates the intrinsic + extrinsic value of the option.
      * @notice Strike / Market * (Volatility * 1000) * sqrt(T in seconds remaining) / Seconds in a Day
      */
-    function calculatePremium(address tokenP) public view returns (uint256 premium) {
+    function calculatePremium(address tokenP) public view returns (uint256 timeRemainder, uint256 premium) {
         // Assume the oracle gets the Price of ETH using compound's oracle for Dai per ETH.
         // Price = ETH per DAI.
-        uint256 market = PriceOracleProxy(oracle).getUnderlyingPrice(ICDai(COMPOUND_DAI)); // FIX ONLY WORKS ON MAINNET Assume price of ETHER
+        uint256 market = PriceOracleProxy(oracle).getUnderlyingPrice(COMPOUND_DAI); // FIX ONLY WORKS ON MAINNET Assume price of ETHER
 
         // Quantity of DAI.
         uint256 base = IPrime(tokenP).base();
-        // Quantity of Ether.
-        uint256 price = IPrime(tokenP).price();
-        // Expiration Date.
-        uint256 expiry = IPrime(tokenP).expiry();
         // Strike price of DAI per ETH. ETH / DAI = price of dai per eth, then scaled to 10^18 units.
-        uint256 strike = price.mul(ONE_ETHER).div(base);
+        uint256 strike = IPrime(tokenP).price().mul(ONE_ETHER).div(base);
         // Difference = Base * market price / strike price = new Base.
         uint256 difference = base.mul(market).div(strike);
         // Intrinsic value in DAI.
         uint256 intrinsic = difference >= base ? difference.sub(base) : 0;
         // Time left in seconds
-        uint256 timeRemainder = (expiry.sub(block.timestamp)).mul(MILLISECONDS_TO_SECONDS);
+        timeRemainder = (IPrime(tokenP).expiry().sub(block.timestamp));
         // Strike / market scaled to 1e18
         uint256 moneyness = strike.mul(ONE_ETHER).div(market);
         // Extrinsic value in DAI.
@@ -345,13 +345,11 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
                             .mul(sqrt(timeRemainder))
                                 .div(ONE_ETHER)
                                 .div(SECONDS_IN_DAY);
-        // Total Premium in DAI
-        premium = extrinsic.add(intrinsic);
         // Total Premium in ETH.
-        premium = premium.mul(market).div(ONE_ETHER);
+        premium = (extrinsic.add(intrinsic)).mul(market).div(ONE_ETHER);
     }
 
-    function sqrt(uint256 y) internal pure returns (uint256 z) {
+    function sqrt(uint256 y) public pure returns (uint256 z) {
         if (y > 3) {
             uint256 x = (y + 1) / 2;
             z = y;

@@ -12,6 +12,7 @@ module.exports = async (deployer, network) => {
     const rinkebyChainlink = '0x0bF4e7bf3e1f6D6Dc29AA516A33134985cC3A5aA';
     const rinkebyWeth = '0xc778417e063141139fce010982780140aa0cd5ab';
     const mainnetWeth = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
+    const mainnetCompoundOracleProxy = '0xdA17fbEdA95222f331Cb1D252401F4b44F49f7A0';
 
     let compound;
     let compoundDai;
@@ -20,12 +21,12 @@ module.exports = async (deployer, network) => {
     if (network === 'rinkeby') {
         compound = rinkebyCompoundAddress;
         compoundDai = rinkebyCompoundDai;
-        oracle = rinkebyChainlink;
+        oracle = mainnetCompoundOracleProxy;
         weth = rinkebyWeth;
     } else {
         compound = mainnetCompoundAddress;
         compoundDai = mainnetCompoundDai;
-        oracle = mainnetChainlink;
+        oracle = mainnetCompoundOracleProxy;
         weth = mainnetWeth;
     }
 
