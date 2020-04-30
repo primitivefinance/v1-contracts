@@ -1,7 +1,7 @@
 pragma solidity ^0.6.2;
 
 /**
- * @title Primitive's Instrument Controller
+ * @title Primitive's Instrument Controller Factory
  * @author Primitive
  */
 
@@ -56,13 +56,6 @@ contract ControllerMarket is Ownable {
         _isInitialized.controllers = true;
         return true;
     }
-
-    /* function initMakerPool(address compoundContract, address oracle) public onlyOwner returns (address) {
-        require(!_isInitialized.maker, "ERR_INITIALIZED");
-        address maker = _addMarketMaker(compoundContract, oracle);
-        _isInitialized.maker = true;
-        return maker;
-    } */
 
     function createMaker(
         address oracle,
@@ -131,16 +124,6 @@ contract ControllerMarket is Ownable {
 
         return marketId;
     }
-
-    /* function _addMarketMaker(
-        address compoundEther,
-        address oracle
-    ) internal returns (address) {
-        IControllerPool pool = IControllerPool(_controllers.pool);
-        address poolAddress = pool.addPool(oracle);
-        _maker = poolAddress;
-        return poolAddress;
-    } */
 
     function getOption(uint256 marketId) public view returns (address) {
         return _markets[marketId].option;

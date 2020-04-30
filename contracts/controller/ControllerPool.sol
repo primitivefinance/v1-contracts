@@ -1,12 +1,11 @@
 pragma solidity ^0.6.2;
 
 /**
- * @title Primitive's Market Maker Creator Contract
+ * @title Primitive's Pool Factory
  * @author Primitive
  */
 
 import "../PrimePool.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract ControllerPool is Ownable {
 
@@ -29,9 +28,7 @@ contract ControllerPool is Ownable {
             weth,
             oracle,
             name,
-            symbol,
-            tokenU,
-            tokenS
+            symbol
         );
         makerFor[tokenU][tokenS] = address(primePool);
         return address(primePool);

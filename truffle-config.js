@@ -1,8 +1,11 @@
 require('dotenv').config()
+const web3 = require('web3');
 const HDWalletProvider = require('@truffle/hdwallet-provider');
 const rinkeby = process.env.RINKEBY;
 const ropsten = process.env.ROPSTEN;
+const mainnet = process.env.MAINNET;
 const mnemonic = process.env.TEST_MNEMONIC;
+const live = process.env.MNEMONIC;
 
 module.exports = {
   /* contracts_build_directory: './client/app/src/abi/', */
@@ -17,6 +20,16 @@ module.exports = {
       host: "127.0.0.1",
       port: 8545,
       network_id: "999",
+    },
+    live: {
+      provider: () => new HDWalletProvider(live, mainnet),
+      network_id: 1,     
+      gas: 5500000,      
+      confirmations: 2,  
+      timeoutBlocks: 200,
+      skipDryRun: false ,
+      from: '0x619F9Fb924c7e5fd6D21680b9bAc146FffB2D5C3',
+      gasPrice: web3.utils.toWei('15', 'gwei')
     },
     ropsten: {
       provider: () => new HDWalletProvider(mnemonic, ropsten),

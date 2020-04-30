@@ -1,7 +1,7 @@
 pragma solidity ^0.6.2;
 
 /**
- * @title Primitive's Base ERC-20 Option
+ * @title ERC-20 Binary Option Primitive
  * @author Primitive
  */
 
@@ -14,8 +14,6 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 contract PrimeOption is ERC20, ReentrancyGuard {
     using SafeMath for uint256;
 
-    uint256 public constant DENOMINATOR = 1 ether;
-
     address public tokenR;
     address public factory;
 
@@ -26,8 +24,6 @@ contract PrimeOption is ERC20, ReentrancyGuard {
     uint256 public marketId;
 
     Instruments.PrimeOption public option;
-
-    uint256 public test;
 
     event Mint(address indexed from, uint256 outTokenP, uint256 outTokenR);
     event Swap(address indexed from, uint256 outTokenU, uint256 inTokenS);
@@ -309,18 +305,20 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         // Differences between current and cached balances.
         inTokenR = balanceR.sub(cacheR);
 
-        // Assumes the cached balance is 0.
-        // This is because the close function burns the Primes received.
-        // Only external transfers will be able to send Primes to this contract.
-        // Close() and swap() are the only function that check for the Primes balance.
-        inTokenP = balanceP;
-
         // The quantity of tokenU to send out it still determined by the amount of inTokenR.
         // This outTokenU amount is checked against inTokenP.
         // inTokenP must be greater than or equal to outTokenU.
         // balanceP must be greater than or equal to outTokenU.
         // Neither inTokenR or inTokenP can be zero.
         outTokenU = inTokenR.mul(option.base).div(option.price);
+
+        // Assumes the cached balance is 0.
+        // This is because the close function burns the Primes received.
+        // Only external transfers will be able to send Primes to this contract.
+        // Close() and swap() are the only function that check for the Primes balance.
+        // If option is expired, tokenP does not need to be sent in. Only tokenR.
+        inTokenP = option.expiry > block.timestamp ? balanceP : outTokenU;
+
         require(inTokenR > 0 && inTokenP > 0, "ERR_ZERO");
         require(inTokenP >= outTokenU && balanceU >= outTokenU, "ERR_BAL_UNDERLYING");
 
@@ -371,6 +369,24 @@ contract PrimeOption is ERC20, ReentrancyGuard {
 
     function expiry() public view returns (uint256) {
         return option.expiry;
+    }
+
+    function prime() public view returns (
+            address _tokenS,
+            address _tokenU,
+            address _tokenR,
+            uint256 _base,
+            uint256 _price,
+            uint256 _expiry
+        )
+    {
+        Instruments.PrimeOption memory _prime = option;
+        _tokenS = _prime.tokenS;
+        _tokenU = _prime.tokenU;
+        _tokenR = tokenR;
+        _base = _prime.base;
+        _price = _prime.price;
+        _expiry = _prime.expiry;
     }
 
     /**

@@ -43,6 +43,14 @@ interface IPrime {
     function maxDraw() external view returns (uint256 draw);
     function getCaches() external view returns (uint256 _cacheU, uint256 _cacheS);
     function getTokens() external view returns (address _tokenU, address _tokenS, address _tokenR);
+    function prime() external view returns (
+            address _tokenS,
+            address _tokenU,
+            address _tokenR,
+            uint256 _base,
+            uint256 _price,
+            uint256 _expiry
+    );
 }
 
 interface IPrimeTrader {
