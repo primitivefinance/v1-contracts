@@ -25,6 +25,8 @@ contract PrimeOption is ERC20, ReentrancyGuard {
 
     Instruments.PrimeOption public option;
 
+    bool public expired;
+
     event Mint(address indexed from, uint256 outTokenP, uint256 outTokenR);
     event Swap(address indexed from, uint256 outTokenU, uint256 inTokenS);
     event Redeem(address indexed from, uint256 inTokenR);
@@ -57,7 +59,7 @@ contract PrimeOption is ERC20, ReentrancyGuard {
     }
 
     modifier notExpired {
-        require(option.expiry >= block.timestamp, "ERR_EXPIRED");
+        require(option.expiry >= block.timestamp && !expired, "ERR_EXPIRED");
         _;
     }
 
@@ -66,6 +68,10 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         require(msg.sender == factory, "ERR_NOT_OWNER");
         tokenR = _tokenR;
         return true;
+    }
+
+    function testExpire() public {
+        expired = true;
     }
 
 
@@ -317,13 +323,15 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         // Only external transfers will be able to send Primes to this contract.
         // Close() and swap() are the only function that check for the Primes balance.
         // If option is expired, tokenP does not need to be sent in. Only tokenR.
-        inTokenP = option.expiry > block.timestamp ? balanceP : outTokenU;
+        inTokenP = option.expiry > block.timestamp && !expired ? balanceP : outTokenU;
 
         require(inTokenR > 0 && inTokenP > 0, "ERR_ZERO");
         require(inTokenP >= outTokenU && balanceU >= outTokenU, "ERR_BAL_UNDERLYING");
 
         // Burn inTokenR and inTokenP.
-        _burn(address(this), inTokenP);
+        if(option.expiry > block.timestamp && !expired) {
+            _burn(address(this), inTokenP);
+        }
 
         // Send outTokenU to user.
         // User does not receive extra tokenU if there was extra tokenP in the contract.
@@ -372,8 +380,8 @@ contract PrimeOption is ERC20, ReentrancyGuard {
     }
 
     function prime() public view returns (
-            address _tokenS,
             address _tokenU,
+            address _tokenS,
             address _tokenR,
             uint256 _base,
             uint256 _price,
@@ -381,8 +389,8 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         )
     {
         Instruments.PrimeOption memory _prime = option;
-        _tokenS = _prime.tokenS;
         _tokenU = _prime.tokenU;
+        _tokenS = _prime.tokenS;
         _tokenR = tokenR;
         _base = _prime.base;
         _price = _prime.price;

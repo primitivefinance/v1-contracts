@@ -1014,7 +1014,7 @@ contract('Primitive', accounts => {
             );
         });
 
-        it('Should initialize with the correct tokenU', async () => {
+        /* it('Should initialize with the correct tokenU', async () => {
             assert.equal(
                 (await _pool.tokenU()),
                 (tokenU),
@@ -1028,7 +1028,7 @@ contract('Primitive', accounts => {
                 (tokenS),
                 `Incorrect tokenS`
             );
-        });
+        }); */
 
         it('Should initialize with the correct oracle', async () => {
             assert.equal(
@@ -1060,6 +1060,7 @@ contract('Primitive', accounts => {
                 await truffleAssert.reverts(
                     _pool.deposit(
                         0,
+                        tokenP,
                         {from: Alice, value: 0}
                     ),
                     "ERR_BAL_UNDERLYING"
@@ -1076,7 +1077,7 @@ contract('Primitive', accounts => {
                 let balance0UC = await _tokenU.balanceOf(tokenPULP);
                 let balance0SC = await _pool.totalSupply();
 
-                let deposit = await _pool.deposit(inTokenU, {from: Alice});
+                let deposit = await _pool.deposit(inTokenU, tokenP, {from: Alice});
 
                 let balance1U = await _tokenU.balanceOf(Alice);
                 let balance1PULP = await _pool.balanceOf(Alice);
@@ -1097,7 +1098,11 @@ contract('Primitive', accounts => {
                 truffleAssert.eventEmitted(deposit, "Deposit");
                 console.log('[BASE]', fromWei(await _tokenP.base()));
                 console.log('[PRICE]', fromWei(await _tokenP.price()));
-                let premium = await _pool.calculatePremium(tokenP);
+                let premium = await _pool.calculatePremium(
+                    await _tokenP.base(),
+                    await _tokenP.price(),
+                    await _tokenP.expiry()
+                );
                 
                 console.log('[PREMIUM CALCULATED]', fromWei(premium.premium));
                 console.log('[SQRT CALCULATED]', (await _pool.sqrt(premium.timeRemainder)).toString());
@@ -1124,13 +1129,13 @@ contract('Primitive', accounts => {
                         inTokenS,
                         tokenP,
                         {from: Alice, value: inTokenS}),
-                    "ERR_BAL_UNDERLYING"
+                    "ERC20: transfer amount exceeds balance"
                 );
             });
 
             it('purchases Prime option for a premium', async () => {
                 await _tokenU.mint(Alice, MILLION_ETHER);
-                await _pool.deposit(await _tokenP.base());
+                await _pool.deposit(await _tokenP.base(), tokenP);
 
                 let inTokenS = await _tokenP.price();
                 let outTokenU = await _tokenP.base();
@@ -1147,12 +1152,12 @@ contract('Primitive', accounts => {
                 let balance0UC = await _tokenU.balanceOf(tokenP);
                 let balance0SC = await WETH.methods.balanceOf(tokenP).call();
                 console.log('[TOKEN R BALANCE]', fromWei(await _tokenR.balanceOf(_pool.address)));
-                console.log('[Utilized]', fromWei(await _pool.poolUtilized(base, price)));
-                console.log('[VOLATILITY]', (await _pool.calculateVolatilityProxy(base, price)).toString());
+                console.log('[Utilized]', fromWei(await _pool.poolUtilized(tokenR, base, price)));
+                console.log('[VOLATILITY]', (await _pool.calculateVolatilityProxy(tokenU, tokenR, base, price)).toString());
                 let buy = await _pool.buy(inTokenS, tokenP, {from: Alice, value: inTokenS});
                 console.log('[TOKEN R BALANCE]', fromWei(await _tokenR.balanceOf(_pool.address)));
-                console.log('[Utilized]', fromWei(await _pool.poolUtilized(base, price)));
-                console.log('[VOLATILITY]', (await _pool.calculateVolatilityProxy(base, price)).toString());
+                console.log('[Utilized]', fromWei(await _pool.poolUtilized(tokenR, base, price)));
+                console.log('[VOLATILITY]', (await _pool.calculateVolatilityProxy(tokenU, tokenR, base, price)).toString());
                 truffleAssert.prettyPrintEmittedEvents(buy);
 
                 let balance1S = await getBalance(Alice);

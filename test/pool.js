@@ -172,7 +172,7 @@ contract('PrimePool.sol', accounts => {
             );
         });
 
-        it('Should initialize with the correct tokenU', async () => {
+        /* it('Should initialize with the correct tokenU', async () => {
             assert.equal(
                 (await _pool.tokenU()),
                 (tokenU),
@@ -186,7 +186,7 @@ contract('PrimePool.sol', accounts => {
                 (tokenS),
                 `Incorrect tokenS`
             );
-        });
+        }); */
 
         it('Should initialize with the correct oracle', async () => {
             assert.equal(
@@ -218,6 +218,7 @@ contract('PrimePool.sol', accounts => {
                 await truffleAssert.reverts(
                     _pool.deposit(
                         0,
+                        tokenP,
                         {from: Alice, value: 0}
                     ),
                     "ERR_BAL_UNDERLYING"
@@ -234,7 +235,7 @@ contract('PrimePool.sol', accounts => {
                 let balance0UC = await _tokenU.balanceOf(tokenPULP);
                 let balance0SC = await _pool.totalSupply();
 
-                let deposit = await _pool.deposit(inTokenU, {from: Alice});
+                let deposit = await _pool.deposit(inTokenU, tokenP, {from: Alice});
 
                 let balance1U = await _tokenU.balanceOf(Alice);
                 let balance1PULP = await _pool.balanceOf(Alice);
@@ -255,7 +256,11 @@ contract('PrimePool.sol', accounts => {
                 truffleAssert.eventEmitted(deposit, "Deposit");
                 console.log('[BASE]', fromWei(await _tokenP.base()));
                 console.log('[PRICE]', fromWei(await _tokenP.price()));
-                let premium = await _pool.calculatePremium(tokenP);
+                let premium = await _pool.calculatePremium(
+                    await _tokenP.base(),
+                    await _tokenP.price(),
+                    await _tokenP.expiry()
+                );
                 
                 console.log('[PREMIUM CALCULATED]', fromWei(premium.premium));
                 console.log('[SQRT CALCULATED]', (await _pool.sqrt(premium.timeRemainder)).toString());
@@ -282,13 +287,13 @@ contract('PrimePool.sol', accounts => {
                         inTokenS,
                         tokenP,
                         {from: Alice, value: inTokenS}),
-                    "ERR_BAL_UNDERLYING"
+                    "ERC20: transfer amount exceeds balance"
                 );
             });
 
             it('purchases Prime option for a premium', async () => {
                 await _tokenU.mint(Alice, MILLION_ETHER);
-                await _pool.deposit(await _tokenP.base());
+                await _pool.deposit(await _tokenP.base(), tokenP);
 
                 let inTokenS = await _tokenP.price();
                 let outTokenU = await _tokenP.base();
@@ -305,12 +310,12 @@ contract('PrimePool.sol', accounts => {
                 let balance0UC = await _tokenU.balanceOf(tokenP);
                 let balance0SC = await WETH.methods.balanceOf(tokenP).call();
                 console.log('[TOKEN R BALANCE]', fromWei(await _tokenR.balanceOf(_pool.address)));
-                console.log('[Utilized]', fromWei(await _pool.poolUtilized(base, price)));
-                console.log('[VOLATILITY]', (await _pool.calculateVolatilityProxy(base, price)).toString());
+                console.log('[Utilized]', fromWei(await _pool.poolUtilized(tokenR, base, price)));
+                console.log('[VOLATILITY]', (await _pool.calculateVolatilityProxy(tokenU, tokenR, base, price)).toString());
                 let buy = await _pool.buy(inTokenS, tokenP, {from: Alice, value: inTokenS});
                 console.log('[TOKEN R BALANCE]', fromWei(await _tokenR.balanceOf(_pool.address)));
-                console.log('[Utilized]', fromWei(await _pool.poolUtilized(base, price)));
-                console.log('[VOLATILITY]', (await _pool.calculateVolatilityProxy(base, price)).toString());
+                console.log('[Utilized]', fromWei(await _pool.poolUtilized(tokenR, base, price)));
+                console.log('[VOLATILITY]', (await _pool.calculateVolatilityProxy(tokenU, tokenR, base, price)).toString());
                 truffleAssert.prettyPrintEmittedEvents(buy);
 
                 let balance1S = await getBalance(Alice);
@@ -416,5 +421,97 @@ contract('PrimePool.sol', accounts => {
                 truffleAssert.eventEmitted(withdraw, "Withdraw");
             });
         });
+
+        /* describe('PrimePool.pause()', () => {
+            it('reverts if trying to pause as not owner', async () => {
+                await truffleAssert.reverts(
+                    _pool.pause(
+                        {from: Bob}
+                    ),
+                    "Ownable: caller is not the owner"
+                );
+            });
+
+            it('reverts if trying to unpause when its not paused', async () => {
+                await truffleAssert.reverts(
+                    _pool.unpause(
+                        {from: Alice}
+                    ),
+                    "Pausable: not paused"
+                );
+            });
+
+
+            it('should withdraw proportional amount of tokenU and tokenS when paused', async () => {
+                let inTokenS = await _tokenP.price();
+                // Deposit some funds
+                await _pool.deposit(await _tokenP.base(), tokenP);
+                // Buy the options
+                await _pool.buy(inTokenS, tokenP, {from: Alice, value: inTokenS});
+                // Pause the pool
+                await _pool.pause();
+                // Swap the options
+                await trader.safeSwap(tokenP, await _tokenP.balanceOf(Alice), Alice, {from: Alice});
+                // attempt to withdraw
+
+                let inTokenPULP = await _pool.balanceOf(Alice);
+                let outTokenU = inTokenPULP*1 * await _tokenU.balanceOf(_pool.address) / await _pool.totalSupply();
+                let outTokenS = inTokenPULP*1 * await _tokenR.balanceOf(_pool.address) / await _pool.totalSupply();
+                let outTokenR = outTokenS; // FIX
+
+                let balance0U = await _tokenU.balanceOf(Alice); 
+                let balance0P = await _pool.balanceOf(Alice);
+                let balance0S = await WETH.methods.balanceOf(Alice).call();
+
+                let balance0UC = await _tokenU.balanceOf(tokenP);
+                let balance0SC = await WETH.methods.balanceOf(tokenP).call();
+                
+                let withdraw = await _pool.withdraw((inTokenPULP).toString(), tokenP);
+                truffleAssert.prettyPrintEmittedEvents(withdraw);
+
+                let balance1U = await _tokenU.balanceOf(Alice);
+                let balance1P = await _pool.balanceOf(Alice);
+                let balance1S = await WETH.methods.balanceOf(Alice).call();
+
+                let balance1UC = await _tokenU.balanceOf(tokenP);
+                let balance1SC = await WETH.methods.balanceOf(tokenP).call();
+
+                let deltaS = balance1S - balance0S;
+                let deltaP = balance1P - balance0P;
+                let deltaU = balance1U - balance0U;
+                let deltaSC = balance1SC - balance0SC;
+                let deltaUC = balance1UC - balance0UC;
+
+                expect(deltaS).to.be.eq(+outTokenS);
+                expect(deltaP).to.be.eq(-inTokenPULP);
+                assert.isAtMost(deltaU, +outTokenU + ROUNDING_ERR);
+                expect(deltaSC).to.be.eq(-outTokenS);
+                expect(deltaUC).to.be.eq(+0);
+
+                truffleAssert.eventEmitted(withdraw, "Withdraw");
+            });
+
+            it('reverts if trying to call deposit when paused', async () => {
+                await truffleAssert.reverts(
+                    _pool.deposit(
+                        10,
+                        tokenP,
+                        {from: Alice}
+                    ),
+                    "Pausable: paused"
+                );
+            });
+
+            it('reverts if trying to call buy when paused', async () => {
+                await truffleAssert.reverts(
+                    _pool.buy(
+                        10,
+                        tokenP,
+                        {from: Alice}
+                    ),
+                    "Pausable: paused"
+                );
+            });
+        }); */
     }); 
 })

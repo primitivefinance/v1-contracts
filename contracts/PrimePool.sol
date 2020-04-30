@@ -226,34 +226,34 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     {
         // Store locally for gas savings.
         (
-            address tokenU, // Assume DAI
-            address tokenS, // Assume ETH
-            address tokenR, // Assume Redeemable for DAI 1:1.
-            uint256 base,
-            uint256 price,
-            uint256 expiry
+            address _tokenU, // Assume DAI
+            address _tokenS, // Assume ETH
+            address _tokenR, // Assume Redeemable for DAI 1:1.
+            uint256 _base,
+            uint256 _price,
+            uint256 _expiry
         ) = IPrime(tokenP).prime();
 
         // Calculates the Intrinsic + Extrinsic value of tokenP.
-        volatility = calculateVolatilityProxy(tokenU, tokenR, base, price);
-        (uint256 premium, ) = calculatePremium(base, price, expiry);
+        volatility = calculateVolatilityProxy(_tokenU, _tokenR, _base, _price);
+        (uint256 premium, ) = calculatePremium(_base, _price, _expiry);
         premium = amount.mul(premium).div(ONE_ETHER);
 
         // Premium is paid in tokenS. If tokenS is WETH, its paid with ETH, which is then swapped to WETH.
-        if(tokenS == weth) {
+        if(_tokenS == weth) {
             require(msg.value >= premium && premium > 0, "ERR_BAL_ETH");
             IWETH(weth).deposit.value(premium)();
             // Refunds remainder.
             sendEther(msg.sender, msg.value.sub(premium));
         } else {
-            require(IERC20(tokenS).balanceOf(msg.sender) >= amount && amount > 0, "ERR_BAL_STRIKE");
+            require(IERC20(_tokenS).balanceOf(msg.sender) >= amount && amount > 0, "ERR_BAL_STRIKE");
         }
 
         // tokenU = Amount * Quantity of tokenU (base) / Quantity of tokenS (price).
-        uint256 outTokenU = amount.mul(base).div(price); 
+        uint256 outTokenU = amount.mul(_base).div(_price); 
 
         // Transfer tokenU (assume DAI) to option contract using Pool funds.
-        (bool transferU) = IERC20(tokenU).transfer(tokenP, outTokenU);
+        (bool transferU) = IERC20(_tokenU).transfer(tokenP, outTokenU);
 
         // Mint Prime and Prime Redeem to this contract.
         (uint256 inTokenU,) = IPrime(tokenP).mint(address(this));

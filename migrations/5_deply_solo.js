@@ -42,8 +42,6 @@ module.exports = async (deployer, network) => {
         mainnetCompoundOracleProxy,
         poolName,
         poolSymbol,
-        tokenU,
-        tokenS
     );
     let prime = await deployer.deploy(
         PrimeOption,
