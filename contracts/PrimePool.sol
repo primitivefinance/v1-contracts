@@ -238,7 +238,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
 
         // Premium is paid in tokenS. If tokenS is WETH, its paid with ETH, which is then swapped to WETH.
         if(_tokenS == weth) {
-            require(msg.value >= premium && premium > 0, "ERR_BAL_ETH");
+            require(msg.value >= premium /* && premium > 0 */, "ERR_BAL_ETH");
             IWETH(weth).deposit.value(premium)();
             // Refunds remainder.
             sendEther(msg.sender, msg.value.sub(premium));
