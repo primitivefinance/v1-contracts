@@ -26,8 +26,6 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
 
     Instruments.PrimeOption public option;
 
-    bool public expired;
-
     event Mint(address indexed from, uint256 outTokenP, uint256 outTokenR);
     event Swap(address indexed from, uint256 outTokenU, uint256 inTokenS);
     event Redeem(address indexed from, uint256 inTokenR);
@@ -60,7 +58,7 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
     }
 
     modifier notExpired {
-        require(option.expiry >= block.timestamp && !expired, "ERR_EXPIRED");
+        require(option.expiry >= block.timestamp, "ERR_EXPIRED");
         _;
     }
 
@@ -71,18 +69,13 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
         return true;
     }
 
-    function testExpire() public {
-        expired = true;
-    }
-
     function kill() public {
-        /* require(msg.sender == factory, "ERR_NOT_OWNER"); */
-        /* if(paused()) {
+        require(msg.sender == factory, "ERR_NOT_OWNER");
+        if(paused()) {
             _unpause();
         } else {
             _pause();
-        } */
-        _pause();
+        }
     }
 
     /* =========== CACHE & TOKEN GETTER FUNCTIONS =========== */
@@ -335,13 +328,13 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
         // Only external transfers will be able to send Primes to this contract.
         // Close() and swap() are the only function that check for the Primes balance.
         // If option is expired, tokenP does not need to be sent in. Only tokenR.
-        inTokenP = option.expiry > block.timestamp && !expired ? balanceP : outTokenU;
+        inTokenP = option.expiry > block.timestamp ? balanceP : outTokenU;
 
         require(inTokenR > 0 && inTokenP > 0, "ERR_ZERO");
         require(inTokenP >= outTokenU && balanceU >= outTokenU, "ERR_BAL_UNDERLYING");
 
         // Burn inTokenR and inTokenP.
-        if(option.expiry > block.timestamp && !expired) {
+        if(option.expiry > block.timestamp) {
             _burn(address(this), inTokenP);
         }
 

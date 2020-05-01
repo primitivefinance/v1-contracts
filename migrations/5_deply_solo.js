@@ -2,19 +2,24 @@ const PrimeTrader = artifacts.require("PrimeTrader.sol");
 const PrimeOption = artifacts.require("PrimeOption.sol");
 const PrimePool = artifacts.require("PrimePool.sol");
 const PrimeRedeem = artifacts.require("PrimeRedeem.sol");
+const Dai = artifacts.require("DAI");
 
 module.exports = async (deployer, network) => {
     const rinkebyWeth = '0xc778417e063141139fce010982780140aa0cd5ab';
     const mainnetWeth = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
     const mainnetCompoundOracleProxy = '0xdA17fbEdA95222f331Cb1D252401F4b44F49f7A0';
     const mainnetDAI = '0x6b175474e89094c44da98b954eedeac495271d0f';
+    let dai = await Dai.deployed();
     let weth;
     if (network === 'rinkeby') {
         weth = rinkebyWeth;
     } else {
         weth = mainnetWeth;
     }
-    const tokenU = mainnetDAI;
+    let tokenU = mainnetDAI;
+    if (network === 'local') {
+        tokenU = dai.address;
+    }
     const tokenS = weth;
     const marketId = 1;
     const poolName = "ETH Short Put Pool";

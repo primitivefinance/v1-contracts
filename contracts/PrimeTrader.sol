@@ -188,7 +188,7 @@ contract PrimeTrader is ReentrancyGuard {
         returns (uint256 inTokenR, uint256 inTokenP, uint256 outTokenU)
     {
         require(amount > 0, "ERR_ZERO");
-        require(IPrime(tokenP).expiry() < block.timestamp || IPrime(tokenP).expired(), "ERR_NOT_EXPIRED");
+        require(IPrime(tokenP).expiry() < block.timestamp, "ERR_NOT_EXPIRED");
         address tokenR = IPrime(tokenP).tokenR();
 
         inTokenR = amount.mul(IPrime(tokenP).price()).div(IPrime(tokenP).base());

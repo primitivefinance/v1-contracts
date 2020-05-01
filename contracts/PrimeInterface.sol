@@ -51,9 +51,6 @@ interface IPrime {
             uint256 _price,
             uint256 _expiry
     );
-
-    // TEST
-    function expired() external view returns(bool);
 }
 
 interface IPrimeTrader {

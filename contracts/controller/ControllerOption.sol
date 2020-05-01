@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract ControllerOption is Ownable {
     using SafeMath for uint256;
 
-    uint256 public _marketNonce;
+    /* uint256 public _marketNonce; */
 
     constructor(
         address _controller
@@ -20,6 +20,7 @@ contract ControllerOption is Ownable {
     }
 
     function addOption(
+        uint256 _marketNonce,
         string calldata name,
         string calldata symbol,
         address tokenU,
@@ -30,9 +31,9 @@ contract ControllerOption is Ownable {
     )
         external
         onlyOwner
-        returns (address, uint256)
+        returns (address)
     {
-        _marketNonce = _marketNonce.add(1);
+        /* _marketNonce = _marketNonce.add(1); */
         PrimeOption tokenP = new PrimeOption(
             name,
             symbol,
@@ -43,7 +44,7 @@ contract ControllerOption is Ownable {
             price,
             expiry
         );
-        return (address(tokenP), _marketNonce);
+        return (address(tokenP));
     }
 
     function setRedeem(address tokenR, address tokenP) public onlyOwner returns (bool) {

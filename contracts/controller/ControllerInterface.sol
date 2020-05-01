@@ -25,6 +25,7 @@ interface IControllerRedeem {
 
 interface IControllerOption {
     function addOption(
+        uint256 marketNonce,
         string calldata name,
         string calldata symbol,
         address tokenU,
@@ -32,7 +33,7 @@ interface IControllerOption {
         uint256 base,
         uint256 price,
         uint256 expiry
-    ) external returns (address, uint256);
+    ) external returns (address);
 
     function setRedeem(address tokenR, address tokenP) external returns (bool);
 }

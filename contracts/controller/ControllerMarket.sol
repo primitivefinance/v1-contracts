@@ -87,7 +87,10 @@ contract ControllerMarket is Ownable {
         IControllerOption optionController = IControllerOption(_controllers.option);
 
         // Deploys option contract.
-        (address option, uint256 marketId) = optionController.addOption(
+        marketNonce = marketNonce.add(1);
+        uint256 marketId = marketNonce;
+        (address option) = optionController.addOption(
+            marketId,
             name,
             symbol,
             tokenU,
