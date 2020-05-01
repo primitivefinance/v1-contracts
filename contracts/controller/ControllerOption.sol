@@ -6,100 +6,50 @@ pragma solidity ^0.6.2;
  */
 
 import "../PrimeOption.sol";
-import { IControllerMarket } from "./ControllerInterface.sol";
-import "@openzeppelin/contracts/ownership/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC721/ERC721Holder.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract ControllerOption is Ownable, ERC721Holder {
+contract ControllerOption is Ownable {
     using SafeMath for uint256;
 
-    /* mapping(uint256 => address) public _primeMarkets; */
-    uint256 public _nonce;
-    IPrime public _prime;
-    IControllerMarket public market;
+    /* uint256 public _marketNonce; */
 
     constructor(
-        address controller,
-        address primeAddress
+        address _controller
     ) public {
-        transferOwnership(controller);
-        _prime = IPrime(primeAddress);
-        market = IControllerMarket(controller);
+        transferOwnership(_controller);
     }
 
     function addOption(
-        uint256 qUnderlying,
-        IERC20 aUnderlying,
-        uint256 qStrike,
-        IERC20 aStrike,
-        uint256 tExpiry,
-        string memory name,
-        bool isEthCallOption,
-        bool isTokenOption
+        uint256 _marketNonce,
+        string calldata name,
+        string calldata symbol,
+        address tokenU,
+        address tokenS,
+        uint256 base,
+        uint256 price,
+        uint256 expiry
     )
-        public
-        payable
+        external
         onlyOwner
-        returns (address payable)
+        returns (address)
     {
-        PrimeOption primeOption = deployPrimeOption(name);
-        uint256 tokenId;
-
-        // if its a call the underlying q will be 1 and the address will be the erc-20 oPulp
-        // else its a put, the underlying q+a is the strike q+a and
-        // the strike q is 1 ether and strike address is erc-20 oPulp
-        // e.g. 1 ETH / 150 DAI Call vs. 150 DAI / 1 ETH Put
-        if(isEthCallOption) {
-            tokenId = _prime.createPrime(
-                qUnderlying,
-                address(primeOption),
-                qStrike,
-                address(aStrike),
-                tExpiry,
-                address(this)
-            );
-        } else if(isTokenOption) {
-            tokenId = _prime.createPrime(
-                qUnderlying,
-                address(aUnderlying),
-                qStrike,
-                address(aStrike),
-                tExpiry,
-                address(this)
-            );
-        } else {
-            tokenId = _prime.createPrime(
-                qStrike,
-                address(aStrike),
-                qUnderlying,
-                address(primeOption),
-                tExpiry,
-                address(this)
-            );
-        }
-
-        primeOption.setParentToken(tokenId);
-        return address(primeOption);
-    }
-
-    function deployPrimeOption(string memory name) internal returns (PrimeOption) {
-        _nonce = _nonce.add(1);
-        PrimeOption primeOption = new PrimeOption(
+        /* _marketNonce = _marketNonce.add(1); */
+        PrimeOption tokenP = new PrimeOption(
             name,
-            address(_prime)
+            symbol,
+            _marketNonce,
+            tokenU,
+            tokenS,
+            base,
+            price,
+            expiry
         );
-        /* _primeMarkets[_nonce] = address(primeOption); */
-        return primeOption;
+        return (address(tokenP));
     }
 
-    function setExchange(address exchange, address payable primeOption) public onlyOwner returns (bool) {
-        PrimeOption option = PrimeOption(primeOption);
-        return option.setPool(exchange);
-    }
-
-    function setRedeem(address redeem, address payable primeOption) public onlyOwner returns (bool) {
-        PrimeOption option = PrimeOption(primeOption);
-        return option.setRPulp(redeem);
+    function setRedeem(address tokenR, address tokenP) public onlyOwner returns (bool) {
+        PrimeOption option = PrimeOption(tokenP);
+        return option.initTokenR(tokenR);
     }
 }
 

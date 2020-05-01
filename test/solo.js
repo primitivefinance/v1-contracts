@@ -90,46 +90,30 @@ contract('PrimePool.sol', accounts => {
         WETH = new web3.eth.Contract(Weth.abi, await _controllerPool.weth());
 
         _tokenS = WETH;
-        _tokenU = await Usdc.deployed();
+        _tokenU = await Dai.deployed();
 
-        name = 'ETH201212C150USDC';
+        name = 'ETH Put 200 DAI Expiring May 30 2020';
         symbol = 'PRIME';
         tokenU = _tokenU.address; // USDC
         tokenS = WETH._address; // WETH
-        expiry = '1588334400';
+        expiry = '1590868800';
         base = toWei('200');
         price = toWei('1');
 
         // Create a new Eth Option Market
         firstMarket = 1;
-        await _controllerMarket.createMaker(
-            MAINNET_ORACLE,
-            "ETH Short Put Pool Denominated in DAI",
-            "spPULP",
-            tokenU, // USDC
-            tokenS // WETH
-        );
 
-        await _controllerMarket.createMarket(
-            name,
-            symbol,
-            tokenU, // USDC
-            tokenS, // WETH
-            base, // USDC
-            price, // WETH
-            expiry
-        );
-
-        _pool = await PrimePool.at(await _controllerMarket.getMaker(1));
-        _tokenP = await PrimeOption.at(await _controllerMarket.getOption(firstMarket));
-        _tokenR = await PrimeRedeem.at(await _tokenP.tokenR());
+        _pool = await PrimePool.deployed();
+        _tokenP = await PrimeOption.deployed();
+        _tokenR = await PrimeRedeem.deployed();
         tokenP = _tokenP.address;
         tokenR = _tokenR.address;
         tokenPULP = _pool.address;
         _tokenPULP = _pool;
 
-        await WETH.methods.deposit().send({from: Alice, value: TEN_ETHER});
-        await WETH.methods.deposit().send({from: Bob, value: TEN_ETHER});
+        await _tokenU.mint(Alice, MILLION_ETHER);
+        await WETH.methods.deposit().send({from: Alice, value: toWei('25')});
+        await WETH.methods.deposit().send({from: Bob, value: toWei('25')});
 
         await _tokenU.approve(_tokenP.address, MILLION_ETHER, {from: Alice});
         await WETH.methods.approve(_tokenP.address, MILLION_ETHER).send({from: Alice});
@@ -249,7 +233,7 @@ contract('PrimePool.sol', accounts => {
                 let deltaUC = balance1UC - balance0UC;
 
                 expect(deltaPULP).to.be.eq(+outTokenPULP);
-                expect(deltaU).to.be.eq(-inTokenU);
+                assert.isAtMost(deltaU, -inTokenU-10^10);
                 expect(deltaSC).to.be.eq(+outTokenPULP);
                 expect(deltaUC).to.be.eq(+inTokenU);
 

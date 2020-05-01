@@ -6,7 +6,7 @@ pragma solidity ^0.6.2;
  */
 
 import "../PrimeRedeem.sol";
-import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract ControllerRedeem is Ownable {
 
@@ -17,15 +17,10 @@ contract ControllerRedeem is Ownable {
     function addRedeem(
         string memory name,
         string memory symbol,
-        address payable optionAddress,
-        IERC20 strikeAddress
+        address tokenP,
+        address tokenS
     ) public onlyOwner returns (address) {
-        PrimeRedeem primeRedeem = new PrimeRedeem(name, symbol, optionAddress, strikeAddress);
+        PrimeRedeem primeRedeem = new PrimeRedeem(name, symbol, tokenP, tokenS);
         return address(primeRedeem);
-    }
-
-    function setValid(address primeOption, address redeemAddress) public onlyOwner returns (bool) {
-        PrimeRedeem primeRedeem = PrimeRedeem(redeemAddress);
-        return primeRedeem.setValid(primeOption);
     }
 }

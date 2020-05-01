@@ -2,48 +2,38 @@ pragma solidity ^0.6.2;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface IControllerMarket {
-    function _crRedeem() external view returns (address);
-    function _prRedeem() external view returns (address);
-    function getExchange(uint256 tokenId) external view returns (address);
-}
-
-interface IControllerExchange {
-    function addExchange(address payable primeOption) external returns (address);
-}
-
 interface IControllerPool {
-    function addPool(address compoundEther, address oracle) external returns (address);
-    function addMarket(address payable primeOption) external returns (address);
-}
-
-interface IControllerPerpetual {
-    function addPerpetual(address compoundDai) external returns (address);
-    function addMarket(address payable primeOption) external returns (address);
+    function makerFor(address tokenU, address tokenS) external view returns (address payable);
+    function addPool(
+        address oracle,
+        string calldata name,
+        string calldata symbol,
+        address tokenU,
+        address tokenS
+    ) external returns (address payable);
+    function addMarket(address maker, address tokenP) external returns (address);
 }
 
 interface IControllerRedeem {
     function addRedeem(
         string calldata name,
         string calldata symbol,
-        address payable optionAddress,
-        IERC20 strikeAddress
+        address tokenP,
+        address tokenS
     ) external returns (address);
-    function setValid(address primeOption, address redeemAddress) external returns (bool);
 }
 
 interface IControllerOption {
     function addOption(
-        uint256 qUnderlying,
-        IERC20 aUnderlying,
-        uint256 qStrike,
-        IERC20 aStrike,
-        uint256 tExpiry,
+        uint256 marketNonce,
         string calldata name,
-        bool isEthCallOption,
-        bool isTokenOption
-    ) external payable returns (address payable);
+        string calldata symbol,
+        address tokenU,
+        address tokenS,
+        uint256 base,
+        uint256 price,
+        uint256 expiry
+    ) external returns (address);
 
-    function setExchange(address exchange, address payable primeOption) external returns (bool);
-    function setRedeem(address redeem, address payable primeOption) external returns (bool);
+    function setRedeem(address tokenR, address tokenP) external returns (bool);
 }

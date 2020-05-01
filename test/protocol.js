@@ -1,13 +1,44 @@
-const assert = require('assert').strict;
+const assert = require('chai').assert;
+const chai = require('chai');
+const BN = require('bn.js');
+// Enable and inject BN dependency
+chai.use(require('chai-bn')(BN));
+const expect = require('chai').expect;
 const truffleAssert = require('truffle-assertions');
-const Options = artifacts.require('Options');
-const tUSD = artifacts.require("tUSD");
-const Prime = artifacts.require("Prime");
+const ControllerMarket = artifacts.require('ControllerMarket');
+const ControllerPool = artifacts.require('ControllerPool');
+const ControllerOption = artifacts.require('ControllerOption');
 const PrimeOption = artifacts.require('PrimeOption.sol');
-const PrimeExchange = artifacts.require('PrimeExchange.sol');
-const PrimePool = artifacts.require('PrimePool.sol');
+const PrimeRedeem = artifacts.require('PrimeRedeem');
+const PrimePool = artifacts.require("PrimePool.sol");
+const PrimeTrader = artifacts.require("PrimeTrader.sol");
+const Usdc = artifacts.require("USDC");
+const Dai = artifacts.require('DAI');
+const Weth = require('../build/contracts/WETH9.json');
 
-contract('Prime - Local', accounts => {
+contract('Primitive', accounts => {
+    const { toWei } = web3.utils;
+    const { fromWei } = web3.utils;
+    const { getBalance } = web3.eth;
+    const ERR_ZERO = "ERR_ZERO";
+    const ERR_BAL_ETH = "ERR_BAL_ETH";
+    const ERR_NOT_OWNER = "ERR_NOT_OWNER";
+    const ERR_BAL_PRIME = "ERR_BAL_PRIME";
+    const ERR_BAL_STRIKE = "ERR_BAL_STRIKE";
+    const ERR_BAL_REDEEM = "ERR_BAL_REDEEM";
+    const ERR_BAL_TOKENS = "ERR_BAL_TOKENS";
+    const ERR_BAL_OPTIONS = "ERR_BAL_OPTIONS";
+    const ERR_OPTION_TYPE = "ERR_OPTION_TYPE";
+    const ROUNDING_ERR = 10**8;
+    const ONE_ETHER = toWei('0.1');
+    const TWO_ETHER = toWei('0.2');
+    const FIVE_ETHER = toWei('0.5');
+    const TEN_ETHER = toWei('1');
+    const FIFTY_ETHER = toWei('50');
+    const MILLION_ETHER = toWei('1000000');
+    const MAINNET_ORACLE = '0xdA17fbEdA95222f331Cb1D252401F4b44F49f7A0';
+    const MAINNET_COMPOUND_ETH = '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5';
+    
 
     // User Accounts
     const Alice = accounts[0]
@@ -21,1498 +52,1265 @@ contract('Prime - Local', accounts => {
     const Olga = accounts[8]
     const Treasury = accounts[9]
 
-    let _prime,
-        _tETH,
-        _tUSD,
-        collateral,
-        payment,
-        xis,
-        yak,
-        zed,
-        wax,
-        pow,
-        gem,
-        mint,
-        exercise,
-        close,
-        withdraw,
-        _burnId,
-        _collateralID,
-        _exchange,
-        primeAddress,
-        expiration,
-        collateralPoolAddress,
-        strikeAddress,
-        premium,
-        value,
-        activeTokenId,
-        nonce,
-        oneEther,
-        twoEther,
-        fiveEther,
-        tenEther,
-        userA,
-        userB,
-        prime20Address
+    let firstMarket;
+
+    let _controllerMarket,
+        _controllerPool,
+        _controllerOption,
+        WETH,
+        tokenP,
+        tokenR,
+        _tokenP,
+        _tokenR,
+        _tokenU,
+        _tokenS,
+        name,
+        symbol,
+        tokenU,
+        tokenS,
+        base,
+        price,
+        expiry,
+        _pool,
+        trader
         ;
 
-    async function getGas(func, name) {
-        let spent = await func.receipt.gasUsed
-        gas.push([name + ' gas: ', spent])
+    async function sendWeth(weth, to, from, amount) {
+        await weth.methods.transfer(to, amount).send({from: from});
     }
 
-    beforeEach(async () => {
-        // get values that wont change
-        _prime = await Prime.deployed();
-        _tUSD = await tUSD.deployed();
-        strike = _tUSD.address;
-        oneEther = await web3.utils.toWei('1');
-        twoEther = await web3.utils.toWei('2');
-        fiveEther = await web3.utils.toWei('5');
-        tenEther = await web3.utils.toWei('10');
-        expiry = '1587607322';
-        userA = Alice;
-        userB = Bob;
+    before(async () => {
+        trader = await PrimeTrader.deployed();
+
+        // Get the Market Controller Contract
+        _controllerMarket = await ControllerMarket.deployed();
+        _controllerPool = await ControllerPool.deployed();
+        _controllerOption = await ControllerOption.deployed();
+
+        WETH = new web3.eth.Contract(Weth.abi, await _controllerPool.weth());
+
+        _tokenS = await Usdc.deployed();
+        _tokenU = WETH;
+
+        name = 'ETH201212C150USDC';
+        symbol = 'PRIME';
+        tokenS = _tokenS.address;
+        tokenU = _tokenU._address;
+        expiry = '1607774400';
+        base = toWei('1');
+        price = toWei('10');
+
+        // Create a new Eth Option Market
+        firstMarket = 1;
+        await _controllerMarket.createMarket(
+            name,
+            symbol,
+            tokenU,
+            tokenS,
+            base,
+            price,
+            expiry
+        );
+
+        await _controllerMarket.createMaker(
+            MAINNET_ORACLE,
+            "ETH Short Put Pool Denominated in DAI",
+            "spPULP",
+            _tokenS.address, // USDC
+            WETH._address // WETH
+        );
+
+        await _controllerMarket.createMarket(
+            name,
+            symbol,
+            _tokenS.address, // USDC
+            WETH._address, // WETH
+            toWei('15'), // USDC
+            toWei('0.1'), // WETH
+            '1607774400'
+        );
+        
+        _pool = await PrimePool.at(await _controllerMarket.getMaker(2));
+        _tokenP = await PrimeOption.at(await _controllerMarket.getOption(firstMarket));
+        _tokenR = await PrimeRedeem.at(await _tokenP.tokenR());
+        tokenP = _tokenP.address;
+        tokenR = _tokenR.address;
+
+        await _tokenU.methods.deposit().send({from: Alice, value: TEN_ETHER});
+        await _tokenU.methods.deposit().send({from: Bob, value: TEN_ETHER});
+
+        await _tokenS.approve(_tokenP.address, MILLION_ETHER, {from: Alice});
+        await _tokenU.methods.approve(_tokenP.address, MILLION_ETHER).send({from: Alice});
+
+        await _tokenS.approve(_tokenP.address, MILLION_ETHER, {from: Bob});
+        await _tokenU.methods.approve(_tokenP.address, MILLION_ETHER).send({from: Bob});
+
+        await _tokenS.approve(trader.address, MILLION_ETHER, {from: Alice});
+        await _tokenU.methods.approve(trader.address, MILLION_ETHER).send({from: Alice});
+
+        await _tokenS.approve(trader.address, MILLION_ETHER, {from: Bob});
+        await _tokenU.methods.approve(trader.address, MILLION_ETHER).send({from: Bob});
+
+        await _tokenP.approve(trader.address, MILLION_ETHER, {from: Alice});
+        await _tokenP.approve(trader.address, MILLION_ETHER, {from: Bob});
+
+        await _tokenR.approve(trader.address, MILLION_ETHER, {from: Alice});
+        await _tokenR.approve(trader.address, MILLION_ETHER, {from: Bob});
+
+        await _tokenS.approve(_pool.address, MILLION_ETHER, {from: Alice});
+        await WETH.methods.approve(_pool.address, MILLION_ETHER).send({from: Alice});
+
+        await _tokenS.approve(_pool.address, MILLION_ETHER, {from: Bob});
+        await WETH.methods.approve(_pool.address, MILLION_ETHER).send({from: Bob});
+
+        await _tokenP.approve(_pool.address, MILLION_ETHER, {from: Alice});
+        await _tokenP.approve(_pool.address, MILLION_ETHER, {from: Bob});
+
+        await _tokenR.approve(_pool.address, MILLION_ETHER, {from: Alice});
+        await _tokenR.approve(_pool.address, MILLION_ETHER, {from: Bob});
     });
-    
-    describe('PrimeERC20.sol', () => {
-        beforeEach(async () => {
-            // new PrimeERC20 instance
-            options = await Options.deployed();
-            nonce = await options._nonce();
-            prime20Address = await options._primeMarkets(nonce);
-            _prime20 = await PrimeERC20.at(prime20Address);
-            _exchange20 = await ExchangeERC20.deployed();
 
-            collateral = prime20Address;
+    describe('PrimeOption.sol', () => {
+        it('Should deploy a new market', async () => {
+            await _controllerMarket.createMarket(
+                name,
+                symbol,
+                tokenU,
+                tokenS,
+                base,
+                price,
+                expiry
+            );
         });
 
-        describe('deposit()', () => {
-
-            it('revert if collateral is > users balance', async () => {
-                let bobBalance = await web3.utils.fromWei(await web3.eth.getBalance(Bob));
-                let million = await web3.utils.toWei('1000000');
-                await truffleAssert.reverts(
-                    _prime.createPrime(
-                        million,
-                        collateral,
-                        strikeAmount,
-                        strike,
-                        expiry,
-                        receiver,
-                        {from: minter,  value: 0}
-                    ),
-                    "a < b"
-                );
-            });
-
-            it('should revert if its an Ether Prime and no ether was sent', async () => {
-                await truffleAssert.reverts(
-                    _prime.createPrime(
-                        collateralAmount,
-                        collateral,
-                        strikeAmount,
-                        strike,
-                        expiry,
-                        receiver,
-                        {from: minter,  value: 0}
-                    ),
-                    "a < b"
-                );
-            });
-
-            it('should revert if expiration date has already passed', async () => {
-                expiry = '1585522471';
-                await truffleAssert.reverts(
-                    _prime.createPrime(
-                        collateralAmount,
-                        collateral,
-                        strikeAmount,
-                        strike,
-                        expiry,
-                        receiver,
-                        {from: minter,  value: 0}
-                    ),
-                    "Create: expired timestamp"
-                );
-            });
-
-            it('create an ether prime', async () => {
-                await _prime.createPrime(
-                    collateralAmount,
-                    collateral,
-                    strikeAmount,
-                    strike,
-                    expiry,
-                    receiver,
-                    {from: minter,  value: collateralAmount}
-                );
-            });
-
-            it('assert liability was updated after prime minted', async () => {
-                /* Assert liability of msg sender added the xis */
-                let liability = (await _prime._liabilities(Bob, collateral)).toString();
-                assert.strictEqual(
-                    liability, 
-                    (collateralAmount).toString(), 
-                    `Create: liability should be updated. 
-                    Liability: ${liability} collateral: ${collateralAmount}`
-                );
-        
-                /* Assert returns the nonce of the token */
-            });
-
-            it('assert ether collateral was deposited in Prime', async () => {
-                let collateralBalance = await web3.eth.getBalance(_prime.address);
-                assert.strictEqual(
-                    collateralBalance,
-                    collateralAmount,
-                    `Prime Balance: ${collateralBalance},
-                     Collateral Amount: ${collateralAmount},
-                     should equal.
-                    `
-                );
-            });
-
-            it('should have had the nonce updated to 1', async () => {
-                let nonce = (await _prime._nonce()).toString();
-                assert.strictEqual(nonce, '1', `Nonce: ${nonce} should be 1 - one minted Prime.`);
-            });
-
-            it('should close the prime', async () => {
-                let nonce = (await _prime._nonce()).toString();
-                await _prime.close(nonce, nonce, {from: minter, value: 0});
-            });
+        it('Should initialize with the correct values', async () => {
+            let marketId = await _tokenP.marketId();
+            assert.equal(
+                (await _tokenP.name()).toString(),
+                name,
+                'Incorrect name'
+            );
+            assert.equal(
+                (await _tokenP.symbol()).toString(),
+                symbol,
+                'Incorrect symbol'
+            );
+            assert.equal(
+                (await _tokenP.factory()).toString(),
+                _controllerOption.address,
+                'Incorrect factory'
+            );
+            assert.equal(
+                (await _tokenP.marketId()).toString(),
+                (firstMarket).toString(),
+                'Incorrect market id'
+            );
+            assert.equal(
+                (await _tokenP.tokenU()).toString(),
+                tokenU,
+                'Incorrect tokenU'
+            );
+            assert.equal(
+                (await _tokenP.tokenS()).toString(),
+                tokenS,
+                'Incorrect tokenS'
+            );
+            assert.equal(
+                (await _tokenP.base()).toString(),
+                base,
+                'Incorrect base'
+            );
+            assert.equal(
+                (await _tokenP.price()).toString(),
+                price,
+                'Incorrect price'
+            );
+            assert.equal(
+                (await _tokenP.expiry()).toString(),
+                expiry,
+                'Incorrect expiry'
+            );
+            const tokens = await _tokenP.getTokens();
+            assert.equal(
+                (tokens._tokenU).toString(),
+                tokenU,
+                'Incorrect tokenU'
+            );
+            assert.equal(
+                (tokens._tokenS).toString(),
+                tokenS,
+                'Incorrect tokenS'
+            );
+            assert.equal(
+                (tokens._tokenR).toString(),
+                _tokenR.address,
+                'Incorrect tokenR'
+            );
+            assert.equal(
+                (await _tokenP.maxDraw()).toString(),
+                '0',
+                'CacheS should be 0'
+            );
         });
 
-        describe('depositAndSell()', () => {
-            let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
-            beforeEach(async () => {
-                _prime = await Prime.deployed();
-                _tUSD = await tUSD.deployed();
-                _exchange = await Exchange.deployed();
-                _pool = await Pool.deployed();
+        describe('PrimeOption.mint()', () => {
 
-                minter = Bob;
-                collateralAmount = await web3.utils.toWei('1');
-                strikeAmount = await web3.utils.toWei('10');
-                collateral = _pool.address;
-                strike = _tUSD.address;
-                expiry = '1587607322';
-                receiver = minter;
-            });
-
-            it('revert if collateral is > users balance', async () => {
-                let bobBalance = await web3.utils.fromWei(await web3.eth.getBalance(Bob));
-                let million = await web3.utils.toWei('1000000');
+            it('revert if no tokens were sent to contract', async () => {
                 await truffleAssert.reverts(
-                    _prime.createPrime(
-                        million,
-                        collateral,
-                        strikeAmount,
-                        strike,
-                        expiry,
-                        receiver,
-                        {from: minter,  value: 0}
+                    _tokenP.mint(
+                        Alice,
+                        {from: Alice}
                     ),
-                    "a < b"
+                    "ERR_ZERO"
                 );
             });
 
-            it('should revert if its an Ether Prime and no ether was sent', async () => {
-                await truffleAssert.reverts(
-                    _prime.createPrime(
-                        collateralAmount,
-                        collateral,
-                        strikeAmount,
-                        strike,
-                        expiry,
-                        receiver,
-                        {from: minter,  value: 0}
-                    ),
-                    "a < b"
-                );
+            it('mint tokenP and tokenR to Alice', async () => {
+                let inTokenU = ONE_ETHER;
+                let balanceER = inTokenU*1 * price*1 / toWei('1');
+                let balanceEP = ONE_ETHER;
+
+                await _tokenU.methods.transfer(tokenP, inTokenU).send({from: Alice});
+                let mint = await _tokenP.mint(Alice, {from: Alice});
+
+                let balanceAR = await _tokenR.balanceOf(Alice);
+                let balanceAP = await _tokenP.balanceOf(Alice);
+
+                assert.equal(balanceAR, balanceER, `${balanceAR} != ${balanceER}`);
+                assert.equal(balanceAP, balanceEP, `${balanceAP} != ${balanceEP}`);
+
+                let balanceU = await _tokenU.methods.balanceOf(tokenP).call();
+                let cacheU = await _tokenP.cacheU();
+
+                assert.equal(balanceU, inTokenU, `${balanceU} != ${inTokenU}`)
+                assert.equal(cacheU, inTokenU, `${cacheU} != ${inTokenU}`)
+
+                truffleAssert.eventEmitted(mint, "Mint");
+                truffleAssert.eventEmitted(mint, "Fund");
             });
 
-            it('should revert if expiration date has already passed', async () => {
-                expiry = '1585522471';
-                await truffleAssert.reverts(
-                    _prime.createPrime(
-                        collateralAmount,
-                        collateral,
-                        strikeAmount,
-                        strike,
-                        expiry,
-                        receiver,
-                        {from: minter,  value: 0}
-                    ),
-                    "Create: expired timestamp"
-                );
-            });
+            it('send 1 wei of tokenU to tokenP and call mint', async () => {
+                let inTokenU = '1';
+                let differenceE = (inTokenU*1 * price*1 / toWei('1')).toString();
+                let balanceER = (await _tokenR.balanceOf(Alice)).toString();
+                let balanceEP = (await _tokenP.balanceOf(Alice)).toString();
+                let balanceEU = (await _tokenU.methods.balanceOf(tokenP).call()).toString();
+                let cacheEU = (await _tokenP.cacheU()).toString();
 
-            it('create an ether prime', async () => {
-                await _prime.createPrime(
-                    collateralAmount,
-                    collateral,
-                    strikeAmount,
-                    strike,
-                    expiry,
-                    receiver,
-                    {from: minter,  value: collateralAmount}
-                );
-            });
+                await _tokenU.methods.transfer(tokenP, inTokenU).send({from: Alice});
+                let mint = await _tokenP.mint(Alice, {from: Alice});
 
-            it('assert liability was updated after prime minted', async () => {
-                /* Assert liability of msg sender added the xis */
-                let liability = (await _prime._liabilities(Bob, collateral)).toString();
-                assert.strictEqual(
-                    liability, 
-                    (collateralAmount).toString(), 
-                    `Create: liability should be updated. 
-                    Liability: ${liability} collateral: ${collateralAmount}`
-                );
-        
-                /* Assert returns the nonce of the token */
-            });
+                let balanceAR = (await _tokenR.balanceOf(Alice)).toString();
+                let balanceAP = (await _tokenP.balanceOf(Alice)).toString();
 
-            it('assert ether collateral was deposited in Prime', async () => {
-                let collateralBalance = await web3.eth.getBalance(_prime.address);
-                assert.strictEqual(
-                    collateralBalance,
-                    collateralAmount,
-                    `Prime Balance: ${collateralBalance},
-                     Collateral Amount: ${collateralAmount},
-                     should equal.
-                    `
-                );
-            });
-
-            it('should have had the nonce updated to 1', async () => {
-                let nonce = (await _prime._nonce()).toString();
-                assert.strictEqual(nonce, '1', `Nonce: ${nonce} should be 1 - one minted Prime.`);
-            });
-
-            it('should close the prime', async () => {
-                let nonce = (await _prime._nonce()).toString();
-                await _prime.close(nonce, nonce, {from: minter, value: 0});
-            });
-        });
-
-        describe('swap()', () => {
-            let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
-            beforeEach(async () => {
-                minter = Bob;
-                collateralAmount = await web3.utils.toWei('1');
-                strikeAmount = await web3.utils.toWei('10');
-                collateral = _pool.address;
-                strike = _tUSD.address;
-                expiry = '1587607322';
-                receiver = minter;
-            });
-
-            it('revert is attempted prime to exercise is not owned by msg.sender', async () => {
-                /* Create a Prime from Alice, then try exercising as Bob */
-                minter = Alice;
-                receiver = Alice;
-                await _prime.createPrime(
-                    collateralAmount,
-                    collateral,
-                    strikeAmount,
-                    strike,
-                    expiry,
-                    receiver,
-                    {from: minter,  value: collateralAmount}
-                );
-                let nonce = await _prime._nonce();
-
-                await truffleAssert.reverts(
-                    _prime.exercise(
-                        nonce,
-                        {from: Bob,  value: 0}
-                    ),
-                    "!own"
-                );
-            });
-
-            it('revert if user has no ERC-20 collateral', async () => {
-                await truffleAssert.reverts(
-                    _prime.createPrime(
-                        collateralAmount,
-                        strike,
-                        strikeAmount,
-                        collateral,
-                        expiry,
-                        receiver,
-                        {from: minter,  value: 0}
-                    ),
-                    "a < b"
-                );
-            });
-
-            it('revert if strike is pool address and msg.value != strike amount', async () => {
-                await _tUSD.mint(minter, strikeAmount);
-                await _tUSD.approve(_prime.address, strikeAmount, {from: minter});
-                await _prime.createPrime(
-                    collateralAmount,
-                    strike,
-                    strikeAmount,
-                    collateral,
-                    expiry,
-                    receiver,
-                    {from: minter,  value: collateralAmount}
-                );
-                let nonce = await _prime._nonce();
-                await truffleAssert.reverts(
-                    _prime.exercise(
-                        nonce,
-                        {from: minter,  value: 0}
-                    ),
-                    "a < b"
-                );
-            });
-
-            it('revert if strike is erc-20 and users balance < strike amount', async () => {
-                await _prime.createPrime(
-                    collateralAmount,
-                    collateral,
-                    strikeAmount,
-                    strike,
-                    expiry,
-                    receiver,
-                    {from: minter,  value: collateralAmount}
-                );
-                let nonce = await _prime._nonce();
-                await truffleAssert.reverts(
-                    _prime.exercise(
-                        nonce,
-                        {from: minter,  value: 0}
-                    ),
-                    "a < b"
-                );
-            });
-
-            it('should exercise a Prime', async () => {
-                let nonce = await _prime._nonce();
-                await _tUSD.mint(minter, strikeAmount);
-                await _tUSD.approve(_prime.address, strikeAmount, {from: minter});
-                await _prime.exercise(nonce, {from: minter});
-            });
-
-            it('asserts liabilities were debited from minters account', async () => {
-                let liabilites = (await _prime._liabilities(minter, collateral)).toString();
-                assert.strictEqual(
-                    liabilites,
-                    '0',
-                    `Liabilities should be 0. Liable: ${liabilites}`
-                );
-            });
-
-            it('asserts collateral assets were credited to exerciser', async () => {
-                let assets = (await _prime._assets(minter, collateral)).toString();
-                assert.strictEqual(
-                    assets,
-                    (collateralAmount).toString(),
-                    `Assets should equal collateral amount.
-                    Assets: ${assets}, Collateral: ${collateralAmount}`
-                );
-            });
-
-            it('asserts strike assets were credited to minter', async () => {
-                let assets = (await _prime._assets(minter, strike)).toString();
-                assert.strictEqual(
-                    assets,
-                    (strikeAmount).toString(),
-                    `Assets should equal strike amount.
-                    Assets: ${assets}, Strike: ${strikeAmount}`
-                );
-            });
-
-            it('asserts tokenId was burned', async () => {
-                let nonce = await _prime._nonce();
-                await truffleAssert.reverts(
-                    _prime.ownerOf(nonce),
-                    "ERC721: owner query for nonexistent token"
-                );
-            });
-
-            it('should revert with create prime with strike receiver = pool address', async () => {
-                /* FIX - TEMPORARILY REMOVED DUE TO GAS LIMIT */
+                let differenceR = balanceAR*1 - balanceER*1;
+                let differenceP = balanceAP*1 - balanceEP*1;
                 
-                /* receiver = _pool.address;
-                await truffleAssert.reverts(
-                    _prime.createPrime(
-                        collateralAmount,
-                        collateral,
-                        strikeAmount,
-                        strike,
-                        expiry,
-                        receiver,
-                        {from: minter,  value: collateralAmount}
-                    ),
-                    "Create: rcvr != Msg.Sender"
-                ); */
-            });
+                assert.equal(differenceR <= ROUNDING_ERR, true, `${balanceAR} != ${balanceER}`);
+                assert.equal(differenceP <= ROUNDING_ERR, true, `${balanceAP} != ${balanceEP}`);
 
-            it('should revert because not enough pool funds - create prime from pool', async () => {
-                receiver = _pool.address;
-                await truffleAssert.reverts(
-                    _pool.mintPrimeFromPool(
-                        collateralAmount,
-                        strikeAmount,
-                        strike,
-                        expiry,
-                        minter,
-                        {from: minter,  value: collateralAmount}
-                    ),
-                    "Mint: available < amt"
-                );
-            });
+                let balanceU = (await _tokenU.methods.balanceOf(tokenP).call()).toString();
+                let cacheU = (await _tokenP.cacheU()).toString();
 
-            it('create prime from pool', async () => {
-                receiver = _pool.address;
-                let depositAmt = await web3.utils.toWei('4');
-                let deposit = await _pool.deposit(depositAmt, {value: depositAmt});
-                _pool.mintPrimeFromPool(
-                    collateralAmount,
-                    strikeAmount,
-                    strike,
-                    expiry,
-                    minter,
-                    {from: minter,  value: collateralAmount}
-                );
-            });
+                assert.isAtMost(balanceU*1 - balanceEU*1, ROUNDING_ERR);
+                assert.equal((balanceU*1 - balanceEU*1) <= ROUNDING_ERR, true, `${balanceU*1 - balanceEU*1} != ${inTokenU}`)
+                assert.equal((cacheU*1 - cacheEU*1) <= ROUNDING_ERR, true, `${cacheU*1 - cacheEU*1} != ${inTokenU}`)
 
-            it('exercise prime that has strike receiver = pool', async () => {
-                let nonce = await _prime._nonce();
-                await _tUSD.mint(minter, strikeAmount);
-                await _tUSD.approve(_prime.address, strikeAmount, {from: minter});
-                await _prime.exercise(nonce, {from: minter});
-            });
-
-            it('asserts pool received strike asset', async () => {
-                let poolStrikeBalance = (await _tUSD.balanceOf(_pool.address)).toString();
-                assert.strictEqual(
-                    poolStrikeBalance,
-                    (strikeAmount).toString(),
-                    `Pools Strike balance should equal the strike of the exercised prime.
-                    Pool: ${poolStrikeBalance}, StrikeAmt: ${strikeAmount}`
-                );
-            });
-
-            it('asserts prime withdrew ether from pool', async () => {
-                let etherBalanceOfPrimeContract = (await web3.eth.getBalance(_prime.address)).toString();
-                /* collateral * 4 because 4 primes were minted an executed in total so far with collateral amt */
-                assert.strictEqual(
-                    etherBalanceOfPrimeContract,
-                    (collateralAmount*4).toString(),
-                    `Ether balance of Prime should equal collateral that was exercised.
-                    Ether Bal: ${etherBalanceOfPrimeContract}, Collateral: ${collateralAmount}`
-                );
-            });
-
-            it('asserts the pool reduced its liability', async () => {
-                let liability = (await _pool._liability()).toString();
-                assert.strictEqual(
-                    liability,
-                    '0',
-                    `Liability should be 0. Liability: ${liability}` 
-                );
-            });
-
-            it('create and exercise a regular Prime', async () => {
-                await _prime.createPrime(
-                    collateralAmount,
-                    collateral,
-                    strikeAmount,
-                    strike,
-                    expiry,
-                    receiver,
-                    {from: minter,  value: collateralAmount}
-                );
-                let nonce = await _prime._nonce();
-                await _tUSD.mint(minter, strikeAmount);
-                await _tUSD.approve(_prime.address, strikeAmount, {from: minter});
-                let strikeBalanceOfPrimeBefore = (await _tUSD.balanceOf(_prime.address)).toString();
-                await _prime.exercise(nonce, {from: minter});
-                let strikeBalanceOfPrime = (await _tUSD.balanceOf(_prime.address)).toString();
-                assert.strictEqual(
-                    strikeBalanceOfPrime,
-                    (strikeBalanceOfPrimeBefore*1 + strikeAmount*1).toString(),
-                    `Strike Balance should equal strike amount. 
-                    Strike Balance: ${strikeBalanceOfPrime}, Stike Amt: ${strikeAmount}
-                    `
-                );
+                truffleAssert.eventEmitted(mint, "Mint");
+                truffleAssert.eventEmitted(mint, "Fund");
             });
         });
 
-        describe('withdraw()', () => {
-            let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
-            beforeEach(async () => {
-                minter = Bob;
-                collateralAmount = await web3.utils.toWei('1');
-                strikeAmount = await web3.utils.toWei('10');
-                collateral = _pool.address;
-                strike = _tUSD.address;
-                expiry = '1587607322';
-                receiver = minter;
-            });
-
-            it('mint a prime, then try to withdraw more collateral than exercised', async () => {
-                await _prime.createPrime(
-                    collateralAmount,
-                    collateral,
-                    strikeAmount,
-                    strike,
-                    expiry,
-                    receiver,
-                    {from: minter,  value: collateralAmount}
-                );
-                let tokenId = await _prime._nonce();
-                await _tUSD.mint(minter, strikeAmount);
-                await _tUSD.approve(_prime.address, strikeAmount, {from: minter});
-                await _prime.exercise(tokenId, {from: minter, value: 0});
-                let million = await web3.utils.toWei('1000000');
+        
+        describe('PrimeOption.swap()', () => {
+            it('reverts if inTokenS is 0', async () => {
+                await _tokenP.transfer(tokenP, ONE_ETHER);
                 await truffleAssert.reverts(
-                    _prime.withdraw(million, collateral, {from: minter, value: 0}),
-                    "a < b"
+                    _tokenP.swap(
+                        Alice,
+                        {from: Alice}
+                    ),
+                    "ERR_ZERO"
                 );
+                await _tokenP.take();
             });
 
-            it('should withdraw valid amount and debited it from assets', async () => {
-                let assetBalanceBefore = (await _prime._assets(minter, collateral, {from: minter, value: 0}));
-                await _prime.withdraw(collateralAmount, collateral, {from: minter, value: 0});
-                let assetBalanceAfter = (await _prime._assets(minter, collateral, {from: minter, value: 0})).toString();
-                assert.strictEqual(
-                    assetBalanceAfter,
-                    (assetBalanceBefore*1 - collateralAmount*1).toString(),
-                    `Withdrawed assets should have been debited.
-                    Before: ${(assetBalanceBefore*1 - collateralAmount*1).toString()}, After: ${assetBalanceAfter}`
+            it('reverts if inTokenP is 0', async () => {
+                await _tokenS.transfer(tokenP, ONE_ETHER);
+                await truffleAssert.reverts(
+                    _tokenP.swap(
+                        Alice,
+                        {from: Alice}
+                    ),
+                    "ERR_ZERO"
                 );
+                await _tokenP.take();
+            });
+
+            it('reverts if outTokenU > inTokenP', async () => {
+                await _tokenP.transfer(tokenP, toWei('0.01'));
+                await _tokenS.transfer(tokenP, price);
+                await truffleAssert.reverts(
+                    _tokenP.swap(
+                        Alice,
+                        {from: Alice}
+                    ),
+                    "ERR_BAL_UNDERLYING"
+                );
+                await _tokenP.take();
+            });
+
+            it('swaps tokenS + tokenP for tokenU', async () => {
+                let inTokenU = ONE_ETHER;
+                await _tokenU.methods.transfer(tokenP, inTokenU).send({from: Alice});
+                await _tokenP.mint(Alice, {from: Alice});
+                await _tokenP.take();
+                await _tokenP.update();
+
+                let inTokenS = price*1 * ONE_ETHER*1 / toWei('1');
+                let inTokenP = ONE_ETHER;
+                let outTokenU = ONE_ETHER;
+
+                let balance0S = await _tokenS.balanceOf(Alice);
+                let balance0P = await _tokenP.balanceOf(Alice);
+                let balance0U = await _tokenU.methods.balanceOf(Alice).call();
+
+                let balance0SC = await _tokenS.balanceOf(tokenP);
+                let balance0UC = await _tokenU.methods.balanceOf(tokenP).call();
+
+                await _tokenS.transfer(tokenP, (inTokenS).toString());
+                await _tokenP.transfer(tokenP, inTokenP);
+                let swap = await _tokenP.swap(Alice);
+                truffleAssert.prettyPrintEmittedEvents(swap);
+
+                let balance1S = await _tokenS.balanceOf(Alice);
+                let balance1P = await _tokenP.balanceOf(Alice);
+                let balance1U = await _tokenU.methods.balanceOf(Alice).call();
+
+                let balance1SC = await _tokenS.balanceOf(tokenP);
+                let balance1UC = await _tokenU.methods.balanceOf(tokenP).call();
+
+                let deltaS = balance1S - balance0S;
+                let deltaP = balance1P - balance0P;
+                let deltaU = balance1U - balance0U;
+                let deltaSC = balance1SC - balance0SC;
+                let deltaUC = balance1UC - balance0UC;
+
+                expect(deltaS).to.be.eq(-inTokenS);
+                expect(deltaP).to.be.eq(-inTokenP);
+                expect(deltaU).to.be.eq(+outTokenU);
+                expect(deltaSC).to.be.eq(+inTokenS);
+                expect(deltaUC).to.be.eq(-outTokenU);
+
+                truffleAssert.eventEmitted(swap, "Swap", (ev) => {
+                    return ev.outTokenU == inTokenP && ev.inTokenS == inTokenS;
+                });
+                truffleAssert.eventEmitted(swap, "Fund");
             });
         });
 
-        describe('close()', () => {
-            let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
-            beforeEach(async () => {
-                minter = Bob;
-                collateralAmount = await web3.utils.toWei('1');
-                strikeAmount = await web3.utils.toWei('10');
-                collateral = _pool.address;
-                strike = _tUSD.address;
-                expiry = '1587607322';
-                receiver = minter;
+        
+        describe('PrimeOption.redeem()', () => {
+            it('reverts if not enough withdrawable strike', async () => {
+                let inTokenU = TEN_ETHER;
+                await _tokenU.methods.deposit().send({from: Alice, value: inTokenU});
+                await _tokenU.methods.transfer(tokenP, inTokenU).send({from: Alice});
+                await _tokenP.mint(Alice, {from: Alice});
+                await _tokenR.transfer(tokenP, (price*1 * inTokenU*1 / toWei('1')).toString());
+                await truffleAssert.reverts(
+                    _tokenP.redeem(
+                        Alice,
+                        {from: Alice, value: 0}),
+                    "ERR_BAL_STRIKE"
+                );
             });
 
-            it('try closing a token id that doesnt belong to the msg.sender', async () => {
-                await _prime.createPrime(
-                    collateralAmount,
-                    collateral,
-                    strikeAmount,
-                    strike,
-                    expiry,
-                    receiver,
-                    {from: minter,  value: collateralAmount}
+            it('withdraws strike assets using redeem tokens', async () => {
+                let inTokenU = ONE_ETHER;
+                await _tokenU.methods.transfer(tokenP, inTokenU).send({from: Alice});
+                await _tokenP.mint(Alice, {from: Alice});
+                await _tokenP.take();
+                await _tokenP.update();
+
+                let inTokenS = price*1 * ONE_ETHER*1 / toWei('1');
+                let inTokenP = ONE_ETHER;
+                let outTokenU = ONE_ETHER;
+                let inTokenR = TEN_ETHER;
+                let outTokenS = inTokenR;
+
+                let balance0S = await _tokenS.balanceOf(Alice);
+                let balance0P = await _tokenP.balanceOf(Alice);
+                let balance0U = await _tokenU.methods.balanceOf(Alice).call();
+                let balance0R = await _tokenR.balanceOf(Alice);
+
+                let balance0SC = await _tokenS.balanceOf(tokenP);
+                let balance0UC = await _tokenU.methods.balanceOf(tokenP).call();
+
+                await _tokenR.transfer(tokenP, (inTokenS).toString());
+                let redeem = await _tokenP.redeem(Alice);
+                truffleAssert.prettyPrintEmittedEvents(redeem);
+
+                let balance1S = await _tokenS.balanceOf(Alice);
+                let balance1P = await _tokenP.balanceOf(Alice);
+                let balance1U = await _tokenU.methods.balanceOf(Alice).call();
+                let balance1R = await _tokenR.balanceOf(Alice);
+
+                let balance1SC = await _tokenS.balanceOf(tokenP);
+                let balance1UC = await _tokenU.methods.balanceOf(tokenP).call();
+
+                let deltaS = balance1S - balance0S;
+                let deltaP = balance1P - balance0P;
+                let deltaU = balance1U - balance0U;
+                let deltaR = balance1R - balance0R;
+                let deltaSC = balance1SC - balance0SC;
+                let deltaUC = balance1UC - balance0UC;
+
+                expect(deltaS).to.be.eq(+outTokenS);
+                expect(deltaP).to.be.eq(+0);
+                expect(deltaU).to.be.eq(+0);
+                expect(deltaR).to.be.eq(-inTokenR);
+                expect(deltaSC).to.be.eq(-outTokenS);
+                expect(deltaUC).to.be.eq(+0);
+
+                truffleAssert.eventEmitted(redeem, "Redeem", (ev) => {
+                    return ev.inTokenR == inTokenR && ev.inTokenR == outTokenS;
+                });
+                truffleAssert.eventEmitted(redeem, "Fund");
+            });
+        });
+
+        
+        describe('PrimeOption.close()', () => {
+            it('reverts if inTokenR is 0', async () => {
+                await _tokenP.take();
+                await _tokenP.update();
+                let inTokenP = ONE_ETHER;
+                await _tokenP.transfer(tokenP, inTokenP);
+                await truffleAssert.reverts(
+                    _tokenP.close(
+                        Alice,
+                        {from: Alice, value: 0}),
+                    "ERR_ZERO"
                 );
-                let tokenId = await _prime._nonce();
+                await _tokenP.take();
+            });
+
+            it('reverts if inTokenP is 0', async () => {
+                await _tokenP.take();
+                await _tokenP.update();
+                let inTokenR = TEN_ETHER;
+                await _tokenR.transfer(tokenP, inTokenR);
+                await truffleAssert.reverts(
+                    _tokenP.close(
+                        Alice,
+                        {from: Alice, value: 0}),
+                    "ERR_ZERO"
+                );
+                await _tokenP.take();
+            });
+
+            it('reverts if outTokenU > inTokenP', async () => {
+                await _tokenP.transfer(tokenP, toWei('0.01'));
+                await _tokenR.transfer(tokenP, price);
+                await truffleAssert.reverts(
+                    _tokenP.close(
+                        Alice,
+                        {from: Alice}
+                    ),
+                    "ERR_BAL_UNDERLYING"
+                );
+                await _tokenP.take();
+            });
+
+
+            it('closes position', async () => {
+                let inTokenU = ONE_ETHER;
+                await _tokenU.methods.transfer(tokenP, inTokenU).send({from: Alice});
+                await _tokenP.mint(Alice, {from: Alice});
+                await _tokenP.take();
+                await _tokenP.update();
+
+                let inTokenS = 0;
+                let inTokenP = ONE_ETHER;
+                let inTokenR = price*1 * ONE_ETHER*1 / toWei('1');
+                let outTokenU = ONE_ETHER;
+                let outTokenS = 0;
+
+                let balance0S = await _tokenS.balanceOf(Alice);
+                let balance0P = await _tokenP.balanceOf(Alice);
+                let balance0U = await _tokenU.methods.balanceOf(Alice).call();
+                let balance0R = await _tokenR.balanceOf(Alice);
+
+                let balance0SC = await _tokenS.balanceOf(tokenP);
+                let balance0UC = await _tokenU.methods.balanceOf(tokenP).call();
+
+                await _tokenR.transfer(tokenP, (inTokenR).toString());
+                await _tokenP.transfer(tokenP, (inTokenP).toString());
+                let close = await _tokenP.close(Alice);
+                truffleAssert.prettyPrintEmittedEvents(close);
+
+                let balance1S = await _tokenS.balanceOf(Alice);
+                let balance1P = await _tokenP.balanceOf(Alice);
+                let balance1U = await _tokenU.methods.balanceOf(Alice).call();
+                let balance1R = await _tokenR.balanceOf(Alice);
+
+                let balance1SC = await _tokenS.balanceOf(tokenP);
+                let balance1UC = await _tokenU.methods.balanceOf(tokenP).call();
+
+                let deltaS = balance1S - balance0S;
+                let deltaP = balance1P - balance0P;
+                let deltaU = balance1U - balance0U;
+                let deltaR = balance1R - balance0R;
+                let deltaSC = balance1SC - balance0SC;
+                let deltaUC = balance1UC - balance0UC;
+
+                expect(deltaS).to.be.eq(+outTokenS);
+                expect(deltaP).to.be.eq(-inTokenP);
+                expect(deltaU).to.be.eq(+outTokenU);
+                expect(deltaR).to.be.eq(-inTokenR);
+
+                expect(deltaSC).to.be.eq(-outTokenS);
+                expect(deltaUC).to.be.eq(-outTokenU);
+
+                truffleAssert.eventEmitted(close, "Close", (ev) => {
+                    return ev.inTokenP == +outTokenU && ev.inTokenP == +inTokenP;
+                });
+                truffleAssert.eventEmitted(close, "Fund");
+            });
+        });
+    });
+
+    describe('PrimeTrader.sol', () => {
+        it('Should initialize with the correct values', async () => {
+            let wethAddress = _tokenU._address;
+            assert.equal(
+                (await trader.weth()),
+                (wethAddress),
+                `Incorrect WETH Address ${await trader.weth()} != ${wethAddress}`
+            );
+        });
+
+        describe('PrimeTrader.safeMint()', () => {
+
+            it('revert if zero was the input for the amount parameter', async () => {
+                await truffleAssert.reverts(
+                    trader.safeMint(
+                        tokenP,
+                        0,
+                        Alice,
+                        {from: Alice}
+                    ),
+                    "ERR_ZERO"
+                );
+            });
+
+            it('reverts if msg.sender does not have enough tokenU', async () => {
+                await truffleAssert.reverts(
+                    trader.safeMint(
+                        tokenP,
+                        MILLION_ETHER,
+                        Alice,
+                        {from: Alice}
+                    ),
+                    "ERR_BAL_UNDERLYING"
+                );
+            });
+
+            it('mint tokenP and tokenR to Alice', async () => {
+                let inTokenU = ONE_ETHER;
+                let outTokenR = inTokenU*1 * price*1 / toWei('1');
+                let outTokenP = inTokenU;
+
+                let balanceER = await _tokenR.balanceOf(Alice);
+                let balanceEP = await _tokenP.balanceOf(Alice);
+
+                let balanceEU = await _tokenU.methods.balanceOf(tokenP).call();
+                let cacheEU = await _tokenP.cacheU();
+
+                let mint = await trader.safeMint(tokenP, inTokenU, Alice, {from: Alice});
+
+                let balanceAR = await _tokenR.balanceOf(Alice);
+                let balanceAP = await _tokenP.balanceOf(Alice);
+
+                let deltaR = balanceAR - balanceER;
+                let deltaP = balanceAP - balanceEP;
+
+                expect(deltaR).to.be.eq(+outTokenR);
+                expect(deltaP).to.be.eq(+outTokenP);
+
+                let balanceAU = await _tokenU.methods.balanceOf(tokenP).call();
+                let cacheAU = await _tokenP.cacheU();
+
+                let deltaU = balanceAU - balanceEU;
+                let deltaCacheU = cacheAU - cacheEU;
+
+                expect(deltaU).to.be.eq(+inTokenU);
+                expect(deltaCacheU).to.be.eq(+inTokenU);
+
+                truffleAssert.eventEmitted(mint, "Mint");
+            });
+
+            it('send 1 wei of tokenU to tokenP and call mint', async () => {
+                let inTokenU = '1';
+                let differenceE = (inTokenU*1 * price*1 / toWei('1')).toString();
+                let balanceER = (await _tokenR.balanceOf(Alice)).toString();
+                let balanceEP = (await _tokenP.balanceOf(Alice)).toString();
+                let balanceEU = (await _tokenU.methods.balanceOf(tokenP).call()).toString();
+                let cacheEU = (await _tokenP.cacheU()).toString();
+
+                let mint = await trader.safeMint(tokenP, inTokenU, Alice, {from: Alice});
+
+                let balanceAR = (await _tokenR.balanceOf(Alice)).toString();
+                let balanceAP = (await _tokenP.balanceOf(Alice)).toString();
+
+                let differenceR = balanceAR*1 - balanceER*1;
+                let differenceP = balanceAP*1 - balanceEP*1;
                 
+                assert.equal(differenceR <= ROUNDING_ERR, true, `${balanceAR} != ${balanceER}`);
+                assert.equal(differenceP <= ROUNDING_ERR, true, `${balanceAP} != ${balanceEP}`);
+
+                let balanceU = (await _tokenU.methods.balanceOf(tokenP).call()).toString();
+                let cacheU = (await _tokenP.cacheU()).toString();
+
+                assert.isAtMost(balanceU*1 - balanceEU*1, ROUNDING_ERR);
+                assert.equal((balanceU*1 - balanceEU*1) <= ROUNDING_ERR, true, `${balanceU*1 - balanceEU*1} != ${inTokenU}`)
+                assert.equal((cacheU*1 - cacheEU*1) <= ROUNDING_ERR, true, `${cacheU*1 - cacheEU*1} != ${inTokenU}`)
+
+                truffleAssert.eventEmitted(mint, "Mint");
+            });
+        });
+
+        
+        describe('PrimeTrader.safeSwap()', () => {
+            it('reverts if inTokenS is 0', async () => {
                 await truffleAssert.reverts(
-                    _prime.close(
-                        tokenId,
-                        tokenId,
+                    trader.safeSwap(
+                        tokenP,
+                        0,
+                        Alice,
+                        {from: Alice}
+                    ),
+                    "ERR_ZERO"
+                );
+            });
+
+            it('reverts if user does not have enough tokenP', async () => {
+                await truffleAssert.reverts(
+                    trader.safeSwap(
+                        tokenP,
+                        MILLION_ETHER,
+                        Alice,
+                        {from: Alice}
+                    ),
+                    "ERR_BAL_PRIME"
+                );
+            });
+
+            /* it('reverts if user does not have enough strike assets', async () => {
+                await truffleAssert.reverts(
+                    trader.safeSwap(
+                        tokenP,
+                        ONE_ETHER,
+                        Alice,
+                        {from: Alice}
+                    ),
+                    "ERR_BAL_STRIKE"
+                );
+            }); */
+
+            it('swaps tokenS + tokenP for tokenU', async () => {
+                let inTokenU = ONE_ETHER;
+                await _tokenU.methods.transfer(tokenP, inTokenU).send({from: Alice});
+                await _tokenP.mint(Alice, {from: Alice});
+                await _tokenP.take();
+                await _tokenP.update();
+
+                let inTokenS = price*1 * ONE_ETHER*1 / toWei('1');
+                let inTokenP = ONE_ETHER;
+                let outTokenU = ONE_ETHER;
+
+                let balance0S = await _tokenS.balanceOf(Alice);
+                let balance0P = await _tokenP.balanceOf(Alice);
+                let balance0U = await _tokenU.methods.balanceOf(Alice).call();
+
+                let balance0SC = await _tokenS.balanceOf(tokenP);
+                let balance0UC = await _tokenU.methods.balanceOf(tokenP).call();
+
+                let swap = await trader.safeSwap(tokenP, (inTokenP).toString(), Alice);
+                truffleAssert.prettyPrintEmittedEvents(swap);
+
+                let balance1S = await _tokenS.balanceOf(Alice);
+                let balance1P = await _tokenP.balanceOf(Alice);
+                let balance1U = await _tokenU.methods.balanceOf(Alice).call();
+
+                let balance1SC = await _tokenS.balanceOf(tokenP);
+                let balance1UC = await _tokenU.methods.balanceOf(tokenP).call();
+
+                let deltaS = balance1S - balance0S;
+                let deltaP = balance1P - balance0P;
+                let deltaU = balance1U - balance0U;
+                let deltaSC = balance1SC - balance0SC;
+                let deltaUC = balance1UC - balance0UC;
+
+                expect(deltaS).to.be.eq(-inTokenS);
+                expect(deltaP).to.be.eq(-inTokenP);
+                expect(deltaU).to.be.eq(+outTokenU);
+                expect(deltaSC).to.be.eq(+inTokenS);
+                expect(deltaUC).to.be.eq(-outTokenU);
+
+                truffleAssert.eventEmitted(swap, "Swap", (ev) => {
+                    return ev.outTokenU == inTokenP && ev.inTokenS == inTokenS;
+                });
+            });
+        });
+
+        
+        describe('PrimeTrader.safeRedeem()', () => {
+            it('reverts if inTokenR is 0', async () => {
+                await truffleAssert.reverts(
+                    trader.safeRedeem(
+                        tokenP,
+                        0,
+                        Alice,
+                        {from: Alice}
+                    ),
+                    "ERR_ZERO"
+                );
+            });
+
+            it('reverts if not enough withdrawable strike', async () => {
+                let inTokenU = TEN_ETHER;
+                await _tokenU.methods.deposit().send({from: Alice, value: inTokenU});
+                await _tokenU.methods.transfer(tokenP, inTokenU).send({from: Alice});
+                await _tokenP.mint(Alice, {from: Alice});
+                await truffleAssert.reverts(
+                    trader.safeRedeem(
+                        tokenP,
+                        (price*1 * inTokenU*1 / toWei('1')).toString(),
+                        Alice,
+                        {from: Alice, value: 0}),
+                    "ERR_BAL_STRIKE"
+                );
+            });
+
+            it('withdraws strike assets using redeem tokens', async () => {
+                let inTokenU = ONE_ETHER;
+                await _tokenU.methods.transfer(tokenP, inTokenU).send({from: Alice});
+                await _tokenP.mint(Alice, {from: Alice});
+                await _tokenP.take();
+                await _tokenP.update();
+
+                let inTokenS = price*1 * ONE_ETHER*1 / toWei('1');
+                let inTokenP = ONE_ETHER;
+                let outTokenU = ONE_ETHER;
+                let inTokenR = TEN_ETHER;
+                let outTokenS = inTokenR;
+
+                let balance0S = await _tokenS.balanceOf(Alice);
+                let balance0P = await _tokenP.balanceOf(Alice);
+                let balance0U = await _tokenU.methods.balanceOf(Alice).call();
+                let balance0R = await _tokenR.balanceOf(Alice);
+
+                let balance0SC = await _tokenS.balanceOf(tokenP);
+                let balance0UC = await _tokenU.methods.balanceOf(tokenP).call();
+
+                let redeem = await trader.safeRedeem(tokenP, (inTokenS).toString(), Alice);
+                truffleAssert.prettyPrintEmittedEvents(redeem);
+
+                let balance1S = await _tokenS.balanceOf(Alice);
+                let balance1P = await _tokenP.balanceOf(Alice);
+                let balance1U = await _tokenU.methods.balanceOf(Alice).call();
+                let balance1R = await _tokenR.balanceOf(Alice);
+
+                let balance1SC = await _tokenS.balanceOf(tokenP);
+                let balance1UC = await _tokenU.methods.balanceOf(tokenP).call();
+
+                let deltaS = balance1S - balance0S;
+                let deltaP = balance1P - balance0P;
+                let deltaU = balance1U - balance0U;
+                let deltaR = balance1R - balance0R;
+                let deltaSC = balance1SC - balance0SC;
+                let deltaUC = balance1UC - balance0UC;
+
+                expect(deltaS).to.be.eq(+outTokenS);
+                expect(deltaP).to.be.eq(+0);
+                expect(deltaU).to.be.eq(+0);
+                expect(deltaR).to.be.eq(-inTokenR);
+                expect(deltaSC).to.be.eq(-outTokenS);
+                expect(deltaUC).to.be.eq(+0);
+
+                truffleAssert.eventEmitted(redeem, "Redeem", (ev) => {
+                    return ev.inTokenR == inTokenR && ev.inTokenR == outTokenS;
+                });
+            });
+        });
+
+        
+        describe('PrimeTrader.safeClose()', () => {
+            it('reverts if inTokenR is 0', async () => {
+                await _tokenP.take();
+                await _tokenP.update();
+                let inTokenP = ONE_ETHER;
+                await truffleAssert.reverts(
+                    trader.safeClose(
+                        tokenP,
+                        0,
+                        Alice,
+                        {from: Alice, value: 0}),
+                    "ERR_ZERO"
+                );
+                await _tokenP.take();
+            });
+
+            it('reverts if user does not have enough redeem', async () => {
+                await _tokenP.take();
+                await _tokenP.update();
+                let inTokenR = MILLION_ETHER;
+                await truffleAssert.reverts(
+                    trader.safeClose(
+                        tokenP,
+                        inTokenR,
+                        Alice,
+                        {from: Alice, value: 0}),
+                    "ERR_BAL_REDEEM"
+                );
+                await _tokenP.take();
+            });
+
+            /* it('reverts if user does not have enough primes', async () => {
+                await truffleAssert.reverts(
+                    trader.safeClose(
+                        tokenP,
+                        toWei('0.01'),
+                        Alice,
+                        {from: Alice}
+                    ),
+                    "ERR_BAL_PRIME"
+                );
+                await _tokenP.take();
+            }); */
+
+
+            it('closes position', async () => {
+                let inTokenU = ONE_ETHER;
+                await _tokenU.methods.transfer(tokenP, inTokenU).send({from: Alice});
+                await _tokenP.mint(Alice, {from: Alice});
+                await _tokenP.take();
+                await _tokenP.update();
+
+                let inTokenS = 0;
+                let inTokenP = ONE_ETHER;
+                let inTokenR = price*1 * ONE_ETHER*1 / toWei('1');
+                let outTokenU = ONE_ETHER;
+                let outTokenS = 0;
+
+                let balance0S = await _tokenS.balanceOf(Alice);
+                let balance0P = await _tokenP.balanceOf(Alice);
+                let balance0U = await _tokenU.methods.balanceOf(Alice).call();
+                let balance0R = await _tokenR.balanceOf(Alice);
+
+                let balance0SC = await _tokenS.balanceOf(tokenP);
+                let balance0UC = await _tokenU.methods.balanceOf(tokenP).call();
+
+                let close = await trader.safeClose(tokenP, (inTokenP).toString(), Alice);
+                truffleAssert.prettyPrintEmittedEvents(close);
+
+                let balance1S = await _tokenS.balanceOf(Alice);
+                let balance1P = await _tokenP.balanceOf(Alice);
+                let balance1U = await _tokenU.methods.balanceOf(Alice).call();
+                let balance1R = await _tokenR.balanceOf(Alice);
+
+                let balance1SC = await _tokenS.balanceOf(tokenP);
+                let balance1UC = await _tokenU.methods.balanceOf(tokenP).call();
+
+                let deltaS = balance1S - balance0S;
+                let deltaP = balance1P - balance0P;
+                let deltaU = balance1U - balance0U;
+                let deltaR = balance1R - balance0R;
+                let deltaSC = balance1SC - balance0SC;
+                let deltaUC = balance1UC - balance0UC;
+
+                expect(deltaS).to.be.eq(+outTokenS);
+                expect(deltaP).to.be.eq(-inTokenP);
+                expect(deltaU).to.be.eq(+outTokenU);
+                expect(deltaR).to.be.eq(-inTokenR);
+
+                expect(deltaSC).to.be.eq(-outTokenS);
+                expect(deltaUC).to.be.eq(-outTokenU);
+
+                truffleAssert.eventEmitted(close, "Close", (ev) => {
+                    return ev.inTokenP == +outTokenU && ev.inTokenP == +inTokenP;
+                });
+            });
+        });
+    });
+
+    describe('PrimePool.sol', () => {
+        before(async () => {
+            console.log('[TOKEN U BEFORE]', (await Usdc.deployed()).address);
+            console.log('[TOKEN S BEFORE]', WETH._address);
+            _tokenS = WETH;
+            _tokenU = await Usdc.deployed();
+            
+            name = 'ETH201212C150USDC';
+            symbol = 'PRIME';
+            tokenU = _tokenU.address; // USDC
+            tokenS = WETH._address; // WETH
+            expiry = '1588334400';
+            base = toWei('200');
+            price = toWei('1');
+
+            console.log('[TOKEN U AFTER]', tokenU);
+            console.log('[TOKEN S BEFORE]', WETH._address);
+
+            _pool = await PrimePool.at(await _controllerMarket.getMaker(2));
+            _tokenP = await PrimeOption.at(await _controllerMarket.getOption(2));
+            _tokenR = await PrimeRedeem.at(await _tokenP.tokenR());
+            tokenP = _tokenP.address;
+            tokenR = _tokenR.address;
+            tokenPULP = _pool.address;
+            _tokenPULP = _pool;
+
+            await WETH.methods.deposit().send({from: Alice, value: TEN_ETHER});
+            await WETH.methods.deposit().send({from: Bob, value: TEN_ETHER});
+
+            await _tokenU.approve(_tokenP.address, MILLION_ETHER, {from: Alice});
+            await WETH.methods.approve(_tokenP.address, MILLION_ETHER).send({from: Alice});
+
+            await _tokenU.approve(_tokenP.address, MILLION_ETHER, {from: Bob});
+            await WETH.methods.approve(_tokenP.address, MILLION_ETHER).send({from: Bob});
+
+            await _tokenU.approve(_pool.address, MILLION_ETHER, {from: Alice});
+            await WETH.methods.approve(_pool.address, MILLION_ETHER).send({from: Alice});
+
+            await _tokenU.approve(_pool.address, MILLION_ETHER, {from: Bob});
+            await WETH.methods.approve(_pool.address, MILLION_ETHER).send({from: Bob});
+
+            await _tokenP.approve(_pool.address, MILLION_ETHER, {from: Alice});
+            await _tokenP.approve(_pool.address, MILLION_ETHER, {from: Bob});
+
+            await _tokenR.approve(_pool.address, MILLION_ETHER, {from: Alice});
+            await _tokenR.approve(_pool.address, MILLION_ETHER, {from: Bob});
+
+            await _tokenU.approve(trader.address, MILLION_ETHER, {from: Alice});
+            await _tokenS.methods.approve(trader.address, MILLION_ETHER).send({from: Alice});
+
+            await _tokenU.approve(trader.address, MILLION_ETHER, {from: Bob});
+            await _tokenS.methods.approve(trader.address, MILLION_ETHER).send({from: Bob});
+
+            await _tokenP.approve(trader.address, MILLION_ETHER, {from: Alice});
+            await _tokenP.approve(trader.address, MILLION_ETHER, {from: Bob});
+
+            await _tokenR.approve(trader.address, MILLION_ETHER, {from: Alice});
+            await _tokenR.approve(trader.address, MILLION_ETHER, {from: Bob});
+        });
+
+        it('Should initialize with the correct values', async () => {
+            let wethAddress = WETH._address;
+            assert.equal(
+                (await _pool.weth()),
+                (wethAddress),
+                `Incorrect WETH Address ${await _pool.weth()} != ${wethAddress}`
+            );
+        });
+
+        /* it('Should initialize with the correct tokenU', async () => {
+            assert.equal(
+                (await _pool.tokenU()),
+                (tokenU),
+                `Incorrect tokenU`
+            );
+        });
+
+        it('Should initialize with the correct tokenS', async () => {
+            assert.equal(
+                (await _pool.tokenS()),
+                (tokenS),
+                `Incorrect tokenS`
+            );
+        }); */
+
+        it('Should initialize with the correct oracle', async () => {
+            assert.equal(
+                (await _pool.oracle()),
+                (MAINNET_ORACLE),
+                `Incorrect oracle`
+            );
+        });
+
+        /* it('Should initialize with the correct option market', async () => {
+            assert.equal(
+                (await _pool.isValidOption(tokenP)),
+                (true),
+                `Incorrect tokenS`
+            );
+        }); */
+
+        /* it('Should initialize with the correct option market in array', async () => {
+            assert.equal(
+                (await _pool._optionMarkets(firstMarket)),
+                (tokenP),
+                `Incorrect tokenS`
+            );
+        }); */
+
+        describe('PrimePool.deposit()', () => {
+
+            it('revert if zero was the input for the amount parameter', async () => {
+                await truffleAssert.reverts(
+                    _pool.deposit(
+                        0,
+                        tokenP,
                         {from: Alice, value: 0}
                     ),
-                    "!own"
+                    "ERR_BAL_UNDERLYING"
                 );
             });
 
-            it('try closing a prime thats not in the same series', async () => {
-                /* A different expiration will put the Prime in a difference series */
-                expiry = '1597227010';
-                await _prime.createPrime(
-                    collateralAmount,
-                    collateral,
-                    strikeAmount,
-                    strike,
-                    expiry,
-                    receiver,
-                    {from: minter,  value: collateralAmount}
-                );
+            it('mint tokenPULP to Alice for tokenU by deposit', async () => {
+                let inTokenU = ONE_ETHER;
+                let outTokenPULP = inTokenU;
 
-                let burnId = (await _prime._nonce()).toString();
-                let collateralId = (burnId*1 - 1).toString();
+                let balance0U = await _tokenU.balanceOf(Alice);
+                let balance0PULP = await _pool.balanceOf(Alice);
+
+                let balance0UC = await _tokenU.balanceOf(tokenPULP);
+                let balance0SC = await _pool.totalSupply();
+
+                let deposit = await _pool.deposit(inTokenU, tokenP, {from: Alice});
+
+                let balance1U = await _tokenU.balanceOf(Alice);
+                let balance1PULP = await _pool.balanceOf(Alice);
+
+                let balance1UC = await _tokenU.balanceOf(tokenPULP);
+                let balance1SC = await _pool.totalSupply();
+
+                let deltaPULP = balance1PULP - balance0PULP;
+                let deltaU = balance1U - balance0U;
+                let deltaSC = balance1SC - balance0SC;
+                let deltaUC = balance1UC - balance0UC;
+
+                expect(deltaPULP).to.be.eq(+outTokenPULP);
+                expect(deltaU).to.be.eq(-inTokenU);
+                expect(deltaSC).to.be.eq(+outTokenPULP);
+                expect(deltaUC).to.be.eq(+inTokenU);
+
+                truffleAssert.eventEmitted(deposit, "Deposit");
+                console.log('[BASE]', fromWei(await _tokenP.base()));
+                console.log('[PRICE]', fromWei(await _tokenP.price()));
+                let premium = await _pool.calculatePremium(
+                    await _tokenP.base(),
+                    await _tokenP.price(),
+                    await _tokenP.expiry()
+                );
+                
+                console.log('[PREMIUM CALCULATED]', fromWei(premium.premium));
+                console.log('[SQRT CALCULATED]', (await _pool.sqrt(premium.timeRemainder)).toString());
+                console.log('[TIME REMAINING]', (premium.timeRemainder).toString());
+            });
+
+            it('should be able to withdraw tokenU if no tokenR is in contract', async () => {
+                let inTokenPULP = await _pool.balanceOf(Alice);
+                let outTokenU = inTokenPULP*1 * await _tokenU.balanceOf(_pool.address) / await _pool.totalSupply();
+                let outTokenS = inTokenPULP*1 * await _tokenR.balanceOf(_pool.address) / await _pool.totalSupply();
+                let outTokenR = outTokenS; // FIX
+
+                let balance0U = await _tokenU.balanceOf(Alice); 
+                let balance0P = await _pool.balanceOf(Alice);
+                let balance0S = await WETH.methods.balanceOf(Alice).call();
+
+                let balance0UC = await _tokenU.balanceOf(tokenP);
+                let balance0SC = await WETH.methods.balanceOf(tokenP).call();
+
+                console.log('[CACHE U]', fromWei(await _tokenU.balanceOf(tokenPULP)));
+                console.log('[CACHE S]', fromWei(await WETH.methods.balanceOf(tokenPULP).call()));
+                console.log('[BALANCE U]', fromWei(balance0U));
+                console.log('[BALANCE S]', fromWei(balance0S));
+                console.log('[BALANCE P]', fromWei(balance0P));
+
+                let withdraw = await _pool.withdraw((inTokenPULP).toString(), tokenP);
+                truffleAssert.prettyPrintEmittedEvents(withdraw);
+
+                let balance1U = await _tokenU.balanceOf(Alice);
+                let balance1P = await _pool.balanceOf(Alice);
+                let balance1S = await WETH.methods.balanceOf(Alice).call();
+
+                let balance1UC = await _tokenU.balanceOf(tokenP);
+                let balance1SC = await WETH.methods.balanceOf(tokenP).call();
+
+                let deltaS = balance1S - balance0S;
+                let deltaP = balance1P - balance0P;
+                let deltaU = balance1U - balance0U;
+                let deltaSC = balance1SC - balance0SC;
+                let deltaUC = balance1UC - balance0UC;
+
+                expect(deltaS).to.be.eq(+outTokenS);
+                expect(deltaP).to.be.eq(-inTokenPULP);
+                assert.isAtMost(deltaU, +outTokenU + ROUNDING_ERR);
+                expect(deltaSC).to.be.eq(-outTokenS);
+                expect(deltaUC).to.be.eq(+0);
+
+                truffleAssert.eventEmitted(withdraw, "Withdraw");
+                console.log('[CACHE U]', fromWei(await _tokenU.balanceOf(tokenPULP)));
+                console.log('[CACHE S]', fromWei(await WETH.methods.balanceOf(tokenPULP).call()));
+                console.log('[BALANCE U]', fromWei(balance1U));
+                console.log('[BALANCE S]', fromWei(balance1S));
+                console.log('[BALANCE P]', fromWei(balance1P));
+            });
+        });
+
+        describe('PrimePool.buy()', () => {
+            it('reverts if inTokenS amount parameter is 0', async () => {
                 await truffleAssert.reverts(
-                    _prime.close(
-                        collateralId,
-                        burnId,
-                        {from: minter, value: 0}
+                    _pool.buy(
+                        0,
+                        tokenP,
+                        {from: Alice, value: 0}
                     ),
-                    "Props !="
+                    "ERR_BAL_ETH"
                 );
             });
 
-            it('close the Prime and Assert that collateral was debited', async () => {
-                let burnId = (await _prime._nonce()).toString();
-                let collateralBalanceOfMinterBefore = (await _prime._liabilities(minter, collateral, {from: minter})).toString();
-                await _prime.close(burnId, burnId, {from: minter, value: 0});
-                let collateralBalanceOfMinterAfter = (await _prime._liabilities(minter, collateral, {from: minter})).toString();
-                assert.strictEqual(
-                    collateralBalanceOfMinterAfter,
-                    (collateralBalanceOfMinterBefore*1 - collateralAmount*1).toString(),
-                    `Collateral should have been debited.
-                    Before: ${collateralBalanceOfMinterBefore}, After: ${collateralBalanceOfMinterAfter}`
-                )
-            });
-
-            it('asserts the token was actually burned', async () => {
-                let burnId = (await _prime._nonce()).toString();
+            it('reverts if not enough tokenU', async () => {
+                let inTokenS = ONE_ETHER;
                 await truffleAssert.reverts(
-                    _prime.ownerOf(burnId),
-                    "ERC721: owner query for nonexistent token"
+                    _pool.buy(
+                        inTokenS,
+                        tokenP,
+                        {from: Alice, value: inTokenS}),
+                    "ERC20: transfer amount exceeds balance"
                 );
             });
 
-            it('create prime with yak = pool and assert ether was sent from prime to user when closed', async () => {
-                await _prime.createPrime(
-                    collateralAmount,
-                    collateral,
-                    strikeAmount,
-                    strike,
-                    expiry,
-                    receiver,
-                    {from: minter,  value: collateralAmount}
-                );
-                let etherBalanceOfMinterBefore = (await web3.eth.getBalance(minter)).toString();
-                let tokenId = await _prime._nonce();
-                await _prime.close(tokenId, tokenId, {from: minter});
-                let etherBalanceOfMinterAfter = (await web3.eth.getBalance(minter)).toString();
-                /* Need to account for interest accumulated - FIX */
-                /* assert.strictEqual(
-                    etherBalanceOfMinterAfter,
-                    (etherBalanceOfMinterBefore*1 + collateralAmount*1).toString(),
-                    `Ether balance after should have added collateral amount.
-                    Ether Bal After: ${etherBalanceOfMinterAfter}, Before: ${etherBalanceOfMinterBefore}`
-                ); */
+            it('purchases Prime option for a premium', async () => {
+                await _tokenU.mint(Alice, MILLION_ETHER);
+                await _pool.deposit(await _tokenP.base(), tokenP);
+
+                let inTokenS = await _tokenP.price();
+                let outTokenU = await _tokenP.base();
+                let inTokenR = await _tokenP.price();
+                let outTokenS = inTokenR;
+                let outTokenP = await _tokenP.base();
+
+                let balance0S = await getBalance(Alice);
+                let balance0P = await _tokenP.balanceOf(Alice);
+
+                let balance0U = await _tokenU.balanceOf(tokenPULP);
+                let balance0R = await _tokenR.balanceOf(tokenPULP);
+
+                let balance0UC = await _tokenU.balanceOf(tokenP);
+                let balance0SC = await WETH.methods.balanceOf(tokenP).call();
+                console.log('[TOKEN R BALANCE]', fromWei(await _tokenR.balanceOf(_pool.address)));
+                console.log('[Utilized]', fromWei(await _pool.poolUtilized(tokenR, base, price)));
+                console.log('[VOLATILITY]', (await _pool.calculateVolatilityProxy(tokenU, tokenR, base, price)).toString());
+                let buy = await _pool.buy(inTokenS, tokenP, {from: Alice, value: inTokenS});
+                console.log('[TOKEN R BALANCE]', fromWei(await _tokenR.balanceOf(_pool.address)));
+                console.log('[Utilized]', fromWei(await _pool.poolUtilized(tokenR, base, price)));
+                console.log('[VOLATILITY]', (await _pool.calculateVolatilityProxy(tokenU, tokenR, base, price)).toString());
+                truffleAssert.prettyPrintEmittedEvents(buy);
+
+                let balance1S = await getBalance(Alice);
+                let balance1P = await _tokenP.balanceOf(Alice);
+
+                let balance1U = await _tokenU.balanceOf(tokenPULP);
+                let balance1R = await _tokenR.balanceOf(tokenPULP);
+
+                let balance1UC = await _tokenU.balanceOf(tokenP);
+                let balance1SC = await WETH.methods.balanceOf(tokenP).call();
+
+                let deltaS = balance1S - balance0S;
+                let deltaP = balance1P - balance0P;
+                let deltaU = balance1U - balance0U;
+                let deltaR = balance1R - balance0R;
+                let deltaSC = balance1SC - balance0SC;
+                let deltaUC = balance1UC - balance0UC;
+
+                assert.isAtMost(deltaS, -inTokenS - 10^15);
+                expect(deltaP).to.be.eq(+outTokenP);
+                expect(deltaU).to.be.eq(-outTokenU); // this is the strike asset
+                expect(deltaR).to.be.eq(+inTokenR);
+                expect(deltaSC).to.be.eq(+0);
+                expect(deltaUC).to.be.eq(+outTokenU);
+
+                truffleAssert.eventEmitted(buy, "Buy");
             });
-
-            it('create prime with yak = ERC20 and assert token was sent from prime to user when closed', async () => {
-                collateral = _tUSD.address;
-                await _tUSD.mint(minter, collateralAmount, {from: minter});
-                await _tUSD.approve(_prime.address, collateralAmount, {from: minter});
-                await _prime.createPrime(
-                    collateralAmount,
-                    collateral,
-                    strikeAmount,
-                    strike,
-                    expiry,
-                    receiver,
-                    {from: minter,  value: collateralAmount}
-                );
-                let tokenBalanceOfMinterBefore = (await _tUSD.balanceOf(minter)).toString();
-                let tokenId = await _prime._nonce();
-                await _prime.close(tokenId, tokenId, {from: minter});
-                let tokenBalanceOfMinterAfter = (await _tUSD.balanceOf(minter)).toString();
-                /* Need to account for interest accumulated - FIX */
-                /* assert.strictEqual(
-                    tokenBalanceOfMinterAfter,
-                    (tokenBalanceOfMinterBefore*1 + collateralAmount*1).toString(),
-                    `Token balance after should have added collateral amount.
-                    Token Bal After: ${tokenBalanceOfMinterAfter}, Before: ${tokenBalanceOfMinterBefore}`
-                ); */
-            });
-        });
-    });
-
-    describe('ExchangeERC20.sol', () => {
-        let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
-        beforeEach(async () => {
-            _prime = await Prime.deployed();
-            _tUSD = await tUSD.deployed();
-            _exchange = await Exchange.deployed();
-            _pool = await Pool.deployed();
-
-            minter = Bob;
-            collateralAmount = await web3.utils.toWei('1');
-            strikeAmount = await web3.utils.toWei('10');
-            collateral = _pool.address;
-            strike = _tUSD.address;
-            expiry = '1607775120';
-            receiver = minter;
-            
-        });
-        it('should assert only owner can call set exchange', async () => {
-            await truffleAssert.reverts(
-                _exchange.setPoolAddress(Bob, {from: Bob}),
-                "Ownable: caller is not the owner"
-            );
-        });
-
-        it('should assert only owner can call killswitch', async () => {
-            await truffleAssert.reverts(
-                _exchange.killSwitch({from: Bob}),
-                "Ownable: caller is not the owner"
-            );
-        });
-
-        it('should assert only owner can call unpause', async () => {
-            await truffleAssert.reverts(
-                _exchange.unpause({from: Bob}),
-                "Ownable: caller is not the owner"
-            );
-        });
-
-        it('should revert if user trys to withdraw more ether than their balance', async () => {
-            let amount = await web3.utils.toWei('10');
-            await truffleAssert.reverts(
-                _exchange.withdrawEther(amount, {from: Bob}),
-                "Bal < amount"
-            );
-        });
-
-        describe('addLiquidity()', () => {
-        let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
-        beforeEach(async () => {
-            _prime = await Prime.deployed();
-            _tUSD = await tUSD.deployed();
-            _exchange = await Exchange.deployed();
-            _pool = await Pool.deployed();
-
-            minter = Bob;
-            collateralAmount = await web3.utils.toWei('1');
-            strikeAmount = await web3.utils.toWei('10');
-            collateral = _pool.address;
-            strike = _tUSD.address;
-            expiry = '1607775120';
-            receiver = minter;
-            
-        });
-
-        it('should revert if tokenId <= 0', async () => {
-            let askPrice = collateralAmount;
-            let tokenId = 0;
-            await truffleAssert.reverts(
-                _exchange.sellOrder(tokenId, askPrice, {from: minter}),
-                "Invalid Token"
-            );
-            tokenId = -1;
-            /* ah, maybe since uint it converts to 1? 
-            this is interesting, reverts because expired not because invalid? 
-            even though require(valid) is first */
-            await truffleAssert.reverts(
-                _exchange.sellOrder(tokenId, askPrice, {from: minter}),
-                "expired"
-            );
-        });
-
-        it('should revert if askPrice <= 0', async () => {
-            let askPrice = 0;
-            await _prime.createPrime(
-                collateralAmount,
-                collateral,
-                strikeAmount,
-                strike,
-                expiry,
-                minter,
-                {from: minter, value: collateralAmount}
-            );
-            let tokenId = await _prime._nonce();
-            await _prime.approve(_exchange.address, tokenId, {from: minter});
-            await truffleAssert.reverts(
-                _exchange.sellOrder(tokenId, askPrice, {from: minter}),
-                "Ask < 0"
-            );
-            /* How to deal with negatives? */
-            /* askPrice = -1;
-            await truffleAssert.reverts(
-                _exchange.sellOrder(tokenId, askPrice, {from: minter}),
-                "Ask < 0"
-            ); */
-        });
-
-        it('should revert if token is expired', async () => {
-            let expiry = '1607775120';
-            /* FIX - needs a javascript function to get a unix timestamp that will expire immediatly after */
-            /* await _prime.createPrime(
-                collateralAmount,
-                collateral,
-                strikeAmount,
-                strikeAddress,
-                expiry,
-                minter,
-                {from: minter, value: collateralAmount}
-            )
-            let tokenId = await _prime._nonce();
-            await truffleAssert.reverts(
-                _exchange.sellOrder(tokenId, askPrice, {from: minter}),
-                "Token expired"
-            ); */
-        });
-
-        it('should revert if token is already listed', async () => {
-            await _prime.createPrime(
-                collateralAmount,
-                collateral,
-                strikeAmount,
-                strike,
-                expiry,
-                minter,
-                {from: minter, value: collateralAmount}
-            ); /* might not work because it wont let an expired token to be made */
-            let tokenId = await _prime._nonce();
-            await _prime.approve(_exchange.address, tokenId, {from: minter});
-            await _exchange.sellOrder(tokenId, collateralAmount, {from: minter});
-            await truffleAssert.reverts(
-                _exchange.sellOrder(tokenId, collateralAmount, {from: minter}),
-                "Token listed already"
-            );
-        });
-
-        it('should fill unfilled buy order', async () => {
-            await _prime.createPrime(
-                collateralAmount,
-                collateral,
-                strikeAmount,
-                strike,
-                expiry,
-                minter,
-                {from: minter, value: collateralAmount}
-            ); /* might not work because it wont let an expired token to be made */
-            let tokenId = await _prime._nonce();
-            let bidPrice = (await web3.utils.toWei('0.75')).toString();
-            let askPrice = (await web3.utils.toWei('0.5')).toString();
-            let buyOrderUnfilled = await _exchange.buyOrderUnfilled(
-                bidPrice,
-                collateralAmount,
-                collateral,
-                strikeAmount,
-                strike,
-                expiry, 
-                {from: minter, value: collateralAmount}
-            );
-            await truffleAssert.eventEmitted(buyOrderUnfilled, 'BuyOrderUnfilled');
-            /* GOES TO FILL UNFILLED BUY ORDER INTERNAL FUNCTION */
-            let series = await _prime.getSeries(tokenId);
-            let buyNonce = await _exchange._unfilledNonce(series);
-            await _prime.approve(_exchange.address, tokenId, {from: minter});
-            let sellOrder = await _exchange.sellOrder(tokenId, askPrice, {from: minter});
-            
-            await truffleAssert.eventEmitted(sellOrder, 'SellOrder');
-            await truffleAssert.eventEmitted(sellOrder, 'FillUnfilledBuyOrder');
-
-            let etherBalanceOfSeller = (await _exchange._etherBalance(minter, {from: minter})).toString();
-            assert.strictEqual(
-                etherBalanceOfSeller,
-                askPrice,
-                `Should have the ask price credited to the sellers balance.
-                ether bal credit: ${etherBalanceOfSeller}, ask price: ${askPrice}`
-            );
-            /* Need to work on fee assertions */
-        });
-
-        it('assert buyer received prime from seller', async () => {
-            let tokenId = await _prime._nonce();
-            let owner = await _prime.ownerOf(tokenId);
-            assert.strictEqual(
-                owner,
-                minter,
-                `Owner should == minter, because they sold then bought it.
-                owner: ${owner} minter: ${minter}`
-            );
-        });
-
-        it('assert buyer received prime from seller', async () => {
-            let tokenId = await _prime._nonce();
-            let owner = await _prime.ownerOf(tokenId);
-            assert.strictEqual(
-                owner,
-                minter,
-                `Owner should == minter, because they sold then bought it.
-                owner: ${owner} minter: ${minter}`
-            );
-        });
-
-        it('should fill a buy order for the specific token ID', async () => {
-            await _prime.createPrime(
-                collateralAmount,
-                collateral,
-                strikeAmount,
-                strike,
-                expiry,
-                minter,
-                {from: minter, value: collateralAmount}
-            ); /* might not work because it wont let an expired token to be made */
-            let tokenId = await _prime._nonce();
-            let bidPrice = (await web3.utils.toWei('0.5')).toString();
-            let askPrice = (await web3.utils.toWei('0.5')).toString();
-            /* Pool should not have funds, else itll fill order */
-            let buyOrder = await _exchange.buyOrder(
-                tokenId,
-                bidPrice,
-                {from: minter, value: collateralAmount}
-            );
-            await truffleAssert.eventEmitted(buyOrder, 'BuyOrder');
-            /* GOES TO FILL ORDER INTERNAL FUNCTION */
-            await _prime.approve(_exchange.address, tokenId, {from: minter});
-            let sellOrder = await _exchange.sellOrder(tokenId, askPrice, {from: minter});
-            await truffleAssert.eventEmitted(sellOrder, 'FillOrder');
-            /* Need to work on fee assertions */
-        });
-
-        it('should list a sell order if no buy orders', async () => {
-            await _prime.createPrime(
-                collateralAmount,
-                collateral,
-                strikeAmount,
-                strike,
-                expiry,
-                minter,
-                {from: minter, value: collateralAmount}
-            ); /* might not work because it wont let an expired token to be made */
-            let tokenId = await _prime._nonce();
-            let askPrice = (await web3.utils.toWei('0.5')).toString();
-            /* Pool should not have funds, else itll fill order */
-            await _prime.approve(_exchange.address, tokenId, {from: minter});
-            let sellOrder = await _exchange.sellOrder(tokenId, askPrice, {from: minter});
-            await truffleAssert.eventEmitted(sellOrder, 'SellOrder');
-        });
-
-        it('should have updated state with sell order', async () => {
-            let tokenId = await _prime._nonce();
-            let askPrice = (await web3.utils.toWei('0.5')).toString();
-            let sellOrder = await _exchange.getSellOrder(tokenId, {from: minter});
-            assert.strictEqual(
-                sellOrder.seller,
-                minter,
-                'Sell order seller should be minter'
-            );
-            assert.strictEqual(
-                (sellOrder.askPrice).toString(),
-                askPrice,
-                'Sell order ask should be ask price'
-            );
-            assert.strictEqual(
-                (sellOrder.tokenId).toString(),
-                (tokenId).toString(),
-                `Sell order token id should be token id
-                sell order: ${sellOrder.tokenId}, tokenId: ${tokenId}`
-            );
-        });
-
-        it('should have transferred Prime from seller to exchange', async () => {
-            let tokenId = await _prime._nonce();
-            let owner = await _prime.ownerOf(tokenId, {from: minter});
-            assert.strictEqual(
-                owner,
-                _exchange.address,
-                `Owner should be exchange.
-                owner: ${owner} exchange: ${_exchange.address}`
-            );
-        });
-        });
-
-        describe('removeLiquidity()', () => {
-        let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
-        beforeEach(async () => {
-            minter = Bob;
-            collateralAmount = await web3.utils.toWei('1');
-            strikeAmount = await web3.utils.toWei('10');
-            collateral = _pool.address;
-            strike = _tUSD.address;
-            expiry = '1587607322';
-            receiver = minter;
         });
         
-        it('should revert if tokenId <= 0', async () => {
-            let bidPrice = collateralAmount;
-            let tokenId = 0;
-            await truffleAssert.reverts(
-                _exchange.buyOrder(tokenId, bidPrice, {from: minter}),
-                "Invalid Token"
-            );
-        });
-
-        it('should revert if bidPrice <= 0', async () => {
-            let bidPrice = 0;
-            let tokenId = 1;
-            await truffleAssert.reverts(
-                _exchange.buyOrder(tokenId, bidPrice, {from: minter}),
-                "Bid < 0"
-            );
-        });
-
-        /* Fee unit tests - need to be reworked */
-
-        it('should fill a buy order for an already listed tokenId', async () => {
-            await _prime.createPrime(
-                collateralAmount,
-                collateral,
-                strikeAmount,
-                strike,
-                expiry,
-                Alice,
-                {from: Alice, value: collateralAmount}
-            );
-            let tokenId = await _prime._nonce();
-            let bidPrice = (await web3.utils.toWei('0.5')).toString();
-            await _prime.approve(_exchange.address, tokenId, {from: Alice});
-            await _exchange.sellOrder(tokenId, bidPrice, {from: Alice});
-            let buyOrder = await _exchange.buyOrder(tokenId, bidPrice, {from: minter, value: collateralAmount});
-            await truffleAssert.eventEmitted(buyOrder, 'FillOrder');
-        });
-
-        it('asserts sellers exchange balance had the ask price added to it', async () => {
-            let tokenId = await _prime._nonce();
-            let bidPrice = (await web3.utils.toWei('0.5')).toString();
-            let etherBalanceOfSeller = (await _exchange._etherBalance(Alice, {from: Alice})).toString();
-            assert.strictEqual(
-                etherBalanceOfSeller,
-                bidPrice,
-                `Ether balance should = ask price = bid price. 
-                ether bal: ${etherBalanceOfSeller} bid/ask: ${bidPrice}`
-            );
-        });
-
-        it('asserts prime token was transferred from exchange to buyer', async () => {
-            let tokenId = await _prime._nonce();
-            let owner = await _prime.ownerOf(tokenId);
-            assert.strictEqual(
-                owner,
-                minter,
-                `Minter purchased it so they should be the owner.`
-            );
-        });
-
-        it('should submit a buy order for a tokenId', async () => {
-            await _prime.createPrime(
-                collateralAmount,
-                collateral,
-                strikeAmount,
-                strike,
-                expiry,
-                minter,
-                {from: minter, value: collateralAmount}
-            );
-            let tokenId = await _prime._nonce();
-            let bidPrice = (await web3.utils.toWei('0.5')).toString();
-            let buyOrder = await _exchange.buyOrder(tokenId, bidPrice, {from: minter, value: collateralAmount});
-            await truffleAssert.eventEmitted(buyOrder, 'BuyOrder');
-        });
-
-        it('should have updated state with a buy order for token Id', async () => {
-            let tokenId = await _prime._nonce();
-            let bidPrice = (await web3.utils.toWei('0.5')).toString();
-            let buyOrder = await _exchange.getBuyOrder(tokenId, {from: minter});
-            assert.strictEqual(
-                buyOrder.buyer,
-                minter,
-                'Buy order buyer should be minter'
-            );
-            assert.strictEqual(
-                (buyOrder.bidPrice).toString(),
-                (bidPrice).toString(),
-                'Buy order bid should be bid price'
-            );
-            assert.strictEqual(
-                (buyOrder.tokenId).toString(),
-                (tokenId).toString(),
-                'Buy order token id should be token id'
-            );
-        });
-        });
-
-        describe('swapTokensToEth()', () => {
-        let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
-        beforeEach(async () => {
-            minter = Bob;
-            collateralAmount = await web3.utils.toWei('1');
-            strikeAmount = await web3.utils.toWei('10');
-            collateral = _pool.address;
-            strike = _tUSD.address;
-            expiry = '1587607322';
-            receiver = minter;
-        });
-
-        it('should revert if trying to close a token ID <= 0', async () => {
-            let tokenId = 0;
-            await truffleAssert.reverts(
-                _exchange.closeSellOrder(tokenId, {from: minter}),
-                "Invalid Token"
-            );
-        });
-
-        it('should revert is trying to close sell order without being seller', async () => {
-            await _prime.createPrime(
-                collateralAmount,
-                collateral,
-                strikeAmount,
-                strike,
-                expiry,
-                minter,
-                {from: minter, value: collateralAmount}
-            );
-            let tokenId = await _prime._nonce();
-            let askPrice = (await web3.utils.toWei('0.5')).toString();
-            await _prime.approve(_exchange.address, tokenId, {from: minter});
-            let sellOrder = await _exchange.sellOrder(tokenId, askPrice, {from: minter});
-            await truffleAssert.reverts(
-                _exchange.closeSellOrder(tokenId, {from: Alice}),
-                "Msg.sender != seller"
-            );
-        });
-
-        it('close sell order', async () => {
-            let tokenId = await _prime._nonce();
-            let askPrice = (await web3.utils.toWei('0.5')).toString();
-            let closeSellOrder = await _exchange.closeSellOrder(tokenId, {from: minter});
-            await truffleAssert.eventEmitted(closeSellOrder, 'CloseOrder');
-        });
-
-        it('assert sell order was cleared from state', async () => {
-            let tokenId = await _prime._nonce();
-            let askPrice = 0;
-            await _prime.approve(_exchange.address, tokenId, {from: minter});
-            let sellOrder = await _exchange.getSellOrder(tokenId, {from: minter});
-            let zeroAddress = '0x0000000000000000000000000000000000000000';
-            assert.strictEqual(
-                sellOrder.seller,
-                zeroAddress,
-                'Sell order Seller should be zero address'
-            );
-            assert.strictEqual(
-                (sellOrder.askPrice).toString(),
-                (askPrice).toString(),
-                'Sell order bid should be 0'
-            );
-            assert.strictEqual(
-                (sellOrder.tokenId).toString(),
-                '0',
-                'Sell order token id should be 0'
-            );
-        });
-
-        it('assert prime was transferred from exchange to seller', async () => {
-            let tokenId = await _prime._nonce();
-            let owner = await _prime.ownerOf(tokenId, {from: minter});
-            assert.strictEqual(
-                owner,
-                minter,
-                `Should be seller who receives prime token back.`
-            );
-        });
-        });
-
-        describe('swapEthToTokens()', () => {
-        let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
-        beforeEach(async () => {
-            minter = Bob;
-            collateralAmount = await web3.utils.toWei('1');
-            strikeAmount = await web3.utils.toWei('10');
-            collateral = _pool.address;
-            strike = _tUSD.address;
-            expiry = '1587607322';
-            receiver = minter;
-        });
-
-        it('should revert if trying to close a token ID <= 0', async () => {
-            let tokenId = 0;
-            await truffleAssert.reverts(
-                _exchange.closeBuyOrder(tokenId, {from: minter}),
-                "Invalid Token"
-            );
-        });
-
-        it('should revert is trying to close buy order without being buyer', async () => {
-            await _prime.createPrime(
-                collateralAmount,
-                collateral,
-                strikeAmount,
-                strike,
-                expiry,
-                minter,
-                {from: minter, value: collateralAmount}
-            );
-            let tokenId = await _prime._nonce();
-            let bidPrice = (await web3.utils.toWei('0.5')).toString();
-            let buyOrder = await _exchange.buyOrder(tokenId, bidPrice, {from: minter, value: collateralAmount});
-            await truffleAssert.reverts(
-                _exchange.closeBuyOrder(tokenId, {from: Alice}),
-                "Msg.sender != buyer"
-            );
-        });
-
-        it('close buy order', async () => {
-            let tokenId = await _prime._nonce();
-            let bidPrice = (await web3.utils.toWei('0.5')).toString();
-            let buyOrder = await _exchange.buyOrder(tokenId, bidPrice, {from: minter, value: collateralAmount});
-            let closeBuyOrder = await _exchange.closeBuyOrder(tokenId, {from: minter});
-            await truffleAssert.eventEmitted(closeBuyOrder, 'CloseOrder');
-        });
-
-        it('assert buy order was cleared from state', async () => {
-            let tokenId = await _prime._nonce();
-            let bidPrice = 0;
-            let buyOrder = await _exchange.getBuyOrder(tokenId, {from: Alice});
-            let zeroAddress = '0x0000000000000000000000000000000000000000';
-            assert.strictEqual(
-                buyOrder.buyer,
-                zeroAddress,
-                'Buy order buyer should be zero address'
-            );
-            assert.strictEqual(
-                (buyOrder.bidPrice).toString(),
-                (bidPrice).toString(),
-                'Buy order bid should be 0'
-            );
-            assert.strictEqual(
-                (buyOrder.tokenId).toString(),
-                '0',
-                'Buy order token id should be 0'
-            );
-        });
-
-        it('assert prime bid was added to withdraw amount', async () => {
-            let tokenId = await _prime._nonce();
-            let bidPrice = (await web3.utils.toWei('0.5')).toString();
-            let etherBalanceOfBuyer = (await _exchange._etherBalance(Alice, {from: Alice})).toString();
-            assert.strictEqual(
-                etherBalanceOfBuyer,
-                bidPrice,
-                `Bid price should be users balance in exchange.`
-            );
-        });
-        });
-    });
-
-    describe('PoolERC20.sol', () => {
-        describe('setExchangeAddress()', () => {
-            let minter;
-            beforeEach(async () => {
-                minter = Bob;
-                _prime = await Prime.deployed();
-                _tUSD = await tUSD.deployed();
-                _exchange = await Exchange.deployed();
-                _pool = await Pool.deployed();
-            });
-
-            it('should assert only owner can call set exchange', async () => {
-                await truffleAssert.reverts(
-                    _pool.setExchangeAddress(minter, {from: minter}),
-                    "Ownable: caller is not the owner"
-                );
-            });
-        });
-
-        describe('deposit()', () => {
-            let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
-            beforeEach(async () => {
-                minter = Bob;
-                collateralAmount = await web3.utils.toWei('1');
-                strikeAmount = await web3.utils.toWei('10');
-                collateral = _pool.address;
-                strike = _tUSD.address;
-                expiry = '1587607322';
-                receiver = minter;
-            });
-
-            it('should revert if msg.value != deposit amount', async () => {
-                await truffleAssert.reverts(
-                    _pool.deposit(collateralAmount, {from: minter, value: strikeAmount}),
-                    "Deposit: Val < deposit"
-                );
-            });
-
-            it('check initial LP token mint is equal to deposit amount', async () => {
-                let deposit = await _pool.deposit(collateralAmount, {from: minter, value: collateralAmount});
-                await truffleAssert.eventEmitted(deposit, "Deposit");
-                let mintedPulpTokens = (await _pool.balanceOf(minter)).toString();
-                /* FIX - NEED TO FIND A WAY TO CALCULATE EXCHANGE RATE BETWEEN PULP AND ETHER */
-                /* assert.strictEqual(
-                    mintedPulpTokens,
-                    collateralAmount,
-                    `Minted LP tokens should match deposit for the initial supply.
-                    Minted: ${mintedPulpTokens}, Collateral: ${collateralAmount}`
-                ); */
-            });
-
-            it('asserts the ether was converted into cEther', async () => {
-                /* FIX */
-
-                /* let etherBalanceOfPool = (await web3.eth.getBalance(_pool.address)).toString();
-                let cEtherBalanceOfPool = (await _pool.getPoolBalance()).toString();
-                assert.strictEqual(
-                    etherBalanceOfPool,
-                    cEtherBalanceOfPool,
-                    `Gets balance of underlying through cEther and compares to deposit.
-                    Ether Bal: ${etherBalanceOfPool}, cEther Equivalent: ${cEtherBalanceOfPool}`
-                ); */
-            });
-
-            it('asserts deposit event was emitted', async () => {
-                let deposit = await _pool.deposit(collateralAmount, {from: minter, value: collateralAmount});
-                await truffleAssert.eventEmitted(deposit, 'Deposit');
-            });
-        });
-
-        describe('withdraw()', () => {
-            let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
-            beforeEach(async () => {
-                minter = Bob;
-                collateralAmount = await web3.utils.toWei('1');
-                strikeAmount = await web3.utils.toWei('10');
-                collateral = _pool.address;
-                strike = _tUSD.address;
-                expiry = '1587607322';
-                receiver = minter;
-            });
-            
-            it('revert with attempted withdraw amount is greater than deposit', async () => {
-                let million = (await web3.utils.toWei('1000000')).toString();
-                await truffleAssert.reverts(
-                    _pool.withdraw(million, {from: minter, value: 0}),
-                    `Withdraw: Bal < withdraw`
-                )
-            });
-
-            it('revert with attempted withdraw amount is greater than max draw', async () => {
-                /* FIX - need to find a way to fill the pool with just enough liabilities to trigger this */
-                
-                /* Make a liabilitiy */
-                /* await _pool.mintPrimeFromPool(
-                    collateralAmount,
-                    strikeAmount,
-                    strike,
-                    expiry,
-                    minter,
-                    {from: minter, value: collateralAmount}
-                );
-                let totalBalance = (await _pool.totalSupply()).toString();
+        describe('PrimePool.withdraw()', () => {
+            it('reverts if amount parameter is 0', async () => {
                 await truffleAssert.reverts(
                     _pool.withdraw(
-                        totalBalance,
-                        {from: minter, value: 0}
+                        0,
+                        tokenP,
+                        {from: Alice}
                     ),
-                    "Withdraw: max burn < amt"
-                ); */
+                    "ERR_BAL_PULP"
+                );
+            });
+
+            it('reverts if user does not have enough tokenPULP', async () => {
+                await truffleAssert.reverts(
+                    _pool.withdraw(
+                        MILLION_ETHER,
+                        tokenP,
+                        {from: Alice}
+                    ),
+                    "ERR_BAL_PULP"
+                );
+            });
+
+            it('reverts if not enough redeemable strike', async () => {
+                await truffleAssert.reverts(
+                    _pool.withdraw(
+                        ONE_ETHER,
+                        tokenP,
+                        {from: Alice}
+                    ),
+                    "ERR_BAL_STRIKE"
+                );
+            });
+
+            it('should withdraw proportional amount of tokenU and tokenS', async () => {
+                // tokenPULP in, tokenU and tokenS out, tokenR expended
+                // tokenU out = tokenPULP * cacheU / total tokenPULP
+                // tokenS out = tokenPULP * cacheS / total tokenPULP
+                await trader.safeSwap(tokenP, await _tokenP.balanceOf(Alice), Alice, {from: Alice});
+                let inTokenPULP = await _pool.balanceOf(Alice);
+                let outTokenU = inTokenPULP*1 * await _tokenU.balanceOf(_pool.address) / await _pool.totalSupply();
+                let outTokenS = inTokenPULP*1 * await _tokenR.balanceOf(_pool.address) / await _pool.totalSupply();
+                let outTokenR = outTokenS; // FIX
+
+                let balance0U = await _tokenU.balanceOf(Alice); 
+                let balance0P = await _pool.balanceOf(Alice);
+                let balance0S = await WETH.methods.balanceOf(Alice).call();
+
+                let balance0UC = await _tokenU.balanceOf(tokenP);
+                let balance0SC = await WETH.methods.balanceOf(tokenP).call();
+
+                let withdraw = await _pool.withdraw((inTokenPULP).toString(), tokenP);
+                truffleAssert.prettyPrintEmittedEvents(withdraw);
+
+                let balance1U = await _tokenU.balanceOf(Alice);
+                let balance1P = await _pool.balanceOf(Alice);
+                let balance1S = await WETH.methods.balanceOf(Alice).call();
+
+                let balance1UC = await _tokenU.balanceOf(tokenP);
+                let balance1SC = await WETH.methods.balanceOf(tokenP).call();
+
+                let deltaS = balance1S - balance0S;
+                let deltaP = balance1P - balance0P;
+                let deltaU = balance1U - balance0U;
+                let deltaSC = balance1SC - balance0SC;
+                let deltaUC = balance1UC - balance0UC;
+
+                expect(deltaS).to.be.eq(+outTokenS);
+                expect(deltaP).to.be.eq(-inTokenPULP);
+                assert.isAtMost(deltaU, +outTokenU + ROUNDING_ERR);
+                expect(deltaSC).to.be.eq(-outTokenS);
+                expect(deltaUC).to.be.eq(+0);
+
+                truffleAssert.eventEmitted(withdraw, "Withdraw");
             });
         });
-
-        describe('redeem()', () => {
-            let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
-            beforeEach(async () => {
-                minter = Bob;
-                collateralAmount = await web3.utils.toWei('1');
-                strikeAmount = await web3.utils.toWei('10');
-                collateral = _pool.address;
-                strike = _tUSD.address;
-                expiry = '1587607322';
-                receiver = minter;
-            });
-
-            it('should revert, attempts to close a position larger than their position', async () => {
-                let million = (await web3.utils.toWei('1000000')).toString();
-                await truffleAssert.reverts(
-                    _pool.closePosition(million, {from: minter, value: 0}),
-                    "Close: Eth Bal < amt"
-                );
-            });
-
-            it('should revert, attempts to close a position without paying its debt', async () => {
-                let pulpBalanceOfUser = (await _pool.balanceOf(minter, {from: minter})).toString();
-                /* Make a liabilitiy */
-                await _pool.mintPrimeFromPool(
-                    collateralAmount,
-                    strikeAmount,
-                    strike,
-                    expiry,
-                    minter,
-                    {from: minter, value: collateralAmount}
-                );
-                await truffleAssert.reverts(
-                    _pool.closePosition(pulpBalanceOfUser, {from: minter, value: 0}),
-                    "Close: Value < debt"
-                );
-            });
-
-            it('should close position by paying debt', async () => {
-                let pulpBalanceOfUser = (await _pool.balanceOf(minter, {from: minter})).toString();
-                let etherBalanceOfUserBefore = (await web3.eth.getBalance(minter)).toString();
-                let close = await _pool.closePosition(pulpBalanceOfUser, {from: minter, value: pulpBalanceOfUser});
-                let pulpBalanceOfUserAfter = (await _pool.balanceOf(minter, {from: minter})).toString();
-                let etherBalanceOfUserAfter = (await web3.eth.getBalance(minter)).toString();
-                assert.strictEqual(
-                    pulpBalanceOfUserAfter,
-                    (pulpBalanceOfUser*1 - pulpBalanceOfUser*1).toString(),
-                    `Should burn all the pulp tokens.
-                    Pulp before: ${pulpBalanceOfUser}, Pulp after: ${pulpBalanceOfUserAfter}`
-                );
-                await truffleAssert.eventEmitted(close, 'Close');
-                /* Assertion below has 0.0001 ether difference because of Compound interest - FIX */
-                /* assert.strictEqual(
-                    etherBalanceOfUserAfter,
-                    (etherBalanceOfUserBefore*1 + pulpBalanceOfUser*1).toString(),
-                    `Should have sent ether proportional to pulp burned.
-                    Ether before: ${etherBalanceOfUserBefore}, Ether After: ${etherBalanceOfUserAfter}`
-                ); */
-            });
-        });
-
-        describe('closePosition()', () => {
-            let minter, collateralAmount, strikeAmount, collateral, strike, expiry, receiver;
-            beforeEach(async () => {
-                minter = Bob;
-                collateralAmount = await web3.utils.toWei('1');
-                strikeAmount = await web3.utils.toWei('10');
-                collateral = _pool.address;
-                strike = _tUSD.address;
-                expiry = '1587607322';
-                receiver = minter;
-            });
-
-            it('should revert, attempts to close a position larger than their position', async () => {
-                let million = (await web3.utils.toWei('1000000')).toString();
-                await truffleAssert.reverts(
-                    _pool.closePosition(million, {from: minter, value: 0}),
-                    "Close: Eth Bal < amt"
-                );
-            });
-
-            it('should revert, attempts to close a position without paying its debt', async () => {
-                let pulpBalanceOfUser = (await _pool.balanceOf(minter, {from: minter})).toString();
-                /* Make a liabilitiy */
-                await _pool.mintPrimeFromPool(
-                    collateralAmount,
-                    strikeAmount,
-                    strike,
-                    expiry,
-                    minter,
-                    {from: minter, value: collateralAmount}
-                );
-                await truffleAssert.reverts(
-                    _pool.closePosition(pulpBalanceOfUser, {from: minter, value: 0}),
-                    "Close: Value < debt"
-                );
-            });
-
-            it('should close position by paying debt', async () => {
-                let pulpBalanceOfUser = (await _pool.balanceOf(minter, {from: minter})).toString();
-                let etherBalanceOfUserBefore = (await web3.eth.getBalance(minter)).toString();
-                let close = await _pool.closePosition(pulpBalanceOfUser, {from: minter, value: pulpBalanceOfUser});
-                let pulpBalanceOfUserAfter = (await _pool.balanceOf(minter, {from: minter})).toString();
-                let etherBalanceOfUserAfter = (await web3.eth.getBalance(minter)).toString();
-                assert.strictEqual(
-                    pulpBalanceOfUserAfter,
-                    (pulpBalanceOfUser*1 - pulpBalanceOfUser*1).toString(),
-                    `Should burn all the pulp tokens.
-                    Pulp before: ${pulpBalanceOfUser}, Pulp after: ${pulpBalanceOfUserAfter}`
-                );
-                await truffleAssert.eventEmitted(close, 'Close');
-                /* Assertion below has 0.0001 ether difference because of Compound interest - FIX */
-                /* assert.strictEqual(
-                    etherBalanceOfUserAfter,
-                    (etherBalanceOfUserBefore*1 + pulpBalanceOfUser*1).toString(),
-                    `Should have sent ether proportional to pulp burned.
-                    Ether before: ${etherBalanceOfUserBefore}, Ether After: ${etherBalanceOfUserAfter}`
-                ); */
-            });
-        });
-    });
+    }); 
 })
