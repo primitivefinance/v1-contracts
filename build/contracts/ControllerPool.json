@@ -181,14 +181,14 @@
     "absolutePath": "/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/controller/ControllerPool.sol",
     "exportedSymbols": {
       "ControllerPool": [
-        3655
+        3652
       ]
     },
-    "id": 3656,
+    "id": 3653,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 3562,
+        "id": 3559,
         "literals": [
           "solidity",
           "^",
@@ -201,9 +201,9 @@
       {
         "absolutePath": "/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/PrimePool.sol",
         "file": "../PrimePool.sol",
-        "id": 3563,
+        "id": 3560,
         "nodeType": "ImportDirective",
-        "scope": 3656,
+        "scope": 3653,
         "sourceUnit": 2391,
         "src": "97:26:9",
         "symbolAliases": [],
@@ -216,34 +216,34 @@
             "arguments": null,
             "baseName": {
               "contractScope": null,
-              "id": 3564,
+              "id": 3561,
               "name": "Ownable",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 3964,
+              "referencedDeclaration": 3961,
               "src": "154:7:9",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_Ownable_$3964",
+                "typeIdentifier": "t_contract$_Ownable_$3961",
                 "typeString": "contract Ownable"
               }
             },
-            "id": 3565,
+            "id": 3562,
             "nodeType": "InheritanceSpecifier",
             "src": "154:7:9"
           }
         ],
         "contractDependencies": [
           2390,
-          3861,
-          3964
+          3858,
+          3961
         ],
         "contractKind": "contract",
         "documentation": null,
         "fullyImplemented": true,
-        "id": 3655,
+        "id": 3652,
         "linearizedBaseContracts": [
-          3655,
-          3964,
-          3861
+          3652,
+          3961,
+          3858
         ],
         "name": "ControllerPool",
         "nodeType": "ContractDefinition",
@@ -251,11 +251,11 @@
           {
             "constant": false,
             "functionSelector": "3fc8cef3",
-            "id": 3567,
+            "id": 3564,
             "name": "weth",
             "nodeType": "VariableDeclaration",
             "overrides": null,
-            "scope": 3655,
+            "scope": 3652,
             "src": "171:27:9",
             "stateVariable": true,
             "storageLocation": "default",
@@ -264,7 +264,7 @@
               "typeString": "address payable"
             },
             "typeName": {
-              "id": 3566,
+              "id": 3563,
               "name": "address",
               "nodeType": "ElementaryTypeName",
               "src": "171:15:9",
@@ -280,11 +280,11 @@
           {
             "constant": false,
             "functionSelector": "b0e9c996",
-            "id": 3573,
+            "id": 3570,
             "name": "makerFor",
             "nodeType": "VariableDeclaration",
             "overrides": null,
-            "scope": 3655,
+            "scope": 3652,
             "src": "205:71:9",
             "stateVariable": true,
             "storageLocation": "default",
@@ -293,9 +293,9 @@
               "typeString": "mapping(address => mapping(address => address payable))"
             },
             "typeName": {
-              "id": 3572,
+              "id": 3569,
               "keyType": {
-                "id": 3568,
+                "id": 3565,
                 "name": "address",
                 "nodeType": "ElementaryTypeName",
                 "src": "213:7:9",
@@ -311,9 +311,9 @@
                 "typeString": "mapping(address => mapping(address => address payable))"
               },
               "valueType": {
-                "id": 3571,
+                "id": 3568,
                 "keyType": {
-                  "id": 3569,
+                  "id": 3566,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
                   "src": "232:7:9",
@@ -329,7 +329,7 @@
                   "typeString": "mapping(address => address payable)"
                 },
                 "valueType": {
-                  "id": 3570,
+                  "id": 3567,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
                   "src": "243:15:9",
@@ -346,7 +346,7 @@
           },
           {
             "body": {
-              "id": 3588,
+              "id": 3585,
               "nodeType": "Block",
               "src": "347:71:9",
               "statements": [
@@ -356,11 +356,11 @@
                     "arguments": [
                       {
                         "argumentTypes": null,
-                        "id": 3581,
+                        "id": 3578,
                         "name": "controller",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3575,
+                        "referencedDeclaration": 3572,
                         "src": "376:10:9",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
@@ -375,18 +375,18 @@
                           "typeString": "address"
                         }
                       ],
-                      "id": 3580,
+                      "id": 3577,
                       "name": "transferOwnership",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 3963,
+                      "referencedDeclaration": 3960,
                       "src": "358:17:9",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_nonpayable$_t_address_$returns$__$",
                         "typeString": "function (address)"
                       }
                     },
-                    "id": 3582,
+                    "id": 3579,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -401,25 +401,25 @@
                       "typeString": "tuple()"
                     }
                   },
-                  "id": 3583,
+                  "id": 3580,
                   "nodeType": "ExpressionStatement",
                   "src": "358:29:9"
                 },
                 {
                   "expression": {
                     "argumentTypes": null,
-                    "id": 3586,
+                    "id": 3583,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
                     "lValueRequested": false,
                     "leftHandSide": {
                       "argumentTypes": null,
-                      "id": 3584,
+                      "id": 3581,
                       "name": "weth",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 3567,
+                      "referencedDeclaration": 3564,
                       "src": "398:4:9",
                       "typeDescriptions": {
                         "typeIdentifier": "t_address_payable",
@@ -430,11 +430,11 @@
                     "operator": "=",
                     "rightHandSide": {
                       "argumentTypes": null,
-                      "id": 3585,
+                      "id": 3582,
                       "name": "_weth",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 3577,
+                      "referencedDeclaration": 3574,
                       "src": "405:5:9",
                       "typeDescriptions": {
                         "typeIdentifier": "t_address_payable",
@@ -447,14 +447,14 @@
                       "typeString": "address payable"
                     }
                   },
-                  "id": 3587,
+                  "id": 3584,
                   "nodeType": "ExpressionStatement",
                   "src": "398:12:9"
                 }
               ]
             },
             "documentation": null,
-            "id": 3589,
+            "id": 3586,
             "implemented": true,
             "kind": "constructor",
             "modifiers": [],
@@ -462,16 +462,16 @@
             "nodeType": "FunctionDefinition",
             "overrides": null,
             "parameters": {
-              "id": 3578,
+              "id": 3575,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3575,
+                  "id": 3572,
                   "name": "controller",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3589,
+                  "scope": 3586,
                   "src": "297:18:9",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -480,7 +480,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3574,
+                    "id": 3571,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "297:7:9",
@@ -495,11 +495,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 3577,
+                  "id": 3574,
                   "name": "_weth",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3589,
+                  "scope": 3586,
                   "src": "317:21:9",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -508,7 +508,7 @@
                     "typeString": "address payable"
                   },
                   "typeName": {
-                    "id": 3576,
+                    "id": 3573,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "317:15:9",
@@ -525,12 +525,12 @@
               "src": "296:43:9"
             },
             "returnParameters": {
-              "id": 3579,
+              "id": 3576,
               "nodeType": "ParameterList",
               "parameters": [],
               "src": "347:0:9"
             },
-            "scope": 3655,
+            "scope": 3652,
             "src": "285:133:9",
             "stateMutability": "nonpayable",
             "virtual": false,
@@ -538,22 +538,22 @@
           },
           {
             "body": {
-              "id": 3632,
+              "id": 3629,
               "nodeType": "Block",
               "src": "628:237:9",
               "statements": [
                 {
                   "assignments": [
-                    3607
+                    3604
                   ],
                   "declarations": [
                     {
                       "constant": false,
-                      "id": 3607,
+                      "id": 3604,
                       "name": "primePool",
                       "nodeType": "VariableDeclaration",
                       "overrides": null,
-                      "scope": 3632,
+                      "scope": 3629,
                       "src": "639:19:9",
                       "stateVariable": false,
                       "storageLocation": "default",
@@ -563,7 +563,7 @@
                       },
                       "typeName": {
                         "contractScope": null,
-                        "id": 3606,
+                        "id": 3603,
                         "name": "PrimePool",
                         "nodeType": "UserDefinedTypeName",
                         "referencedDeclaration": 2390,
@@ -577,17 +577,17 @@
                       "visibility": "internal"
                     }
                   ],
-                  "id": 3615,
+                  "id": 3612,
                   "initialValue": {
                     "argumentTypes": null,
                     "arguments": [
                       {
                         "argumentTypes": null,
-                        "id": 3610,
+                        "id": 3607,
                         "name": "weth",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3567,
+                        "referencedDeclaration": 3564,
                         "src": "689:4:9",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address_payable",
@@ -596,11 +596,11 @@
                       },
                       {
                         "argumentTypes": null,
-                        "id": 3611,
+                        "id": 3608,
                         "name": "oracle",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3591,
+                        "referencedDeclaration": 3588,
                         "src": "708:6:9",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
@@ -609,11 +609,11 @@
                       },
                       {
                         "argumentTypes": null,
-                        "id": 3612,
+                        "id": 3609,
                         "name": "name",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3593,
+                        "referencedDeclaration": 3590,
                         "src": "729:4:9",
                         "typeDescriptions": {
                           "typeIdentifier": "t_string_memory_ptr",
@@ -622,11 +622,11 @@
                       },
                       {
                         "argumentTypes": null,
-                        "id": 3613,
+                        "id": 3610,
                         "name": "symbol",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3595,
+                        "referencedDeclaration": 3592,
                         "src": "748:6:9",
                         "typeDescriptions": {
                           "typeIdentifier": "t_string_memory_ptr",
@@ -653,7 +653,7 @@
                           "typeString": "string memory"
                         }
                       ],
-                      "id": 3609,
+                      "id": 3606,
                       "isConstant": false,
                       "isLValue": false,
                       "isPure": false,
@@ -666,7 +666,7 @@
                       },
                       "typeName": {
                         "contractScope": null,
-                        "id": 3608,
+                        "id": 3605,
                         "name": "PrimePool",
                         "nodeType": "UserDefinedTypeName",
                         "referencedDeclaration": 2390,
@@ -677,7 +677,7 @@
                         }
                       }
                     },
-                    "id": 3614,
+                    "id": 3611,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -698,7 +698,7 @@
                 {
                   "expression": {
                     "argumentTypes": null,
-                    "id": 3625,
+                    "id": 3622,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -709,25 +709,25 @@
                         "argumentTypes": null,
                         "baseExpression": {
                           "argumentTypes": null,
-                          "id": 3616,
+                          "id": 3613,
                           "name": "makerFor",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 3573,
+                          "referencedDeclaration": 3570,
                           "src": "776:8:9",
                           "typeDescriptions": {
                             "typeIdentifier": "t_mapping$_t_address_$_t_mapping$_t_address_$_t_address_payable_$_$",
                             "typeString": "mapping(address => mapping(address => address payable))"
                           }
                         },
-                        "id": 3619,
+                        "id": 3616,
                         "indexExpression": {
                           "argumentTypes": null,
-                          "id": 3617,
+                          "id": 3614,
                           "name": "tokenU",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 3597,
+                          "referencedDeclaration": 3594,
                           "src": "785:6:9",
                           "typeDescriptions": {
                             "typeIdentifier": "t_address",
@@ -745,14 +745,14 @@
                           "typeString": "mapping(address => address payable)"
                         }
                       },
-                      "id": 3620,
+                      "id": 3617,
                       "indexExpression": {
                         "argumentTypes": null,
-                        "id": 3618,
+                        "id": 3615,
                         "name": "tokenS",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3599,
+                        "referencedDeclaration": 3596,
                         "src": "793:6:9",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
@@ -777,11 +777,11 @@
                       "arguments": [
                         {
                           "argumentTypes": null,
-                          "id": 3623,
+                          "id": 3620,
                           "name": "primePool",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 3607,
+                          "referencedDeclaration": 3604,
                           "src": "811:9:9",
                           "typeDescriptions": {
                             "typeIdentifier": "t_contract$_PrimePool_$2390",
@@ -796,7 +796,7 @@
                             "typeString": "contract PrimePool"
                           }
                         ],
-                        "id": 3622,
+                        "id": 3619,
                         "isConstant": false,
                         "isLValue": false,
                         "isPure": true,
@@ -808,7 +808,7 @@
                           "typeString": "type(address)"
                         },
                         "typeName": {
-                          "id": 3621,
+                          "id": 3618,
                           "name": "address",
                           "nodeType": "ElementaryTypeName",
                           "src": "803:7:9",
@@ -818,7 +818,7 @@
                           }
                         }
                       },
-                      "id": 3624,
+                      "id": 3621,
                       "isConstant": false,
                       "isLValue": false,
                       "isPure": false,
@@ -839,7 +839,7 @@
                       "typeString": "address payable"
                     }
                   },
-                  "id": 3626,
+                  "id": 3623,
                   "nodeType": "ExpressionStatement",
                   "src": "776:45:9"
                 },
@@ -849,11 +849,11 @@
                     "arguments": [
                       {
                         "argumentTypes": null,
-                        "id": 3629,
+                        "id": 3626,
                         "name": "primePool",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3607,
+                        "referencedDeclaration": 3604,
                         "src": "847:9:9",
                         "typeDescriptions": {
                           "typeIdentifier": "t_contract$_PrimePool_$2390",
@@ -868,7 +868,7 @@
                           "typeString": "contract PrimePool"
                         }
                       ],
-                      "id": 3628,
+                      "id": 3625,
                       "isConstant": false,
                       "isLValue": false,
                       "isPure": true,
@@ -880,7 +880,7 @@
                         "typeString": "type(address)"
                       },
                       "typeName": {
-                        "id": 3627,
+                        "id": 3624,
                         "name": "address",
                         "nodeType": "ElementaryTypeName",
                         "src": "839:7:9",
@@ -890,7 +890,7 @@
                         }
                       }
                     },
-                    "id": 3630,
+                    "id": 3627,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -905,8 +905,8 @@
                       "typeString": "address payable"
                     }
                   },
-                  "functionReturnParameters": 3605,
-                  "id": 3631,
+                  "functionReturnParameters": 3602,
+                  "id": 3628,
                   "nodeType": "Return",
                   "src": "832:25:9"
                 }
@@ -914,20 +914,20 @@
             },
             "documentation": null,
             "functionSelector": "50d3f4b1",
-            "id": 3633,
+            "id": 3630,
             "implemented": true,
             "kind": "function",
             "modifiers": [
               {
                 "arguments": null,
-                "id": 3602,
+                "id": 3599,
                 "modifierName": {
                   "argumentTypes": null,
-                  "id": 3601,
+                  "id": 3598,
                   "name": "onlyOwner",
                   "nodeType": "Identifier",
                   "overloadedDeclarations": [],
-                  "referencedDeclaration": 3915,
+                  "referencedDeclaration": 3912,
                   "src": "592:9:9",
                   "typeDescriptions": {
                     "typeIdentifier": "t_modifier$__$",
@@ -942,16 +942,16 @@
             "nodeType": "FunctionDefinition",
             "overrides": null,
             "parameters": {
-              "id": 3600,
+              "id": 3597,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3591,
+                  "id": 3588,
                   "name": "oracle",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3633,
+                  "scope": 3630,
                   "src": "453:14:9",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -960,7 +960,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3590,
+                    "id": 3587,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "453:7:9",
@@ -975,11 +975,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 3593,
+                  "id": 3590,
                   "name": "name",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3633,
+                  "scope": 3630,
                   "src": "478:18:9",
                   "stateVariable": false,
                   "storageLocation": "memory",
@@ -988,7 +988,7 @@
                     "typeString": "string"
                   },
                   "typeName": {
-                    "id": 3592,
+                    "id": 3589,
                     "name": "string",
                     "nodeType": "ElementaryTypeName",
                     "src": "478:6:9",
@@ -1002,11 +1002,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 3595,
+                  "id": 3592,
                   "name": "symbol",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3633,
+                  "scope": 3630,
                   "src": "507:20:9",
                   "stateVariable": false,
                   "storageLocation": "memory",
@@ -1015,7 +1015,7 @@
                     "typeString": "string"
                   },
                   "typeName": {
-                    "id": 3594,
+                    "id": 3591,
                     "name": "string",
                     "nodeType": "ElementaryTypeName",
                     "src": "507:6:9",
@@ -1029,11 +1029,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 3597,
+                  "id": 3594,
                   "name": "tokenU",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3633,
+                  "scope": 3630,
                   "src": "538:14:9",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -1042,7 +1042,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3596,
+                    "id": 3593,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "538:7:9",
@@ -1057,11 +1057,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 3599,
+                  "id": 3596,
                   "name": "tokenS",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3633,
+                  "scope": 3630,
                   "src": "563:14:9",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -1070,7 +1070,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3598,
+                    "id": 3595,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "563:7:9",
@@ -1087,16 +1087,16 @@
               "src": "442:142:9"
             },
             "returnParameters": {
-              "id": 3605,
+              "id": 3602,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3604,
+                  "id": 3601,
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3633,
+                  "scope": 3630,
                   "src": "611:15:9",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -1105,7 +1105,7 @@
                     "typeString": "address payable"
                   },
                   "typeName": {
-                    "id": 3603,
+                    "id": 3600,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "611:15:9",
@@ -1121,7 +1121,7 @@
               ],
               "src": "610:17:9"
             },
-            "scope": 3655,
+            "scope": 3652,
             "src": "426:439:9",
             "stateMutability": "nonpayable",
             "virtual": false,
@@ -1129,7 +1129,7 @@
           },
           {
             "body": {
-              "id": 3653,
+              "id": 3650,
               "nodeType": "Block",
               "src": "966:77:9",
               "statements": [
@@ -1139,11 +1139,11 @@
                     "arguments": [
                       {
                         "argumentTypes": null,
-                        "id": 3648,
+                        "id": 3645,
                         "name": "tokenP",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3637,
+                        "referencedDeclaration": 3634,
                         "src": "1004:6:9",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
@@ -1163,11 +1163,11 @@
                         "arguments": [
                           {
                             "argumentTypes": null,
-                            "id": 3645,
+                            "id": 3642,
                             "name": "maker",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 3635,
+                            "referencedDeclaration": 3632,
                             "src": "987:5:9",
                             "typeDescriptions": {
                               "typeIdentifier": "t_address_payable",
@@ -1182,7 +1182,7 @@
                               "typeString": "address payable"
                             }
                           ],
-                          "id": 3644,
+                          "id": 3641,
                           "name": "PrimePool",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
@@ -1193,7 +1193,7 @@
                             "typeString": "type(contract PrimePool)"
                           }
                         },
-                        "id": 3646,
+                        "id": 3643,
                         "isConstant": false,
                         "isLValue": false,
                         "isPure": false,
@@ -1208,7 +1208,7 @@
                           "typeString": "contract PrimePool"
                         }
                       },
-                      "id": 3647,
+                      "id": 3644,
                       "isConstant": false,
                       "isLValue": false,
                       "isPure": false,
@@ -1222,7 +1222,7 @@
                         "typeString": "function (address) external returns (address)"
                       }
                     },
-                    "id": 3649,
+                    "id": 3646,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -1237,26 +1237,26 @@
                       "typeString": "address"
                     }
                   },
-                  "id": 3650,
+                  "id": 3647,
                   "nodeType": "ExpressionStatement",
                   "src": "977:34:9"
                 },
                 {
                   "expression": {
                     "argumentTypes": null,
-                    "id": 3651,
+                    "id": 3648,
                     "name": "tokenP",
                     "nodeType": "Identifier",
                     "overloadedDeclarations": [],
-                    "referencedDeclaration": 3637,
+                    "referencedDeclaration": 3634,
                     "src": "1029:6:9",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
                     }
                   },
-                  "functionReturnParameters": 3643,
-                  "id": 3652,
+                  "functionReturnParameters": 3640,
+                  "id": 3649,
                   "nodeType": "Return",
                   "src": "1022:13:9"
                 }
@@ -1264,20 +1264,20 @@
             },
             "documentation": null,
             "functionSelector": "de1f4430",
-            "id": 3654,
+            "id": 3651,
             "implemented": true,
             "kind": "function",
             "modifiers": [
               {
                 "arguments": null,
-                "id": 3640,
+                "id": 3637,
                 "modifierName": {
                   "argumentTypes": null,
-                  "id": 3639,
+                  "id": 3636,
                   "name": "onlyOwner",
                   "nodeType": "Identifier",
                   "overloadedDeclarations": [],
-                  "referencedDeclaration": 3915,
+                  "referencedDeclaration": 3912,
                   "src": "938:9:9",
                   "typeDescriptions": {
                     "typeIdentifier": "t_modifier$__$",
@@ -1292,16 +1292,16 @@
             "nodeType": "FunctionDefinition",
             "overrides": null,
             "parameters": {
-              "id": 3638,
+              "id": 3635,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3635,
+                  "id": 3632,
                   "name": "maker",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3654,
+                  "scope": 3651,
                   "src": "892:21:9",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -1310,7 +1310,7 @@
                     "typeString": "address payable"
                   },
                   "typeName": {
-                    "id": 3634,
+                    "id": 3631,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "892:15:9",
@@ -1325,11 +1325,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 3637,
+                  "id": 3634,
                   "name": "tokenP",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3654,
+                  "scope": 3651,
                   "src": "915:14:9",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -1338,7 +1338,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3636,
+                    "id": 3633,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "915:7:9",
@@ -1355,16 +1355,16 @@
               "src": "891:39:9"
             },
             "returnParameters": {
-              "id": 3643,
+              "id": 3640,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3642,
+                  "id": 3639,
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3654,
+                  "scope": 3651,
                   "src": "957:7:9",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -1373,7 +1373,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3641,
+                    "id": 3638,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "957:7:9",
@@ -1389,14 +1389,14 @@
               ],
               "src": "956:9:9"
             },
-            "scope": 3655,
+            "scope": 3652,
             "src": "873:170:9",
             "stateMutability": "nonpayable",
             "virtual": false,
             "visibility": "public"
           }
         ],
-        "scope": 3656,
+        "scope": 3653,
         "src": "127:919:9"
       }
     ],
@@ -1406,14 +1406,14 @@
     "absolutePath": "/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/controller/ControllerPool.sol",
     "exportedSymbols": {
       "ControllerPool": [
-        3655
+        3652
       ]
     },
-    "id": 3656,
+    "id": 3653,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 3562,
+        "id": 3559,
         "literals": [
           "solidity",
           "^",
@@ -1426,9 +1426,9 @@
       {
         "absolutePath": "/C/Users/alexa/OneDrive/Documents/Master/Blockchain/Projects/carbon/contracts/PrimePool.sol",
         "file": "../PrimePool.sol",
-        "id": 3563,
+        "id": 3560,
         "nodeType": "ImportDirective",
-        "scope": 3656,
+        "scope": 3653,
         "sourceUnit": 2391,
         "src": "97:26:9",
         "symbolAliases": [],
@@ -1441,34 +1441,34 @@
             "arguments": null,
             "baseName": {
               "contractScope": null,
-              "id": 3564,
+              "id": 3561,
               "name": "Ownable",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 3964,
+              "referencedDeclaration": 3961,
               "src": "154:7:9",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_Ownable_$3964",
+                "typeIdentifier": "t_contract$_Ownable_$3961",
                 "typeString": "contract Ownable"
               }
             },
-            "id": 3565,
+            "id": 3562,
             "nodeType": "InheritanceSpecifier",
             "src": "154:7:9"
           }
         ],
         "contractDependencies": [
           2390,
-          3861,
-          3964
+          3858,
+          3961
         ],
         "contractKind": "contract",
         "documentation": null,
         "fullyImplemented": true,
-        "id": 3655,
+        "id": 3652,
         "linearizedBaseContracts": [
-          3655,
-          3964,
-          3861
+          3652,
+          3961,
+          3858
         ],
         "name": "ControllerPool",
         "nodeType": "ContractDefinition",
@@ -1476,11 +1476,11 @@
           {
             "constant": false,
             "functionSelector": "3fc8cef3",
-            "id": 3567,
+            "id": 3564,
             "name": "weth",
             "nodeType": "VariableDeclaration",
             "overrides": null,
-            "scope": 3655,
+            "scope": 3652,
             "src": "171:27:9",
             "stateVariable": true,
             "storageLocation": "default",
@@ -1489,7 +1489,7 @@
               "typeString": "address payable"
             },
             "typeName": {
-              "id": 3566,
+              "id": 3563,
               "name": "address",
               "nodeType": "ElementaryTypeName",
               "src": "171:15:9",
@@ -1505,11 +1505,11 @@
           {
             "constant": false,
             "functionSelector": "b0e9c996",
-            "id": 3573,
+            "id": 3570,
             "name": "makerFor",
             "nodeType": "VariableDeclaration",
             "overrides": null,
-            "scope": 3655,
+            "scope": 3652,
             "src": "205:71:9",
             "stateVariable": true,
             "storageLocation": "default",
@@ -1518,9 +1518,9 @@
               "typeString": "mapping(address => mapping(address => address payable))"
             },
             "typeName": {
-              "id": 3572,
+              "id": 3569,
               "keyType": {
-                "id": 3568,
+                "id": 3565,
                 "name": "address",
                 "nodeType": "ElementaryTypeName",
                 "src": "213:7:9",
@@ -1536,9 +1536,9 @@
                 "typeString": "mapping(address => mapping(address => address payable))"
               },
               "valueType": {
-                "id": 3571,
+                "id": 3568,
                 "keyType": {
-                  "id": 3569,
+                  "id": 3566,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
                   "src": "232:7:9",
@@ -1554,7 +1554,7 @@
                   "typeString": "mapping(address => address payable)"
                 },
                 "valueType": {
-                  "id": 3570,
+                  "id": 3567,
                   "name": "address",
                   "nodeType": "ElementaryTypeName",
                   "src": "243:15:9",
@@ -1571,7 +1571,7 @@
           },
           {
             "body": {
-              "id": 3588,
+              "id": 3585,
               "nodeType": "Block",
               "src": "347:71:9",
               "statements": [
@@ -1581,11 +1581,11 @@
                     "arguments": [
                       {
                         "argumentTypes": null,
-                        "id": 3581,
+                        "id": 3578,
                         "name": "controller",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3575,
+                        "referencedDeclaration": 3572,
                         "src": "376:10:9",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
@@ -1600,18 +1600,18 @@
                           "typeString": "address"
                         }
                       ],
-                      "id": 3580,
+                      "id": 3577,
                       "name": "transferOwnership",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 3963,
+                      "referencedDeclaration": 3960,
                       "src": "358:17:9",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_nonpayable$_t_address_$returns$__$",
                         "typeString": "function (address)"
                       }
                     },
-                    "id": 3582,
+                    "id": 3579,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -1626,25 +1626,25 @@
                       "typeString": "tuple()"
                     }
                   },
-                  "id": 3583,
+                  "id": 3580,
                   "nodeType": "ExpressionStatement",
                   "src": "358:29:9"
                 },
                 {
                   "expression": {
                     "argumentTypes": null,
-                    "id": 3586,
+                    "id": 3583,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
                     "lValueRequested": false,
                     "leftHandSide": {
                       "argumentTypes": null,
-                      "id": 3584,
+                      "id": 3581,
                       "name": "weth",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 3567,
+                      "referencedDeclaration": 3564,
                       "src": "398:4:9",
                       "typeDescriptions": {
                         "typeIdentifier": "t_address_payable",
@@ -1655,11 +1655,11 @@
                     "operator": "=",
                     "rightHandSide": {
                       "argumentTypes": null,
-                      "id": 3585,
+                      "id": 3582,
                       "name": "_weth",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 3577,
+                      "referencedDeclaration": 3574,
                       "src": "405:5:9",
                       "typeDescriptions": {
                         "typeIdentifier": "t_address_payable",
@@ -1672,14 +1672,14 @@
                       "typeString": "address payable"
                     }
                   },
-                  "id": 3587,
+                  "id": 3584,
                   "nodeType": "ExpressionStatement",
                   "src": "398:12:9"
                 }
               ]
             },
             "documentation": null,
-            "id": 3589,
+            "id": 3586,
             "implemented": true,
             "kind": "constructor",
             "modifiers": [],
@@ -1687,16 +1687,16 @@
             "nodeType": "FunctionDefinition",
             "overrides": null,
             "parameters": {
-              "id": 3578,
+              "id": 3575,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3575,
+                  "id": 3572,
                   "name": "controller",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3589,
+                  "scope": 3586,
                   "src": "297:18:9",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -1705,7 +1705,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3574,
+                    "id": 3571,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "297:7:9",
@@ -1720,11 +1720,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 3577,
+                  "id": 3574,
                   "name": "_weth",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3589,
+                  "scope": 3586,
                   "src": "317:21:9",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -1733,7 +1733,7 @@
                     "typeString": "address payable"
                   },
                   "typeName": {
-                    "id": 3576,
+                    "id": 3573,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "317:15:9",
@@ -1750,12 +1750,12 @@
               "src": "296:43:9"
             },
             "returnParameters": {
-              "id": 3579,
+              "id": 3576,
               "nodeType": "ParameterList",
               "parameters": [],
               "src": "347:0:9"
             },
-            "scope": 3655,
+            "scope": 3652,
             "src": "285:133:9",
             "stateMutability": "nonpayable",
             "virtual": false,
@@ -1763,22 +1763,22 @@
           },
           {
             "body": {
-              "id": 3632,
+              "id": 3629,
               "nodeType": "Block",
               "src": "628:237:9",
               "statements": [
                 {
                   "assignments": [
-                    3607
+                    3604
                   ],
                   "declarations": [
                     {
                       "constant": false,
-                      "id": 3607,
+                      "id": 3604,
                       "name": "primePool",
                       "nodeType": "VariableDeclaration",
                       "overrides": null,
-                      "scope": 3632,
+                      "scope": 3629,
                       "src": "639:19:9",
                       "stateVariable": false,
                       "storageLocation": "default",
@@ -1788,7 +1788,7 @@
                       },
                       "typeName": {
                         "contractScope": null,
-                        "id": 3606,
+                        "id": 3603,
                         "name": "PrimePool",
                         "nodeType": "UserDefinedTypeName",
                         "referencedDeclaration": 2390,
@@ -1802,17 +1802,17 @@
                       "visibility": "internal"
                     }
                   ],
-                  "id": 3615,
+                  "id": 3612,
                   "initialValue": {
                     "argumentTypes": null,
                     "arguments": [
                       {
                         "argumentTypes": null,
-                        "id": 3610,
+                        "id": 3607,
                         "name": "weth",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3567,
+                        "referencedDeclaration": 3564,
                         "src": "689:4:9",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address_payable",
@@ -1821,11 +1821,11 @@
                       },
                       {
                         "argumentTypes": null,
-                        "id": 3611,
+                        "id": 3608,
                         "name": "oracle",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3591,
+                        "referencedDeclaration": 3588,
                         "src": "708:6:9",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
@@ -1834,11 +1834,11 @@
                       },
                       {
                         "argumentTypes": null,
-                        "id": 3612,
+                        "id": 3609,
                         "name": "name",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3593,
+                        "referencedDeclaration": 3590,
                         "src": "729:4:9",
                         "typeDescriptions": {
                           "typeIdentifier": "t_string_memory_ptr",
@@ -1847,11 +1847,11 @@
                       },
                       {
                         "argumentTypes": null,
-                        "id": 3613,
+                        "id": 3610,
                         "name": "symbol",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3595,
+                        "referencedDeclaration": 3592,
                         "src": "748:6:9",
                         "typeDescriptions": {
                           "typeIdentifier": "t_string_memory_ptr",
@@ -1878,7 +1878,7 @@
                           "typeString": "string memory"
                         }
                       ],
-                      "id": 3609,
+                      "id": 3606,
                       "isConstant": false,
                       "isLValue": false,
                       "isPure": false,
@@ -1891,7 +1891,7 @@
                       },
                       "typeName": {
                         "contractScope": null,
-                        "id": 3608,
+                        "id": 3605,
                         "name": "PrimePool",
                         "nodeType": "UserDefinedTypeName",
                         "referencedDeclaration": 2390,
@@ -1902,7 +1902,7 @@
                         }
                       }
                     },
-                    "id": 3614,
+                    "id": 3611,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -1923,7 +1923,7 @@
                 {
                   "expression": {
                     "argumentTypes": null,
-                    "id": 3625,
+                    "id": 3622,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -1934,25 +1934,25 @@
                         "argumentTypes": null,
                         "baseExpression": {
                           "argumentTypes": null,
-                          "id": 3616,
+                          "id": 3613,
                           "name": "makerFor",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 3573,
+                          "referencedDeclaration": 3570,
                           "src": "776:8:9",
                           "typeDescriptions": {
                             "typeIdentifier": "t_mapping$_t_address_$_t_mapping$_t_address_$_t_address_payable_$_$",
                             "typeString": "mapping(address => mapping(address => address payable))"
                           }
                         },
-                        "id": 3619,
+                        "id": 3616,
                         "indexExpression": {
                           "argumentTypes": null,
-                          "id": 3617,
+                          "id": 3614,
                           "name": "tokenU",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 3597,
+                          "referencedDeclaration": 3594,
                           "src": "785:6:9",
                           "typeDescriptions": {
                             "typeIdentifier": "t_address",
@@ -1970,14 +1970,14 @@
                           "typeString": "mapping(address => address payable)"
                         }
                       },
-                      "id": 3620,
+                      "id": 3617,
                       "indexExpression": {
                         "argumentTypes": null,
-                        "id": 3618,
+                        "id": 3615,
                         "name": "tokenS",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3599,
+                        "referencedDeclaration": 3596,
                         "src": "793:6:9",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
@@ -2002,11 +2002,11 @@
                       "arguments": [
                         {
                           "argumentTypes": null,
-                          "id": 3623,
+                          "id": 3620,
                           "name": "primePool",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 3607,
+                          "referencedDeclaration": 3604,
                           "src": "811:9:9",
                           "typeDescriptions": {
                             "typeIdentifier": "t_contract$_PrimePool_$2390",
@@ -2021,7 +2021,7 @@
                             "typeString": "contract PrimePool"
                           }
                         ],
-                        "id": 3622,
+                        "id": 3619,
                         "isConstant": false,
                         "isLValue": false,
                         "isPure": true,
@@ -2033,7 +2033,7 @@
                           "typeString": "type(address)"
                         },
                         "typeName": {
-                          "id": 3621,
+                          "id": 3618,
                           "name": "address",
                           "nodeType": "ElementaryTypeName",
                           "src": "803:7:9",
@@ -2043,7 +2043,7 @@
                           }
                         }
                       },
-                      "id": 3624,
+                      "id": 3621,
                       "isConstant": false,
                       "isLValue": false,
                       "isPure": false,
@@ -2064,7 +2064,7 @@
                       "typeString": "address payable"
                     }
                   },
-                  "id": 3626,
+                  "id": 3623,
                   "nodeType": "ExpressionStatement",
                   "src": "776:45:9"
                 },
@@ -2074,11 +2074,11 @@
                     "arguments": [
                       {
                         "argumentTypes": null,
-                        "id": 3629,
+                        "id": 3626,
                         "name": "primePool",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3607,
+                        "referencedDeclaration": 3604,
                         "src": "847:9:9",
                         "typeDescriptions": {
                           "typeIdentifier": "t_contract$_PrimePool_$2390",
@@ -2093,7 +2093,7 @@
                           "typeString": "contract PrimePool"
                         }
                       ],
-                      "id": 3628,
+                      "id": 3625,
                       "isConstant": false,
                       "isLValue": false,
                       "isPure": true,
@@ -2105,7 +2105,7 @@
                         "typeString": "type(address)"
                       },
                       "typeName": {
-                        "id": 3627,
+                        "id": 3624,
                         "name": "address",
                         "nodeType": "ElementaryTypeName",
                         "src": "839:7:9",
@@ -2115,7 +2115,7 @@
                         }
                       }
                     },
-                    "id": 3630,
+                    "id": 3627,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -2130,8 +2130,8 @@
                       "typeString": "address payable"
                     }
                   },
-                  "functionReturnParameters": 3605,
-                  "id": 3631,
+                  "functionReturnParameters": 3602,
+                  "id": 3628,
                   "nodeType": "Return",
                   "src": "832:25:9"
                 }
@@ -2139,20 +2139,20 @@
             },
             "documentation": null,
             "functionSelector": "50d3f4b1",
-            "id": 3633,
+            "id": 3630,
             "implemented": true,
             "kind": "function",
             "modifiers": [
               {
                 "arguments": null,
-                "id": 3602,
+                "id": 3599,
                 "modifierName": {
                   "argumentTypes": null,
-                  "id": 3601,
+                  "id": 3598,
                   "name": "onlyOwner",
                   "nodeType": "Identifier",
                   "overloadedDeclarations": [],
-                  "referencedDeclaration": 3915,
+                  "referencedDeclaration": 3912,
                   "src": "592:9:9",
                   "typeDescriptions": {
                     "typeIdentifier": "t_modifier$__$",
@@ -2167,16 +2167,16 @@
             "nodeType": "FunctionDefinition",
             "overrides": null,
             "parameters": {
-              "id": 3600,
+              "id": 3597,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3591,
+                  "id": 3588,
                   "name": "oracle",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3633,
+                  "scope": 3630,
                   "src": "453:14:9",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -2185,7 +2185,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3590,
+                    "id": 3587,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "453:7:9",
@@ -2200,11 +2200,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 3593,
+                  "id": 3590,
                   "name": "name",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3633,
+                  "scope": 3630,
                   "src": "478:18:9",
                   "stateVariable": false,
                   "storageLocation": "memory",
@@ -2213,7 +2213,7 @@
                     "typeString": "string"
                   },
                   "typeName": {
-                    "id": 3592,
+                    "id": 3589,
                     "name": "string",
                     "nodeType": "ElementaryTypeName",
                     "src": "478:6:9",
@@ -2227,11 +2227,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 3595,
+                  "id": 3592,
                   "name": "symbol",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3633,
+                  "scope": 3630,
                   "src": "507:20:9",
                   "stateVariable": false,
                   "storageLocation": "memory",
@@ -2240,7 +2240,7 @@
                     "typeString": "string"
                   },
                   "typeName": {
-                    "id": 3594,
+                    "id": 3591,
                     "name": "string",
                     "nodeType": "ElementaryTypeName",
                     "src": "507:6:9",
@@ -2254,11 +2254,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 3597,
+                  "id": 3594,
                   "name": "tokenU",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3633,
+                  "scope": 3630,
                   "src": "538:14:9",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -2267,7 +2267,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3596,
+                    "id": 3593,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "538:7:9",
@@ -2282,11 +2282,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 3599,
+                  "id": 3596,
                   "name": "tokenS",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3633,
+                  "scope": 3630,
                   "src": "563:14:9",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -2295,7 +2295,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3598,
+                    "id": 3595,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "563:7:9",
@@ -2312,16 +2312,16 @@
               "src": "442:142:9"
             },
             "returnParameters": {
-              "id": 3605,
+              "id": 3602,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3604,
+                  "id": 3601,
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3633,
+                  "scope": 3630,
                   "src": "611:15:9",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -2330,7 +2330,7 @@
                     "typeString": "address payable"
                   },
                   "typeName": {
-                    "id": 3603,
+                    "id": 3600,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "611:15:9",
@@ -2346,7 +2346,7 @@
               ],
               "src": "610:17:9"
             },
-            "scope": 3655,
+            "scope": 3652,
             "src": "426:439:9",
             "stateMutability": "nonpayable",
             "virtual": false,
@@ -2354,7 +2354,7 @@
           },
           {
             "body": {
-              "id": 3653,
+              "id": 3650,
               "nodeType": "Block",
               "src": "966:77:9",
               "statements": [
@@ -2364,11 +2364,11 @@
                     "arguments": [
                       {
                         "argumentTypes": null,
-                        "id": 3648,
+                        "id": 3645,
                         "name": "tokenP",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3637,
+                        "referencedDeclaration": 3634,
                         "src": "1004:6:9",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
@@ -2388,11 +2388,11 @@
                         "arguments": [
                           {
                             "argumentTypes": null,
-                            "id": 3645,
+                            "id": 3642,
                             "name": "maker",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 3635,
+                            "referencedDeclaration": 3632,
                             "src": "987:5:9",
                             "typeDescriptions": {
                               "typeIdentifier": "t_address_payable",
@@ -2407,7 +2407,7 @@
                               "typeString": "address payable"
                             }
                           ],
-                          "id": 3644,
+                          "id": 3641,
                           "name": "PrimePool",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
@@ -2418,7 +2418,7 @@
                             "typeString": "type(contract PrimePool)"
                           }
                         },
-                        "id": 3646,
+                        "id": 3643,
                         "isConstant": false,
                         "isLValue": false,
                         "isPure": false,
@@ -2433,7 +2433,7 @@
                           "typeString": "contract PrimePool"
                         }
                       },
-                      "id": 3647,
+                      "id": 3644,
                       "isConstant": false,
                       "isLValue": false,
                       "isPure": false,
@@ -2447,7 +2447,7 @@
                         "typeString": "function (address) external returns (address)"
                       }
                     },
-                    "id": 3649,
+                    "id": 3646,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -2462,26 +2462,26 @@
                       "typeString": "address"
                     }
                   },
-                  "id": 3650,
+                  "id": 3647,
                   "nodeType": "ExpressionStatement",
                   "src": "977:34:9"
                 },
                 {
                   "expression": {
                     "argumentTypes": null,
-                    "id": 3651,
+                    "id": 3648,
                     "name": "tokenP",
                     "nodeType": "Identifier",
                     "overloadedDeclarations": [],
-                    "referencedDeclaration": 3637,
+                    "referencedDeclaration": 3634,
                     "src": "1029:6:9",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
                       "typeString": "address"
                     }
                   },
-                  "functionReturnParameters": 3643,
-                  "id": 3652,
+                  "functionReturnParameters": 3640,
+                  "id": 3649,
                   "nodeType": "Return",
                   "src": "1022:13:9"
                 }
@@ -2489,20 +2489,20 @@
             },
             "documentation": null,
             "functionSelector": "de1f4430",
-            "id": 3654,
+            "id": 3651,
             "implemented": true,
             "kind": "function",
             "modifiers": [
               {
                 "arguments": null,
-                "id": 3640,
+                "id": 3637,
                 "modifierName": {
                   "argumentTypes": null,
-                  "id": 3639,
+                  "id": 3636,
                   "name": "onlyOwner",
                   "nodeType": "Identifier",
                   "overloadedDeclarations": [],
-                  "referencedDeclaration": 3915,
+                  "referencedDeclaration": 3912,
                   "src": "938:9:9",
                   "typeDescriptions": {
                     "typeIdentifier": "t_modifier$__$",
@@ -2517,16 +2517,16 @@
             "nodeType": "FunctionDefinition",
             "overrides": null,
             "parameters": {
-              "id": 3638,
+              "id": 3635,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3635,
+                  "id": 3632,
                   "name": "maker",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3654,
+                  "scope": 3651,
                   "src": "892:21:9",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -2535,7 +2535,7 @@
                     "typeString": "address payable"
                   },
                   "typeName": {
-                    "id": 3634,
+                    "id": 3631,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "892:15:9",
@@ -2550,11 +2550,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 3637,
+                  "id": 3634,
                   "name": "tokenP",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3654,
+                  "scope": 3651,
                   "src": "915:14:9",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -2563,7 +2563,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3636,
+                    "id": 3633,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "915:7:9",
@@ -2580,16 +2580,16 @@
               "src": "891:39:9"
             },
             "returnParameters": {
-              "id": 3643,
+              "id": 3640,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3642,
+                  "id": 3639,
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 3654,
+                  "scope": 3651,
                   "src": "957:7:9",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -2598,7 +2598,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3641,
+                    "id": 3638,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "957:7:9",
@@ -2614,14 +2614,14 @@
               ],
               "src": "956:9:9"
             },
-            "scope": 3655,
+            "scope": 3652,
             "src": "873:170:9",
             "stateMutability": "nonpayable",
             "virtual": false,
             "visibility": "public"
           }
         ],
-        "scope": 3656,
+        "scope": 3653,
         "src": "127:919:9"
       }
     ],
@@ -2660,7 +2660,7 @@
     }
   },
   "schemaVersion": "3.0.23",
-  "updatedAt": "2020-05-01T00:51:30.179Z",
+  "updatedAt": "2020-05-01T02:08:26.757Z",
   "devdoc": {
     "methods": {
       "owner()": {

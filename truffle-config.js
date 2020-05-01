@@ -24,12 +24,12 @@ module.exports = {
     live: {
       provider: () => new HDWalletProvider(live, mainnet),
       network_id: 1,     
-      gas: 5500000,      
+      gas: 6500000,      
       confirmations: 2,  
       timeoutBlocks: 200,
       skipDryRun: false ,
       from: '0x619F9Fb924c7e5fd6D21680b9bAc146FffB2D5C3',
-      gasPrice: web3.utils.toWei('15', 'gwei')
+      gasPrice: web3.utils.toWei('6', 'gwei')
     },
     ropsten: {
       provider: () => new HDWalletProvider(mnemonic, ropsten),

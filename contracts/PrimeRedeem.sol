@@ -1,8 +1,8 @@
 pragma solidity ^0.6.2;
 
 /**
- * @title Primitive's Strike Redeem ERC-20 for Prime Options
- * @author Primitive
+ * @title   Primitive's Redeem ERC-20 for Prime Options
+ * @author  Primitive
  */
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";

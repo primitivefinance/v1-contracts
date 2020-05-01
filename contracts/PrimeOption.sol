@@ -1,8 +1,8 @@
 pragma solidity ^0.6.2;
 
 /**
- * @title ERC-20 Binary Option Primitive
- * @author Primitive
+ * @title   ERC-20 Binary Option Primitive
+ * @author  Primitive
  */
 
 import "./PrimeInterface.sol";

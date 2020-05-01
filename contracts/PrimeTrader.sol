@@ -1,9 +1,9 @@
 pragma solidity ^0.6.2;
 
 /**
- * @title Primitive's Trader Contract
- * @notice Safely interacts with the Prime Base ERC-20 Option
- * @author Primitive
+ * @title   Primitive's Trader Contract
+ * @notice  Safely interacts with the Prime Base ERC-20 Option Primitive
+ * @author  Primitive
  */
 
 import "./PrimeInterface.sol";
@@ -13,8 +13,6 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 contract PrimeTrader is ReentrancyGuard {
     using SafeMath for uint256;
-
-    uint256 public constant DENOMINATOR = 1 ether;
 
     address payable public weth;
 
