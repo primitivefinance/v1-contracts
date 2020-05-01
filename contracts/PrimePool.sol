@@ -62,21 +62,16 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
 
     function addMarket(address tokenP) public onlyOwner returns (address) {
         primes[IPrime(tokenP).marketId()] = tokenP;
-        /* (address _tokenU, address _tokenS, address _tokenR, , ,) = IPrime(tokenP).prime(); */
-        /* IERC20(_tokenS).approve(tokenP, 1000000000 ether);
-        IERC20(_tokenU).approve(tokenP, 1000000000 ether);
-        IERC20(_tokenR).approve(tokenP, 1000000000 ether); */
         emit Market(tokenP);
         return tokenP;
     }
 
-    function pause() public onlyOwner returns (bool) {
-        _pause();
-        return true;
-    }
-
-    function unpause() public onlyOwner returns (bool) {
-        _unpause();
+    function kill() public onlyOwner returns (bool) {
+        if(paused()) {
+            _unpause();
+        } else {
+            _pause();
+        }
         return true;
     }
 

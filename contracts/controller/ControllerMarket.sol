@@ -86,7 +86,7 @@ contract ControllerMarket is Ownable {
     ) public onlyOwner returns (uint256) {
         IControllerOption optionController = IControllerOption(_controllers.option);
 
-        // Deploys option contract and mints prime erc-721
+        // Deploys option contract.
         (address option, uint256 marketId) = optionController.addOption(
             name,
             symbol,
@@ -97,7 +97,7 @@ contract ControllerMarket is Ownable {
             expiry
         );
 
-        // Deploys redeem contract
+        // Deploys redeem contract.
         IControllerRedeem redeemController = IControllerRedeem(_controllers.redeem);
         address tokenR = redeemController.addRedeem(
             "Redeem Primitive Underlying LP",
@@ -108,7 +108,7 @@ contract ControllerMarket is Ownable {
         (bool setRedeem) = optionController.setRedeem(tokenR, option);
         require(setRedeem, "ERR_SET_REDEEM");
 
-        // Adds option to pool contract
+        // Adds option to pool contract.
         IControllerPool pool = IControllerPool(_controllers.pool);
         address payable maker = pool.makerFor(tokenU, tokenS);
         if(maker != address(0)) {

@@ -10,8 +10,9 @@ import "./controller/Instruments.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 
-contract PrimeOption is ERC20, ReentrancyGuard {
+contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
     using SafeMath for uint256;
 
     address public tokenR;
@@ -74,6 +75,15 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         expired = true;
     }
 
+    function kill() public {
+        /* require(msg.sender == factory, "ERR_NOT_OWNER"); */
+        /* if(paused()) {
+            _unpause();
+        } else {
+            _pause();
+        } */
+        _pause();
+    }
 
     /* =========== CACHE & TOKEN GETTER FUNCTIONS =========== */
 
@@ -159,6 +169,7 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         external
         nonReentrant
         notExpired
+        whenNotPaused
         returns (uint256 inTokenU, uint256 outTokenR)
     {
         // Current balance of tokenU.
@@ -197,6 +208,7 @@ contract PrimeOption is ERC20, ReentrancyGuard {
         external
         nonReentrant
         notExpired
+        whenNotPaused
         returns (uint256 inTokenS, uint256 inTokenP, uint256 outTokenU)
     {
         // Stores addresses locally for gas savings.

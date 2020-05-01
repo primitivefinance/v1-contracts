@@ -12,13 +12,11 @@ contract ControllerOption is Ownable {
     using SafeMath for uint256;
 
     uint256 public _marketNonce;
-    address public controller;
 
     constructor(
         address _controller
     ) public {
         transferOwnership(_controller);
-        controller = _controller;
     }
 
     function addOption(

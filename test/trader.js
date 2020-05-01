@@ -490,5 +490,113 @@ contract('PrimeTrader.sol', accounts => {
                 });
             });
         });
+
+        describe('PrimeTrader.safeUnwind()', () => {
+            it('reverts if calling unwind on an option that hasnt expired', async () => {
+                await truffleAssert.reverts(
+                    trader.safeUnwind(
+                        tokenP,
+                        10,
+                        Alice,
+                        {from: Alice}),
+                    "ERR_NOT_EXPIRED"
+                );
+            });
+            it('sets the conditions for the option to test expired', async () => {
+                let inTokenU = ONE_ETHER;
+
+                let inTokenS = price*1 * ONE_ETHER*1 / toWei('1');
+                let inTokenP = ONE_ETHER;
+
+                // Mint some options
+                await _tokenU.methods.transfer(tokenP, inTokenU).send({from: Alice});
+                let mint = await _tokenP.mint(Alice, {from: Alice});
+
+                // Swap some options
+                await _tokenS.transfer(tokenP, (inTokenS).toString());
+                await _tokenP.transfer(tokenP, inTokenP);
+                let swap = await _tokenP.swap(Alice);
+
+                // Expire the contract
+                await _tokenP.testExpire();
+
+                // log the outstanding balances
+                console.log('[CACHE U]', fromWei(await _tokenP.cacheU()));
+                console.log('[CACHE S]', fromWei(await _tokenP.cacheS()));
+                console.log('[CACHE R]', fromWei(await _tokenP.cacheR()));
+                console.log('[CACHE P]', fromWei(await _tokenP.balanceOf(tokenP)));
+                console.log('[BALANCE U]', fromWei(await _tokenU.methods.balanceOf(Alice).call()));
+                console.log('[BALANCE S]', fromWei(await _tokenS.balanceOf(Alice)));
+                console.log('[BALANCE R]', fromWei(await _tokenR.balanceOf(Alice)));
+                console.log('[BALANCE P]', fromWei(await _tokenP.balanceOf(Alice)));
+            });
+
+            it('closes position', async () => {
+                let inTokenU = ONE_ETHER;
+
+                let inTokenS = 0;
+                let inTokenP = await _tokenP.balanceOf(Alice);
+                let inTokenR = price*1 * ONE_ETHER*1 / toWei('1');
+                let outTokenU = inTokenP;
+                let outTokenS = 0;
+
+                let balance0S = await _tokenS.balanceOf(Alice);
+                let balance0P = await _tokenP.balanceOf(Alice);
+                let balance0U = await _tokenU.methods.balanceOf(Alice).call();
+                let balance0R = await _tokenR.balanceOf(Alice);
+
+                let balance0SC = await _tokenS.balanceOf(tokenP);
+                let balance0UC = await _tokenU.methods.balanceOf(tokenP).call();
+
+                let unwind = await trader.safeUnwind(tokenP, (inTokenP).toString(), Alice);
+                truffleAssert.prettyPrintEmittedEvents(unwind);
+                console.log('[CACHE U]', fromWei(await _tokenP.cacheU()));
+                console.log('[CACHE S]', fromWei(await _tokenP.cacheS()));
+                console.log('[CACHE R]', fromWei(await _tokenP.cacheR()));
+                console.log('[CACHE P]', fromWei(await _tokenP.balanceOf(tokenP)));
+                console.log('[BALANCE U]', fromWei(await _tokenU.methods.balanceOf(Alice).call()));
+                console.log('[BALANCE S]', fromWei(await _tokenS.balanceOf(Alice)));
+                console.log('[BALANCE R]', fromWei(await _tokenR.balanceOf(Alice)));
+                console.log('[BALANCE P]', fromWei(await _tokenP.balanceOf(Alice)));
+
+                let balance1S = await _tokenS.balanceOf(Alice);
+                let balance1P = await _tokenP.balanceOf(Alice);
+                let balance1U = await _tokenU.methods.balanceOf(Alice).call();
+                let balance1R = await _tokenR.balanceOf(Alice);
+
+                let balance1SC = await _tokenS.balanceOf(tokenP);
+                let balance1UC = await _tokenU.methods.balanceOf(tokenP).call();
+
+                let deltaS = balance1S - balance0S;
+                let deltaP = balance1P - balance0P;
+                let deltaU = balance1U - balance0U;
+                let deltaR = balance1R - balance0R;
+                let deltaSC = balance1SC - balance0SC;
+                let deltaUC = balance1UC - balance0UC;
+
+                /* expect(deltaS).to.be.eq(+outTokenS); */
+                /* expect(deltaP).to.be.eq(-inTokenP); */
+                expect(deltaU).to.be.eq(+outTokenU);
+                /* expect(deltaR).to.be.eq(-inTokenR); */
+
+                /* expect(deltaSC).to.be.eq(-outTokenS); */
+                expect(deltaUC).to.be.eq(-outTokenU);
+
+                truffleAssert.eventEmitted(unwind, "Close", (ev) => {
+                    return ev.inTokenP == +outTokenU && ev.inTokenP == +inTokenP;
+                });
+
+                let redeem = await trader.safeRedeem(tokenP, await _tokenR.balanceOf(Alice), Alice);
+                truffleAssert.prettyPrintEmittedEvents(redeem);
+                console.log('[CACHE U]', fromWei(await _tokenP.cacheU()));
+                console.log('[CACHE S]', fromWei(await _tokenP.cacheS()));
+                console.log('[CACHE R]', fromWei(await _tokenP.cacheR()));
+                console.log('[CACHE P]', fromWei(await _tokenP.balanceOf(tokenP)));
+                console.log('[BALANCE U]', fromWei(await _tokenU.methods.balanceOf(Alice).call()));
+                console.log('[BALANCE S]', fromWei(await _tokenS.balanceOf(Alice)));
+                console.log('[BALANCE R]', fromWei(await _tokenR.balanceOf(Alice)));
+                console.log('[BALANCE P]', fromWei(await _tokenP.balanceOf(Alice)));
+            });
+        });
     }); 
 })

@@ -422,22 +422,13 @@ contract('PrimePool.sol', accounts => {
             });
         });
 
-        /* describe('PrimePool.pause()', () => {
+        /* describe('PrimePool.kill()', () => {
             it('reverts if trying to pause as not owner', async () => {
                 await truffleAssert.reverts(
-                    _pool.pause(
+                    _pool.kill(
                         {from: Bob}
                     ),
                     "Ownable: caller is not the owner"
-                );
-            });
-
-            it('reverts if trying to unpause when its not paused', async () => {
-                await truffleAssert.reverts(
-                    _pool.unpause(
-                        {from: Alice}
-                    ),
-                    "Pausable: not paused"
                 );
             });
 
@@ -449,7 +440,7 @@ contract('PrimePool.sol', accounts => {
                 // Buy the options
                 await _pool.buy(inTokenS, tokenP, {from: Alice, value: inTokenS});
                 // Pause the pool
-                await _pool.pause();
+                await _pool.kill();
                 // Swap the options
                 await trader.safeSwap(tokenP, await _tokenP.balanceOf(Alice), Alice, {from: Alice});
                 // attempt to withdraw

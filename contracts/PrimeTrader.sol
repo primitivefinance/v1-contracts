@@ -172,6 +172,39 @@ contract PrimeTrader is ReentrancyGuard {
         emit Close(msg.sender, inTokenP);
     }
 
+    /**
+     * @dev Burn Prime Redeem tokens to withdraw tokenU and tokenS from expired options.
+     * @notice Takes paramter for quantity of Primes to burn.
+     * The Prime Redeems to burn is equal to the Primes * ratio.
+     * @param amount Quantity of tokenU to withdraw.
+     */
+    function safeUnwind(
+        address tokenP,
+        uint256 amount,
+        address receiver
+    )
+        external
+        nonReentrant
+        returns (uint256 inTokenR, uint256 inTokenP, uint256 outTokenU)
+    {
+        require(amount > 0, "ERR_ZERO");
+        require(IPrime(tokenP).expiry() < block.timestamp || IPrime(tokenP).expired(), "ERR_NOT_EXPIRED");
+        address tokenR = IPrime(tokenP).tokenR();
+
+        inTokenR = amount.mul(IPrime(tokenP).price()).div(IPrime(tokenP).base());
+
+        verifyBalance(
+            IERC20(tokenR).balanceOf(msg.sender),
+            inTokenR,
+            "ERR_BAL_REDEEM"
+        );
+
+        (bool inTransferR) = IERC20(tokenR).transferFrom(msg.sender, tokenP, inTokenR);
+        require(inTransferR, "ERR_TRANSFER_IN_FAIL");
+        (inTokenR, inTokenP, outTokenU) = IPrime(tokenP).close(receiver);
+        emit Close(msg.sender, inTokenP);
+    }
+
     function verifyBalance(
         uint256 balance,
         uint256 minBalance,

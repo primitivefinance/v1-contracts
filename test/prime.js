@@ -578,7 +578,8 @@ contract('PrimeOption.sol', accounts => {
             });
 
 
-            it('closes position', async () => {
+            it('closes position in a killed and expired environment', async () => {
+                await _tokenP.kill();
                 let inTokenU = ONE_ETHER;
                 await _tokenP.take();
                 await _tokenP.update();
