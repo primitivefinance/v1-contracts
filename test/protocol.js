@@ -1108,6 +1108,55 @@ contract('Primitive', accounts => {
                 console.log('[SQRT CALCULATED]', (await _pool.sqrt(premium.timeRemainder)).toString());
                 console.log('[TIME REMAINING]', (premium.timeRemainder).toString());
             });
+
+            it('should be able to withdraw tokenU if no tokenR is in contract', async () => {
+                let inTokenPULP = await _pool.balanceOf(Alice);
+                let outTokenU = inTokenPULP*1 * await _tokenU.balanceOf(_pool.address) / await _pool.totalSupply();
+                let outTokenS = inTokenPULP*1 * await _tokenR.balanceOf(_pool.address) / await _pool.totalSupply();
+                let outTokenR = outTokenS; // FIX
+
+                let balance0U = await _tokenU.balanceOf(Alice); 
+                let balance0P = await _pool.balanceOf(Alice);
+                let balance0S = await WETH.methods.balanceOf(Alice).call();
+
+                let balance0UC = await _tokenU.balanceOf(tokenP);
+                let balance0SC = await WETH.methods.balanceOf(tokenP).call();
+
+                console.log('[CACHE U]', fromWei(await _tokenU.balanceOf(tokenPULP)));
+                console.log('[CACHE S]', fromWei(await WETH.methods.balanceOf(tokenPULP).call()));
+                console.log('[BALANCE U]', fromWei(balance0U));
+                console.log('[BALANCE S]', fromWei(balance0S));
+                console.log('[BALANCE P]', fromWei(balance0P));
+
+                let withdraw = await _pool.withdraw((inTokenPULP).toString(), tokenP);
+                truffleAssert.prettyPrintEmittedEvents(withdraw);
+
+                let balance1U = await _tokenU.balanceOf(Alice);
+                let balance1P = await _pool.balanceOf(Alice);
+                let balance1S = await WETH.methods.balanceOf(Alice).call();
+
+                let balance1UC = await _tokenU.balanceOf(tokenP);
+                let balance1SC = await WETH.methods.balanceOf(tokenP).call();
+
+                let deltaS = balance1S - balance0S;
+                let deltaP = balance1P - balance0P;
+                let deltaU = balance1U - balance0U;
+                let deltaSC = balance1SC - balance0SC;
+                let deltaUC = balance1UC - balance0UC;
+
+                expect(deltaS).to.be.eq(+outTokenS);
+                expect(deltaP).to.be.eq(-inTokenPULP);
+                assert.isAtMost(deltaU, +outTokenU + ROUNDING_ERR);
+                expect(deltaSC).to.be.eq(-outTokenS);
+                expect(deltaUC).to.be.eq(+0);
+
+                truffleAssert.eventEmitted(withdraw, "Withdraw");
+                console.log('[CACHE U]', fromWei(await _tokenU.balanceOf(tokenPULP)));
+                console.log('[CACHE S]', fromWei(await WETH.methods.balanceOf(tokenPULP).call()));
+                console.log('[BALANCE U]', fromWei(balance1U));
+                console.log('[BALANCE S]', fromWei(balance1S));
+                console.log('[BALANCE P]', fromWei(balance1P));
+            });
         });
 
         describe('PrimePool.buy()', () => {

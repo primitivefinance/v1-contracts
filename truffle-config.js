@@ -29,7 +29,7 @@ module.exports = {
       timeoutBlocks: 200,
       skipDryRun: false ,
       from: '0x619F9Fb924c7e5fd6D21680b9bAc146FffB2D5C3',
-      gasPrice: web3.utils.toWei('6', 'gwei')
+      gasPrice: web3.utils.toWei('7.5', 'gwei')
     },
     ropsten: {
       provider: () => new HDWalletProvider(mnemonic, ropsten),

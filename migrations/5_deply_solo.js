@@ -23,7 +23,7 @@ module.exports = async (deployer, network) => {
     } */
     const tokenS = weth;
     const marketId = 1;
-    const poolName = "ETH Short Put Pool";
+    const poolName = "ETH Short Put Pool LP";
     const poolSymbol = "PULP";
     const optionName = "ETH Put 200 DAI Expiring May 30 2020";
     const optionSymbol = "PRIME";
@@ -42,14 +42,14 @@ module.exports = async (deployer, network) => {
     
 
     /* await deployer.deploy(PrimeTrader, weth); */
-    /* let pool = await deployer.deploy(
+    let pool = await deployer.deploy(
         PrimePool,
         weth,
         mainnetCompoundOracleProxy,
         poolName,
         poolSymbol,
-    ); */
-    await deployer.deploy(
+    );
+    /* await deployer.deploy(
         PrimeOption,
         optionName,
         optionSymbol,
@@ -72,6 +72,6 @@ module.exports = async (deployer, network) => {
 
     console.log(redeem.address, prime.address)
     await prime.initTokenR(redeem.address);
-    console.log(await prime.tokenR());
+    console.log(await prime.tokenR()); */
     /* await pool.addMarket(prime.address); */
 };

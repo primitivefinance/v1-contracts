@@ -177,15 +177,17 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         uint256 outTokenR = amount.mul(IERC20(tokenR).balanceOf(address(this))).div(totalSupply);
 
         // Balance of tokenS in tokenP must be >= outTokenR.
-        (uint256 maxDraw) = IPrime(tokenP).maxDraw();
-        require(maxDraw >= outTokenR, "ERR_BAL_STRIKE");
+        if(outTokenR > 0) {
+            (uint256 maxDraw) = IPrime(tokenP).maxDraw();
+            require(maxDraw >= outTokenR, "ERR_BAL_STRIKE");
 
-        // Send tokenR to tokenP so we can call redeem() later to tokenP.
-        (bool success) = IERC20(tokenR).transfer(tokenP, outTokenR);
-    
-        // Call redeem function to send tokenS to msg.sender.
-        (uint256 inTokenR) = IPrime(tokenP).redeem(msg.sender);
-        assert(inTokenR == outTokenR && success);
+            // Send tokenR to tokenP so we can call redeem() later to tokenP.
+            (bool success) = IERC20(tokenR).transfer(tokenP, outTokenR);
+
+            // Call redeem function to send tokenS to msg.sender.
+            (uint256 inTokenR) = IPrime(tokenP).redeem(msg.sender);
+            assert(inTokenR == outTokenR && success);
+        }
 
         // Send outTokenU to msg.sender.
         emit Withdraw(msg.sender, outTokenU, outTokenR);
