@@ -101,6 +101,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         payable
         whenNotPaused
         nonReentrant
+        valid(tokenP)
         returns (bool)
     {
         // Store locally for gas savings.
@@ -114,15 +115,15 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         // Mint LP tokens proportional to the Total LP Supply and Total Pool Balance.
         uint256 outTokenPULP;
         uint256 balanceU = IERC20(tokenU).balanceOf(address(this));
-        uint256 totalSupply = totalSupply();
+        uint256 _totalSupply = totalSupply();
          
         // If liquidity is not intiialized, mint LP tokens equal to deposit.
-        if(balanceU.mul(totalSupply) == 0) {
+        if(balanceU.mul(_totalSupply) == 0) {
             outTokenPULP = amount;
-        } else if(amount.mul(totalSupply) < balanceU) {
-            require(amount.mul(totalSupply) >= balanceU, "ERR_ZERO");
+        } else if(amount.mul(_totalSupply) < balanceU) {
+            require(amount.mul(_totalSupply) >= balanceU, "ERR_ZERO");
         } else {
-            outTokenPULP = amount.mul(totalSupply).div(balanceU);
+            outTokenPULP = amount.mul(_totalSupply).div(balanceU);
         }
 
         _mint(msg.sender, outTokenPULP);

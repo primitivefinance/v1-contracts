@@ -5,13 +5,14 @@
 const bre = require("@nomiclabs/buidler");
 const PrimeOption = artifacts.require("PrimeOption");
 const { web3 } = require('@nomiclabs/buidler');
+const Dai = artifacts.require("DAI");
 
 async function main() {
   // Buidler always runs the compile task when running scripts through it. 
   // If this runs in a standalone fashion you may want to call compile manually 
   // to make sure everything is compiled
   // await bre.run('compile');
-  const Dai = artifacts.require("DAI");
+  
   // We get the contract to deploy
   const dai = await Dai.new(web3.utils.toWei('10000'));
 
