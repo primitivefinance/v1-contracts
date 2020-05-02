@@ -238,7 +238,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
 
         // Premium is paid in tokenS. If tokenS is WETH, its paid with ETH, which is then swapped to WETH.
         if(_tokenS == weth) {
-            require(msg.value >= premium && premium > 0, "ERR_BAL_ETH");
+            require(msg.value >= premium /* && premium > 0 */, "ERR_BAL_ETH");
             IWETH(weth).deposit.value(premium)();
             // Refunds remainder.
             sendEther(msg.sender, msg.value.sub(premium));
@@ -313,14 +313,23 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     }
 
     /**
-     * @dev Calculates the utilization of the Pool based on the proportion of tokenR owned.
+     * @dev Calculates the amount of utilized tokenU assets in the Pool.
      */
-    function poolUtilized(address tokenR, uint256 base, uint256 price) public view returns (uint256 utilized) {
-        utilized = IERC20(tokenR).balanceOf(address(this))
-                    .mul(price)
-                    .mul(ONE_ETHER)
-                    .div(base)
-                    .div(ONE_ETHER);
+    function poolUtilized(address tokenR, uint256 base, uint256 price)
+        public
+        view
+        returns (uint256 utilized)
+    {
+        // Assume tokenR is proportional to tokenS (WETH) at a 1:1 ratio.
+        // TokenR is always minted proportionally to the ratio between tokenU and tokenS (strike price).
+        // Assume a ratio of 200 DAI per 1 ETH.
+        // If 200 tokenU is used to mint a Prime, it will return 1 tokenR.
+        // 1 tokenR * 200 (base) / 1 (price) = 200 tokenU utilized.
+        // The returned value for `utilized` should always be greater than 1.
+        // TokenR is redeemable to tokenS at a 1:1 ratio (1 tokenR can be redeemed for 1 WETH).
+        // The utilized amount of tokenU is therefore this calculation:
+        // (tokenR = tokenS = WETH) * Quantity of tokenU (base) / Quantity of tokenS (price).
+        utilized = IERC20(tokenR).balanceOf(address(this)).mul(base).div(price);
     }
 
     /**
