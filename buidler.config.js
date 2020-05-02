@@ -76,7 +76,6 @@ module.exports = {
     showTimeSpent: true,
     outputFiile: 'gas-used.log',
     currency: 'USD',
-    url: "http://localhost:8545"
   },
   solc: {
     version: "0.6.2",
