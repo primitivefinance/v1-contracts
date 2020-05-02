@@ -1160,7 +1160,7 @@ contract('Primitive', accounts => {
         });
 
         describe('PrimePool.buy()', () => {
-            /* it('reverts if inTokenS amount parameter is 0', async () => {
+            it('reverts if inTokenS amount parameter is 0', async () => {
                 await truffleAssert.reverts(
                     _pool.buy(
                         0,
@@ -1169,7 +1169,7 @@ contract('Primitive', accounts => {
                     ),
                     "ERR_BAL_ETH"
                 );
-            }); */
+            });
 
             it('reverts if not enough tokenU', async () => {
                 let inTokenS = ONE_ETHER;
@@ -1234,33 +1234,6 @@ contract('Primitive', accounts => {
 
                 truffleAssert.eventEmitted(buy, "Buy");
             });
-            it('purchases Prime option for a premium', async () => {
-                await _tokenU.mint(Alice, MILLION_ETHER);
-                await _pool.deposit(await _tokenP.base(), tokenP);
-
-                let inTokenS = await _tokenP.price();
-                let outTokenU = await _tokenP.base();
-
-                console.log('[TOKEN R BALANCE]', fromWei(await _tokenR.balanceOf(_pool.address)));
-                console.log('[Utilized]', fromWei(await _pool.poolUtilized(tokenR, base, price)));
-                console.log('[VOLATILITY]', (await _pool.calculateVolatilityProxy(tokenU, tokenR, base, price)).toString());
-                console.log('[VOLATILITY2]', (await _pool.volatility()).toString());
-                let premium = (await _pool.calculatePremium(base, price, await _tokenP.expiry()));
-                premium = (premium.premium).toString();
-                console.log('[PREMIUM]', premium);
-
-                console.log(['POOL UTILIZED'], (await _pool.poolUtilized(tokenR, base, price)).toString());
-                console.log(['Balance Underlying'], (await _tokenU.balanceOf(_pool.address)).toString());
-
-                let buy = await _pool.buy(inTokenS, tokenP, {from: Alice, value: inTokenS});
-                truffleAssert.prettyPrintEmittedEvents(buy);
-                console.log('[TOKEN R BALANCE]', fromWei(await _tokenR.balanceOf(_pool.address)));
-                console.log('[Utilized]', fromWei(await _pool.poolUtilized(tokenR, base, price)));
-                console.log('[VOLATILITY]', (await _pool.calculateVolatilityProxy(tokenU, tokenR, base, price)).toString());
-                console.log('[PREMIUM]', premium);
-                console.log('[VOLATILITY2]', (await _pool.volatility()).toString());
-            });
-
         });
         
         describe('PrimePool.withdraw()', () => {
