@@ -117,7 +117,7 @@ When a user withdraws liquidity from the Pool, they will burn an amount of liqui
 
 _Withdrawn Underlying = Liquidity Tokens Burned _ Total Pool Balance / Total Liquidity Tokens\*
 
-# Documentation
+# Documentation - (!OLD! SYSTEM - NOT UPDATED ERC-20 SYSTEM)
 
 [Documentation](https://docs.primitive.finance)
 
