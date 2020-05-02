@@ -24,6 +24,11 @@ task("accounts", "Prints the list of accounts", async () => {
 // defaultNetwork, networks, solc, and paths.
 // Go to https://buidler.dev/config/ to learn more
 module.exports = {
+  networks: {
+    local: {
+      url: "http://127.0.0.1:8545",
+    },
+  },
   /* networks: {
     development: {
      host: "127.0.0.1",  
@@ -68,7 +73,10 @@ module.exports = {
   },
   gasReporter: {
     currency: 'USD',
-    gasPrice: 21
+    showTimeSpent: true,
+    outputFiile: 'gas-used.log',
+    currency: 'USD',
+    url: "http://localhost:8545"
   },
   solc: {
     version: "0.6.2",

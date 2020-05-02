@@ -3,20 +3,19 @@
 // When running the script with `buidler run <script>` you'll find the Buidler
 // Runtime Environment's members available in the global scope.
 const bre = require("@nomiclabs/buidler");
+const PrimeOption = artifacts.require("PrimeOption");
+const { web3 } = require('@nomiclabs/buidler');
 
 async function main() {
   // Buidler always runs the compile task when running scripts through it. 
   // If this runs in a standalone fashion you may want to call compile manually 
   // to make sure everything is compiled
   // await bre.run('compile');
-
+  const Dai = artifacts.require("DAI");
   // We get the contract to deploy
-  const Greeter = await ethers.getContractFactory("Greeter");
-  const greeter = await Greeter.deploy("Hello, Buidler!");
+  const dai = await Dai.new(web3.utils.toWei('10000'));
 
-  await greeter.deployed();
-
-  console.log("Greeter deployed to:", greeter.address);
+  console.log("Dai deployed to:", dai.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

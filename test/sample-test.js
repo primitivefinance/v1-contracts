@@ -1,7 +1,7 @@
 const { expect } = require("chai");
-const Greeter = artifacts.require("Greeter");
+const Dai = artifacts.require("Dai");
 
-describe("Greeter contract", function() {
+describe("Dai contract", function() {
   let accounts;
 
   before(async function() {
@@ -9,12 +9,14 @@ describe("Greeter contract", function() {
   });
 
   describe("Deployment", function() {
-    it("Should deploy with the right greeting", async function() {
-      const greeter = await Greeter.new("Hello, world!");
-      assert.equal(await greeter.greet(), "Hello, world!");
-
-      const greeter2 = await Greeter.new("Hola, mundo!");
-      assert.equal(await greeter2.greet(), "Hola, mundo!");
+    it("Should deploy with the right supply", async function() {
+      const dai = await Dai.new(1000);
+      let supply = await dai.totalSupply();
+      console.log((supply).toString());
+      let tx = await dai.transfer(accounts[1], 1000);
+      
+      assert.equal(await dai.totalSupply(), 1000);
+      await dai.mint(accounts[1], 100000);
     });
   });
 });

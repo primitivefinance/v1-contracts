@@ -1,6 +1,6 @@
-const Greeter = artifacts.require("Greeter");
+const Dai = artifacts.require("DAI");
 
 module.exports = async () => {
-  const greeter = await Greeter.new();
-  Greeter.setAsDeployed(greeter);
+  const dai = await Dai.new();
+  Dai.setAsDeployed(dai);
 }
