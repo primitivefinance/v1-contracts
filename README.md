@@ -4,7 +4,7 @@
 ![](https://img.shields.io/twitter/follow/PrimitiveFi?style=social)
 ![](https://img.shields.io/discord/168831573876015105?style=social)
 
-Primitive is an on-chain options protocol.
+Primitive is an on-chain permissionless options protocol.
 
 ## Introduction
 
