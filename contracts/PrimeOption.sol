@@ -6,7 +6,7 @@ pragma solidity ^0.6.2;
  */
 
 import "./PrimeInterface.sol";
-import "./controller/Instruments.sol";
+import "./Instruments.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";

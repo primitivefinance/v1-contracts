@@ -4,7 +4,7 @@
 ![](https://img.shields.io/twitter/follow/PrimitiveFi?style=social)
 ![](https://img.shields.io/discord/168831573876015105?style=social)
 
-Primitive is an on-chain options protocol.
+Primitive is an on-chain permissionless options protocol.
 
 ## Introduction
 
@@ -117,7 +117,7 @@ When a user withdraws liquidity from the Pool, they will burn an amount of liqui
 
 _Withdrawn Underlying = Liquidity Tokens Burned _ Total Pool Balance / Total Liquidity Tokens\*
 
-# Documentation
+# Documentation - (!OLD! SYSTEM - NOT UPDATED ERC-20 SYSTEM)
 
 [Documentation](https://docs.primitive.finance)
 
