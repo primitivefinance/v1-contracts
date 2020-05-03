@@ -42,6 +42,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     uint256 public constant ONE_ETHER = 1 ether;
     uint256 public constant MAX_SLIPPAGE = 92;
     uint256 public constant MIN_VOLATILITY = 10**15;
+    uint256 public constant MIN_PREMIUM = 10**5;
 
     uint256 public volatility;
 
@@ -102,10 +103,10 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
 
     /**
      * @dev Adds liquidity by depositing tokenU. Receives tokenPULP.
-     * @param amount The quantity of tokenU to deposit.
+     * @param inTokenU The quantity of tokenU to deposit.
      */
     function deposit(
-        uint256 amount,
+        uint256 inTokenU,
         address tokenP
     )
         external
@@ -116,13 +117,15 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     {
         // Store locally for gas savings.
         address tokenU = IPrime(tokenP).tokenU();
-        require(IERC20(tokenU).balanceOf(msg.sender) >= amount && amount > 0, "ERR_BAL_UNDERLYING");
+
+        // Require inTokenUs greater than 0 and the msg.sender to have the inTokenU in the params.
+        require(IERC20(tokenU).balanceOf(msg.sender) >= inTokenU && inTokenU > 0, "ERR_BAL_UNDERLYING");
 
         // Add liquidity to pool and push tokenPULP to depositor.
-        (outTokenPULP) = _addLiquidity(tokenU, msg.sender, amount);
+        (outTokenPULP) = _addLiquidity(tokenP, msg.sender, inTokenU);
 
         // Assume we hold the tokenU asset until it is utilized in minting a Prime.
-        (success) = IERC20(tokenU).transferFrom(msg.sender, address(this), amount);
+        (success) = IERC20(tokenU).transferFrom(msg.sender, address(this), inTokenU);
     }
 
     /**
@@ -142,6 +145,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     {
         // Save in memory for gas savings.
         address tokenU = IPrime(tokenP).tokenU();
+
         // To deposit ETH, tokenU needs to be WETH.
         require(tokenU == weth, "ERR_NOT_WETH");
 
@@ -156,27 +160,27 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     /**
      * @dev Private function to mint tokenPULP to depositor.
      */
-    function _addLiquidity(address tokenU, address to, uint256 amount)
+    function _addLiquidity(address tokenP, address to, uint256 inTokenU)
         private
         returns (uint256 outTokenPULP)
     {
         // Mint LP tokens proportional to the Total LP Supply and Total Pool Balance.
-        uint256 balanceU = IERC20(tokenU).balanceOf(address(this));
         uint256 _totalSupply = totalSupply();
+        (uint256 totalBalance) = totalPoolBalance(tokenP);
          
         // If liquidity is not intiialized, mint the initial liquidity and lock it by
         // minting it to this contract.
         if(_totalSupply == 0) {
-            outTokenPULP = amount.sub(10**4);
+            outTokenPULP = inTokenU.sub(10**4);
             _mint(address(this), 10**4);
         } else {
-            outTokenPULP = amount.mul(_totalSupply).div(balanceU);
+            outTokenPULP = inTokenU.mul(_totalSupply).div(totalBalance);
         }
 
         // Calculate the amount of tokenPULP to output.
         require(outTokenPULP > 0, "ERR_ZERO_LIQUIDITY");
         _mint(to, outTokenPULP);
-        emit Deposit(to, amount, outTokenPULP);
+        emit Deposit(to, inTokenU, outTokenPULP);
     }
 
     /**
@@ -185,11 +189,11 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
      *          outTokenS = inTokenPULP * balanceR / Total Supply tokenPULP,
      *          If the pool is fully utilized and there are no strike assets to redeem,
      *          the LPs will have to wait for options to be exercised or become expired.
-     * @param amount The quantity of liquidity tokens to burn.
+     * @param inTokenPULP The quantity of liquidity tokens to burn.
      * @param tokenP The address of the Prime option token.
      */
     function withdraw(
-        uint256 amount,
+        uint256 inTokenPULP,
         address tokenP
     ) 
         external
@@ -198,22 +202,22 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         returns (uint256 outTokenU, bool success)
     {
         // Check tokenPULP balance.
-        require(balanceOf(msg.sender) >= amount && amount > 0, "ERR_BAL_PULP");
+        require(balanceOf(msg.sender) >= inTokenPULP && inTokenPULP > 0, "ERR_BAL_PULP");
         
         // Store Total Supply before we burn
         uint256 _totalSupply = totalSupply();
 
         // Get tokenU balances.
-        (uint256 balanceU, uint256 totalBalance) = _removeLiquidity(tokenP, amount);
+        (uint256 balanceU, uint256 totalBalance) = _removeLiquidity(tokenP, inTokenPULP);
 
         // outTokenU = inTokenPULP * Balance of tokenU / Total Supply of tokenPULP.
         // Checks to make sure numerator >= denominator.
-        // Will revert in cases that amount * total balance < total supply of tokenPULP.
-        outTokenU = amount.mul(totalBalance).div(_totalSupply);
+        // Will revert in cases that inTokenPULP * total balance < total supply of tokenPULP.
+        outTokenU = inTokenPULP.mul(totalBalance).div(_totalSupply);
         require(balanceU >= outTokenU && outTokenU > 0, "ERR_BAL_UNDERLYING");
 
         // Push outTokenU to msg.sender.
-        emit Withdraw(msg.sender, amount, outTokenU);
+        emit Withdraw(msg.sender, inTokenPULP, outTokenU);
         (success) = _settle(IPrime(tokenP).tokenU(), msg.sender, outTokenU);
     }
 
@@ -223,13 +227,13 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
      * It also swaps tokenS to tokenU using a uniswap pool.
      * @param tokenP The option contract address.
      */
-    function _removeLiquidity(address tokenP, uint256 amount)
+    function _removeLiquidity(address tokenP, uint256 inTokenPULP)
         private
         valid(tokenP)
         returns (uint256 balanceU, uint256 totalBalance)
     {
         // Burn tokenPULP.
-        _burn(msg.sender, amount);
+        _burn(msg.sender, inTokenPULP);
 
         // Pull tokenS into this contract.
         assert(_redeem(tokenP) > 0);
@@ -333,7 +337,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
      * @return bool True if the msg.sender receives tokenP.
      */
     function buy(
-        uint256 amount,
+        uint256 inTokenS,
         address tokenP
     )
         external 
@@ -342,7 +346,30 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         valid(tokenP)
         returns (bool)
     {
-        // Store locally for gas savings.
+        // Calculate and accept the premium payment.
+        (uint256 premium, bool isPaid) = _expense(tokenP);
+        
+        // tokenU = inTokenS * Quantity of tokenU (base) / Quantity of tokenS (price).
+        uint256 outTokenU = inTokenS.mul(IPrime(tokenP).base()).div(IPrime(tokenP).price()); 
+
+        // Transfer tokenU (assume DAI) to option contract using Pool funds.
+        (bool transferU) = IERC20(IPrime(tokenP).tokenU()).transfer(tokenP, outTokenU);
+
+        // Mint Prime and Prime Redeem to this contract.
+        (uint256 inTokenU,) = IPrime(tokenP).mint(address(this));
+
+        // Updates the volatility global state variable.
+        volatility = calculateVolatilityProxy(tokenP);
+
+        // Send Prime to msg.sender.
+        emit Buy(msg.sender, inTokenS, outTokenU, premium);
+        return isPaid && transferU && IPrime(tokenP).transfer(msg.sender, inTokenU);
+    }
+
+    /**
+     * @dev Private function to handle the calculation and payment of the premium.
+     */
+    function _expense(address tokenP) private returns (uint256 premium, bool isPaid) {
         (
             address _tokenU, // Assume DAI
             address _tokenS, // Assume ETH
@@ -352,33 +379,26 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
             uint256 _expiry
         ) = IPrime(tokenP).prime();
 
-        // Calculates the Intrinsic + Extrinsic value of tokenP.
-        volatility = calculateVolatilityProxy(tokenP);
+        // Calculates the Intrinsic + Extrinsic value of 1 unit of tokenP.
         (uint256 premium, ) = calculatePremium(_base, _price, _expiry);
-        premium = amount.mul(premium).div(ONE_ETHER);
+
+        // Total premium paid is premium per 1 unit of tokenP * units of tokenP being purchased.
+        premium = inTokenS.mul(premium).div(ONE_ETHER);
 
         // Premium is paid in tokenS. If tokenS is WETH, its paid with ETH, which is then swapped to WETH.
         if(_tokenS == weth) {
-            require(msg.value >= premium /* && premium > 0 */, "ERR_BAL_ETH");
+            // Wrap the ETH to WETH.
+            require(msg.value >= premium && premium > 0, "ERR_BAL_ETH");
             IWETH(weth).deposit.value(premium)();
+
             // Refunds remainder.
             sendEther(msg.sender, msg.value.sub(premium));
+            isPaid = true;
         } else {
-            require(IERC20(_tokenS).balanceOf(msg.sender) >= amount && amount > 0, "ERR_BAL_STRIKE");
+            // If tokenS is an ERC-20, transfer it into the contract as payment.
+            require(IERC20(_tokenS).balanceOf(msg.sender) >= inTokenS && inTokenS > 0, "ERR_BAL_STRIKE");
+            (isPaid) = IERC20(_tokenS).transferFrom(msg.sender, address(this), inTokenS);
         }
-
-        // tokenU = Amount * Quantity of tokenU (base) / Quantity of tokenS (price).
-        uint256 outTokenU = amount.mul(_base).div(_price); 
-
-        // Transfer tokenU (assume DAI) to option contract using Pool funds.
-        (bool transferU) = IERC20(_tokenU).transfer(tokenP, outTokenU);
-
-        // Mint Prime and Prime Redeem to this contract.
-        (uint256 inTokenU,) = IPrime(tokenP).mint(address(this));
-
-        // Send Prime to msg.sender.
-        emit Buy(msg.sender, amount, outTokenU, premium);
-        return transferU && IPrime(tokenP).transfer(msg.sender, inTokenU);
     }
 
     /**
@@ -413,6 +433,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
                                 .div(SECONDS_IN_DAY);
         // Total Premium in ETH.
         premium = (extrinsic.add(intrinsic)).mul(market).div(ONE_ETHER);
+        premium = premium > 0 ? premium : MIN_PREMIUM;
     }
 
     /**
@@ -425,7 +446,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         returns (uint256 _volatility)
     {
         (uint256 utilized) = totalUtilized(tokenP);
-        uint256 totalBalance = IERC20(IPrime(tokenP).tokenU()).balanceOf(address(this)).add(utilized);
+        uint256 totalBalance = totalPoolBalance(tokenP);
         _volatility = utilized.mul(ONE_ETHER).div(totalBalance); // Volatility with 1e18 decimals.
         if(_volatility < MIN_VOLATILITY) {
             _volatility = 10; // 10 = 1%, where 1000 = 100%.
