@@ -67,6 +67,10 @@ module.exports = {
       skipDryRun: false    
     },
   }, */
+  mocha: {
+    timeout: 10000000,
+    useColors: true
+  },
   etherscan: {
     url: "https://api.etherscan.io/api",
     apiKey: ETHERSCAN_APY_KEY

@@ -333,7 +333,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
      * @notice An eth put is 200 DAI / 1 ETH. The right to swap 1 ETH (tokenS) for 200 Dai (tokenU).
      * As a user, you want to cover ETH, so you pay in ETH. Every 1 Quantity of ETH covers 200 DAI.
      * A user specifies the amount of ETH they want covered, i.e. the amount of ETH they can swap.
-     * @param amount The quantity of tokenS (ETH) to 'cover' with an option. Denominated in tokenS (WETH).
+     * @param inTokenS The quantity of tokenS (ETH) to 'cover' with an option. Denominated in tokenS (WETH).
      * @return bool True if the msg.sender receives tokenP.
      */
     function buy(
@@ -347,7 +347,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         returns (bool)
     {
         // Calculate and accept the premium payment.
-        (uint256 premium, bool isPaid) = _expense(tokenP);
+        (uint256 premium, bool isPaid) = _expense(tokenP, inTokenS);
         
         // tokenU = inTokenS * Quantity of tokenU (base) / Quantity of tokenS (price).
         uint256 outTokenU = inTokenS.mul(IPrime(tokenP).base()).div(IPrime(tokenP).price()); 
@@ -369,9 +369,9 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     /**
      * @dev Private function to handle the calculation and payment of the premium.
      */
-    function _expense(address tokenP) private returns (uint256 premium, bool isPaid) {
+    function _expense(address tokenP, uint256 inTokenS) private returns (uint256 premium, bool isPaid) {
         (
-            address _tokenU, // Assume DAI
+             , // Assume DAI
             address _tokenS, // Assume ETH
              , // Assume Redeemable for DAI 1:1.
             uint256 _base,
@@ -380,7 +380,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         ) = IPrime(tokenP).prime();
 
         // Calculates the Intrinsic + Extrinsic value of 1 unit of tokenP.
-        (uint256 premium, ) = calculatePremium(_base, _price, _expiry);
+        (premium, ) = calculatePremium(_base, _price, _expiry);
 
         // Total premium paid is premium per 1 unit of tokenP * units of tokenP being purchased.
         premium = inTokenS.mul(premium).div(ONE_ETHER);
