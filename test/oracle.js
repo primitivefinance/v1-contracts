@@ -135,7 +135,6 @@ contract("Oracle contract", accounts => {
                     let expected = 
                                 new BigNumber(option.base)
                                     .minus(market);
-
                     let difference;
                     if(intrinsic >= expected) {
                         difference = new BigNumber(intrinsic).minus(expected);
@@ -154,18 +153,120 @@ contract("Oracle contract", accounts => {
                         difference: fromWei((Math.floor(difference)).toString()),
                         error: (error).toString()
                     }
-
                     console.log(calculation);
                     let max_error = 1.5; // %
                     if(+intrinsic > 0) {
                         assert.isAtMost(+error, +max_error);
                     }
-                    
-                    
                 }
             }
             
             await run(10);
+        });
+    });
+
+    describe("Calculation Extrinsic", () => {
+
+        it("Calculates extrinsic premiums for arbritary options parameters", async () => {
+            const calculateExtrinsic = async (volatility, base, price, expiry) => {
+                let tokenU = MAINNET_DAI;
+                let extrinsic = await oracle.calculateExtrinsic(tokenU, volatility, base, price, expiry);
+                return extrinsic;
+            }
+
+            const generateRandomOption = () => {
+                let ethPrice = 200;
+                function randomDate(start, end) {
+                    let date = Math.floor(+start + Math.random() * (end - start));
+                    return date;
+                }
+                function getRandomArbitrary(min, max) {
+                    return Math.random() * (max - min) + min;
+                }
+                let option = {
+                    volatility: Math.floor(1000 * Math.random()),
+                    base: toWei((ethPrice * getRandomArbitrary(0.9, 1.1)).toString()),
+                    price: toWei('1'),
+                    expiry: randomDate(1588636800, 1590796740)
+                }
+
+                return option;
+            }
+
+            const run = async (amount) => {
+                for(let i = 0; i < amount; i++) {
+                    let option = generateRandomOption();
+                    let extrinsic = await calculateExtrinsic(
+                        option.volatility,
+                        option.base,
+                        option.price,
+                        option.expiry
+                    );
+
+                    let calculation = {
+                        volatility: option.volatility,
+                        base: fromWei(option.base),
+                        price: fromWei(option.price),
+                        expiry: (new Date(option.expiry * 1000)).toDateString(),
+                        extrinsic: fromWei(extrinsic)
+                    }
+                    console.log(calculation);
+                }
+            }
+            
+            await run(3);
+        });
+    });
+
+    describe("Calculation Specific", () => {
+
+        it("Calculates extrinsic premiums for arbritary options parameters", async () => {
+            const calculateExtrinsic = async (volatility, base, price, expiry) => {
+                let tokenU = MAINNET_DAI;
+                let extrinsic = await oracle.calculateExtrinsic(tokenU, volatility, base, price, expiry);
+                return extrinsic;
+            }
+            
+            let extrinsic = await calculateExtrinsic(
+                829,
+                toWei('200'),
+                toWei('1'),
+                '1589543940' // May 15 11:59 pm
+            );
+
+            let calculation = {
+                volatility: 829,
+                base: '200',
+                price: '1',
+                expiry: (new Date(1589543940 * 1000)).toDateString(),
+                extrinsic: fromWei(extrinsic)
+            }
+            console.log(calculation);
+
+            const run = async (amount) => {
+                let volatility = 640;
+                for(let i = 0; i < amount; i++) {
+                    
+                    let extrinsic = await calculateExtrinsic(
+                        volatility,
+                        toWei('200'),
+                        toWei('1'),
+                        '1589543940' // May 15 11:59 pm
+                    );
+
+                    let calculation = {
+                        volatility: volatility,
+                        base: '200',
+                        price: '1',
+                        expiry: (new Date(1589543940 * 1000)).toDateString(),
+                        extrinsic: fromWei(extrinsic)
+                    }
+                    console.log(calculation);
+                    volatility -= 1;
+                }
+            }
+            
+            await run(1);
         });
     });
 });
