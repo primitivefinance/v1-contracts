@@ -43,6 +43,7 @@ contract PrimeOracle {
      * @param price The quantity of the strike asset. Also the price of tokenU denominated in tokenS.
      * @param expiry The expirate date (strike date) of the Prime option as a UNIX timestamp.
      * @return premium The sum of the 'time value' and 'intrinsic' value of the Prime option.
+     * Returns a premium that is denominated in tokenU.
      */
     function calculatePremium(
         address tokenU,
@@ -64,9 +65,6 @@ contract PrimeOracle {
         
         // Sum the parts.
         premium = (extrinsic.add(intrinsic));
-
-        // Premium was denominated in tokenU, we convert it so its denominated in tokenS.
-        premium = premium.mul(market).div(ONE_ETHER);
 
         // If the premium is 0, return a minimum value.
         premium = premium > 0 ? premium : MIN_PREMIUM;

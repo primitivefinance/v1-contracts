@@ -228,14 +228,14 @@ contract("Oracle contract", accounts => {
             }
             
             let extrinsic = await calculateExtrinsic(
-                829,
+                865,
                 toWei('200'),
                 toWei('1'),
                 '1589543940' // May 15 11:59 pm
             );
 
             let calculation = {
-                volatility: 829,
+                volatility: 865,
                 base: '200',
                 price: '1',
                 expiry: (new Date(1589543940 * 1000)).toDateString(),

@@ -81,3 +81,26 @@ interface IPrimeRedeem {
     function transfer(address to, uint256 amount) external returns (bool);
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
 }
+
+interface IPrimeOracle {
+    function marketPrice(address tokenU) external view returns (uint256 market);
+    function calculateIntrinsic(
+        address tokenU,
+        uint256 base,
+        uint256 price
+    ) external view returns (uint256 intrinsic);
+    function calculateExtrinsic(
+        address tokenU,
+        uint256 volatility,
+        uint256 base,
+        uint256 price,
+        uint256 expiry
+    ) external view returns (uint256 extrinsic);
+    function calculatePremium(
+        address tokenU,
+        uint256 volatility,
+        uint256 base,
+        uint256 price,
+        uint256 expiry
+    ) external view returns (uint256 premium);
+}

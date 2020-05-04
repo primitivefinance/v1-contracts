@@ -30,10 +30,6 @@ interface IWETH {
     function withdraw(uint wad) external;
 }
 
-interface PriceOracleProxy {
-    function getUnderlyingPrice(address cToken) external view returns (uint);
-}
-
 contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     using SafeMath for uint256;
 
@@ -42,10 +38,11 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     uint256 public constant ONE_ETHER = 1 ether;
     uint256 public constant MAX_SLIPPAGE = 92;
     uint256 public constant MIN_VOLATILITY = 10**15;
-    uint256 public constant MIN_PREMIUM = 10**5;
+    uint256 public constant MIN_PREMIUM = 100;
 
     uint256 public volatility;
 
+    // Assume oracle is compound's price proxy oracle.
     address public oracle;
     address public factory;
     address payable public weth;
@@ -145,15 +142,16 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     {
         // Save in memory for gas savings.
         address tokenU = IPrime(tokenP).tokenU();
+        address _weth = weth;
 
         // To deposit ETH, tokenU needs to be WETH.
-        require(tokenU == weth, "ERR_NOT_WETH");
+        require(tokenU == _weth, "ERR_NOT_WETH");
 
         // Add liquidity to pool and push tokenPULP to depositor.
         (outTokenPULP) = _addLiquidity(tokenU, msg.sender, msg.value);
 
         // Assume we hold the tokenU asset until it is utilized in minting a Prime.
-        IWETH(weth).deposit.value(msg.value)();
+        IWETH(_weth).deposit.value(msg.value)();
         success = true;
     }
 
@@ -218,7 +216,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
 
         // Push outTokenU to msg.sender.
         emit Withdraw(msg.sender, inTokenPULP, outTokenU);
-        (success) = _settle(IPrime(tokenP).tokenU(), msg.sender, outTokenU);
+        (success) = _withdraw(IPrime(tokenP).tokenU(), msg.sender, outTokenU);
     }
 
     /**
@@ -280,14 +278,14 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
 
         // Unwrap WETH in the contract.
         // Assumes WETH has already been redeemed from the Prime contract and WETH is in the pool.
-        address tokenS = IPrime(tokenP).tokenU();
+        address tokenS = IPrime(tokenP).tokenS();
         assert(tokenS == weth);
         IWETH(weth).withdraw(IERC20(tokenS).balanceOf(address(this)));
 
         // Get price of 1 ETH denominated in tokenU from compound oracle. 1 ETH = 1e36 / oracle's price.
         // Assumes oracle never returns a value greater than 1e36.
         uint256 oraclePrice = (ONE_ETHER).mul(ONE_ETHER)
-                                .div(PriceOracleProxy(oracle).getUnderlyingPrice(COMPOUND_DAI));
+                                .div(IPrimeOracle(oracle).marketPrice(IPrime(tokenP).tokenU()));
 
         // Get price of 1 ETH denominated in tokenU from uniswap pool.
         uint256 uniPrice = UniswapExchangeInterface(exchange).getEthToTokenInputPrice(ONE_ETHER);
@@ -312,10 +310,10 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     }
 
     /**
-     * @dev Private function to push assets to msg.sender. Will push ethers or tokens depending,
+     * @dev Private function to push assets to msg.sender. Will push ethers or tokens depending
      * on the address passed in the parameter.
      */
-    function _settle(address token, address to, uint256 amount) private nonReentrant returns (bool) {
+    function _withdraw(address token, address to, uint256 amount) private nonReentrant returns (bool) {
         if(token == weth) {
             IWETH(weth).withdraw(amount);
             return sendEther(to, amount);
@@ -341,104 +339,66 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         address tokenP
     )
         external 
-        payable
         nonReentrant
         valid(tokenP)
         returns (bool)
     {
-        // Calculate and accept the premium payment.
-        (uint256 premium, bool isPaid) = _expense(tokenP, inTokenS);
-        
-        // tokenU = inTokenS * Quantity of tokenU (base) / Quantity of tokenS (price).
-        uint256 outTokenU = inTokenS.mul(IPrime(tokenP).base()).div(IPrime(tokenP).price()); 
+        // Store in memory for gas savings.
+        (
+            address tokenU, // Assume DAI.
+             , // Assume ETH and we don't need it in this function.
+             , // Assume tokenR and we don't need it in this function.
+            uint256 base,
+            uint256 price,
+            uint256 expiry
+        ) = IPrime(tokenP).prime();
+
+        // Optimistically mint tokenP.
+
+        // outTokenU = inTokenS * Quantity of tokenU (base) / Quantity of tokenS (price).
+        // Units = tokenS * tokenU / tokenS = tokenU.
+        uint256 outTokenU = inTokenS.mul(base).div(price); 
 
         // Transfer tokenU (assume DAI) to option contract using Pool funds.
-        (bool transferU) = IERC20(IPrime(tokenP).tokenU()).transfer(tokenP, outTokenU);
+        // We do this because the mint function in the Prime contract will check the balance,
+        // against its previously cached balance. The difference is the amount of tokens that were
+        // deposited, which determines how many Primes to mint.
+        (bool transferU) = IERC20(tokenU).transfer(tokenP, outTokenU);
 
         // Mint Prime and Prime Redeem to this contract.
-        (uint256 inTokenU,) = IPrime(tokenP).mint(address(this));
+        // If outTokenU is zero because the numerator is smaller than the denominator,
+        // or because the inTokenS is 0, the mint function will revert. This is because
+        // the mint function only works when tokens are sent into the Prime contract.
+        (uint256 inTokenP, ) = IPrime(tokenP).mint(address(this));
+        
+        // Calculate premium. Denominated in tokenU PER tokenS 'covered'.
+        (uint256 premium) = IPrimeOracle(oracle).calculatePremium(
+            tokenU,
+            volatility,
+            base,
+            price,
+            expiry
+        );
+
+        // Calculate total premium to pay, total premium = premium per tokenS * inTokenS.
+        // Units = tokenS * (tokenU / tokenS) = tokenU.
+        premium = inTokenS.mul(premium).div(ONE_ETHER);
+        require(premium > 0, "ERR_PREMIUM_ZERO");
 
         // Updates the volatility global state variable.
         volatility = calculateVolatilityProxy(tokenP);
 
-        // Send Prime to msg.sender.
+        // Pulls payment in tokenU from msg.sender and then pushes tokenP (option).
+        // WARNING: Two calls to untrusted addresses.
+        require(IPrime(tokenU).balanceOf(msg.sender) >= premium, "ERR_BAL_UNDERLYING");
         emit Buy(msg.sender, inTokenS, outTokenU, premium);
-        return isPaid && transferU && IPrime(tokenP).transfer(msg.sender, inTokenU);
-    }
-
-    /**
-     * @dev Private function to handle the calculation and payment of the premium.
-     */
-    function _expense(address tokenP, uint256 inTokenS) private returns (uint256 premium, bool isPaid) {
-        (
-             , // Assume DAI
-            address _tokenS, // Assume ETH
-             , // Assume Redeemable for DAI 1:1.
-            uint256 _base,
-            uint256 _price,
-            uint256 _expiry
-        ) = IPrime(tokenP).prime();
-
-        // Calculates the Intrinsic + Extrinsic value of 1 unit of tokenP.
-        (premium, ) = calculatePremium(_base, _price, _expiry);
-
-        // Total premium paid is premium per 1 unit of tokenP * units of tokenP being purchased.
-        premium = inTokenS.mul(premium).div(ONE_ETHER);
-
-        // Premium is paid in tokenS. If tokenS is WETH, its paid with ETH, which is then swapped to WETH.
-        if(_tokenS == weth) {
-            // Wrap the ETH to WETH.
-            require(msg.value >= premium && premium > 0, "ERR_BAL_ETH");
-            IWETH(weth).deposit.value(premium)();
-
-            // Refunds remainder.
-            sendEther(msg.sender, msg.value.sub(premium));
-            isPaid = true;
-        } else {
-            // If tokenS is an ERC-20, transfer it into the contract as payment.
-            require(IERC20(_tokenS).balanceOf(msg.sender) >= inTokenS && inTokenS > 0, "ERR_BAL_STRIKE");
-            (isPaid) = IERC20(_tokenS).transferFrom(msg.sender, address(this), inTokenS);
-        }
-    }
-
-    /**
-     * @dev Calculates the intrinsic + extrinsic value of the option.
-     * @notice Strike / Market * (Volatility * 1000) * sqrt(T in seconds remaining) / Seconds in a Day.
-     */
-    function calculatePremium(uint256 base, uint256 price, uint256 expiry)
-        public
-        view
-        returns (uint256 premium, uint256 timeRemainder)
-    {
-        // Assume the oracle gets the Price of ETH using compound's oracle for DAI per ETH.
-        // Price = ETH per DAI.
-        uint256 market = PriceOracleProxy(oracle).getUnderlyingPrice(COMPOUND_DAI);
-        // Strike price of DAI per ETH. ETH / DAI = price of dai per eth, then scaled to 10^18 units.
-        uint256 strike = price.mul(ONE_ETHER).div(base);
-        // Difference = Base * market price / strike price.
-        uint256 difference = base.mul(market).div(strike);
-        // Intrinsic value in DAI.
-        uint256 intrinsic = difference >= base ? difference.sub(base) : 0;
-        // Time left in seconds.
-        timeRemainder = (expiry.sub(block.timestamp));
-        // Strike / market scaled to 1e18.
-        uint256 moneyness = strike.mul(ONE_ETHER).div(market);
-        // Extrinsic value in DAI.
-        // Assumes the previously cached volatility.
-        uint256 extrinsic = moneyness
-                            .mul(ONE_ETHER)
-                            .mul(volatility)
-                            .mul(sqrt(timeRemainder))
-                                .div(ONE_ETHER)
-                                .div(SECONDS_IN_DAY);
-        // Total Premium in ETH.
-        premium = (extrinsic.add(intrinsic)).mul(market).div(ONE_ETHER);
-        premium = premium > 0 ? premium : MIN_PREMIUM;
+        (bool received) = IPrime(tokenU).transferFrom(msg.sender, address(this), premium);
+        return received && transferU && IPrime(tokenP).transfer(msg.sender, inTokenP);
     }
 
     /**
      * @dev Calculates the Pool's Utilization to use as a proxy for volatility.
-     * @notice If Pool is not utilized at all, the default volatility is 100.
+     * @notice If Pool is not utilized at all, the default volatility is 250.
      */
     function calculateVolatilityProxy(address tokenP)
         public
@@ -449,7 +409,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         uint256 totalBalance = totalPoolBalance(tokenP);
         _volatility = utilized.mul(ONE_ETHER).div(totalBalance); // Volatility with 1e18 decimals.
         if(_volatility < MIN_VOLATILITY) {
-            _volatility = 10; // 10 = 1%, where 1000 = 100%.
+            _volatility = 250; // 250 = 25%, where 1000 = 100%.
         } else {
             _volatility = _volatility.div(MIN_VOLATILITY);
         }
@@ -502,22 +462,6 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         (bool success, ) = to.call.value(amount)("");
         require(success, "ERR_SEND_ETHER");
         return success;
-    }
-
-    /**
-     * @dev Utility function to calculate the square root of an integer. Used in calculating premium.
-     */
-    function sqrt(uint256 y) public pure returns (uint256 z) {
-        if (y > 3) {
-            uint256 x = (y + 1) / 2;
-            z = y;
-            while (x < z) {
-                z = x;
-                x = (y / x + x) / 2;
-            }
-        } else if (y != 0) {
-            z = 1;
-        }
     }
 }
 
