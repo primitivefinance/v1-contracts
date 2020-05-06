@@ -1,12 +1,17 @@
 const { expect } = require("chai");
+const chai = require('chai');
+const truffleAssert = require('truffle-assertions');
+const BN = require('bn.js');
 const daiABI = require("../contracts/test/abi/dai");
 const Weth = require('../contracts/test/abi/WETH9.json');
 const PrimeOption = artifacts.require("PrimeOption");
 const PrimePool = artifacts.require("PrimePool");
 const PrimeTrader = artifacts.require("PrimeTrader");
 const PrimeRedeem = artifacts.require("PrimeRedeem");
+const PrimeOracle = artifacts.require("PrimeOracle");
 const UniFactoryLike = artifacts.require("UniFactoryLike");
 const UniExchangeLike = artifacts.require("UniExchangeLike");
+chai.use(require('chai-bn')(BN));
 
 contract("Pool contract", accounts => {
     // WEB3
@@ -27,6 +32,7 @@ contract("Pool contract", accounts => {
 
     // COMMON AMOUNTS
     const ROUNDING_ERR = 10**8;
+    const HUNDRETH = toWei('0.01');
     const ONE_ETHER = toWei('1');
     const TWO_ETHER = toWei('2');
     const FIVE_ETHER = toWei('5');
@@ -35,13 +41,15 @@ contract("Pool contract", accounts => {
     const HUNDRED_ETHER = toWei('100');
     const THOUSAND_ETHER = toWei('1000');
     const MILLION_ETHER = toWei('1000000');
+    const MIN_LIQUIDITY = 10**4;
+    const ACCURACY = 10**12;
 
     // CORE ADDRESSES
     const TREASURER ='0x9eb7f2591ed42dee9315b6e2aaf21ba85ea69f8c';
     const MAINNET_DAI = '0x6b175474e89094c44da98b954eedeac495271d0f';
     const MAINNET_ORACLE = '0xdA17fbEdA95222f331Cb1D252401F4b44F49f7A0';
     const MAINNET_COMPOUND_ETH = '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5';
-    const MAINNET_WETH = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
+    const MAINNET_WETH = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
     const MAINNET_UNI_FACTORY = '0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95';
 
     // ACCOUNTS
@@ -56,85 +64,294 @@ contract("Pool contract", accounts => {
     const Olga = accounts[8]
     const Treasury = accounts[9]
 
-  before(async () => {
-    const DAI = new web3.eth.Contract(daiABI, MAINNET_DAI);
-
-    // Initialize our accounts with forked mainnet DAI.
-    mintDai = async (account) => {
-        await web3.eth.sendTransaction({
-            from: Alice,
-            to: TREASURER,
-            value: toWei('0.1')
-        });
-
-        await DAI.methods
-            .transfer(account, toWei('1000').toString())
-            .send({ from: TREASURER, gasLimit: 800000 });
-        const daiBalance = await DAI.methods.balanceOf(account).call();
-        console.log(fromWei(daiBalance), DAI._address);
-    }
-
-    await mintDai(Alice);
-    await mintDai(Bob);
-
-    const WETH = new web3.eth.Contract(Weth.abi, await _controllerPool.weth());
-    await WETH.methods.deposit().send({from: Alice, value: HUNDRED_ETHER});
-    await WETH.methods.deposit().send({from: Bob, value: HUNDRED_ETHER});
-
-    const _tokenU = DAI;
-    const _tokenS = WETH;
-    const tokenU = MAINNET_DAI;
-    const tokenS = MAINNET_WETH;
-    const marketId = 1;
-    const poolName = "ETH Short Put Pool LP";
-    const poolSymbol = "PULP";
-    const optionName = "ETH Put 200 DAI Expiring May 30 2020";
-    const optionSymbol = "PRIME";
-    const redeemName = "ETH Put Redeemable Token";
-    const redeemSymbol = "REDEEM";
-    const base = toWei('200');
-    const price = toWei('1');
-    const expiry = '1590868800'; // May 30, 2020, 8PM UTC
-
-    const trader = await PrimeTrader.new(MAINNET_WETH);
-    const prime = await PrimeOption.new(
-        optionName,
-        optionSymbol,
-        marketId,
+    let DAI,
+        WETH,
+        tokenP,
+        tokenPULP,
+        _tokenU,
+        _tokenS,
         tokenU,
         tokenS,
+        marketId,
+        poolName,
+        poolSymbol,
+        optionName,
+        optionSymbol,
+        redeemName,
+        redeemSymbol,
         base,
         price,
-        expiry
-    );
-    const redeem = await PrimeRedeem.new(redeemName, redeemSymbol, prime.address, tokenS);
-    const pool = await PrimePool.new(
-        MAINNET_WETH,
-        MAINNET_ORACLE,
-        MAINNET_UNI_FACTORY,
-        poolName,
-        poolSymbol
-    );
-    await prime.initTokenR(redeem.address);
-    await pool.addMarket(prime.address);
+        expiry,
+        trader,
+        prime,
+        redeem,
+        oracle,
+        pool,
+        factory,
+        exchange
+        ;
 
-    const factory = await UniFactoryLike.new(MAINNET_UNI_FACTORY);
-    const exchangeAddress = await factory.getExchange(MAINNET_DAI);
-    const exchange = await UniExchangeLike.new(exchangeAddress);
+    const assertBNEqual = (actualBN, expectedBN, message) => {
+        assert.equal(actualBN.toString(), expectedBN.toString(), message);
+    }
 
-    
+    before(async () => {
+        DAI = new web3.eth.Contract(daiABI, MAINNET_DAI);
 
-  });
+        // Initialize our accounts with forked mainnet DAI.
+        mintDai = async (account) => {
+            await web3.eth.sendTransaction({
+                from: Alice,
+                to: TREASURER,
+                value: toWei('0.1')
+            });
 
-  describe("Deployment", () => {
-    it("Should deploy with the right supply", async () => {
+            await DAI.methods
+                .transfer(account, toWei('1000').toString())
+                .send({ from: TREASURER, gasLimit: 800000 });
+            const daiBalance = await DAI.methods.balanceOf(account).call();
+            console.log(fromWei(daiBalance), DAI._address);
+        }
 
+        await mintDai(Alice);
+        await mintDai(Bob);
+
+        WETH = new web3.eth.Contract(Weth.abi, MAINNET_WETH);
+        await WETH.methods.deposit().send({from: Alice, value: FIVE_ETHER});
+        await WETH.methods.deposit().send({from: Bob, value: FIVE_ETHER});
+
+        _tokenU = DAI;
+        _tokenS = WETH;
+        tokenU = MAINNET_DAI;
+        tokenS = MAINNET_WETH;
+        marketId = 1;
+        poolName = "ETH Short Put Pool LP";
+        poolSymbol = "PULP";
+        optionName = "ETH Put 200 DAI Expiring May 30 2020";
+        optionSymbol = "PRIME";
+        redeemName = "ETH Put Redeemable Token";
+        redeemSymbol = "REDEEM";
+        base = toWei('200');
+        price = toWei('1');
+        expiry = '1590868800'; // May 30, 2020, 8PM UTC
+
+        trader = await PrimeTrader.new(MAINNET_WETH);
+        prime = await PrimeOption.new(
+            optionName,
+            optionSymbol,
+            marketId,
+            tokenU,
+            tokenS,
+            base,
+            price,
+            expiry
+        );
+        tokenP = prime.address;
+        redeem = await PrimeRedeem.new(redeemName, redeemSymbol, prime.address, tokenS);
+        oracle = await PrimeOracle.new(MAINNET_ORACLE);
+        pool = await PrimePool.new(
+            MAINNET_WETH,
+            prime.address,
+            oracle.address,
+            MAINNET_UNI_FACTORY,
+            poolName,
+            poolSymbol
+        );
+        tokenPULP = pool.address;
+        await prime.initTokenR(redeem.address);
+        /* await pool.addMarket(prime.address); */
+
+        factory = await UniFactoryLike.new(MAINNET_UNI_FACTORY);
+        const exchangeAddress = await factory.getExchange(MAINNET_DAI);
+        exchange = await UniExchangeLike.new(exchangeAddress);
+
+        await DAI.methods.approve(pool.address, MILLION_ETHER).send({from: Alice});
+        await WETH.methods.approve(pool.address, MILLION_ETHER).send({from: Alice});
     });
-  });
 
-  describe("Pool.deposit()", () => {
-    it("Should deploy with the right supply", async () => {
-
+    describe("Deployment", () => {
+        it("Should deploy with the right variables", async () => {
+            expect(await pool.name()).to.be.eq(poolName);
+            expect(await pool.symbol()).to.be.eq(poolSymbol);
+            expect((await pool.WETH()).toString().toUpperCase()).to.be.eq(MAINNET_WETH.toUpperCase());
+            expect((await pool.oracle()).toString().toUpperCase()).to.be.eq((oracle.address).toUpperCase());
+            expect((await pool.WETH()).toString().toUpperCase()).to.be.eq((await prime.tokenS()).toUpperCase());
+            expect((await pool.oracle()).toString().toUpperCase()).to.be.eq((oracle.address).toUpperCase());
+        });
     });
-  });
+
+    describe("Pool.deposit()", () => {
+        it("should revert if inTokenU is below the min liquidity", async () => {
+            await truffleAssert.reverts(
+                pool.deposit(1),
+                "ERR_BAL_UNDERLYING"
+            );
+        });
+        it("should revert if inTokenU is above the user's balance", async () => {
+            await truffleAssert.reverts(
+                pool.deposit(MILLION_ETHER),
+                "ERR_BAL_UNDERLYING"
+            );
+        });
+
+        it("should deposit tokenU and receive tokenPULP", async () => {
+            const deposit = async (amount) => {
+                let balance0U = new BN(await _tokenU.methods.balanceOf(Alice).call());
+                let balance0P = new BN(await pool.balanceOf(Alice));
+                let balance0CU = new BN(await _tokenU.methods.balanceOf(pool.address).call());
+                let balance0CP = new BN(await pool.totalSupply());
+
+                if(balance0U.lt(new BN(amount))) {
+                    return;
+                }
+
+                let depo = await pool.deposit(amount, {from: Alice});
+                await truffleAssert.eventEmitted(depo, "Deposit");
+
+                let balance1U = new BN(await _tokenU.methods.balanceOf(Alice).call());
+                let balance1P = new BN(await pool.balanceOf(Alice));
+                let balance1CU = new BN(await _tokenU.methods.balanceOf(pool.address).call());
+                let balance1CP = new BN(await pool.totalSupply());
+
+                let deltaU = balance1U.sub(balance0U);
+                let deltaP = balance1P.sub(balance0P);
+                let deltaCU = balance1CU.sub(balance0CU);
+                let deltaCP = balance1CP.sub(balance0CP);
+
+                assertBNEqual(deltaU, -amount);
+                assertBNEqual(deltaP, +amount);
+                assertBNEqual(deltaCU, +amount);
+                assertBNEqual(deltaCP, +amount);
+            }
+
+            const run = async (runs) => {
+                for(let i = 0; i < runs; i++) {
+                    let amt = (Math.floor(TEN_ETHER * Math.random())).toString();
+                    await deposit(amt);
+                }
+            }
+
+            await run(5);
+        });
+    });
+
+    describe("Pool.withdraw()", () => {
+        it("should revert if inTokenU is above the user's balance", async () => {
+            await truffleAssert.reverts(
+                pool.withdraw(MILLION_ETHER),
+                "ERR_BAL_PULP"
+            );
+        });
+
+        it("should revert if inTokenU is 0", async () => {
+            await truffleAssert.reverts(
+                pool.withdraw(0),
+                "ERR_BAL_PULP"
+            );
+        });
+
+        it("should withdraw tokenU by burning tokenPULP", async () => {
+            const withdraw = async (amount) => {
+                let balance0U = new BN(await _tokenU.methods.balanceOf(Alice).call());
+                let balance0P = new BN(await pool.balanceOf(Alice));
+                let balance0CU = new BN(await _tokenU.methods.balanceOf(pool.address).call());
+                let balance0CP = new BN(await pool.totalSupply());
+
+                if(balance0P.lt(new BN(amount))) {
+                    return;
+                }
+
+                let draw = await pool.withdraw(amount, {from: Alice});
+                await truffleAssert.eventEmitted(draw, "Withdraw");
+                /* await truffleAssert.prettyPrintEmittedEvents(draw); */
+
+                let balance1U = new BN(await _tokenU.methods.balanceOf(Alice).call());
+                let balance1P = new BN(await pool.balanceOf(Alice));
+                let balance1CU = new BN(await _tokenU.methods.balanceOf(pool.address).call());
+                let balance1CP = new BN(await pool.totalSupply());
+
+                let deltaU = balance1U.sub(balance0U);
+                let deltaP = balance1P.sub(balance0P);
+                let deltaCU = balance1CU.sub(balance0CU);
+                let deltaCP = balance1CP.sub(balance0CP);
+
+                assertBNEqual(deltaU, +amount);
+                assertBNEqual(deltaP, -amount);
+                assertBNEqual(deltaCU, -amount);
+                assertBNEqual(deltaCP, -amount);
+            }
+
+            const run = async (runs) => {
+                for(let i = 0; i < runs; i++) {
+                    let amt = (Math.floor(ONE_ETHER * Math.random())).toString();
+                    await withdraw(amt);
+                }
+            }
+
+            await run(5);
+        });
+    });
+
+    describe("Pool.buy()", () => {
+        it("should revert if inTokenU is 0", async () => {
+            await truffleAssert.reverts(
+                pool.buy(0),
+                "ERR_ZERO"
+            );
+        });
+
+        it("should revert if inTokenU is greater than the pool's balance", async () => {
+            await truffleAssert.reverts(
+                pool.buy(MILLION_ETHER),
+                "ERR_BAL_UNDERLYING"
+            );
+        });
+
+        it("should buy tokenP by paying some premium of tokenU", async () => {
+            const buy = async (amount) => {
+                let balance0U = new BN(await _tokenU.methods.balanceOf(Alice).call());
+                let balance0P = new BN(await prime.balanceOf(Alice));
+                let balance0CU = new BN(await _tokenU.methods.balanceOf(pool.address).call());
+                let balance0CP = new BN(await prime.totalSupply());
+                let premium = new BN(await oracle.calculatePremium(
+                    tokenU,
+                    await pool.volatility(),
+                    await prime.base(),
+                    await prime.price(),
+                    await prime.expiry()
+                ));
+
+                let buy = await pool.buy(amount, {from: Alice});
+                console.log(fromWei(await prime.balanceOf(pool.address)));
+                await truffleAssert.eventEmitted(buy, "Buy");
+                await truffleAssert.prettyPrintEmittedEvents(buy);
+
+                let balance1U = new BN(await _tokenU.methods.balanceOf(Alice).call());
+                let balance1P = new BN(await prime.balanceOf(Alice));
+                let balance1CU = new BN(await _tokenU.methods.balanceOf(pool.address).call());
+                let balance1CP = new BN(await prime.totalSupply());
+
+                let deltaU = balance1U.sub(balance0U);
+                let deltaP = balance1P.sub(balance0P);
+                let deltaCU = balance1CU.sub(balance0CU);
+                let deltaCP = balance1CP.sub(balance0CP);
+
+                /* assertBNEqual(deltaU, +amount); */
+                let minted = (new BN(amount)).mul(await prime.base()).div(new BN(toWei('1')));
+                assertBNEqual(deltaP, minted);
+                assertBNEqual(deltaCU, minted.neg());
+                assertBNEqual(deltaCP, minted);
+            }
+
+            const run = async (runs) => {
+                for(let i = 0; i < runs; i++) {
+                    console.log('[BUY RUN]', i);
+                    let amt = (Math.floor(HUNDRETH * Math.random())).toString();
+                    await buy(amt);
+                }
+            }
+
+            await run(5);
+        });
+    });
 });

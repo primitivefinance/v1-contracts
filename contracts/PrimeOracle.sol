@@ -56,9 +56,6 @@ contract PrimeOracle {
         view
         returns (uint256 premium)
     {
-        // Calculate the market price of tokenU denominated in tokenS.
-        (uint256 market) = marketPrice(tokenU);
-
         // Calculate the parts.
         (uint256 intrinsic) = calculateIntrinsic(tokenU, base, price);
         (uint256 extrinsic) = calculateExtrinsic(tokenU, volatility, base, price, expiry);

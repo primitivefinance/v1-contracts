@@ -6,6 +6,7 @@ usePlugin("@nomiclabs/buidler-etherscan");
 usePlugin("@nomiclabs/buidler-web3");
 require("dotenv").config();
 const ETHERSCAN_APY_KEY = process.env.ETHERSCAN_APY_KEY;
+const web3 = require('web3');
 
 
 
@@ -27,6 +28,8 @@ module.exports = {
   networks: {
     local: {
       url: "http://127.0.0.1:8545",
+      gasPrice: 80000000000,
+      timeout: 1000000
     },
   },
   /* networks: {
@@ -68,7 +71,7 @@ module.exports = {
     },
   }, */
   mocha: {
-    timeout: 10000000,
+    timeout: 100000000,
     useColors: true
   },
   etherscan: {
