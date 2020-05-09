@@ -2,7 +2,6 @@ const {
     assert,
     expect
 } = require("chai");
-const chai = require('chai');
 const truffleAssert = require('truffle-assertions');
 const BN = require('bn.js');
 const PrimeTrader = artifacts.require("PrimeTrader");
@@ -10,40 +9,29 @@ const PrimeOption = artifacts.require("PrimeOption");
 const PrimeRedeem = artifacts.require("PrimeRedeem");
 const Weth = artifacts.require("WETH9");
 const Dai = artifacts.require("DAI");
-const common_constants = require("./constants");
+const constants = require("./constants");
 const {
     ERR_ZERO,
     ERR_BAL_PRIME,
     ERR_BAL_STRIKE,
     ERR_BAL_UNDERLYING,
+    ERR_BAL_REDEEM,
     ONE_ETHER,
     FIVE_ETHER,
     TEN_ETHER,
     THOUSAND_ETHER,
     MILLION_ETHER,
-} = common_constants;
+} = constants;
 
 contract("Trader", accounts => {
     // WEB3
     const {
         toWei
     } = web3.utils;
-    const {
-        fromWei
-    } = web3.utils;
 
     // ACCOUNTS
     const Alice = accounts[0]
     const Bob = accounts[1]
-    const Mary = accounts[2]
-    const Kiln = accounts[3]
-    const Don = accounts[4]
-    const Penny = accounts[5]
-    const Cat = accounts[6]
-    const Bjork = accounts[7]
-    const Olga = accounts[8]
-    const Treasury = accounts[9]
-
 
     let trader, weth, dai, prime, redeem;
     let tokenU, tokenS, _tokenU, _tokenS, tokenP;
