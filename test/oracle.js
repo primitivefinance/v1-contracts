@@ -1,17 +1,26 @@
-const { assert, expect } = require("chai");
-const { BigNumber } = require("bignumber.js");
+const {
+    assert,
+    expect
+} = require("chai");
+const {
+    BigNumber
+} = require("bignumber.js");
 const PrimeOracle = artifacts.require("PrimeOracle");
+const common_constants = require("./constants");
+const {
+    MAINNET_DAI,
+    MAINNET_ORACLE,
+    MAINNET_COMPOUND_DAI,
+} = common_constants;
 
 contract("Oracle contract", accounts => {
     // WEB3
-    const { toWei } = web3.utils;
-    const { fromWei } = web3.utils;
-
-    // CORE ADDRESSES
-    const MAINNET_DAI = '0x6b175474e89094c44da98b954eedeac495271d0f';
-    const MAINNET_ORACLE = '0xdA17fbEdA95222f331Cb1D252401F4b44F49f7A0';
-    const MAINNET_COMPOUND_DAI = '0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643';
-
+    const {
+        toWei
+    } = web3.utils;
+    const {
+        fromWei
+    } = web3.utils;
 
     let oracle;
 
@@ -50,10 +59,12 @@ contract("Oracle contract", accounts => {
 
             const generateRandomOption = () => {
                 let ethPrice = 200;
+
                 function randomDate(start, end) {
                     let date = Math.floor(+start + Math.random() * (end - start));
                     return date;
                 }
+
                 function getRandomArbitrary(min, max) {
                     return Math.random() * (max - min) + min;
                 }
@@ -68,7 +79,7 @@ contract("Oracle contract", accounts => {
             }
 
             const run = async (amount) => {
-                for(let i = 0; i < amount; i++) {
+                for (let i = 0; i < amount; i++) {
                     let option = generateRandomOption();
                     let premium = await calculatePremiums(
                         option.volatility,
@@ -87,7 +98,7 @@ contract("Oracle contract", accounts => {
                     console.log(calculation);
                 }
             }
-            
+
             await run(1);
         });
     });
@@ -104,10 +115,12 @@ contract("Oracle contract", accounts => {
 
             const generateRandomOption = () => {
                 let ethPrice = 200;
+
                 function randomDate(start, end) {
                     let date = Math.floor(+start + Math.random() * (end - start));
                     return date;
                 }
+
                 function getRandomArbitrary(min, max) {
                     return Math.random() * (max - min) + min;
                 }
@@ -122,21 +135,21 @@ contract("Oracle contract", accounts => {
             }
 
             const run = async (amount) => {
-                for(let i = 0; i < amount; i++) {
+                for (let i = 0; i < amount; i++) {
                     let option = generateRandomOption();
                     let intrinsic = await calculateIntrinsic(
                         option.base,
                         option.price
                     );
                     let market = new BigNumber(await oracle.marketPrice(MAINNET_DAI));
-                    market = new BigNumber(10**36)
-                                    .dividedBy(market);
+                    market = new BigNumber(10 ** 36)
+                        .dividedBy(market);
                     // For puts
-                    let expected = 
-                                new BigNumber(option.base)
-                                    .minus(market);
+                    let expected =
+                        new BigNumber(option.base)
+                        .minus(market);
                     let difference;
-                    if(intrinsic >= expected) {
+                    if (intrinsic >= expected) {
                         difference = new BigNumber(intrinsic).minus(expected);
                     } else {
                         difference = 0;
@@ -155,12 +168,12 @@ contract("Oracle contract", accounts => {
                     }
                     console.log(calculation);
                     let max_error = 1.5; // %
-                    if(+intrinsic > 0) {
+                    if (+intrinsic > 0) {
                         assert.isAtMost(+error, +max_error);
                     }
                 }
             }
-            
+
             await run(10);
         });
     });
@@ -176,10 +189,12 @@ contract("Oracle contract", accounts => {
 
             const generateRandomOption = () => {
                 let ethPrice = 200;
+
                 function randomDate(start, end) {
                     let date = Math.floor(+start + Math.random() * (end - start));
                     return date;
                 }
+
                 function getRandomArbitrary(min, max) {
                     return Math.random() * (max - min) + min;
                 }
@@ -194,7 +209,7 @@ contract("Oracle contract", accounts => {
             }
 
             const run = async (amount) => {
-                for(let i = 0; i < amount; i++) {
+                for (let i = 0; i < amount; i++) {
                     let option = generateRandomOption();
                     let extrinsic = await calculateExtrinsic(
                         option.volatility,
@@ -213,7 +228,7 @@ contract("Oracle contract", accounts => {
                     console.log(calculation);
                 }
             }
-            
+
             await run(3);
         });
     });
@@ -226,7 +241,7 @@ contract("Oracle contract", accounts => {
                 let extrinsic = await oracle.calculateExtrinsic(tokenU, volatility, base, price, expiry);
                 return extrinsic;
             }
-            
+
             let extrinsic = await calculateExtrinsic(
                 865,
                 toWei('200'),
@@ -245,8 +260,8 @@ contract("Oracle contract", accounts => {
 
             const run = async (amount) => {
                 let volatility = 640;
-                for(let i = 0; i < amount; i++) {
-                    
+                for (let i = 0; i < amount; i++) {
+
                     let extrinsic = await calculateExtrinsic(
                         volatility,
                         toWei('200'),
@@ -265,7 +280,7 @@ contract("Oracle contract", accounts => {
                     volatility -= 1;
                 }
             }
-            
+
             await run(1);
         });
     });
