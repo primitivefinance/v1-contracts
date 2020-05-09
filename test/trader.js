@@ -1,4 +1,7 @@
-const { assert, expect } = require("chai");
+const {
+    assert,
+    expect
+} = require("chai");
 const chai = require('chai');
 const truffleAssert = require('truffle-assertions');
 const BN = require('bn.js');
@@ -7,37 +10,27 @@ const PrimeOption = artifacts.require("PrimeOption");
 const PrimeRedeem = artifacts.require("PrimeRedeem");
 const Weth = artifacts.require("WETH9");
 const Dai = artifacts.require("DAI");
+const common_constants = require("./constants");
+const {
+    ERR_ZERO,
+    ERR_BAL_PRIME,
+    ERR_BAL_STRIKE,
+    ERR_BAL_UNDERLYING,
+    ONE_ETHER,
+    FIVE_ETHER,
+    TEN_ETHER,
+    THOUSAND_ETHER,
+    MILLION_ETHER,
+} = common_constants;
 
 contract("Trader", accounts => {
     // WEB3
-    const { toWei } = web3.utils;
-    const { fromWei } = web3.utils;
-
-    // ERROR CODES
-    const ERR_ZERO = "ERR_ZERO";
-    const ERR_BAL_ETH = "ERR_BAL_ETH";
-    const ERR_NOT_OWNER = "ERR_NOT_OWNER";
-    const ERR_BAL_PRIME = "ERR_BAL_PRIME";
-    const ERR_BAL_STRIKE = "ERR_BAL_STRIKE";
-    const ERR_BAL_REDEEM = "ERR_BAL_REDEEM";
-    const ERR_BAL_TOKENS = "ERR_BAL_TOKENS";
-    const ERR_BAL_OPTIONS = "ERR_BAL_OPTIONS";
-    const ERR_OPTION_TYPE = "ERR_OPTION_TYPE";
-    const ERR_BAL_UNDERLYING = "ERR_BAL_UNDERLYING";
-
-    // COMMON AMOUNTS
-    const ROUNDING_ERR = 10**8;
-    const HUNDRETH = toWei('0.01');
-    const ONE_ETHER = toWei('1');
-    const TWO_ETHER = toWei('2');
-    const FIVE_ETHER = toWei('5');
-    const TEN_ETHER = toWei('10');
-    const FIFTY_ETHER = toWei('50');
-    const HUNDRED_ETHER = toWei('100');
-    const THOUSAND_ETHER = toWei('1000');
-    const MILLION_ETHER = toWei('1000000');
-    const MIN_LIQUIDITY = 10**4;
-    const ACCURACY = 10**12;
+    const {
+        toWei
+    } = web3.utils;
+    const {
+        fromWei
+    } = web3.utils;
 
     // ACCOUNTS
     const Alice = accounts[0]
@@ -114,8 +107,12 @@ contract("Trader", accounts => {
     describe("safeMint", () => {
         beforeEach(async () => {
             trader = await PrimeTrader.new(weth.address);
-            await _tokenU.approve(trader.address, MILLION_ETHER, {from: Alice});
-            await _tokenS.approve(trader.address, MILLION_ETHER, {from: Alice});
+            await _tokenU.approve(trader.address, MILLION_ETHER, {
+                from: Alice
+            });
+            await _tokenS.approve(trader.address, MILLION_ETHER, {
+                from: Alice
+            });
 
             safeMint = async (inTokenU) => {
                 inTokenU = new BN(inTokenU);
@@ -126,7 +123,7 @@ contract("Trader", accounts => {
                 let balanceR = await getBalance(redeem, Alice);
 
                 let mint = await trader.safeMint(tokenP, inTokenU, Alice);
-                
+
                 let deltaU = (await getBalance(_tokenU, Alice)).sub(balanceU);
                 let deltaP = (await getBalance(prime, Alice)).sub(balanceP);
                 let deltaR = (await getBalance(redeem, Alice)).sub(balanceR);
@@ -136,9 +133,9 @@ contract("Trader", accounts => {
                 assertBNEqual(deltaR, outTokenR);
 
                 await truffleAssert.eventEmitted(mint, "Mint", (ev) => {
-                    return  expect(ev.from).to.be.eq(Alice) &&
-                            expect((ev.outTokenP).toString()).to.be.eq(inTokenU.toString()) &&
-                            expect((ev.outTokenR).toString()).to.be.eq(outTokenR.toString())
+                    return expect(ev.from).to.be.eq(Alice) &&
+                        expect((ev.outTokenP).toString()).to.be.eq(inTokenU.toString()) &&
+                        expect((ev.outTokenR).toString()).to.be.eq(outTokenR.toString())
                 });
             }
         });
@@ -180,9 +177,9 @@ contract("Trader", accounts => {
             let outTokenR = inTokenU.mul(new BN(price)).div(new BN(base));
             let mint = await trader.safeMint(tokenP, inTokenU, Alice);
             await truffleAssert.eventEmitted(mint, "Mint", (ev) => {
-                return  expect(ev.from).to.be.eq(Alice) &&
-                        expect((ev.outTokenP).toString()).to.be.eq(inTokenU.toString()) &&
-                        expect((ev.outTokenR).toString()).to.be.eq(outTokenR.toString())
+                return expect(ev.from).to.be.eq(Alice) &&
+                    expect((ev.outTokenP).toString()).to.be.eq(inTokenU.toString()) &&
+                    expect((ev.outTokenR).toString()).to.be.eq(outTokenR.toString())
             });
         });
 
@@ -203,9 +200,15 @@ contract("Trader", accounts => {
     describe("safeSwap", () => {
         beforeEach(async () => {
             trader = await PrimeTrader.new(weth.address);
-            await _tokenU.approve(trader.address, MILLION_ETHER, {from: Alice});
-            await _tokenS.approve(trader.address, MILLION_ETHER, {from: Alice});
-            await prime.approve(trader.address, MILLION_ETHER, {from: Alice});
+            await _tokenU.approve(trader.address, MILLION_ETHER, {
+                from: Alice
+            });
+            await _tokenS.approve(trader.address, MILLION_ETHER, {
+                from: Alice
+            });
+            await prime.approve(trader.address, MILLION_ETHER, {
+                from: Alice
+            });
             await safeMint(TEN_ETHER);
 
             safeSwap = async (inTokenU) => {
@@ -218,7 +221,7 @@ contract("Trader", accounts => {
                 let balanceS = await getBalance(_tokenS, Alice);
 
                 let swap = await trader.safeSwap(tokenP, inTokenU, Alice);
-                
+
                 let deltaU = (await getBalance(_tokenU, Alice)).sub(balanceU);
                 let deltaP = (await getBalance(prime, Alice)).sub(balanceP);
                 let deltaS = (await getBalance(_tokenS, Alice)).sub(balanceS);
@@ -228,9 +231,9 @@ contract("Trader", accounts => {
                 assertBNEqual(deltaS, inTokenS.neg());
 
                 await truffleAssert.eventEmitted(swap, "Swap", (ev) => {
-                    return  expect(ev.from).to.be.eq(Alice) &&
-                            expect((ev.outTokenU).toString()).to.be.eq(inTokenU.toString()) &&
-                            expect((ev.inTokenS).toString()).to.be.eq(inTokenS.toString())
+                    return expect(ev.from).to.be.eq(Alice) &&
+                        expect((ev.outTokenU).toString()).to.be.eq(inTokenU.toString()) &&
+                        expect((ev.inTokenS).toString()).to.be.eq(inTokenS.toString())
                 });
             }
         });
@@ -270,20 +273,26 @@ contract("Trader", accounts => {
 
         it("should revert if user does not have enough strike tokens", async () => {
             await trader.safeMint(tokenP, ONE_ETHER, Bob);
-            await _tokenS.transfer(Alice, await _tokenS.balanceOf(Bob), {from: Bob})
+            await _tokenS.transfer(Alice, await _tokenS.balanceOf(Bob), {
+                from: Bob
+            })
             await truffleAssert.reverts(
                 trader.safeSwap(
                     tokenP,
                     ONE_ETHER,
-                    Bob,
-                    {from: Bob}
+                    Bob, {
+                        from: Bob
+                    }
                 ),
                 ERR_BAL_STRIKE
             );
         });
 
         it("should swap consecutively", async () => {
-            await _tokenS.deposit({from: Alice, value: TEN_ETHER});
+            await _tokenS.deposit({
+                from: Alice,
+                value: TEN_ETHER
+            });
             await safeSwap(toWei('0.1'));
             await safeSwap(toWei('0.32525'));
             await safeSwap(ONE_ETHER);
