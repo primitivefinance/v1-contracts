@@ -94,6 +94,7 @@ contract PrimeTrader is ReentrancyGuard {
 
     /**
      * @dev Burns Prime Redeem tokens to withdraw available tokenS.
+     * @notice inTokenR = outTokenS
      * @param amount Quantity of Prime Redeem to spend.
      */
     function safeRedeem(
@@ -135,6 +136,7 @@ contract PrimeTrader is ReentrancyGuard {
      * @dev Burn Prime and Prime Redeem tokens to withdraw tokenU.
      * @notice Takes paramter for quantity of Primes to burn.
      * The Prime Redeems to burn is equal to the Primes * ratio.
+     * inTokenP = inTokenR / strike ratio = outTokenU
      * @param amount Quantity of Primes to burn.
      */
     function safeClose(

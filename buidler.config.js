@@ -37,7 +37,7 @@ module.exports = {
   gasReporter: {
     currency: 'USD',
     showTimeSpent: true,
-    outputFiile: 'gas-used.log',
+    enabled: true,
     currency: 'USD',
   },
   solc: {
