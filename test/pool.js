@@ -1,4 +1,4 @@
-const { expect } = require("chai");
+const { assert, expect } = require("chai");
 const chai = require('chai');
 const truffleAssert = require('truffle-assertions');
 const BN = require('bn.js');

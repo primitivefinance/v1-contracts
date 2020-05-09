@@ -33,7 +33,7 @@ contract PrimeTrader is ReentrancyGuard {
      * @param receiver The newly minted tokens are sent to the receiver address.
      */
     function safeMint(
-        address tokenP,
+        IPrime tokenP,
         uint256 amount,
         address receiver
     )
@@ -42,17 +42,17 @@ contract PrimeTrader is ReentrancyGuard {
         returns (uint256 inTokenU, uint256 outTokenR)
     {
         require(amount > 0, "ERR_ZERO");
-        address tokenU = IPrime(tokenP).tokenU();
+        address tokenU = tokenP.tokenU();
         verifyBalance(
             IERC20(tokenU).balanceOf(msg.sender),
             amount,
             "ERR_BAL_UNDERLYING"
         );
         require(
-            IERC20(tokenU).transferFrom(msg.sender, tokenP, amount),
+            IERC20(tokenU).transferFrom(msg.sender, address(tokenP), amount),
             "ERR_TRANSFER_IN_FAIL"
         );
-        (inTokenU, outTokenR) = IPrime(tokenP).mint(receiver);
+        (inTokenU, outTokenR) = tokenP.mint(receiver);
         emit Mint(msg.sender, inTokenU, outTokenR);
     }
 
