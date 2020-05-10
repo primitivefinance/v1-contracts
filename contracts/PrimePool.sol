@@ -38,10 +38,11 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     
     uint256 public constant SECONDS_IN_DAY = 86400;
     uint256 public constant ONE_ETHER = 1 ether;
-    uint256 public constant MAX_SLIPPAGE = 92;
+    uint256 public constant MAX_SLIPPAGE = 98;
     uint256 public constant MIN_VOLATILITY = 10**15;
     uint256 public constant MIN_PREMIUM = 100;
     uint256 public constant MIN_LIQUIDITY = 10**4;
+    uint256 public constant MANTISSA = 10**36;
 
     uint256 public volatility;
 
@@ -238,7 +239,8 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         } else {
             // Get tokenU balances.
             (balanceU, totalBalance) = _removeLiquidity(_tokenP, inTokenPULP);
-
+            outTokenU = inTokenPULP.mul(totalBalance).div(_totalSupply);
+            
             // Push outTokenU to msg.sender.
             emit Withdraw(msg.sender, inTokenPULP, outTokenU);
             return _withdraw(IPrime(_tokenP).tokenU(), msg.sender, outTokenU);
@@ -325,17 +327,16 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
 
         // Get price of 1 ETH denominated in tokenU from compound oracle. 1 ETH = 1e36 / oracle's price.
         // Assumes oracle never returns a value greater than 1e36.
-        uint256 oraclePrice = (ONE_ETHER).mul(ONE_ETHER)
-                                .div(IPrimeOracle(oracle).marketPrice(IPrime(_tokenP).tokenU()));
+        (uint256 oraclePrice) = marketRatio();
 
         // Get price of 1 ETH denominated in tokenU from uniswap pool.
         uint256 uniPrice = UniswapExchangeInterface(exchange).getEthToTokenInputPrice(ONE_ETHER);
 
         // Calculate the max slippage price. Assumes oracle price is never < 100 wei.
-        uint256 slippage = oraclePrice.div(MAX_SLIPPAGE);
+        /* uint256 slippage = oraclePrice.div(MAX_SLIPPAGE); */
 
         // Subtract max slippage amount from uniswap price to get min received tokenU per tokenS.
-        uint256 minReceived = uniPrice.sub(slippage);
+        uint256 minReceived = /* uniPrice.sub(slippage); */ uniPrice;
 
         // Store in memory for gas savings.
         uint256 outEthers = address(this).balance;
@@ -477,8 +478,9 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         // TokenR is redeemable to tokenS at a 1:1 ratio (1 tokenR can be redeemed for 1 WETH).
         // The utilized amount of tokenU is therefore this calculation:
         // (tokenR = tokenS = WETH) * Quantity of tokenU (base) / Quantity of tokenS (price).
-        ( , , address tokenR, uint256 base, uint256 price, ) = IPrime(_tokenP).prime();
-        utilized = IERC20(tokenR).balanceOf(address(this)).mul(base).div(price);
+        ( , , address tokenR, , uint256 price, ) = IPrime(_tokenP).prime();
+        (uint256 oraclePrice) = marketRatio();
+        utilized = IERC20(tokenR).balanceOf(address(this)).mul(oraclePrice).div(price);
     }
 
     /**
@@ -497,6 +499,15 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         // Unutilized is the balance of tokenU in the contract. Utilized is outstanding tokenU.
         // Utilized assets are held in the Prime contract waiting to be exercised or expired.
         totalBalance = totalUnutilized(_tokenP).add(totalUtilized(_tokenP));
+    }
+
+    /**
+     * @dev Utility function to get the market ratio of tokenS denominated in tokenU.
+     * @notice Assumes the getUnderlyingPrice function call from the oracle never returns
+     * a value greater than 1e36 (MANTISSA).
+     */
+    function marketRatio() public view returns(uint256 oraclePrice) {
+        oraclePrice = MANTISSA.div(IPrimeOracle(oracle).marketPrice(IPrime(tokenP).tokenU()));
     }
 
     /**
