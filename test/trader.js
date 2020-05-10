@@ -452,7 +452,7 @@ contract("Trader", accounts => {
         });
 
         it("should handle multiple transactions", async () => {
-            // Start with 100 Primes
+            // Start with 1000 Primes
             await _tokenU.mint(Alice, THOUSAND_ETHER);
             await safeMint(THOUSAND_ETHER);
 
