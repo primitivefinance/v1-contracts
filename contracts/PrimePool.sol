@@ -333,10 +333,10 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         uint256 uniPrice = UniswapExchangeInterface(exchange).getEthToTokenInputPrice(ONE_ETHER);
 
         // Calculate the max slippage price. Assumes oracle price is never < 100 wei.
-        /* uint256 slippage = oraclePrice.div(MAX_SLIPPAGE); */
+        uint256 slippage = oraclePrice.div(MAX_SLIPPAGE);
 
         // Subtract max slippage amount from uniswap price to get min received tokenU per tokenS.
-        uint256 minReceived = /* uniPrice.sub(slippage); */ uniPrice;
+        uint256 minReceived = uniPrice.sub(slippage);
 
         // Store in memory for gas savings.
         uint256 outEthers = address(this).balance;
