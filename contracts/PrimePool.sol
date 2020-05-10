@@ -54,9 +54,9 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     mapping(uint256 => address) public primes;
 
     event Market(address tokenP);
-    event Deposit(address indexed user, uint256 inTokenU, uint256 outTokenPULP);
-    event Withdraw(address indexed user, uint256 inTokenPULP, uint256 outTokenU);
-    event Buy(address indexed user, uint256 inTokenS, uint256 outTokenU, uint256 premium);
+    event Deposit(address indexed from, uint256 inTokenU, uint256 outTokenPULP);
+    event Withdraw(address indexed from, uint256 inTokenPULP, uint256 outTokenU);
+    event Buy(address indexed from, uint256 inTokenS, uint256 outTokenU, uint256 premium);
 
     constructor (
         address _weth,
