@@ -25,6 +25,7 @@ const THOUSAND_ETHER = toWei("1000");
 const MILLION_ETHER = toWei("1000000");
 const MIN_LIQUIDITY = 10 ** 4;
 const ACCURACY = 10 ** 12;
+const MAX_SLIPPAGE = 5;
 
 // CORE ADDRESSES
 const TREASURER = "0x9eb7f2591ed42dee9315b6e2aaf21ba85ea69f8c";
@@ -63,4 +64,5 @@ module.exports = {
     MAINNET_COMPOUND_ETH,
     MAINNET_WETH,
     MAINNET_UNI_FACTORY,
+    MAX_SLIPPAGE,
 };

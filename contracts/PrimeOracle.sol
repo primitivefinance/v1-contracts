@@ -35,6 +35,13 @@ contract PrimeOracle {
     }
 
     /**
+     * @dev Testing function to add non-mainnet oracle feeds.
+     */
+    function addFeed(address feed) public {
+        feeds[feed] = feed;
+    }
+
+    /**
      * @dev Calculates the intrinsic + extrinsic value of the Prime option.
      * @notice Strike / Market * (Volatility * 1000) * sqrt(T in seconds remaining) / Seconds in a Day.
      * @param tokenU The address of the underlying asset.
@@ -142,7 +149,7 @@ contract PrimeOracle {
     /**
      * @dev Utility function to calculate the square root of an integer. Used in calculating premium.
      */
-    function sqrt(uint256 y) public pure returns (uint256 z) {
+    function sqrt(uint256 y) private pure returns (uint256 z) {
         if (y > 3) {
             uint256 x = (y + 1) / 2;
             z = y;
