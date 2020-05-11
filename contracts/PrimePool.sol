@@ -43,6 +43,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     uint256 public constant MIN_PREMIUM = 100;
     uint256 public constant MIN_LIQUIDITY = 10**4;
     uint256 public constant MANTISSA = 10**36;
+    uint256 public constant DISCOUNT_RATE = 5;
 
     uint256 public volatility;
 
@@ -58,6 +59,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     event Deposit(address indexed from, uint256 inTokenU, uint256 outTokenPULP);
     event Withdraw(address indexed from, uint256 inTokenPULP, uint256 outTokenU);
     event Buy(address indexed from, uint256 inTokenS, uint256 outTokenU, uint256 premium);
+    event Sell(address indexed from, uint256 inTokenP, uint256 premium);
 
     constructor (
         address _weth,
@@ -423,7 +425,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         );
         
         // Calculate total premium to pay, total premium = premium per tokenS * inTokenS.
-        // Units = tokenS * (tokenU / tokenS) = tokenU.
+        // Units = tokenS * (tokenU / tokenS) / 10^18 units = tokenU.
         premium = inTokenS.mul(premium).div(ONE_ETHER);
         require(premium > 0, "ERR_PREMIUM_ZERO");
 
@@ -439,6 +441,65 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         emit Buy(msg.sender, inTokenS, outTokenU, premium);
         (bool received) = IERC20(tokenU).transferFrom(msg.sender, address(this), premium);
         return received && transferU && IPrime(_tokenP).transfer(msg.sender, inTokenP);
+    }
+
+    /**
+     * @dev Sell Prime options back to the pool.
+     * @notice The pool buys options at a discounted rate based on the current premium price.
+     * @param inTokenP The amount of Prime option tokens that are being sold.
+     */
+    function sell(
+        uint256 inTokenP
+    )
+        external
+        nonReentrant
+        returns (bool)
+    {
+        // Store in memory for gas savings.
+        address _tokenP = tokenP;
+        (
+            address tokenU, // Assume DAI.
+             , // Assume ETH and we don't need it in this function.
+            address tokenR, // Assume tokenR.
+            uint256 base,
+            uint256 price,
+            uint256 expiry
+        ) = IPrime(_tokenP).prime();
+
+        // Calculate the current premium price.
+        (uint256 premium) = IPrimeOracle(oracle).calculatePremium(
+            tokenU,
+            volatility,
+            base,
+            price,
+            expiry
+        );
+
+        // Calculate discounted premium. This is the value of tokenU per tokenS covered.
+        premium = premium.sub(premium.div(DISCOUNT_RATE));
+
+        // Calculate total premium.
+        // Units: tokenU * (tokenU / tokenS) / 10^18 units = total quantity tokenU price.
+        uint256 totalPremium = inTokenP.mul(premium).div(ONE_ETHER);
+        
+        // Calculate amount of redeem needed to close position with inTokenU.
+        uint256 redeem = inTokenP.mul(price).div(base);
+
+        // Transfer redeem to prime token optimistically.
+        (bool success) = IERC20(tokenR).transfer(tokenP, redeem);
+        require(success, "ERR_TRANSFER_REDEEM_OUT");
+
+        // Transfer prime token to prime contract optimistically.
+        (success) = IERC20(_tokenP).transferFrom(msg.sender, tokenP, inTokenP);
+        require(success, "ERR_TRANSFER_IN");
+        
+        // Call the close function to have the transferred prime and redeem tokens burned.
+        // Returns tokenU.
+        (success) = IPrime(_tokenP).close(address(this));
+
+        // Pay out the total premium to the seller.
+        emit Sell(msg.sender, inTokenP, totalPremium);
+        return success && IERC20(tokenU).transfer(msg.sender, totalPremium);
     }
 
     /**

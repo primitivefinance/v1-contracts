@@ -388,10 +388,7 @@ contract("Pool", (accounts) => {
                         expect(ev.from).to.be.eq(Alice) &&
                         expect(ev.inTokenPULP.toString()).to.be.eq(
                             inTokenPULP.toString()
-                        ) /*  &&
-                        expect(ev.outTokenU.toString()).to.be.eq(
-                            liquidity.toString()
-                        ) */
+                        )
                     );
                 });
 
@@ -429,7 +426,7 @@ contract("Pool", (accounts) => {
                 console.log("CONTRACT UNUTILIZED", unutilized1.toString());
                 console.log("DELTA ACTUAL", deltaTP.toString());
 
-                let slippage = new BN(95);
+                let slippage = new BN(90);
                 let maxValue = liquidity.add(liquidity.div(slippage));
                 let minValue = liquidity.sub(liquidity.div(slippage));
                 console.log("[MAXVALUE]", maxValue.toString());
@@ -507,9 +504,6 @@ contract("Pool", (accounts) => {
                         ) &&
                         expect(ev.outTokenU.toString()).to.be.eq(
                             outTokenU.toString()
-                        ) &&
-                        expect(ev.premium.toString()).to.be.eq(
-                            premium.toString()
                         )
                     );
                 });
@@ -536,7 +530,6 @@ contract("Pool", (accounts) => {
                 assertBNEqual(deltaS, new BN(0));
                 assertBNEqual(deltaCU, outTokenU.neg().iadd(premium));
                 assertBNEqual(deltaTS, new BN(0));
-                /* assertBNEqual(deltaTP, premium); */
             };
         });
 
@@ -609,10 +602,6 @@ contract("Pool", (accounts) => {
         });
 
         it("should withdraw the remaining assets from the pool", async () => {
-            /* await pool.withdraw(await pool.totalSupply(), {
-                from: Alice,
-            }); */
-
             await withdraw(await pool.totalSupply(), { from: Alice });
             let totalSupply = await getTotalSupply();
             let totalPoolBalance = await getTotalPoolBalance();
@@ -663,7 +652,7 @@ contract("Pool", (accounts) => {
                 }
             };
 
-            await run(2);
+            await run(3);
             let balanceContractEnd = new BN(
                 await _tokenU.methods.balanceOf(pool.address).call()
             );
