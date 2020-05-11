@@ -332,7 +332,7 @@ contract("Pool", (accounts) => {
                 }
             };
 
-            await run(2);
+            await run(1);
         });
     });
 
@@ -361,7 +361,7 @@ contract("Pool", (accounts) => {
                     balance0TP
                 );
 
-                if (balance0U.lt(inTokenPULP)) {
+                if (balance0P.lt(inTokenPULP)) {
                     return;
                 }
 
@@ -429,10 +429,22 @@ contract("Pool", (accounts) => {
                 console.log("CONTRACT UNUTILIZED", unutilized1.toString());
                 console.log("DELTA ACTUAL", deltaTP.toString());
 
-                assertBNEqual(deltaU, liquidity);
+                let slippage = new BN(95);
+                let maxValue = liquidity.add(liquidity.div(slippage));
+                let minValue = liquidity.sub(liquidity.div(slippage));
+                console.log("[MAXVALUE]", maxValue.toString());
+                console.log("[LIQUIDITY]", liquidity.toString());
+                console.log("[MINVALUE]", minValue.toString());
+                expect(deltaU).to.be.a.bignumber.that.is.at.most(maxValue);
+                expect(deltaU).to.be.a.bignumber.that.is.at.least(minValue);
                 assertBNEqual(deltaP, inTokenPULP.neg());
                 assertBNEqual(deltaTS, inTokenPULP.neg());
-                assertBNEqual(deltaTP, liquidity.neg());
+                expect(deltaTP).to.be.a.bignumber.that.is.at.least(
+                    maxValue.neg()
+                );
+                expect(deltaTP).to.be.a.bignumber.that.is.at.most(
+                    minValue.neg()
+                );
             };
         });
 
@@ -455,7 +467,7 @@ contract("Pool", (accounts) => {
                 }
             };
 
-            await run(2);
+            await run(1);
         });
     });
 
@@ -542,7 +554,6 @@ contract("Pool", (accounts) => {
         it("should buy tokenP by paying some premium of tokenU", async () => {
             const run = async (runs) => {
                 for (let i = 0; i < runs; i++) {
-                    console.log("[BUY() Test RUN #]", i);
                     let amt = Math.floor(HUNDRETH * Math.random()).toString();
                     await buy(amt);
                 }
@@ -616,51 +627,6 @@ contract("Pool", (accounts) => {
                 await _tokenU.methods.balanceOf(pool.address).call()
             );
 
-            /* const deposit = async (amount) => {
-                let balance0U = new BN(
-                    await _tokenU.methods.balanceOf(Alice).call()
-                );
-                let balance0P = new BN(await pool.balanceOf(Alice));
-                let balance0CU = new BN(
-                    await _tokenU.methods.balanceOf(pool.address).call()
-                );
-                let balance0CP = new BN(await pool.totalSupply());
-
-                if (balance0U.lt(new BN(amount))) {
-                    return;
-                }
-
-                let expectedP = calculateAddLiquidity(
-                    amount,
-                    await pool.totalSupply(),
-                    await pool.totalPoolBalance(prime.address)
-                );
-
-                let depo = await pool.deposit(amount, {
-                    from: Alice,
-                });
-                truffleAssert.eventEmitted(depo, "Deposit");
-
-                let balance1U = new BN(
-                    await _tokenU.methods.balanceOf(Alice).call()
-                );
-                let balance1P = new BN(await pool.balanceOf(Alice));
-                let balance1CU = new BN(
-                    await _tokenU.methods.balanceOf(pool.address).call()
-                );
-                let balance1CP = new BN(await pool.totalSupply());
-
-                let deltaU = balance1U.sub(balance0U);
-                let deltaP = balance1P.sub(balance0P);
-                let deltaCU = balance1CU.sub(balance0CU);
-                let deltaCP = balance1CP.sub(balance0CP);
-
-                assertBNEqual(deltaU, -amount);
-                assertBNEqual(deltaP, expectedP);
-                assertBNEqual(deltaCU, +amount);
-                assertBNEqual(deltaCP, expectedP);
-            }; */
-
             const runDeposit = async (runs) => {
                 for (let i = 0; i < runs; i++) {
                     let amt = Math.floor(TEN_ETHER * Math.random()).toString();
@@ -668,120 +634,12 @@ contract("Pool", (accounts) => {
                 }
             };
 
-            /* const withdraw = async (amount) => {
-                let balance0U = new BN(
-                    await _tokenU.methods.balanceOf(Alice).call()
-                );
-                let balance0P = new BN(await pool.balanceOf(Alice));
-                let balance0S = new BN(
-                    await _tokenS.methods.balanceOf(prime.address).call()
-                );
-                let balance0CU = new BN(
-                    await _tokenU.methods.balanceOf(pool.address).call()
-                );
-                let balance0CP = new BN(await pool.totalSupply());
-
-                if (balance0P.lt(new BN(amount))) {
-                    return;
-                }
-
-                let expectedU = calculateRemoveLiquidity(
-                    amount,
-                    await pool.totalSupply(),
-                    await pool.totalPoolBalance(prime.address)
-                );
-
-                let draw = await pool.withdraw(amount, {
-                    from: Alice,
-                });
-                truffleAssert.eventEmitted(draw, "Withdraw");
-
-                let balance1U = new BN(
-                    await _tokenU.methods.balanceOf(Alice).call()
-                );
-                let balance1P = new BN(await pool.balanceOf(Alice));
-                let balance1S = new BN(
-                    await _tokenS.methods.balanceOf(prime.address).call()
-                );
-                let balance1CU = new BN(
-                    await _tokenU.methods.balanceOf(pool.address).call()
-                );
-                let balance1CP = new BN(await pool.totalSupply());
-
-                let deltaU = balance1U.sub(balance0U);
-                let deltaP = balance1P.sub(balance0P);
-                let deltaS = balance1S.sub(balance0S);
-                let deltaCU = balance1CU.sub(balance0CU);
-                let deltaCP = balance1CP.sub(balance0CP);
-
-                assertBNEqual(deltaU, expectedU);
-                assertBNEqual(deltaP, -amount);
-                assertBNEqual(deltaCU, expectedU.neg());
-                assertBNEqual(deltaCP, -amount);
-            }; */
-
             const runWithdraw = async (runs) => {
                 for (let i = 0; i < runs; i++) {
                     let amt = Math.floor(HUNDRETH * Math.random()).toString();
                     await withdraw(amt);
                 }
             };
-
-            /* const buy = async (amount) => {
-                let balance0U = new BN(
-                    await _tokenU.methods.balanceOf(Alice).call()
-                );
-                let balance0P = new BN(await prime.balanceOf(Alice));
-                let balance0CU = new BN(
-                    await _tokenU.methods.balanceOf(pool.address).call()
-                );
-                let balance0CP = new BN(await prime.totalSupply());
-                let premium = await oracle.calculatePremium(
-                    tokenU,
-                    await pool.volatility(),
-                    await prime.base(),
-                    await prime.price(),
-                    await prime.expiry()
-                );
-
-                let expectedU = calculateBuy(
-                    amount,
-                    await prime.base(),
-                    await prime.price(),
-                    premium
-                );
-                premium = new BN(premium);
-
-                let buy = await pool.buy(amount, {
-                    from: Alice,
-                });
-                truffleAssert.eventEmitted(buy, "Buy");
-
-                let balance1U = new BN(
-                    await _tokenU.methods.balanceOf(Alice).call()
-                );
-                let balance1P = new BN(await prime.balanceOf(Alice));
-                let balance1CU = new BN(
-                    await _tokenU.methods.balanceOf(pool.address).call()
-                );
-                let balance1CP = new BN(await prime.totalSupply());
-
-                let deltaU = balance1U.sub(balance0U);
-                let deltaP = balance1P.sub(balance0P);
-                let deltaCU = balance1CU.sub(balance0CU);
-                let deltaCP = balance1CP.sub(balance0CP);
-
-                assertBNEqual(deltaU, premium.neg());
-                let minted = new BN(amount)
-                    .mul(await prime.base())
-                    .div(new BN(toWei("1")));
-                assertBNEqual(deltaP, minted); // needs to account for premium
-                assertBNEqual(deltaCU, expectedU.neg()); 
-                assertBNEqual(
-                    deltaCP,
-                    minted
-                );
-            }; */
 
             const runBuy = async (runs) => {
                 for (let i = 0; i < runs; i++) {
