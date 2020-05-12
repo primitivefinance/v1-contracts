@@ -81,9 +81,9 @@ contract PrimeOracle {
      * @dev Gets the market price of tokenU using compound's oracle, which uses the compound
      * version of the token.
      */
-    function marketPrice(address cToken) public view returns (uint256 market) {
+    function marketPrice(address token) public view returns (uint256 market) {
         // The compound wrapped cToken. e.g. cToken = DAI, feed = cDAI.
-        address feed = feeds[cToken];
+        address feed = feeds[token];
         require(feed != address(0), "ERR_FEED_INVALID");
         // Returns the price of cToken denominated in ethers.
         market = PriceOracleProxy(oracle).getUnderlyingPrice(feed);
@@ -162,7 +162,8 @@ contract PrimeOracle {
         // Strike price is the price of tokenU denominated in tokenS.
         uint256 strike = price.mul(ONE_ETHER).div(base);
         // Strike / Market scaled to 1e18. Denominated in ethers.
-        uint256 moneyness = strike.mul(ONE_ETHER).div(market);
+        /* uint256 moneyness = strike.mul(ONE_ETHER).div(market); */
+        uint256 moneyness = market.mul(ONE_ETHER).div(strike);
         // Extrinsic value denominted in tokenU.
         extrinsic = moneyness
                             .mul(ONE_ETHER)

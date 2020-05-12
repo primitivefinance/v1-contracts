@@ -1,24 +1,45 @@
 const { assert, expect } = require("chai");
+const chai = require("chai");
 const BN = require("bn.js");
+chai.use(require("chai-bn")(BN));
 const PrimeOracle = artifacts.require("PrimeOracle");
 const constants = require("./constants");
 const {
+    ONE_ETHER,
     MAINNET_DAI,
     MAINNET_ORACLE,
     MAINNET_COMPOUND_DAI,
     MAINNET_WETH,
     MANTISSA,
+    MAX_SLIPPAGE,
+    MAX_ERROR_PTS,
 } = constants;
 
-contract("Oracle contract", (accounts) => {
-    // WEB3
-    const { toWei } = web3.utils;
-    const { fromWei } = web3.utils;
+const utils = require("./utils");
+const { toWei, fromWei, assertBNEqual, assertWithinError } = utils;
 
-    let oracle;
+const LOG_INTRINSIC = true;
+const LOG_EXTRINSIC = false;
+const LOG_SPECIFIC = true;
+
+contract("Oracle contract", (accounts) => {
+    let oracle, dai;
 
     before(async () => {
         oracle = await PrimeOracle.new(MAINNET_ORACLE);
+        dai = MAINNET_DAI;
+
+        getPriceInDai = async () => {
+            let ether = new BN(ONE_ETHER);
+            let ethPerDai = new BN(await oracle.marketPrice(dai));
+            let daiPerEth = ether.mul(ether).div(ethPerDai);
+            return daiPerEth;
+        };
+
+        getPriceInEth = async () => {
+            let ethPerDai = new BN(await oracle.marketPrice(dai));
+            return ethPerDai;
+        };
     });
 
     describe("Deployment", () => {
@@ -31,6 +52,57 @@ contract("Oracle contract", (accounts) => {
     });
 
     describe("Calculation General", () => {
+        before(async () => {
+            let ethPrice = fromWei(await getPriceInDai());
+            function randomDate(start, end) {
+                let date = Math.floor(+start + Math.random() * (end - start));
+                return date;
+            }
+            function getRandomArbitrary(min, max) {
+                return Math.random() * (max - min) + min;
+            }
+            generateRandomPutOption = () => {
+                let option = {
+                    volatility: Math.floor(1000 * Math.random()),
+                    base: toWei(
+                        (ethPrice * getRandomArbitrary(0.9, 1.1)).toString()
+                    ),
+                    price: toWei("1"),
+                    expiry: randomDate(1594512000, 1609459200),
+                };
+                return option;
+            };
+
+            generateRandomCallOption = () => {
+                let option = {
+                    volatility: Math.floor(1000 * Math.random()),
+                    base: toWei("1"),
+                    price: toWei(
+                        (ethPrice * getRandomArbitrary(0.9, 1.1)).toString()
+                    ),
+                    expiry: randomDate(1594512000, 1609459200),
+                };
+                return option;
+            };
+            calculatePremiums = async (
+                tokenU,
+                tokenS,
+                volatility,
+                base,
+                price,
+                expiry
+            ) => {
+                let premium = await oracle.calculatePremium(
+                    tokenU,
+                    tokenS,
+                    volatility,
+                    base,
+                    price,
+                    expiry
+                );
+                return premium;
+            };
+        });
         it("Calculates the premium for ETH 200 DAI Put Expiring May 29", async () => {
             let deribit = "0.0765"; // in ethers
             let tokenU = MAINNET_DAI;
@@ -38,7 +110,7 @@ contract("Oracle contract", (accounts) => {
             let volatility = 880; // Deribit's IV is 88% as of today May 3, 2020.
             let base = toWei("200");
             let price = toWei("1");
-            let expiry = "1620777600"; // May 29 at 11:59 PM.
+            let expiry = "1590753540"; // May 29 at 11:59 PM.
             let premium = await oracle.calculatePremium(
                 tokenU,
                 tokenS,
@@ -52,55 +124,44 @@ contract("Oracle contract", (accounts) => {
             console.log("[DERIBIT PREMIUM]", deribit);
         });
 
-        it("Calculates premiums for arbritary options", async () => {
-            const calculatePremiums = async (
-                volatility,
-                base,
-                price,
-                expiry
-            ) => {
-                let tokenU = MAINNET_DAI;
-                let tokenS = MAINNET_WETH;
-                let premium = await oracle.calculatePremium(
-                    tokenU,
-                    tokenS,
-                    volatility,
-                    base,
-                    price,
-                    expiry
-                );
-                return premium;
-            };
-
-            const generateRandomOption = () => {
-                let ethPrice = 200;
-
-                function randomDate(start, end) {
-                    let date = Math.floor(
-                        +start + Math.random() * (end - start)
-                    );
-                    return date;
-                }
-
-                function getRandomArbitrary(min, max) {
-                    return Math.random() * (max - min) + min;
-                }
-                let option = {
-                    volatility: Math.floor(1000 * Math.random()),
-                    base: toWei(
-                        (ethPrice * getRandomArbitrary(0.9, 1.1)).toString()
-                    ),
-                    price: toWei("1"),
-                    expiry: randomDate(1588636800, 1620777600),
-                };
-
-                return option;
-            };
-
+        it("Calculates premiums for arbritary Put options", async () => {
+            let tokenU = MAINNET_DAI;
+            let tokenS = MAINNET_WETH;
             const run = async (amount) => {
                 for (let i = 0; i < amount; i++) {
-                    let option = generateRandomOption();
+                    let option = generateRandomPutOption();
                     let premium = await calculatePremiums(
+                        tokenU,
+                        tokenS,
+                        option.volatility,
+                        option.base,
+                        option.price,
+                        option.expiry
+                    );
+
+                    let calculation = {
+                        volatility: option.volatility,
+                        base: fromWei(option.base),
+                        price: fromWei(option.price),
+                        expiry: new Date(option.expiry * 1000).toDateString(),
+                        premium: fromWei(premium),
+                    };
+                    console.log(calculation);
+                }
+            };
+
+            await run(1);
+        });
+
+        it("Calculates premiums for arbritary Call options", async () => {
+            let tokenU = MAINNET_WETH;
+            let tokenS = MAINNET_DAI;
+            const run = async (amount) => {
+                for (let i = 0; i < amount; i++) {
+                    let option = generateRandomCallOption();
+                    let premium = await calculatePremiums(
+                        tokenU,
+                        tokenS,
                         option.volatility,
                         option.base,
                         option.price,
@@ -123,100 +184,93 @@ contract("Oracle contract", (accounts) => {
     });
 
     describe("Calculation Intrinsic", () => {
-        it("Calculates intrinsic premiums for arbritary options and compares to market", async () => {
-            const calculateIntrinsic = async (base, price) => {
-                let tokenU = MAINNET_DAI;
-                let tokenS = MAINNET_WETH;
+        before(async () => {
+            calculateIntrinsic = async (tokenU, tokenS, base, price) => {
                 let intrinsic = await oracle.calculateIntrinsic(
                     tokenU,
                     tokenS,
                     base,
                     price
                 );
-                return intrinsic;
-            };
-
-            const generateRandomOption = () => {
-                let ethPrice = 200;
-
-                function randomDate(start, end) {
-                    let date = Math.floor(
-                        +start + Math.random() * (end - start)
-                    );
-                    return date;
-                }
-
-                function getRandomArbitrary(min, max) {
-                    return Math.random() * (max - min) + min;
-                }
-                let option = {
-                    volatility: Math.floor(1000 * Math.random()),
-                    base: toWei(
-                        (ethPrice * getRandomArbitrary(0.9, 1.1)).toString()
-                    ),
-                    price: toWei("1"),
-                    expiry: randomDate(1588636800, 1620777600),
+                let daiPerEth = await getPriceInDai();
+                let ethPerDai = await getPriceInEth();
+                let expected =
+                    tokenU == MAINNET_DAI
+                        ? new BN(base).sub(daiPerEth)
+                        : ethPerDai
+                              .mul(daiPerEth.sub(new BN(price)))
+                              .div(new BN(ONE_ETHER));
+                let difference =
+                    intrinsic >= expected
+                        ? new BN(intrinsic).sub(expected)
+                        : new BN(0);
+                let error =
+                    tokenU == MAINNET_DAI
+                        ? difference.div(new BN(expected)).mul(new BN(100))
+                        : difference.div(new BN(expected)).mul(new BN(100));
+                let results = {
+                    market: daiPerEth.toString(),
+                    base: base,
+                    price: price,
+                    intrinsic: intrinsic.toString(),
+                    expected: expected.toString(),
+                    difference: difference.toString(),
+                    error: error.toString(),
                 };
 
-                return option;
+                if (LOG_INTRINSIC) console.log(results);
+                assertWithinError(intrinsic, expected, MAX_SLIPPAGE);
+                assertWithinError(error, new BN(100), MAX_ERROR_PTS);
+                return intrinsic;
             };
-
+        });
+        it("Calculates intrinsic for arbritary put options and compares to market", async () => {
+            let tokenU = MAINNET_DAI;
+            let tokenS = MAINNET_WETH;
             const run = async (amount) => {
                 for (let i = 0; i < amount; i++) {
-                    let option = generateRandomOption();
-                    let intrinsic = await calculateIntrinsic(
+                    let option = generateRandomPutOption();
+                    await calculateIntrinsic(
+                        tokenU,
+                        tokenS,
                         option.base,
                         option.price
                     );
-                    let market = new BN(await oracle.marketPrice(MAINNET_DAI));
-                    if (market.eq(new BN(0))) {
-                        return;
-                    }
-                    market = new BN(MANTISSA).div(market);
-                    // For puts
-                    let expected = new BN(option.base).sub(market);
-                    let difference;
-                    if (intrinsic >= expected) {
-                        difference = new BN(intrinsic).sub(expected);
-                    } else {
-                        difference = new BN(0);
-                    }
-
-                    let error = difference
-                        .div(new BN(option.base))
-                        .mul(new BN(100));
-
-                    let calculation = {
-                        market: market.toString(),
-                        base: option.base,
-                        price: option.price,
-                        intrinsic: intrinsic.toString(),
-                        expected: expected.toString(),
-                        difference: fromWei(Math.floor(difference).toString()),
-                        error: error.toString(),
-                    };
-                    console.log(calculation);
-                    let max_error = 1.5; // %
-                    if (+intrinsic > 0) {
-                        assert.isAtMost(+error, +max_error);
-                    }
                 }
             };
 
-            await run(10);
+            await run(5);
+        });
+
+        it("Calculates intrinsic for arbritary call options and compares to market", async () => {
+            let tokenU = MAINNET_WETH;
+            let tokenS = MAINNET_DAI;
+            const run = async (amount) => {
+                for (let i = 0; i < amount; i++) {
+                    let option = generateRandomCallOption();
+                    await calculateIntrinsic(
+                        tokenU,
+                        tokenS,
+                        option.base,
+                        option.price
+                    );
+                }
+            };
+
+            await run(5);
         });
     });
 
     describe("Calculation Extrinsic", () => {
-        it("Calculates extrinsic premiums for arbritary options parameters", async () => {
-            const calculateExtrinsic = async (
+        before(async () => {
+            calculateExtrinsic = async (
+                tokenU,
+                tokenS,
                 volatility,
                 base,
                 price,
                 expiry
             ) => {
-                let tokenU = MAINNET_DAI;
-                let tokenS = MAINNET_WETH;
                 let extrinsic = await oracle.calculateExtrinsic(
                     tokenU,
                     tokenS,
@@ -227,50 +281,30 @@ contract("Oracle contract", (accounts) => {
                 );
                 return extrinsic;
             };
-
-            const generateRandomOption = () => {
-                let ethPrice = 200;
-
-                function randomDate(start, end) {
-                    let date = Math.floor(
-                        +start + Math.random() * (end - start)
-                    );
-                    return date;
-                }
-
-                function getRandomArbitrary(min, max) {
-                    return Math.random() * (max - min) + min;
-                }
-                let option = {
-                    volatility: Math.floor(1000 * Math.random()),
-                    base: toWei(
-                        (ethPrice * getRandomArbitrary(0.9, 1.1)).toString()
-                    ),
-                    price: toWei("1"),
-                    expiry: randomDate(1588636800, 1620777600),
-                };
-
-                return option;
-            };
-
+        });
+        it("Calculates extrinsic premiums for arbritary options parameters", async () => {
+            let tokenU = MAINNET_DAI;
+            let tokenS = MAINNET_WETH;
             const run = async (amount) => {
                 for (let i = 0; i < amount; i++) {
-                    let option = generateRandomOption();
+                    let option = generateRandomPutOption();
                     let extrinsic = await calculateExtrinsic(
+                        tokenU,
+                        tokenS,
                         option.volatility,
                         option.base,
                         option.price,
                         option.expiry
                     );
 
-                    let calculation = {
+                    let results = {
                         volatility: option.volatility,
                         base: fromWei(option.base),
                         price: fromWei(option.price),
                         expiry: new Date(option.expiry * 1000).toDateString(),
                         extrinsic: fromWei(extrinsic),
                     };
-                    console.log(calculation);
+                    if (LOG_EXTRINSIC) console.log(results);
                 }
             };
 
@@ -279,65 +313,126 @@ contract("Oracle contract", (accounts) => {
     });
 
     describe("Calculation Specific", () => {
-        it("Calculates extrinsic premiums for arbritary options parameters", async () => {
-            const calculateExtrinsic = async (
-                volatility,
-                base,
-                price,
-                expiry
-            ) => {
-                let tokenU = MAINNET_DAI;
-                let tokenS = MAINNET_WETH;
-                let extrinsic = await oracle.calculateExtrinsic(
+        it("Calculates premiums for deribit put series expiring Dec 25", async () => {
+            let tokenU = MAINNET_DAI;
+            let tokenS = MAINNET_WETH;
+            let expiry = "1608897540";
+            let volatility = 500;
+            let date = new Date(+expiry * 1000).toDateString();
+            let strikes = [
+                "40",
+                "60",
+                "80",
+                "100",
+                "120",
+                "140",
+                "160",
+                "180",
+                "200",
+                "220",
+                "240",
+                "260",
+                "280",
+                "320",
+            ];
+
+            for (let i = 0; i < strikes.length; i++) {
+                let premium = await calculatePremiums(
                     tokenU,
                     tokenS,
                     volatility,
-                    base,
-                    price,
+                    toWei(strikes[i]),
+                    toWei("1"),
                     expiry
                 );
-                return extrinsic;
-            };
 
-            let extrinsic = await calculateExtrinsic(
-                865,
-                toWei("200"),
-                toWei("1"),
-                "1589543940" // May 15 11:59 pm
-            );
+                let intrinsic = await calculateIntrinsic(
+                    tokenU,
+                    tokenS,
+                    toWei(strikes[i]),
+                    toWei("1")
+                );
 
-            let calculation = {
-                volatility: 865,
-                base: "200",
-                price: "1",
-                expiry: new Date(1589543940 * 1000).toDateString(),
-                extrinsic: fromWei(extrinsic),
-            };
-            console.log(calculation);
+                let extrinsic = await calculateExtrinsic(
+                    tokenU,
+                    tokenS,
+                    volatility,
+                    toWei(strikes[i]),
+                    toWei("1"),
+                    expiry
+                );
 
-            const run = async (amount) => {
-                let volatility = 640;
-                for (let i = 0; i < amount; i++) {
-                    let extrinsic = await calculateExtrinsic(
-                        volatility,
-                        toWei("200"),
-                        toWei("1"),
-                        "1589543940" // May 15 11:59 pm
-                    );
+                let results = {
+                    strike: strikes[i],
+                    date: date,
+                    intrinsic: fromWei(intrinsic),
+                    extrinsic: fromWei(extrinsic),
+                    sum: fromWei(intrinsic.add(extrinsic)),
+                    premium: fromWei(premium),
+                };
+                if (LOG_SPECIFIC) console.log(results);
+            }
+        });
 
-                    let calculation = {
-                        volatility: volatility,
-                        base: "200",
-                        price: "1",
-                        expiry: new Date(1589543940 * 1000).toDateString(),
-                        extrinsic: fromWei(extrinsic),
-                    };
-                    console.log(calculation);
-                    volatility -= 1;
-                }
-            };
+        it("Calculates premiums for deribit call series expiring Dec 25", async () => {
+            let tokenU = MAINNET_WETH;
+            let tokenS = MAINNET_DAI;
+            let expiry = "1608897540";
+            let volatility = 1000;
+            let date = new Date(+expiry * 1000).toDateString();
+            let strikes = [
+                "40",
+                "60",
+                "80",
+                "100",
+                "120",
+                "140",
+                "160",
+                "180",
+                "200",
+                "220",
+                "240",
+                "260",
+                "280",
+                "320",
+            ];
 
-            await run(1);
+            for (let i = 0; i < strikes.length; i++) {
+                let premium = await calculatePremiums(
+                    tokenU,
+                    tokenS,
+                    volatility,
+                    toWei("1"),
+                    toWei(strikes[i]),
+                    expiry
+                );
+
+                let intrinsic = await calculateIntrinsic(
+                    tokenU,
+                    tokenS,
+                    toWei("1"),
+                    toWei(strikes[i])
+                );
+
+                let extrinsic = await calculateExtrinsic(
+                    tokenU,
+                    tokenS,
+                    volatility,
+                    toWei("1"),
+                    toWei(strikes[i]),
+                    expiry
+                );
+
+                let results = {
+                    strike: strikes[i],
+                    date: date,
+                    intrinsic: fromWei(intrinsic),
+                    extrinsic: fromWei(extrinsic),
+                    sum: fromWei(intrinsic.add(extrinsic)),
+                    premium: fromWei(premium),
+                };
+                if (LOG_SPECIFIC) console.log(results);
+            }
         });
     });
 });

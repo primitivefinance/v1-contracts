@@ -1,7 +1,8 @@
 const { assert, expect } = require("chai");
-const chai = require("chai");
 const truffleAssert = require("truffle-assertions");
+const chai = require("chai");
 const BN = require("bn.js");
+chai.use(require("chai-bn")(BN));
 const Dai = artifacts.require("DAI");
 const Weth = artifacts.require("WETH9");
 const PrimeOption = artifacts.require("PrimeOption");
@@ -14,7 +15,6 @@ const UniExchangeLike = artifacts.require("UniExchangeLike");
 const UniFactory = artifacts.require("UniFactory");
 const UniExchange = artifacts.require("UniExchange");
 const OracleLike = artifacts.require("OracleLike");
-chai.use(require("chai-bn")(BN));
 
 // constant imports
 const common_constants = require("./constants");
