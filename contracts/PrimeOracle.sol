@@ -26,6 +26,7 @@ contract PrimeOracle {
     uint256 public constant MIN_PREMIUM = 10**3;
     uint256 public constant ONE_ETHER = 1 ether;
     uint256 public constant SECONDS_IN_DAY = 86400;
+    uint256 public constant MANTISSA = 10**36;
 
     mapping(address => address) public feeds;
 
@@ -45,6 +46,7 @@ contract PrimeOracle {
      * @dev Calculates the intrinsic + extrinsic value of the Prime option.
      * @notice Strike / Market * (Volatility * 1000) * sqrt(T in seconds remaining) / Seconds in a Day.
      * @param tokenU The address of the underlying asset.
+     * @param tokenS The address of the strike asset.
      * @param volatility The arbritary volatility as a percentage scaled by 1000.
      * @param base The quantity of the underlying asset. Also the price of tokenU denomined in tokenU.
      * @param price The quantity of the strike asset. Also the price of tokenU denominated in tokenS.
@@ -54,6 +56,7 @@ contract PrimeOracle {
      */
     function calculatePremium(
         address tokenU,
+        address tokenS,
         uint256 volatility,
         uint256 base,
         uint256 price,
@@ -64,8 +67,8 @@ contract PrimeOracle {
         returns (uint256 premium)
     {
         // Calculate the parts.
-        (uint256 intrinsic) = calculateIntrinsic(tokenU, base, price);
-        (uint256 extrinsic) = calculateExtrinsic(tokenU, volatility, base, price, expiry);
+        (uint256 intrinsic) = calculateIntrinsic(tokenU, tokenS, base, price);
+        (uint256 extrinsic) = calculateExtrinsic(tokenU, tokenS, volatility, base, price, expiry);
         
         // Sum the parts.
         premium = (extrinsic.add(intrinsic));
@@ -78,40 +81,52 @@ contract PrimeOracle {
      * @dev Gets the market price of tokenU using compound's oracle, which uses the compound
      * version of the token.
      */
-    function marketPrice(address tokenU) public view returns (uint256 market) {
-        // The compound wrapped tokenU. e.g. tokenU = DAI, feed = cDAI.
-        address feed = feeds[tokenU];
+    function marketPrice(address cToken) public view returns (uint256 market) {
+        // The compound wrapped cToken. e.g. cToken = DAI, feed = cDAI.
+        address feed = feeds[cToken];
         require(feed != address(0), "ERR_FEED_INVALID");
-        // Returns the price of tokenU denominated in ethers.
+        // Returns the price of cToken denominated in ethers.
         market = PriceOracleProxy(oracle).getUnderlyingPrice(feed);
     }
 
     /**
      * @dev Calculates the intrinsic value of a Prime option using compound's price oracle.
      * @param tokenU The address of the underlying asset.
+     * @param tokenS The address of the strike asset.
      * @param base The quantity of the underlying asset. Also the price of tokenU denomined in tokenU.
      * @param price The quantity of the strike asset. Also the price of tokenU denominated in tokenS.
      * @return intrinsic The difference between the price of tokenU denominated in S between the
      * strike price (price) and market price (market).
      */
-    function calculateIntrinsic(address tokenU, uint256 base, uint256 price)
+    function calculateIntrinsic(address tokenU, address tokenS, uint256 base, uint256 price)
         public
         view
         returns (uint256 intrinsic)
     {
-        (uint256 market) = marketPrice(tokenU);
-        // Strike price of tokenU per ETH. ETH / tokenU = price of tokenU per eth, scaled to 10^18 units.
+        // Get the oracle market price.
+        uint256 market;
+        if(tokenU == WETH) {
+            // Market price of tokenU per tokenS.
+            (market) = marketPrice(tokenS);
+            // Convert tokenU per tokenS to tokenS per tokenU. Assumes oracle never returns a value > 1e36.
+            market = MANTISSA.div(market);
+        } else {
+            // Market price of tokenS per tokenU.
+            (market) = marketPrice(tokenU);
+        }
+        // Strike price of tokenU per tokenS. Scaled to 10^18 units.
         uint256 strike = price.mul(ONE_ETHER).div(base);
-        // Difference = Base * market price / strike price.
-        uint256 difference = base.mul(market).div(strike);
-        // Intrinsic value denominated in tokenU.
-        intrinsic = difference >= base ? difference.sub(base) : 0;
+        // Intrinsic value denominated in tokenS per tokenU.
+        intrinsic = market > strike ? market.sub(strike) : 0; 
+        // Convert units back to tokenU per tokenS.
+        intrinsic = intrinsic.mul(base).div(market);
     }
 
     /**
      * @dev Calculates the extrinsic value of the Prime option using Primitive's pricing model.
      * @notice Strike / Market * (Volatility(%) * 1000) * sqrt(T in seconds left) / Seconds in a Day.
      * @param tokenU The address of the underlying asset.
+     * @param tokenS The address of the strike asset.
      * @param volatility The arbritary volatility as a percentage scaled by 1000.
      * @param base The quantity of the underlying asset. Also the price of tokenU denomined in tokenU.
      * @param price The quantity of the strike asset. Also the price of tokenU denominated in tokenS.
@@ -120,6 +135,7 @@ contract PrimeOracle {
      */
     function calculateExtrinsic(
         address tokenU,
+        address tokenS,
         uint256 volatility,
         uint256 base,
         uint256 price,
@@ -129,8 +145,18 @@ contract PrimeOracle {
         view
         returns (uint256 extrinsic)
     {
-        // Market price of tokenU denominated in ethers.
-        (uint256 market) = marketPrice(tokenU);
+        // Get the oracle market price.
+        uint256 market;
+        if(tokenU == WETH) {
+            // Market price of tokenU per tokenS.
+            (market) = marketPrice(tokenS);
+            // Convert tokenU per tokenS to tokenS per tokenU. Assumes oracle never returns a value > 1e36.
+            market = MANTISSA.div(market);
+        } else {
+            // Market price of tokenS per tokenU.
+            (market) = marketPrice(tokenU);
+        }
+        
         // Time left in seconds.
         uint256 timeRemainder = (expiry.sub(block.timestamp));
         // Strike price is the price of tokenU denominated in tokenS.
@@ -144,6 +170,12 @@ contract PrimeOracle {
                             .mul(sqrt(timeRemainder))
                                 .div(ONE_ETHER)
                                 .div(SECONDS_IN_DAY);
+        if(tokenU == WETH) {
+            // Convert units back to tokenU per tokenS.
+            // Extrinsic calculation is always in DAI per ETH, but if tokenU is ETH
+            // we want the price in ETH per DAI.
+            extrinsic = extrinsic.mul(base).div(market);
+        }
     }
 
     /**

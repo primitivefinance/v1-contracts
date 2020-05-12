@@ -582,6 +582,7 @@ contract("Pool", (accounts) => {
                 let balance0P = await getTokenBalance(pool, Alice);
                 let balance0Prime = await getTokenBalance(prime, Alice);
                 let balance0S = await getBalance(_tokenS, Alice);
+                let balance0R = await getBalance(redeem, pool.address);
                 let balance0CU = await getBalance(_tokenU, pool.address);
                 let balance0TS = await getTotalSupply();
                 let balance0TP = await getTotalPoolBalance();
@@ -596,6 +597,16 @@ contract("Pool", (accounts) => {
                 if (balance0CU.lt(premium)) {
                     return;
                 }
+
+                console.log("[INITIALSTATE]");
+                console.log("ALICE U", balance0U.toString());
+                console.log("ALICE P", balance0P.toString());
+                console.log("ALICE SELL", inTokenP.toString());
+                console.log("CONTRACT U", balance0CU.toString());
+                console.log("CONTRACT R", balance0R.toString());
+                console.log("CONTRACT TS", balance0TS.toString());
+                console.log("CONTRACT TP", balance0TP.toString());
+                console.log("ESTIMATED PREMIUM", premium.toString());
 
                 let event = await pool.sell(inTokenP, {
                     from: Alice,
@@ -613,6 +624,7 @@ contract("Pool", (accounts) => {
                 let balance1U = await getBalance(_tokenU, Alice);
                 let balance1P = await getTokenBalance(pool, Alice);
                 let balance1Prime = await getTokenBalance(prime, Alice);
+                let balance1R = await getBalance(redeem, pool.address);
                 let balance1S = await getBalance(_tokenS, Alice);
                 let balance1CU = await getBalance(_tokenU, pool.address);
                 let balance1TS = await getTotalSupply();
@@ -621,15 +633,42 @@ contract("Pool", (accounts) => {
                 let deltaU = balance1U.sub(balance0U);
                 let deltaP = balance1P.sub(balance0P);
                 let deltaS = balance1S.sub(balance0S);
+                let deltaR = balance1R.sub(balance0R);
                 let deltaPrime = balance1Prime.sub(balance0Prime);
                 let deltaCU = balance1CU.sub(balance0CU);
                 let deltaTS = balance1TS.sub(balance0TS);
 
-                /* assertBNEqual(deltaU, premium.neg()); */
+                console.log("[ENDSTATE]");
+                console.log("ALICE U", balance1U.toString());
+                console.log("ALICE P", balance1P.toString());
+                console.log("ALICE SELL", inTokenP.toString());
+                console.log("CONTRACT U", balance1CU.toString());
+                console.log("CONTRACT R", balance1R.toString());
+                console.log("CONTRACT TS", balance1TS.toString());
+                console.log("CONTRACT TP", balance1TP.toString());
+                console.log("ESTIMATED PREMIUM", premium.toString());
+
+                let discountedPremium = premium.sub(premium.div(new BN(5)));
+                let expectedDeltaU = deltaR
+                    .mul(new BN(base))
+                    .div(new BN(price));
+                expectedDeltaU.iadd(discountedPremium);
+
+                expect(deltaU).to.be.a.bignumber.that.is.at.most(
+                    discountedPremium.add(new BN(1))
+                );
+                expect(deltaU).to.be.a.bignumber.that.is.at.least(
+                    discountedPremium.sub(new BN(1))
+                );
+                expect(deltaCU).to.be.a.bignumber.that.is.at.least(
+                    expectedDeltaU.add(new BN(10)).neg()
+                );
+                expect(deltaCU).to.be.a.bignumber.that.is.at.most(
+                    expectedDeltaU.sub(new BN(10)).neg()
+                );
                 assertBNEqual(deltaP, new BN(0));
                 assertBNEqual(deltaPrime, inTokenP.neg());
                 assertBNEqual(deltaS, new BN(0));
-                /* assertBNEqual(deltaCU, new BN(0)); */
                 assertBNEqual(deltaTS, new BN(0));
             };
         });
@@ -653,7 +692,7 @@ contract("Pool", (accounts) => {
                 }
             };
 
-            await run(2);
+            await run(5);
         });
     });
 
@@ -715,8 +754,6 @@ contract("Pool", (accounts) => {
 
     describe("Run Transactions", () => {
         it("should be able to deposit, withdraw, and buy fluidly", async () => {
-            let balanceContract = new BN(await _tokenU.balanceOf(pool.address));
-
             const runDeposit = async (runs) => {
                 for (let i = 0; i < runs; i++) {
                     let amt = Math.floor(TEN_ETHER * Math.random()).toString();
@@ -738,6 +775,13 @@ contract("Pool", (accounts) => {
                 }
             };
 
+            const runSell = async (runs) => {
+                for (let i = 0; i < runs; i++) {
+                    let amt = Math.floor(HUNDRETH * Math.random()).toString();
+                    await sell(amt);
+                }
+            };
+
             const run = async (runs) => {
                 for (let i = 0; i < runs; i++) {
                     await runDeposit(i);
@@ -749,11 +793,13 @@ contract("Pool", (accounts) => {
                             Alice
                         );
                     }
+                    await runBuy(i);
+                    await runSell(i);
                     await runWithdraw(i);
                 }
             };
 
-            await run(3);
+            await run(10);
         });
     });
 });
