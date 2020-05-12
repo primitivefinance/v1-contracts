@@ -376,7 +376,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         address _tokenP = tokenP;
         (
             address tokenU, // Assume DAI.
-             , // Assume ETH and we don't need it in this function.
+            address tokenS, // Assume ETH.
              , // Assume tokenR and we don't need it in this function.
             uint256 base,
             uint256 price,
@@ -405,6 +405,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         // Calculate premium. Denominated in tokenU PER tokenS 'covered'.
         (uint256 premium) = IPrimeOracle(oracle).calculatePremium(
             tokenU,
+            tokenS,
             volatility,
             base,
             price,
@@ -446,7 +447,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         address _tokenP = tokenP;
         (
             address tokenU, // Assume DAI.
-             , // Assume ETH and we don't need it in this function.
+            address tokenS, // Assume ETH.
             address tokenR, // Assume tokenR.
             uint256 base,
             uint256 price,
@@ -463,6 +464,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         // Calculate the current premium price.
         (uint256 premium) = IPrimeOracle(oracle).calculatePremium(
             tokenU,
+            tokenS,
             volatility,
             base,
             price,
@@ -474,10 +476,10 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
 
         // Calculate total premium.
         // Units: tokenU * (tokenU / tokenS) / 10^18 units = total quantity tokenU price.
-        uint256 totalPremium = inTokenP.mul(premium).div(ONE_ETHER);
+        premium = inTokenP.mul(premium).div(ONE_ETHER);
 
         // Check to see if pool has the premium to pay out.
-        require(IERC20(tokenU).balanceOf(address(this)) >= totalPremium, "ERR_BAL_UNDERLYING");
+        require(IERC20(tokenU).balanceOf(address(this)) >= premium, "ERR_BAL_UNDERLYING");
         
         // Calculate amount of redeem needed to close position with inTokenU.
         uint256 redeem = inTokenP.mul(price).div(base);
@@ -495,8 +497,8 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         IPrime(_tokenP).close(address(this));
 
         // Pay out the total premium to the seller.
-        emit Sell(msg.sender, inTokenP, totalPremium);
-        return success && IERC20(tokenU).transfer(msg.sender, totalPremium);
+        emit Sell(msg.sender, inTokenP, premium);
+        return success && IERC20(tokenU).transfer(msg.sender, premium);
     }
 
     /**

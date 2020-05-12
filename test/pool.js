@@ -239,6 +239,7 @@ contract("Pool", (accounts) => {
         getPremium = async () => {
             let premium = await oracle.calculatePremium(
                 tokenU,
+                tokenS,
                 await pool.volatility(),
                 await prime.base(),
                 await prime.price(),
