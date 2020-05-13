@@ -4,12 +4,14 @@
     "description": "Permissionless options protocol on Ethereum.",
     "main": "index.js",
     "scripts": {
+        "clean-install": "rm -rf build && rm ./package-lock.json && rm -rf node_modules/* && npm install",
         "start": "npx buidler node",
+        "start:f-mainnet": "ganache-cli -f -i 999 --unlock 0x9eb7f2591ed42dee9315b6e2aaf21ba85ea69f8c",
         "lint": "solium -d ./contracts",
         "lint:fix": "solium -d ./contracts --fix",
         "slither": "pip3 install --user slither-analyzer && slither .",
         "test": "npx buidler test ./test/trader.js ./test/prime.js ./test/pool.js",
-        "test:f-mainnet": "npx buidler test --network local",
+        "test:f-mainnet": "npx buidler test --network local ./test/forked-mainnet/pool-mainnet.js",
         "compile": "npx buidler compile",
         "deploy:mainnet": "npx buidler run --network live scripts/deploy.js",
         "deploy:local": "npx buidler run --network local scripts/deploy.js"

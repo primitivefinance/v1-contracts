@@ -92,9 +92,7 @@ Feeds a price, the _premium_, to the Prime Pool. The Primes are sold from the po
 
 # Testing
 
-The supported networks for testing the contracts are mainnet and rinkeby. Local development using ganache does not work well because the contracts use an oracle and WETH, which are deployed to the supported networks.
-
-Testing on mainnet is easy, we just fork mainnet to a local ganache-cli instance! This requires a few things.
+#### Steps to testing using the buidler EVM
 
 Step 1
 
@@ -105,8 +103,30 @@ Step 2
     npm compile
 
 Step 3
-  
- npm test
+
+    npm start
+
+Step 4
+
+    npm test
+
+#### Steps to testing using the ganache-cli on forked mainnet
+
+Step 1
+
+    npm i
+
+Step 2
+
+    npm compile
+
+Step 3
+
+    npm start:f-mainnet
+
+Step 4
+
+    npm test:f-mainnet
 
 #### Linting
 
