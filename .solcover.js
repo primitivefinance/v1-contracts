@@ -1,3 +1,14 @@
 module.exports = {
-    skipFiles: ["OracleLike.sol"],
+    skipFiles: [
+        "./test/OracleLike.sol",
+        "./test/UniExchange.sol",
+        "./test/UniExchangeLike.sol",
+        "./test/UniFactory.sol",
+        "./test/UniFactoryLike.sol",
+        "./oracle.js",
+        "./forked-mainnet/pool-mainnet.js",
+    ],
+    providerOptions: {
+        default_balance_ether: "1000",
+    },
 };

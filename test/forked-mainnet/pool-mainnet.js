@@ -31,7 +31,7 @@ const {
     MAINNET_UNI_FACTORY,
 } = common_constants;
 
-contract("Pool", (accounts) => {
+contract("Pool - forked-mainnet", (accounts) => {
     // WEB3
     const { toWei } = web3.utils;
     const { fromWei } = web3.utils;
