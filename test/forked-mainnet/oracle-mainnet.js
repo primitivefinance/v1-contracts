@@ -3,13 +3,9 @@ const chai = require("chai");
 const BN = require("bn.js");
 chai.use(require("chai-bn")(BN));
 const PrimeOracle = artifacts.require("PrimeOracle");
-const constants = require("./constants");
-const Dai = artifacts.require("DAI");
-const Weth = artifacts.require("WETH9");
-const OracleLike = artifacts.require("OracleLike");
+const constants = require("../constants");
 const {
     ONE_ETHER,
-    MILLION_ETHER,
     MAINNET_DAI,
     MAINNET_ORACLE,
     MAINNET_COMPOUND_DAI,
@@ -19,43 +15,39 @@ const {
     MAX_ERROR_PTS,
 } = constants;
 
-const utils = require("./utils");
+const utils = require("../utils");
 const { toWei, fromWei, assertBNEqual, assertWithinError } = utils;
 
-const LOG_INTRINSIC = false;
+const LOG_INTRINSIC = true;
 const LOG_EXTRINSIC = false;
-const LOG_SPECIFIC = false;
+const LOG_SPECIFIC = true;
 
 contract("Oracle contract", (accounts) => {
-    let oracle, dai, oracleLike;
+    let oracle, dai;
 
     before(async () => {
-        oracleLike = await OracleLike.new();
-        await oracleLike.setUnderlyingPrice(5e15);
-        dai = await Dai.new(MILLION_ETHER);
-        oracle = await PrimeOracle.new(oracleLike.address);
-        await oracle.addFeed(dai.address);
+        oracle = await PrimeOracle.new(MAINNET_ORACLE);
+        dai = MAINNET_DAI;
 
         getPriceInDai = async () => {
             let ether = new BN(ONE_ETHER);
-            let ethPerDai = new BN(await oracle.marketPrice(dai.address));
+            let ethPerDai = new BN(await oracle.marketPrice(dai));
             let daiPerEth = ether.mul(ether).div(ethPerDai);
             return daiPerEth;
         };
 
         getPriceInEth = async () => {
-            let ethPerDai = new BN(await oracle.marketPrice(dai.address));
+            let ethPerDai = new BN(await oracle.marketPrice(dai));
             return ethPerDai;
         };
     });
 
     describe("Deployment", () => {
         it("Should deploy with the correct address and MCD_DAI Feed", async () => {
-            expect(await oracle.oracle()).to.be.equal(oracleLike.address);
+            expect(await oracle.oracle()).to.be.equal(MAINNET_ORACLE);
             expect(await oracle.feeds(MAINNET_DAI)).to.be.equal(
                 MAINNET_COMPOUND_DAI
             );
-            expect(await oracle.feeds(dai.address)).to.be.equal(dai.address);
         });
     });
 
@@ -113,7 +105,7 @@ contract("Oracle contract", (accounts) => {
         });
         it("Calculates the premium for ETH 200 DAI Put Expiring May 29", async () => {
             let deribit = "0.0765"; // in ethers
-            let tokenU = dai.address;
+            let tokenU = MAINNET_DAI;
             let tokenS = MAINNET_WETH;
             let volatility = 880; // Deribit's IV is 88% as of today May 3, 2020.
             let base = toWei("200");
@@ -133,7 +125,7 @@ contract("Oracle contract", (accounts) => {
         });
 
         it("Calculates premiums for arbritary Put options", async () => {
-            let tokenU = dai.address;
+            let tokenU = MAINNET_DAI;
             let tokenS = MAINNET_WETH;
             const run = async (amount) => {
                 for (let i = 0; i < amount; i++) {
@@ -163,7 +155,7 @@ contract("Oracle contract", (accounts) => {
 
         it("Calculates premiums for arbritary Call options", async () => {
             let tokenU = MAINNET_WETH;
-            let tokenS = dai.address;
+            let tokenS = MAINNET_DAI;
             const run = async (amount) => {
                 for (let i = 0; i < amount; i++) {
                     let option = generateRandomCallOption();
@@ -203,22 +195,19 @@ contract("Oracle contract", (accounts) => {
                 let daiPerEth = await getPriceInDai();
                 let ethPerDai = await getPriceInEth();
                 let expected =
-                    tokenU == dai.address
+                    tokenU == MAINNET_DAI
                         ? new BN(base).sub(daiPerEth)
                         : ethPerDai
                               .mul(daiPerEth.sub(new BN(price)))
                               .div(new BN(ONE_ETHER));
                 let difference =
-                    intrinsic > expected
+                    intrinsic >= expected
                         ? new BN(intrinsic).sub(expected)
                         : new BN(0);
-                console.log(difference.toString(), expected.toString());
                 let error =
-                    tokenU == dai.address && difference > new BN(0)
+                    tokenU == MAINNET_DAI
                         ? difference.div(new BN(expected)).mul(new BN(100))
-                        : difference > new BN(0) && expected > new BN(0)
-                        ? difference.div(new BN(expected)).mul(new BN(100))
-                        : new BN(0);
+                        : difference.div(new BN(expected)).mul(new BN(100));
                 let results = {
                     market: daiPerEth.toString(),
                     base: base,
@@ -236,7 +225,7 @@ contract("Oracle contract", (accounts) => {
             };
         });
         it("Calculates intrinsic for arbritary put options and compares to market", async () => {
-            let tokenU = dai.address;
+            let tokenU = MAINNET_DAI;
             let tokenS = MAINNET_WETH;
             const run = async (amount) => {
                 for (let i = 0; i < amount; i++) {
@@ -255,7 +244,7 @@ contract("Oracle contract", (accounts) => {
 
         it("Calculates intrinsic for arbritary call options and compares to market", async () => {
             let tokenU = MAINNET_WETH;
-            let tokenS = dai.address;
+            let tokenS = MAINNET_DAI;
             const run = async (amount) => {
                 for (let i = 0; i < amount; i++) {
                     let option = generateRandomCallOption();
@@ -294,7 +283,7 @@ contract("Oracle contract", (accounts) => {
             };
         });
         it("Calculates extrinsic premiums for arbritary options parameters", async () => {
-            let tokenU = dai.address;
+            let tokenU = MAINNET_DAI;
             let tokenS = MAINNET_WETH;
             const run = async (amount) => {
                 for (let i = 0; i < amount; i++) {
@@ -325,7 +314,7 @@ contract("Oracle contract", (accounts) => {
 
     describe("Calculation Specific", () => {
         it("Calculates premiums for deribit put series expiring Dec 25", async () => {
-            let tokenU = dai.address;
+            let tokenU = MAINNET_DAI;
             let tokenS = MAINNET_WETH;
             let expiry = "1608897540";
             let volatility = 500;
@@ -387,7 +376,7 @@ contract("Oracle contract", (accounts) => {
 
         it("Calculates premiums for deribit call series expiring Dec 25", async () => {
             let tokenU = MAINNET_WETH;
-            let tokenS = dai.address;
+            let tokenS = MAINNET_DAI;
             let expiry = "1608897540";
             let volatility = 1000;
             let date = new Date(+expiry * 1000).toDateString();

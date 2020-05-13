@@ -348,7 +348,7 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
         // the balance of tokenU and tokenP.
         require(
             IPrimeRedeem(_tokenR).burn(address(this), inTokenR) &&
-            IERC20(_tokenU).transfer(receiver, outTokenU),
+            IERC20(_tokenU).transfer(receiver, outTokenU) == true,
             "ERR_TRANSFER_OUT_FAIL"
         );
 

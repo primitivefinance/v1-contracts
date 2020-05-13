@@ -3,8 +3,10 @@ const truffleAssert = require("truffle-assertions");
 const BN = require("bn.js");
 const PrimeOption = artifacts.require("PrimeOption");
 const PrimeRedeem = artifacts.require("PrimeRedeem");
+const PrimeOptionTest = artifacts.require("PrimeOptionTest");
 const Weth = artifacts.require("WETH9");
 const Dai = artifacts.require("DAI");
+const BadToken = artifacts.require("BadERC20");
 const constants = require("./constants");
 const {
     ERR_ZERO,
@@ -12,8 +14,11 @@ const {
     ERR_BAL_UNDERLYING,
     ERR_NOT_OWNER,
     ERR_PAUSED,
+    ERR_EXPIRED,
+    ERR_TRANSFER_OUT_FAIL,
     ONE_ETHER,
     FIVE_ETHER,
+    HUNDRED_ETHER,
     THOUSAND_ETHER,
 } = constants;
 
@@ -25,7 +30,7 @@ contract("Prime", (accounts) => {
     const Alice = accounts[0];
     const Bob = accounts[1];
 
-    let weth, dai, prime, redeem;
+    let weth, dai, prime, redeem, primeTest;
     let tokenU, tokenS, _tokenU, _tokenS, tokenP, tokenR;
     let base, price, expiry;
 
@@ -173,6 +178,30 @@ contract("Prime", (accounts) => {
             );
         });
 
+        it("should return the correct prime", async () => {
+            let result = await prime.prime();
+            assert.equal(result._tokenU.toString(), tokenU, "Incorrect expiry");
+            assert.equal(result._tokenS.toString(), tokenS, "Incorrect expiry");
+            assert.equal(result._tokenR.toString(), tokenR, "Incorrect expiry");
+            assert.equal(result._base.toString(), base, "Incorrect expiry");
+            assert.equal(result._price.toString(), price, "Incorrect expiry");
+            assert.equal(result._expiry.toString(), expiry, "Incorrect expiry");
+        });
+
+        it("should get the tokens", async () => {
+            let result = await prime.getTokens();
+            assert.equal(result._tokenU.toString(), tokenU, "Incorrect tokenU");
+            assert.equal(result._tokenS.toString(), tokenS, "Incorrect tokenS");
+            assert.equal(result._tokenR.toString(), tokenR, "Incorrect tokenR");
+        });
+
+        it("should get the caches", async () => {
+            let result = await prime.getCaches();
+            assert.equal(result._cacheU.toString(), "0", "Incorrect cacheU");
+            assert.equal(result._cacheS.toString(), "0", "Incorrect cacheS");
+            assert.equal(result._cacheR.toString(), "0", "Incorrect cacheR");
+        });
+
         it("should return the correct initial cacheU", async () => {
             assert.equal(
                 (await prime.cacheU()).toString(),
@@ -242,6 +271,14 @@ contract("Prime", (accounts) => {
                 (await redeem.controller()).toString(),
                 Alice,
                 "Incorrect controller"
+            );
+        });
+
+        it("should return the max draw", async () => {
+            assert.equal(
+                (await prime.maxDraw()).toString(),
+                "0",
+                "Incorrect Max Draw - Should be 0"
             );
         });
 
@@ -760,6 +797,131 @@ contract("Prime", (accounts) => {
                 assertBNEqual(cacheU, balanceU);
                 assertBNEqual(cacheS, balanceS);
                 assertBNEqual(cacheR, balanceR);
+            });
+        });
+
+        describe("test expired", () => {
+            beforeEach(async () => {
+                prime = await PrimeOptionTest.new(
+                    optionName,
+                    optionSymbol,
+                    marketId,
+                    tokenU,
+                    tokenS,
+                    base,
+                    price,
+                    expiry
+                );
+                tokenP = prime.address;
+                redeem = await createRedeem();
+                tokenR = redeem.address;
+                await prime.initTokenR(tokenR);
+                let inTokenU = THOUSAND_ETHER;
+                await _tokenU.mint(Alice, inTokenU);
+                await _tokenU.transfer(tokenP, inTokenU);
+                await prime.mint(Alice);
+                let expired = "1589386232";
+                await prime.setExpiry(expired);
+                assert.equal(await prime.expiry(), expired);
+            });
+
+            it("should close position with just redeem tokens after expiry", async () => {
+                let cache0U = await getCache("u");
+                let cache0S = await getCache("s");
+                let balance0R = await redeem.totalSupply();
+                let balance0U = await getBalance(_tokenU, Alice);
+                let balance0CU = await getBalance(_tokenU, tokenP);
+                let balance0S = await getBalance(_tokenS, tokenP);
+
+                let inTokenR = await redeem.balanceOf(Alice);
+                await redeem.transfer(tokenP, inTokenR);
+                await prime.close(Alice);
+
+                let balance1R = await redeem.totalSupply();
+                let balance1U = await getBalance(_tokenU, Alice);
+                let balance1CU = await getBalance(_tokenU, tokenP);
+                let balance1S = await getBalance(_tokenS, tokenP);
+
+                let deltaR = balance1R.sub(balance0R);
+                let deltaU = balance1U.sub(balance0U);
+                let deltaCU = balance1CU.sub(balance0CU);
+                let deltaS = balance1S.sub(balance0S);
+
+                assertBNEqual(deltaR, inTokenR.neg());
+                assertBNEqual(deltaU, cache0U);
+                assertBNEqual(deltaCU, cache0U.neg());
+                assertBNEqual(deltaS, cache0S);
+            });
+
+            it("revert when calling mint on an expired prime", async () => {
+                await truffleAssert.reverts(prime.mint(Alice), ERR_EXPIRED);
+            });
+
+            it("revert when calling swap on an expired prime", async () => {
+                await truffleAssert.reverts(prime.swap(Alice), ERR_EXPIRED);
+            });
+        });
+
+        describe("test bad ERC20", () => {
+            beforeEach(async () => {
+                _tokenU = await BadToken.new(
+                    "Bad ERC20 Doesnt Return Bools",
+                    "BAD"
+                );
+                tokenU = _tokenU.address;
+                tokenU = prime = await PrimeOptionTest.new(
+                    optionName,
+                    optionSymbol,
+                    marketId,
+                    tokenU,
+                    tokenS,
+                    base,
+                    price,
+                    expiry
+                );
+                tokenP = prime.address;
+                redeem = await createRedeem();
+                tokenR = redeem.address;
+                await prime.initTokenR(tokenR);
+                let inTokenU = THOUSAND_ETHER;
+                await _tokenU.mint(Alice, inTokenU);
+                await _tokenU.transfer(tokenP, inTokenU);
+                await prime.mint(Alice);
+            });
+
+            it("should revert on swap because transfer does not return a boolean", async () => {
+                let inTokenP = HUNDRED_ETHER;
+                let inTokenS = toWei("0.5"); // 100 ether (tokenU:base) / 200 (tokenS:price) = 0.5 tokenS
+                await _tokenS.transfer(tokenP, inTokenS);
+                await prime.transfer(tokenP, inTokenP);
+                await truffleAssert.reverts(
+                    prime.swap(Alice),
+                    ERR_TRANSFER_OUT_FAIL
+                );
+            });
+
+            it("should revert on redeem because transfer does not return a boolean", async () => {
+                // no way to swap, because it reverts, so we need to send tokenS and call update()
+                let inTokenS = toWei("0.5"); // 100 ether (tokenU:base) / 200 (tokenS:price) = 0.5 tokenS
+                await _tokenS.transfer(tokenP, inTokenS);
+                await prime.update();
+                await redeem.transfer(tokenP, inTokenS);
+                await truffleAssert.reverts(
+                    prime.redeem(Alice),
+                    ERR_TRANSFER_OUT_FAIL
+                );
+            });
+
+            it("should revert on close because transfer does not return a boolean", async () => {
+                // no way to swap, because it reverts, so we need to send tokenS and call update()
+                let inTokenP = HUNDRED_ETHER;
+                let inTokenR = toWei("0.5"); // 100 ether (tokenU:base) / 200 (tokenS:price) = 0.5 tokenS
+                await redeem.transfer(tokenP, inTokenR);
+                await prime.transfer(tokenP, inTokenP);
+                await truffleAssert.reverts(
+                    prime.close(Alice),
+                    ERR_TRANSFER_OUT_FAIL
+                );
             });
         });
     });
