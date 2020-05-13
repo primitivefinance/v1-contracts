@@ -92,6 +92,15 @@ Feeds a price, the _premium_, to the Prime Pool. The Primes are sold from the po
 
 # Testing
 
+## Use Docker
+
+docker build -t primitive-contracts
+docker run -it --name primitive primitive
+npm run start (???)
+npm run test  (???)
+
+## Or...
+
 #### Steps to testing using the buidler EVM
 
 Step 1
