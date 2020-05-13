@@ -1103,7 +1103,7 @@ contract UniExchange is ERC20 {
    * @return The amount of UNI minted.
    */
   function addLiquidity(uint256 min_liquidity, uint256 max_tokens, uint256 deadline) public payable returns (uint256) {
-    require(deadline > block.timestamp && max_tokens > 0 && msg.value > 0, 'UniswapExchange#addLiquidity: INVALID_ARGUMENT');
+    require(deadline > block.timestamp && max_tokens > 0 && msg.value > 0, "UniswapExchange#addLiquidity: INVALID_ARGUMENT");
     uint256 total_liquidity = _totalSupply;
 
     if (total_liquidity > 0) {
