@@ -38,6 +38,88 @@ Our development environment consists of the following:
 | Active | Prime Trader | 0xff5C103d76586BB55bb33CE01f3dEc9cEe55617f | [Etherscan](https://etherscan.io/address/0xff5c103d76586bb55bb33ce01f3dec9cee55617f) |
 | Paused | Prime Pool   | 0xf7a7126C6eB9c2cC0dB9F936bA4d0D5685662830 | [Etherscan](https://etherscan.io/address/0xf7a7126C6eB9c2cC0dB9F936bA4d0D5685662830) |
 
+# Documentation
+
+[Documentation](https://docs.primitive.finance)
+
+# Testing
+
+## Use Docker
+
+```
+docker build -t primitive-contracts
+docker run -it --name primitive primitive
+
+npm run test
+npm run coverage
+```
+
+## Or...
+
+#### Steps to testing using the buidler EVM
+
+Step 1
+
+    npm run clean-install
+
+Step 2
+
+    npm run compile
+
+Step 3
+
+    npm run test
+
+#### Steps to testing using the ganache-cli on forked mainnet
+
+Step 1
+
+    npm i
+
+Step 2
+
+    npm compile
+
+Step 3
+
+    npm start:f-mainnet
+
+Step 4
+
+    npm test:f-mainnet
+
+#### Coverage
+
+For coverage, we use buidler's plugin for solidity-coverage.
+
+    npm run coverage
+
+#### Linting
+
+For linting you can run this command which uses the solium linter:
+
+    npm run lint
+
+Solium can also fix some linting errors which can be checked with this command:
+
+    npm run lint:fix
+
+#### Static analysis
+
+For static analysis you can run the contracts through slither with this command:
+
+    npm slither
+
+# Etherscan Addresses
+
+[PrimeOption - Primitive](https://etherscan.io/address/0xced83f96aa38bfe34617ea1f699f9f0022548f61)
+
+[PrimeRedeem - Primitive](https://etherscan.io/address/0xb0a4d596939715f203fa9e907935938fedea715f)
+
+[PrimeTrader - Extension](https://etherscan.io/address/0xff5c103d76586bb55bb33ce01f3dec9cee55617f)
+
+[PrimePool - Extension](https://etherscan.io/address/0xf7a7126C6eB9c2cC0dB9F936bA4d0D5685662830)
+
 ## Primitives
 
 ### Prime Option
@@ -85,87 +167,6 @@ This is a liquidity pool contract that has the logic to (1) Accept underlying to
 ### Prime Oracle
 
 Feeds a price, the _premium_, to the Prime Pool. The Primes are sold from the pool to buyers at this price given by the oracle.
-
-# Documentation
-
-[Documentation](https://docs.primitive.finance)
-
-# Testing
-
-## Use Docker
-
-```
-docker build -t primitive-contracts
-docker run -it --name primitive primitive
-
-npm start > /dev/null &
-npm run test
-npm run coverage
-```
-
-## Or...
-
-#### Steps to testing using the buidler EVM
-
-Step 1
-
-    npm i
-
-Step 2
-
-    npm compile
-
-Step 3
-
-    npm start
-
-Step 4
-
-    npm test
-
-#### Steps to testing using the ganache-cli on forked mainnet
-
-Step 1
-
-    npm i
-
-Step 2
-
-    npm compile
-
-Step 3
-
-    npm start:f-mainnet
-
-Step 4
-
-    npm test:f-mainnet
-
-#### Linting
-
-For linting you can run this command which uses the solium linter:
-
-    npm run lint
-
-Solium can also fix some linting errors which can be checked with this command:
-
-    npm run lint:fix
-
-#### Static analysis
-
-For static analysis you can run the contracts through slither with this command:
-
-    npm slither
-
-# Etherscan Addresses
-
-[PrimeOption - Primitive](https://etherscan.io/address/0xced83f96aa38bfe34617ea1f699f9f0022548f61)
-
-[PrimeRedeem - Primitive](https://etherscan.io/address/0xb0a4d596939715f203fa9e907935938fedea715f)
-
-[PrimeTrader - Extension](https://etherscan.io/address/0xff5c103d76586bb55bb33ce01f3dec9cee55617f)
-
-[PrimePool - Extension](https://etherscan.io/address/0xf7a7126C6eB9c2cC0dB9F936bA4d0D5685662830)
 
 # Contributing and Discussion
 
