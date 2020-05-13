@@ -98,8 +98,9 @@ Feeds a price, the _premium_, to the Prime Pool. The Primes are sold from the po
 docker build -t primitive-contracts
 docker run -it --name primitive primitive
 
-npm run start & (???)
-npm run test  (???)
+npm start > /dev/null &
+npm run test
+npm run coverage
 ```
 
 ## Or...
