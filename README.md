@@ -132,11 +132,11 @@ Step 4
 
 For linting you can run this command which uses the solium linter:
 
-    npm lint
+    npm run lint
 
 Solium can also fix some linting errors which can be checked with this command:
 
-    npm lint:fix
+    npm run lint:fix
 
 #### Static analysis
 

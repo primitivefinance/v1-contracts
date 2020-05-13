@@ -485,12 +485,10 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         uint256 redeem = inTokenP.mul(price).div(base);
 
         // Transfer redeem to prime token optimistically.
-        (bool success) = IERC20(tokenR).transfer(tokenP, redeem);
-        require(success, "ERR_TRANSFER_REDEEM_OUT");
+        IERC20(tokenR).transfer(tokenP, redeem);
 
         // Transfer prime token to prime contract optimistically.
-        (success) = IERC20(_tokenP).transferFrom(msg.sender, tokenP, inTokenP);
-        require(success, "ERR_TRANSFER_IN");
+        IERC20(_tokenP).transferFrom(msg.sender, tokenP, inTokenP);
         
         // Call the close function to have the transferred prime and redeem tokens burned.
         // Returns tokenU.
@@ -498,7 +496,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
 
         // Pay out the total premium to the seller.
         emit Sell(msg.sender, inTokenP, premium);
-        return success && IERC20(tokenU).transfer(msg.sender, premium);
+        return IERC20(tokenU).transfer(msg.sender, premium);
     }
 
     /**
