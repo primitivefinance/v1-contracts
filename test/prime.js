@@ -15,11 +15,12 @@ const {
     ERR_NOT_OWNER,
     ERR_PAUSED,
     ERR_EXPIRED,
-    ERR_TRANSFER_OUT_FAIL,
+    ERR_NOT_VALID,
     ONE_ETHER,
     FIVE_ETHER,
     HUNDRED_ETHER,
     THOUSAND_ETHER,
+    ZERO_ADDRESS,
 } = constants;
 
 contract("Prime", (accounts) => {
@@ -105,7 +106,66 @@ contract("Prime", (accounts) => {
         };
     });
 
+    describe("Prime Redeem", () => {
+        it("should return the correct controller", async () => {
+            assert.equal(
+                (await redeem.controller()).toString(),
+                tokenP,
+                "Incorrect controller"
+            );
+        });
+        it("should return the correct name", async () => {
+            assert.equal(
+                (await redeem.name()).toString(),
+                redeemName,
+                "Incorrect name"
+            );
+        });
+        it("should return the correct symbol", async () => {
+            assert.equal(
+                (await redeem.symbol()).toString(),
+                redeemSymbol,
+                "Incorrect symbol"
+            );
+        });
+        it("should return the correct tokenP", async () => {
+            assert.equal(
+                (await redeem.tokenP()).toString(),
+                tokenP,
+                "Incorrect tokenP"
+            );
+        });
+        it("should return the correct tokenS", async () => {
+            assert.equal(
+                (await redeem.tokenS()).toString(),
+                tokenS,
+                "Incorrect tokenS"
+            );
+        });
+        it("should revert on mint if msg.sender is not prime contract", async () => {
+            await truffleAssert.reverts(redeem.mint(Alice, 10), ERR_NOT_VALID);
+        });
+        it("should revert on burn if msg.sender is not prime contract", async () => {
+            await truffleAssert.reverts(redeem.burn(Alice, 10), ERR_NOT_VALID);
+        });
+    });
     describe("Prime Option", () => {
+        it("should revert if tokenU or tokenS is address zero", async () => {
+            await truffleAssert.reverts(
+                PrimeOption.new(
+                    optionName,
+                    optionSymbol,
+                    marketId,
+                    ZERO_ADDRESS,
+                    ZERO_ADDRESS,
+                    base,
+                    price,
+                    expiry
+                ),
+                "ERR_ADDRESS_ZERO"
+            );
+        });
+
         it("should return the correct name", async () => {
             assert.equal(
                 (await prime.name()).toString(),
@@ -673,6 +733,20 @@ contract("Prime", (accounts) => {
                 await truffleAssert.reverts(prime.close(Alice), ERR_ZERO);
             });
 
+            it("revert if not enough tokenP was sent into contract", async () => {
+                let inTokenP = ONE_ETHER;
+                await mint(inTokenP);
+                let inTokenR = new BN(inTokenP)
+                    .mul(new BN(price))
+                    .div(new BN(base));
+                await redeem.transfer(tokenP, inTokenR, { from: Alice });
+                await prime.transfer(tokenP, toWei("0.5"), { from: Alice });
+                await truffleAssert.reverts(
+                    prime.close(Alice),
+                    ERR_BAL_UNDERLYING
+                );
+            });
+
             // Interesting, the two 0s at the end of this are necessary. If they are not 0s, the
             // returned value will be unequal because the accuracy of the mint is only 10^16.
             // This should be verified further.
@@ -866,9 +940,14 @@ contract("Prime", (accounts) => {
             beforeEach(async () => {
                 _tokenU = await BadToken.new(
                     "Bad ERC20 Doesnt Return Bools",
-                    "BAD"
+                    "BADU"
+                );
+                _tokenS = await BadToken.new(
+                    "Bad ERC20 Doesnt Return Bools",
+                    "BADS"
                 );
                 tokenU = _tokenU.address;
+                tokenS = _tokenS.address;
                 tokenU = prime = await PrimeOptionTest.new(
                     optionName,
                     optionSymbol,
@@ -885,6 +964,7 @@ contract("Prime", (accounts) => {
                 await prime.initTokenR(tokenR);
                 let inTokenU = THOUSAND_ETHER;
                 await _tokenU.mint(Alice, inTokenU);
+                await _tokenS.mint(Alice, inTokenU);
                 await _tokenU.transfer(tokenP, inTokenU);
                 await prime.mint(Alice);
             });
@@ -894,10 +974,7 @@ contract("Prime", (accounts) => {
                 let inTokenS = toWei("0.5"); // 100 ether (tokenU:base) / 200 (tokenS:price) = 0.5 tokenS
                 await _tokenS.transfer(tokenP, inTokenS);
                 await prime.transfer(tokenP, inTokenP);
-                await truffleAssert.reverts(
-                    prime.swap(Alice),
-                    ERR_TRANSFER_OUT_FAIL
-                );
+                await truffleAssert.reverts(prime.swap(Alice));
             });
 
             it("should revert on redeem because transfer does not return a boolean", async () => {
@@ -906,10 +983,7 @@ contract("Prime", (accounts) => {
                 await _tokenS.transfer(tokenP, inTokenS);
                 await prime.update();
                 await redeem.transfer(tokenP, inTokenS);
-                await truffleAssert.reverts(
-                    prime.redeem(Alice),
-                    ERR_TRANSFER_OUT_FAIL
-                );
+                await truffleAssert.reverts(prime.redeem(Alice));
             });
 
             it("should revert on close because transfer does not return a boolean", async () => {
@@ -918,10 +992,7 @@ contract("Prime", (accounts) => {
                 let inTokenR = toWei("0.5"); // 100 ether (tokenU:base) / 200 (tokenS:price) = 0.5 tokenS
                 await redeem.transfer(tokenP, inTokenR);
                 await prime.transfer(tokenP, inTokenP);
-                await truffleAssert.reverts(
-                    prime.close(Alice),
-                    ERR_TRANSFER_OUT_FAIL
-                );
+                await truffleAssert.reverts(prime.close(Alice));
             });
         });
     });

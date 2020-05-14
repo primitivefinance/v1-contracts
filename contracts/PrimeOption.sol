@@ -45,7 +45,7 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
         public
         ERC20(name, symbol)
     {
-        require(tokenU != address(this) && tokenS != address(this), "ERR_SELF");
+        require(tokenU != address(0) && tokenS != address(0), "ERR_ADDRESS_ZERO");
         marketId = _marketId;
         factory = msg.sender;
         option = Instruments.PrimeOption(
@@ -178,7 +178,7 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
         outTokenR = inTokenU.mul(option.price).div(option.base);
 
         // Mint the tokens.
-        require(IPrimeRedeem(tokenR).mint(receiver, outTokenR), "ERR_BURN_FAIL");
+        IPrimeRedeem(tokenR).mint(receiver, outTokenR);
         _mint(receiver, inTokenU);
 
         // Update the caches.
@@ -348,7 +348,7 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
         // the balance of tokenU and tokenP.
         require(
             IPrimeRedeem(_tokenR).burn(address(this), inTokenR) &&
-            IERC20(_tokenU).transfer(receiver, outTokenU) == true,
+            IERC20(_tokenU).transfer(receiver, outTokenU),
             "ERR_TRANSFER_OUT_FAIL"
         );
 

@@ -6,6 +6,8 @@ module.exports = {
         "./test/UniFactory.sol",
         "./test/UniFactoryLike.sol",
         "./oracle.js",
+        "./tokens",
+        "./test",
         "./forked-mainnet/pool-mainnet.js",
     ],
     providerOptions: {
