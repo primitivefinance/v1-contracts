@@ -324,15 +324,6 @@ contract("Pool", (accounts) => {
         });
     });
 
-    /* describe("receive", () => {
-        it("revert if sending ether to pool as not WETH contract", async () => {
-            await truffleAssert.reverts(
-                pool.send({ from: Alice, value: ONE_ETHER }),
-                "ERR_NOT_WETH"
-            );
-        });
-    }); */
-
     describe("deposit", () => {
         before(async () => {
             deposit = async (inTokenU) => {

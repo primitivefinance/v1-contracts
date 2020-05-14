@@ -670,4 +670,69 @@ contract("Trader", (accounts) => {
             );
         });
     });
+
+    describe("verifyBalance", () => {
+        beforeEach(async () => {
+            _tokenU = await BadToken.new(
+                "Bad ERC20 Doesnt Return Bools",
+                "BADU"
+            );
+            _tokenS = await BadToken.new(
+                "Bad ERC20 Doesnt Return Bools",
+                "BADS"
+            );
+            tokenU = _tokenU.address;
+            tokenS = _tokenS.address;
+            tokenU = prime = await PrimeOptionTest.new(
+                optionName,
+                optionSymbol,
+                marketId,
+                tokenU,
+                tokenS,
+                base,
+                1,
+                expiry
+            );
+            tokenP = prime.address;
+            redeem = await PrimeRedeem.new(
+                redeemName,
+                redeemSymbol,
+                tokenP,
+                tokenS
+            );
+            tokenR = redeem.address;
+            await prime.initTokenR(tokenR);
+            let inTokenU = THOUSAND_ETHER;
+            await _tokenU.mint(Alice, inTokenU);
+            await _tokenS.mint(Alice, inTokenU);
+            await _tokenU.transfer(tokenP, inTokenU);
+            await prime.mint(Alice);
+        });
+
+        it("should revert on swap because inTokenS is 0", async () => {
+            await _tokenS.transfer(Bob, await _tokenS.balanceOf(Alice), {
+                from: Alice,
+            });
+            await truffleAssert.reverts(
+                trader.safeSwap(tokenP, 1, Alice),
+                ERR_BAL_STRIKE
+            );
+        });
+
+        it("should revert on close because inTokenR is 0", async () => {
+            await redeem.transfer(Bob, await redeem.balanceOf(Alice), {
+                from: Alice,
+            });
+            await truffleAssert.reverts(
+                trader.safeClose(tokenP, 1, Alice),
+                ERR_BAL_REDEEM
+            );
+        });
+        it("should revert on unWind because inTokenR is 0", async () => {
+            let expired = "1589386232";
+            await prime.setExpiry(expired);
+            assert.equal(await prime.expiry(), expired);
+            await truffleAssert.reverts(trader.safeUnwind(tokenP, 1, Alice));
+        });
+    });
 });
