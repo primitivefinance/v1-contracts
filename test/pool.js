@@ -22,10 +22,13 @@ const {
     ERR_BAL_UNDERLYING,
     ERR_BAL_PULP,
     ERR_BAL_PRIME,
+    ERR_ZERO_LIQUIDITY,
+    ERR_PAUSED,
     HUNDRETH,
     ONE_ETHER,
     FIVE_ETHER,
     TEN_ETHER,
+    HUNDRED_ETHER,
     THOUSAND_ETHER,
     MILLION_ETHER,
     MAINNET_DAI,
@@ -68,7 +71,8 @@ contract("Pool", (accounts) => {
         oracle,
         pool,
         factory,
-        exchange;
+        exchange,
+        oracleLike;
 
     const assertBNEqual = (actualBN, expectedBN, message) => {
         assert.equal(actualBN.toString(), expectedBN.toString(), message);
@@ -131,7 +135,7 @@ contract("Pool", (accounts) => {
         await dai.mint(Alice, toWei("1000"));
 
         // init oracle
-        let oracleLike = await OracleLike.new();
+        oracleLike = await OracleLike.new();
         await oracleLike.setUnderlyingPrice(5e15);
 
         await weth.deposit({
@@ -216,6 +220,11 @@ contract("Pool", (accounts) => {
             from: Alice,
         });
 
+        getEthBalance = async (address) => {
+            let bal = new BN(await web3.eth.getBalance(address));
+            return bal;
+        };
+
         getBalance = async (token, address) => {
             let bal = new BN(await token.balanceOf(address));
             return bal;
@@ -275,7 +284,54 @@ contract("Pool", (accounts) => {
                 (await prime.tokenS()).toUpperCase()
             );
         });
+        it("should return the correct factory address", async () => {
+            expect((await pool.factory()).toString().toUpperCase()).to.be.eq(
+                factory.address.toUpperCase()
+            );
+        });
+        it("should return the initialized volatility", async () => {
+            expect((await pool.volatility()).toString()).to.be.eq("100");
+        });
     });
+
+    describe("kill", () => {
+        it("revert if msg.sender is not owner", async () => {
+            await truffleAssert.reverts(
+                pool.kill({ from: Bob }),
+                "Ownable: caller is not the owner"
+            );
+        });
+
+        it("should pause contract", async () => {
+            await pool.kill();
+            assert.equal(await pool.paused(), true);
+        });
+
+        it("should revert mint function call while paused contract", async () => {
+            await truffleAssert.reverts(pool.deposit(ONE_ETHER), ERR_PAUSED);
+        });
+
+        it("should revert swap function call while paused contract", async () => {
+            await truffleAssert.reverts(
+                pool.depositEth({ value: ONE_ETHER }),
+                ERR_PAUSED
+            );
+        });
+
+        it("should unpause contract", async () => {
+            await pool.kill();
+            assert.equal(await pool.paused(), false);
+        });
+    });
+
+    /* describe("receive", () => {
+        it("revert if sending ether to pool as not WETH contract", async () => {
+            await truffleAssert.reverts(
+                pool.send({ from: Alice, value: ONE_ETHER }),
+                "ERR_NOT_WETH"
+            );
+        });
+    }); */
 
     describe("deposit", () => {
         before(async () => {
@@ -340,6 +396,24 @@ contract("Pool", (accounts) => {
             await truffleAssert.reverts(
                 pool.deposit(MILLION_ETHER),
                 ERR_BAL_UNDERLYING
+            );
+        });
+
+        // interesting, depositing the min liquidity breaks the next tests (this is a single state pool)
+        /* it("should revert if outTokenPULP is 0", async () => {
+            await _tokenU.mint(Alice, THOUSAND_ETHER);
+            await _tokenU.transfer(pool.address, THOUSAND_ETHER, {
+                from: Alice,
+            });
+            let min = await pool.MIN_LIQUIDITY();
+            await pool.deposit(min);
+            await truffleAssert.reverts(pool.deposit(min), ERR_ZERO_LIQUIDITY);
+        });
+ */
+        it("should revert on depositEth if tokenU is not WETH", async () => {
+            await truffleAssert.reverts(
+                pool.depositEth({ value: ONE_ETHER }),
+                "ERR_NOT_WETH"
             );
         });
 
@@ -474,6 +548,20 @@ contract("Pool", (accounts) => {
         it("should revert if inTokenU is 0", async () => {
             await truffleAssert.reverts(pool.withdraw(0), ERR_BAL_PULP);
         });
+
+        /* it("should revert if outTokenU is 0 but the balanceU is greater than 0", async () => {
+            await _tokenU.mint(Alice, THOUSAND_ETHER);
+            await pool.deposit(THOUSAND_ETHER);
+            await _tokenU.mint(Alice, THOUSAND_ETHER);
+            await _tokenU.transfer(pool.address, THOUSAND_ETHER);
+            await truffleAssert.reverts(pool.withdraw(1), ERR_BAL_UNDERLYING);
+        });
+
+        it("should revert if removing liquidity and maxdraw is less than required draw", async () => {
+            await _tokenU.mint(Alice, THOUSAND_ETHER);
+            await pool.deposit(THOUSAND_ETHER);
+            await truffleAssert.reverts(pool.withdraw(1), ERR_BAL_UNDERLYING);
+        }); */
 
         it("should withdraw tokenU by burning tokenPULP", async () => {
             const run = async (runs) => {
@@ -801,6 +889,165 @@ contract("Pool", (accounts) => {
             };
 
             await run(10);
+        });
+    });
+
+    describe("depositEth", () => {
+        before(async () => {
+            _tokenU = weth;
+            _tokenS = dai;
+            tokenU = _tokenU.address;
+            tokenS = _tokenS.address;
+            trader = await PrimeTrader.new(weth.address);
+            prime = await PrimeOption.new(
+                optionName,
+                optionSymbol,
+                marketId,
+                tokenU,
+                tokenS,
+                base,
+                price,
+                expiry
+            );
+            tokenP = prime.address;
+            redeem = await PrimeRedeem.new(
+                redeemName,
+                redeemSymbol,
+                prime.address,
+                tokenS
+            );
+
+            // Setup prime oracle and feed for dai.
+            oracle = await PrimeOracle.new(oracleLike.address);
+            await oracle.addFeed(tokenU);
+
+            pool = await PrimePool.new(
+                weth.address,
+                prime.address,
+                oracle.address,
+                factory.address,
+                poolName,
+                poolSymbol
+            );
+            tokenPULP = pool.address;
+            await prime.initTokenR(redeem.address);
+
+            await dai.approve(pool.address, MILLION_ETHER, {
+                from: Alice,
+            });
+            await weth.approve(pool.address, MILLION_ETHER, {
+                from: Alice,
+            });
+            await dai.approve(trader.address, MILLION_ETHER, {
+                from: Alice,
+            });
+            await weth.approve(trader.address, MILLION_ETHER, {
+                from: Alice,
+            });
+            await prime.approve(trader.address, MILLION_ETHER, {
+                from: Alice,
+            });
+
+            await prime.approve(pool.address, MILLION_ETHER, {
+                from: Alice,
+            });
+
+            await prime.approve(prime.address, MILLION_ETHER, {
+                from: Alice,
+            });
+            depositEth = async (inTokenU) => {
+                inTokenU = new BN(inTokenU);
+                let balance0U = await getEthBalance(Alice);
+                let balance0P = await getTokenBalance(pool, Alice);
+                let balance0CU = await getBalance(_tokenU, pool.address);
+                let balance0TS = await getTotalSupply();
+                let balance0TP = await getTotalPoolBalance();
+
+                let liquidity = calculateAddLiquidity(
+                    inTokenU,
+                    balance0TS,
+                    balance0TP
+                );
+
+                if (balance0U.lt(inTokenU)) {
+                    return;
+                }
+
+                let depo = await pool.depositEth({
+                    from: Alice,
+                    value: inTokenU,
+                });
+
+                truffleAssert.eventEmitted(depo, "Deposit", (ev) => {
+                    return (
+                        expect(ev.from).to.be.eq(Alice) &&
+                        expect(ev.inTokenU.toString()).to.be.eq(
+                            inTokenU.toString()
+                        ) &&
+                        expect(ev.outTokenPULP.toString()).to.be.eq(
+                            liquidity.toString()
+                        )
+                    );
+                });
+
+                let balance1U = await getEthBalance(Alice);
+                let balance1P = await getTokenBalance(pool, Alice);
+                let balance1CU = await getBalance(_tokenU, pool.address);
+                let balance1TS = await getTotalSupply();
+                let balance1TP = await getTotalPoolBalance();
+
+                let deltaU = balance1U.sub(balance0U);
+                let deltaP = balance1P.sub(balance0P);
+                let deltaCU = balance1CU.sub(balance0CU);
+                let deltaTS = balance1TS.sub(balance0TS);
+                let deltaTP = balance1TP.sub(balance0TP);
+
+                /* assertBNEqual(deltaU, inTokenU.neg()); */
+                let slippage = new BN(MAX_SLIPPAGE);
+                let maxValue = inTokenU.add(inTokenU.div(slippage));
+                let minValue = inTokenU.sub(inTokenU.div(slippage));
+                expect(deltaU).to.be.a.bignumber.that.is.at.least(
+                    maxValue.neg()
+                );
+                expect(deltaU).to.be.a.bignumber.that.is.at.most(
+                    minValue.neg()
+                );
+                assertBNEqual(deltaP, liquidity);
+                assertBNEqual(deltaCU, inTokenU);
+                assertBNEqual(deltaTS, liquidity);
+                assertBNEqual(deltaTP, inTokenU);
+            };
+        });
+
+        it("should revert if inTokenU is below the min liquidity", async () => {
+            await truffleAssert.reverts(
+                pool.depositEth({ value: 1 }),
+                ERR_BAL_UNDERLYING
+            );
+        });
+
+        it("should revert if outTokenPULP is 0", async () => {
+            await _tokenU.deposit({ from: Alice, value: HUNDRED_ETHER });
+            await _tokenU.transfer(pool.address, HUNDRED_ETHER, {
+                from: Alice,
+            });
+            let min = await pool.MIN_LIQUIDITY();
+            await pool.deposit(min);
+            await truffleAssert.reverts(
+                pool.depositEth({ value: min }),
+                ERR_ZERO_LIQUIDITY
+            );
+        });
+
+        it("should depositEth tokenU and receive tokenPULP", async () => {
+            const run = async (runs) => {
+                for (let i = 0; i < runs; i++) {
+                    let amt = Math.floor(TEN_ETHER * Math.random()).toString();
+                    await depositEth(amt);
+                }
+            };
+
+            await run(1);
         });
     });
 });

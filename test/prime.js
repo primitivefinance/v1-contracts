@@ -31,7 +31,7 @@ contract("Prime", (accounts) => {
     const Alice = accounts[0];
     const Bob = accounts[1];
 
-    let weth, dai, prime, redeem, primeTest;
+    let weth, dai, prime, redeem;
     let tokenU, tokenS, _tokenU, _tokenS, tokenP, tokenR;
     let base, price, expiry;
 
@@ -110,7 +110,7 @@ contract("Prime", (accounts) => {
         it("should return the correct controller", async () => {
             assert.equal(
                 (await redeem.controller()).toString(),
-                tokenP,
+                Alice,
                 "Incorrect controller"
             );
         });
@@ -948,7 +948,7 @@ contract("Prime", (accounts) => {
                 );
                 tokenU = _tokenU.address;
                 tokenS = _tokenS.address;
-                tokenU = prime = await PrimeOptionTest.new(
+                prime = await PrimeOptionTest.new(
                     optionName,
                     optionSymbol,
                     marketId,

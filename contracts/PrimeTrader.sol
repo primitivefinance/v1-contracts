@@ -124,10 +124,7 @@ contract PrimeTrader is ReentrancyGuard {
             amount,
             "ERR_BAL_STRIKE"
         );
-        require(
-            IERC20(tokenR).transferFrom(msg.sender, tokenP, amount),
-            "ERR_TRANSFER_IN_FAIL"
-        );
+        IERC20(tokenR).transferFrom(msg.sender, tokenP, amount);
         (inTokenR) = IPrime(tokenP).redeem(receiver);
         emit Redeem(msg.sender, inTokenR);
     }
@@ -165,9 +162,8 @@ contract PrimeTrader is ReentrancyGuard {
             "ERR_BAL_PRIME"
         );
 
-        (bool inTransferR) = IERC20(tokenR).transferFrom(msg.sender, tokenP, inTokenR);
-        (bool inTransferP) = IPrime(tokenP).transferFrom(msg.sender, tokenP, amount);
-        require(inTransferR && inTransferP, "ERR_TRANSFER_IN_FAIL");
+        IERC20(tokenR).transferFrom(msg.sender, tokenP, inTokenR);
+        IPrime(tokenP).transferFrom(msg.sender, tokenP, amount);
         (inTokenR, inTokenP, outTokenU) = IPrime(tokenP).close(receiver);
         emit Close(msg.sender, inTokenP);
     }
@@ -199,8 +195,7 @@ contract PrimeTrader is ReentrancyGuard {
             "ERR_BAL_REDEEM"
         );
 
-        (bool inTransferR) = IERC20(tokenR).transferFrom(msg.sender, tokenP, inTokenR);
-        require(inTransferR, "ERR_TRANSFER_IN_FAIL");
+        IERC20(tokenR).transferFrom(msg.sender, tokenP, inTokenR);
         (inTokenR, inTokenP, outTokenU) = IPrime(tokenP).close(receiver);
         emit Close(msg.sender, inTokenP);
     }

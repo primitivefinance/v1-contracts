@@ -22,7 +22,7 @@ const LOG_INTRINSIC = true;
 const LOG_EXTRINSIC = false;
 const LOG_SPECIFIC = true;
 
-contract("Oracle contract", (accounts) => {
+contract("Oracle contract - mainnet", (accounts) => {
     let oracle, dai;
 
     before(async () => {

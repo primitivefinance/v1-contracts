@@ -120,7 +120,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         // Require inTokenUs greater than 0 and the msg.sender to have the inTokenU in the params.
         require(
             IERC20(tokenU).balanceOf(msg.sender) >= inTokenU &&
-            inTokenU > MIN_LIQUIDITY,
+            inTokenU >= MIN_LIQUIDITY,
             "ERR_BAL_UNDERLYING"
         );
 
@@ -146,12 +146,16 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         // Save in memory for gas savings.
         address _tokenP = tokenP;
         address tokenU = IPrime(_tokenP).tokenU();
+        require(
+            msg.value >= MIN_LIQUIDITY,
+            "ERR_BAL_UNDERLYING"
+        );
 
         // To deposit ETH, tokenU needs to be WETH.
         require(tokenU == WETH, "ERR_NOT_WETH");
 
         // Add liquidity to pool and push tokenPULP to depositor.
-        (outTokenPULP) = _addLiquidity(tokenU, msg.sender, msg.value);
+        (outTokenPULP) = _addLiquidity(_tokenP, msg.sender, msg.value);
 
         // Assume we hold the tokenU asset until it is utilized in minting a Prime.
         IWETH(WETH).deposit.value(msg.value)();
@@ -225,7 +229,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         // Will revert in cases that inTokenPULP * total balance < total supply of tokenPULP.
         uint256 outTokenU = inTokenPULP.mul(totalBalance).div(_totalSupply);
         if(balanceU >= outTokenU) {
-            require(balanceU >= outTokenU && outTokenU > 0, "ERR_BAL_UNDERLYING");
+            require(outTokenU > 0, "ERR_BAL_UNDERLYING");
             // Burn tokenPULP.
             _burn(msg.sender, inTokenPULP);
 
