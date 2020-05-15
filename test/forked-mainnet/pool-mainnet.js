@@ -135,7 +135,7 @@ contract("Pool - forked-mainnet", (accounts) => {
             value: FIVE_ETHER,
         });
 
-        _tokenU = DAI;
+        /* _tokenU = DAI;
         _tokenS = WETH;
         tokenU = MAINNET_DAI;
         tokenS = MAINNET_WETH;
@@ -148,7 +148,23 @@ contract("Pool - forked-mainnet", (accounts) => {
         redeemSymbol = "REDEEM";
         base = toWei("200");
         price = toWei("1");
-        expiry = "1590868800"; // May 30, 2020, 8PM UTC
+        expiry = "1590868800"; // May 30, 2020, 8PM UTC */
+
+        // test for $300 ETH CALL EXPIRING
+        _tokenU = WETH;
+        _tokenS = DAI;
+        tokenU = MAINNET_WETH;
+        tokenS = MAINNET_DAI;
+        marketId = 1;
+        poolName = "ETH Short Call Pool LP";
+        poolSymbol = "PULP";
+        optionName = "ETH Call 300 DAI Expiring June 26 2020";
+        optionSymbol = "PRIME";
+        redeemName = "ETH Call Redeemable Token";
+        redeemSymbol = "REDEEM";
+        base = toWei("1");
+        price = toWei("200");
+        expiry = "1593129600"; // June 26, 2020, 0:00:00 UTC
 
         trader = await PrimeTrader.new(MAINNET_WETH);
         prime = await PrimeOption.new(
@@ -197,6 +213,9 @@ contract("Pool - forked-mainnet", (accounts) => {
             from: Alice,
         });
         await prime.approve(trader.address, MILLION_ETHER, {
+            from: Alice,
+        });
+        await prime.approve(pool.address, MILLION_ETHER, {
             from: Alice,
         });
 
@@ -252,11 +271,6 @@ contract("Pool - forked-mainnet", (accounts) => {
         it("should return the correct oracle address", async () => {
             expect((await pool.oracle()).toString().toUpperCase()).to.be.eq(
                 oracle.address.toUpperCase()
-            );
-        });
-        it("should return the correct tokenS address", async () => {
-            expect((await pool.WETH()).toString().toUpperCase()).to.be.eq(
-                (await prime.tokenS()).toUpperCase()
             );
         });
     });
@@ -429,7 +443,7 @@ contract("Pool - forked-mainnet", (accounts) => {
                 console.log("CONTRACT UNUTILIZED", unutilized1.toString());
                 console.log("DELTA ACTUAL", deltaTP.toString());
 
-                let slippage = new BN(90);
+                let slippage = new BN(50);
                 let maxValue = liquidity.add(liquidity.div(slippage));
                 let minValue = liquidity.sub(liquidity.div(slippage));
                 console.log("[MAXVALUE]", maxValue.toString());

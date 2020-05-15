@@ -38,6 +38,9 @@ const {
     MAX_SLIPPAGE,
 } = common_constants;
 
+const LOG_VERBOSE = false;
+const LOG_VOL = false;
+
 contract("Pool", (accounts) => {
     // WEB3
     const { toWei } = web3.utils;
@@ -257,6 +260,22 @@ contract("Pool", (accounts) => {
             premium = new BN(premium);
             return premium;
         };
+
+        getVolatilityProxy = async () => {
+            let vol = await pool.calculateVolatilityProxy(tokenP);
+            let utilized = await pool.totalUtilized(tokenP);
+            let unutilized = await pool.totalUnutilized(tokenP);
+            let totalPoolBalance = await pool.totalPoolBalance(tokenP);
+            let balanceU = await _tokenU.balanceOf(pool.address);
+            let balanceR = await getTokenBalance(redeem, pool.address);
+            if (LOG_VOL) console.log("UTILIZED", utilized.toString());
+            if (LOG_VOL) console.log("UNUTILIZED", unutilized.toString());
+            if (LOG_VOL) console.log("TOTALPOOL", totalPoolBalance.toString());
+            if (LOG_VOL) console.log("BALANCEU", balanceU.toString());
+            if (LOG_VOL) console.log("BALANCER", balanceR.toString());
+            if (LOG_VOL) console.log("VOL", vol.toString());
+            expect(vol).to.be.a.bignumber.that.is.at.least(new BN(1000));
+        };
     });
 
     describe("Deployment", () => {
@@ -291,6 +310,9 @@ contract("Pool", (accounts) => {
         });
         it("should return the initialized volatility", async () => {
             expect((await pool.volatility()).toString()).to.be.eq("100");
+        });
+        it("check volatility", async () => {
+            await getVolatilityProxy();
         });
     });
 
@@ -343,11 +365,11 @@ contract("Pool", (accounts) => {
                 if (balance0U.lt(inTokenU)) {
                     return;
                 }
-
+                await getVolatilityProxy();
                 let depo = await pool.deposit(inTokenU, {
                     from: Alice,
                 });
-
+                await getVolatilityProxy();
                 truffleAssert.eventEmitted(depo, "Deposit", (ev) => {
                     return (
                         expect(ev.from).to.be.eq(Alice) &&
@@ -407,6 +429,9 @@ contract("Pool", (accounts) => {
                 "ERR_NOT_WETH"
             );
         });
+        it("check volatility", async () => {
+            await getVolatilityProxy();
+        });
 
         it("should deposit tokenU and receive tokenPULP", async () => {
             const run = async (runs) => {
@@ -462,11 +487,11 @@ contract("Pool", (accounts) => {
                 console.log("WITHDRAW LIQUIDITY", liquidity.toString());
                 console.log("CONTRACT UTILIZED", utilized0.toString());
                 console.log("CONTRACT UNUTILIZED", unutilized0.toString()); */
-
+                await getVolatilityProxy();
                 let event = await pool.withdraw(inTokenPULP, {
                     from: Alice,
                 });
-
+                await getVolatilityProxy();
                 truffleAssert.eventEmitted(event, "Withdraw", (ev) => {
                     return (
                         expect(ev.from).to.be.eq(Alice) &&
@@ -589,11 +614,11 @@ contract("Pool", (accounts) => {
                 if (balance0CU.lt(outTokenU)) {
                     return;
                 }
-
+                await getVolatilityProxy();
                 let event = await pool.buy(inTokenS, {
                     from: Alice,
                 });
-
+                await getVolatilityProxy();
                 truffleAssert.eventEmitted(event, "Buy", (ev) => {
                     return (
                         expect(ev.from).to.be.eq(Alice) &&
@@ -678,20 +703,25 @@ contract("Pool", (accounts) => {
                     return;
                 }
 
-                console.log("[INITIALSTATE]");
-                console.log("ALICE U", balance0U.toString());
-                console.log("ALICE P", balance0P.toString());
-                console.log("ALICE SELL", inTokenP.toString());
-                console.log("CONTRACT U", balance0CU.toString());
-                console.log("CONTRACT R", balance0R.toString());
-                console.log("CONTRACT TS", balance0TS.toString());
-                console.log("CONTRACT TP", balance0TP.toString());
-                console.log("ESTIMATED PREMIUM", premium.toString());
-
+                if (LOG_VERBOSE) console.log("[INITIALSTATE]");
+                if (LOG_VERBOSE) console.log("ALICE U", balance0U.toString());
+                if (LOG_VERBOSE) console.log("ALICE P", balance0P.toString());
+                if (LOG_VERBOSE) console.log("ALICE SELL", inTokenP.toString());
+                if (LOG_VERBOSE)
+                    console.log("CONTRACT U", balance0CU.toString());
+                if (LOG_VERBOSE)
+                    console.log("CONTRACT R", balance0R.toString());
+                if (LOG_VERBOSE)
+                    console.log("CONTRACT TS", balance0TS.toString());
+                if (LOG_VERBOSE)
+                    console.log("CONTRACT TP", balance0TP.toString());
+                if (LOG_VERBOSE)
+                    console.log("ESTIMATED PREMIUM", premium.toString());
+                await getVolatilityProxy();
                 let event = await pool.sell(inTokenP, {
                     from: Alice,
                 });
-
+                await getVolatilityProxy();
                 truffleAssert.eventEmitted(event, "Sell", (ev) => {
                     return (
                         expect(ev.from).to.be.eq(Alice) &&
@@ -718,15 +748,20 @@ contract("Pool", (accounts) => {
                 let deltaCU = balance1CU.sub(balance0CU);
                 let deltaTS = balance1TS.sub(balance0TS);
 
-                console.log("[ENDSTATE]");
-                console.log("ALICE U", balance1U.toString());
-                console.log("ALICE P", balance1P.toString());
-                console.log("ALICE SELL", inTokenP.toString());
-                console.log("CONTRACT U", balance1CU.toString());
-                console.log("CONTRACT R", balance1R.toString());
-                console.log("CONTRACT TS", balance1TS.toString());
-                console.log("CONTRACT TP", balance1TP.toString());
-                console.log("ESTIMATED PREMIUM", premium.toString());
+                if (LOG_VERBOSE) console.log("[ENDSTATE]");
+                if (LOG_VERBOSE) console.log("ALICE U", balance1U.toString());
+                if (LOG_VERBOSE) console.log("ALICE P", balance1P.toString());
+                if (LOG_VERBOSE) console.log("ALICE SELL", inTokenP.toString());
+                if (LOG_VERBOSE)
+                    console.log("CONTRACT U", balance1CU.toString());
+                if (LOG_VERBOSE)
+                    console.log("CONTRACT R", balance1R.toString());
+                if (LOG_VERBOSE)
+                    console.log("CONTRACT TS", balance1TS.toString());
+                if (LOG_VERBOSE)
+                    console.log("CONTRACT TP", balance1TP.toString());
+                if (LOG_VERBOSE)
+                    console.log("ESTIMATED PREMIUM", premium.toString());
 
                 let discountedPremium = premium.sub(premium.div(new BN(5)));
                 let expectedDeltaU = deltaR
@@ -764,6 +799,10 @@ contract("Pool", (accounts) => {
             );
         });
 
+        it("check volatility", async () => {
+            await getVolatilityProxy();
+        });
+
         it("should sell tokenP by paying some premium of tokenU", async () => {
             const run = async (runs) => {
                 for (let i = 0; i < runs; i++) {
@@ -777,6 +816,9 @@ contract("Pool", (accounts) => {
     });
 
     describe("Trader.exercise()", () => {
+        it("check volatility", async () => {
+            await getVolatilityProxy();
+        });
         it("utilize the rest of the pool", async () => {
             let balanceCU = new BN(await _tokenU.balanceOf(pool.address));
             let toCover = balanceCU
@@ -793,6 +835,12 @@ contract("Pool", (accounts) => {
                 await prime.balanceOf(Alice),
                 Alice
             );
+        });
+    });
+
+    describe("calculateVolatilityProxy", () => {
+        it("check volatility", async () => {
+            await getVolatilityProxy();
         });
     });
 
@@ -864,6 +912,7 @@ contract("Pool", (accounts) => {
 
             const run = async (runs) => {
                 for (let i = 0; i < runs; i++) {
+                    await getVolatilityProxy();
                     await runDeposit(i);
                     await runBuy(i);
                     if (new BN(await prime.balanceOf(Alice)).gt(new BN(0))) {
@@ -876,6 +925,7 @@ contract("Pool", (accounts) => {
                     await runBuy(i);
                     await runSell(i);
                     await runWithdraw(i);
+                    await getVolatilityProxy();
                 }
             };
 
@@ -963,12 +1013,12 @@ contract("Pool", (accounts) => {
                 if (balance0U.lt(inTokenU)) {
                     return;
                 }
-
+                await getVolatilityProxy();
                 let depo = await pool.depositEth({
                     from: Alice,
                     value: inTokenU,
                 });
-
+                await getVolatilityProxy();
                 truffleAssert.eventEmitted(depo, "Deposit", (ev) => {
                     return (
                         expect(ev.from).to.be.eq(Alice) &&
@@ -1028,6 +1078,9 @@ contract("Pool", (accounts) => {
                 pool.depositEth({ value: min }),
                 ERR_ZERO_LIQUIDITY
             );
+        });
+        it("check volatility", async () => {
+            await getVolatilityProxy();
         });
 
         it("should depositEth tokenU and receive tokenPULP", async () => {

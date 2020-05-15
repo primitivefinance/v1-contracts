@@ -20,14 +20,14 @@
     </h1>
     <div class='clearfix'>
       <div class='fl pad1y space-right2'>
-        <span class="strong">94.69% </span>
+        <span class="strong">95.61% </span>
         <span class="quiet">Statements</span>
-        <span class='fraction'>107/113</span>
+        <span class='fraction'>109/114</span>
       </div>
       <div class='fl pad1y space-right2'>
-        <span class="strong">68% </span>
+        <span class="strong">71.15% </span>
         <span class="quiet">Branches</span>
-        <span class='fraction'>34/50</span>
+        <span class='fraction'>37/52</span>
       </div>
       <div class='fl pad1y space-right2'>
         <span class="strong">95% </span>
@@ -35,9 +35,9 @@
         <span class='fraction'>19/20</span>
       </div>
       <div class='fl pad1y space-right2'>
-        <span class="strong">94.74% </span>
+        <span class="strong">95.58% </span>
         <span class="quiet">Lines</span>
-        <span class='fraction'>108/114</span>
+        <span class='fraction'>108/113</span>
       </div>
     </div>
   </div>
@@ -625,9 +625,7 @@
 580
 581
 582
-583
-584
-585</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+583</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1141,13 +1139,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">93×</span>
-<span class="cline-any cline-yes">93×</span>
-<span class="cline-any cline-yes">93×</span>
-<span class="cline-any cline-yes">93×</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">93×</span>
+<span class="cline-any cline-yes">593×</span>
+<span class="cline-any cline-yes">593×</span>
+<span class="cline-any cline-yes">593×</span>
+<span class="cline-any cline-yes">593×</span>
+<span class="cline-any cline-yes">17×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1169,9 +1165,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">855×</span>
-<span class="cline-any cline-yes">855×</span>
-<span class="cline-any cline-yes">855×</span>
+<span class="cline-any cline-yes">2855×</span>
+<span class="cline-any cline-yes">2855×</span>
+<span class="cline-any cline-yes">2855×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1179,17 +1175,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">811×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">666×</span>
+<span class="cline-any cline-yes">2311×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1198,7 +1184,17 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">856×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1666×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2856×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1727,12 +1723,10 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     {
         (uint256 utilized) = totalUtilized(_tokenP);
         uint256 totalBalance = totalPoolBalance(_tokenP);
-        _volatility = utilized.mul(ONE_ETHER).div(totalBalance); // Volatility with 1e18 decimals.
-        <span class="missing-if-branch" title="if path not taken" >I</span>if(_volatility &lt; MIN_VOLATILITY) {
-<span class="cstat-no" title="statement not covered" >            _volatility = 250</span>; // 250 = 25%, where 1000 = 100%.
-        } else {
-            _volatility = _volatility.div(MIN_VOLATILITY);
-        }
+        if(totalBalance &gt; 0) _volatility = utilized.mul(ONE_ETHER).div(totalBalance); // Volatility with 1e18 decimals.
+        if(_volatility &lt; MIN_VOLATILITY) {
+            _volatility = 1000;
+        } else _volatility = _volatility.div(MIN_VOLATILITY).add(1000);
 &nbsp;
     }
 &nbsp;
@@ -1801,7 +1795,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
 </div><!-- /wrapper -->
 <div class='footer quiet pad2 space-top1 center small'>
   Code coverage
-  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Wed May 13 2020 23:10:49 GMT-0700 (Pacific Daylight Time)
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Thu May 14 2020 08:44:04 GMT-0700 (Pacific Daylight Time)
 </div>
 </div>
 <script src="../prettify.js"></script>

@@ -320,7 +320,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
 
         // Get price of 1 ETH denominated in tokenU from compound oracle. 1 ETH = 1e36 / oracle's price.
         // Assumes oracle never returns a value greater than 1e36.
-        (uint256 oraclePrice) = marketRatio();
+        (uint256 oraclePrice) = marketRatio(_tokenP);
 
         // Get price of 1 ETH denominated in tokenU from uniswap pool.
         uint256 uniPrice = UniswapExchangeInterface(exchange).getEthToTokenInputPrice(ONE_ETHER);
@@ -514,12 +514,10 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     {
         (uint256 utilized) = totalUtilized(_tokenP);
         uint256 totalBalance = totalPoolBalance(_tokenP);
-        _volatility = utilized.mul(ONE_ETHER).div(totalBalance); // Volatility with 1e18 decimals.
+        if(totalBalance > 0) _volatility = utilized.mul(ONE_ETHER).div(totalBalance); // Volatility with 1e18 decimals.
         if(_volatility < MIN_VOLATILITY) {
-            _volatility = 250; // 250 = 25%, where 1000 = 100%.
-        } else {
-            _volatility = _volatility.div(MIN_VOLATILITY);
-        }
+            _volatility = 1000;
+        } else _volatility = _volatility.div(MIN_VOLATILITY).add(1000);
 
     }
 
@@ -541,7 +539,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         // The utilized amount of tokenU is therefore this calculation:
         // (tokenR = tokenS = WETH) * Quantity of tokenU (base) / Quantity of tokenS (price).
         ( , , address tokenR, , uint256 price, ) = IPrime(_tokenP).prime();
-        (uint256 oraclePrice) = marketRatio();
+        (uint256 oraclePrice) = marketRatio(_tokenP);
         utilized = IERC20(tokenR).balanceOf(address(this)).mul(oraclePrice).div(price);
     }
 
@@ -568,8 +566,10 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
      * @notice Assumes the getUnderlyingPrice function call from the oracle never returns
      * a value greater than 1e36 (MANTISSA).
      */
-    function marketRatio() public view returns(uint256 oraclePrice) {
-        oraclePrice = MANTISSA.div(IPrimeOracle(oracle).marketPrice(IPrime(tokenP).tokenU()));
+    function marketRatio(address _tokenP) public view returns(uint256 oraclePrice) {
+        address _tokenU = IPrime(_tokenP).tokenU();
+        address token = _tokenU == WETH ? IPrime(_tokenP).tokenS() : _tokenU;
+        oraclePrice = MANTISSA.div(IPrimeOracle(oracle).marketPrice(token));
     }
 
     /**

@@ -124,6 +124,28 @@ contract("Oracle contract - mainnet", (accounts) => {
             console.log("[DERIBIT PREMIUM]", deribit);
         });
 
+        it("Calculates the premium for ETH 300 DAI Call Expiring June 26", async () => {
+            let deribit = "0.025"; // in ethers
+            let tokenU = MAINNET_WETH;
+            let tokenS = MAINNET_DAI;
+            let volatility = 1000;
+            let base = toWei("1");
+            let price = toWei("300");
+            let expiry = "1593129600"; // June 26, 2020, 0:00:00 UTC
+            let premium = await oracle.calculatePremium(
+                tokenU,
+                tokenS,
+                volatility,
+                base,
+                price,
+                expiry
+            );
+            console.log("ETH 300 CALL JUNE 26");
+            console.log("[PREMIUM IN WEI]", premium.toString());
+            console.log("[PREMIUM]", fromWei(premium));
+            console.log("[DERIBIT PREMIUM]", deribit);
+        });
+
         it("Calculates premiums for arbritary Put options", async () => {
             let tokenU = MAINNET_DAI;
             let tokenS = MAINNET_WETH;
