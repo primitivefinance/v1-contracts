@@ -163,7 +163,7 @@ contract("Pool - forked-mainnet", (accounts) => {
         redeemName = "ETH Call Redeemable Token";
         redeemSymbol = "REDEEM";
         base = toWei("1");
-        price = toWei("200");
+        price = toWei("300");
         expiry = "1593129600"; // June 26, 2020, 0:00:00 UTC
 
         trader = await PrimeTrader.new(MAINNET_WETH);

@@ -150,7 +150,7 @@ contract("Pool", (accounts) => {
             value: FIVE_ETHER,
         });
 
-        _tokenU = dai;
+        /* _tokenU = dai;
         _tokenS = weth;
         tokenU = _tokenU.address;
         tokenS = _tokenS.address;
@@ -163,7 +163,21 @@ contract("Pool", (accounts) => {
         redeemSymbol = "REDEEM";
         base = toWei("200");
         price = toWei("1");
-        expiry = "1590868800"; // May 30, 2020, 8PM UTC
+        expiry = "1590868800"; // May 30, 2020, 8PM UTC */
+        _tokenU = weth;
+        _tokenS = dai;
+        tokenU = _tokenU.address;
+        tokenS = _tokenS.address;
+        marketId = 1;
+        poolName = "ETH Short Call Pool LP";
+        poolSymbol = "PULP";
+        optionName = "ETH Call 300 DAI Expiring June 26 2020";
+        optionSymbol = "PRIME";
+        redeemName = "ETH Call Redeemable Token";
+        redeemSymbol = "REDEEM";
+        base = toWei("1");
+        price = toWei("300");
+        expiry = "1593129600"; // June 26, 2020, 0:00:00 UTC
 
         trader = await PrimeTrader.new(weth.address);
         prime = await PrimeOption.new(

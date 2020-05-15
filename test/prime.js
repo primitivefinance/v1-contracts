@@ -616,10 +616,7 @@ contract("Prime", (accounts) => {
             });
 
             it("revert if 0 tokenR were sent to contract", async () => {
-                await truffleAssert.reverts(
-                    prime.redeem(Alice),
-                    ERR_BAL_STRIKE
-                );
+                await truffleAssert.reverts(prime.redeem(Alice), ERR_ZERO);
             });
 
             it("reverts if not enough tokenS in prime contract", async () => {

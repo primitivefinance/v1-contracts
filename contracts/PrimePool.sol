@@ -21,6 +21,8 @@ interface UniswapFactoryInterface {
 interface UniswapExchangeInterface {
     // Get Prices
     function getEthToTokenInputPrice(uint256 eth_sold) external view returns (uint256 tokens_bought);
+        // Trade ERC20 to ETH
+    function tokenToEthSwapInput(uint256 tokens_sold, uint256 min_eth, uint256 deadline) external returns (uint256  eth_bought);
     // Trade ETH to ERC20
     function ethToTokenSwapInput(uint256 min_tokens, uint256 deadline) external payable returns (uint256  tokens_bought);
 }
@@ -87,16 +89,6 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         }
         return true;
     }
-
-    modifier valid(address _tokenP) {
-        require(_tokenP == tokenP, "ERR_PRIME");
-        _;
-    }
-
-    receive() external payable {
-        require(msg.sender == WETH, "ERR_NOT_WETH");
-    }
-
 
     /* =========== MAKER FUNCTIONS =========== */
 
@@ -167,7 +159,6 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
      */
     function _addLiquidity(address _tokenP, address to, uint256 inTokenU)
         private
-        valid(_tokenP)
         returns (uint256 outTokenPULP)
     {
         // Mint LP tokens proportional to the Total LP Supply and Total Pool Balance.
@@ -178,14 +169,10 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         // minting it to this contract.
         if(_totalSupply == 0) {
             outTokenPULP = inTokenU;
-            /* outTokenPULP = inTokenU.sub(MIN_LIQUIDITY); */
-            /* _mint(address(this), MIN_LIQUIDITY); */
         } else {
             outTokenPULP = inTokenU.mul(_totalSupply).div(totalBalance);
+            require(outTokenPULP > 0, "ERR_ZERO_LIQUIDITY");
         }
-
-        // Calculate the amount of tokenPULP to output.
-        require(outTokenPULP > 0, "ERR_ZERO_LIQUIDITY");
         _mint(to, outTokenPULP);
         emit Deposit(to, inTokenU, outTokenPULP);
     }
@@ -255,7 +242,6 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
      */
     function _removeLiquidity(address _tokenP, uint256 inTokenPULP)
         private
-        valid(_tokenP)
         returns (uint256 balanceU, uint256 totalBalance)
     {
         // Burn tokenPULP.
@@ -282,7 +268,6 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
      */
     function _redeem(address _tokenP)
         private
-        valid(_tokenP)
         returns (uint256 outTokenR)
     {
         // Check how many tokenS can be pulled from PrimeOption.sol.
@@ -290,11 +275,11 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         require(maxDraw > 0, "ERR_BAL_STRIKE");
 
         // Push tokenR to _tokenP so we can call redeem() and pull tokenS.
-        (bool success) = IERC20(IPrime(_tokenP).tokenR()).transfer(_tokenP, maxDraw);
+        IERC20(IPrime(_tokenP).tokenR()).transfer(_tokenP, maxDraw);
 
         // Call redeem function to pull tokenS.
         outTokenR = IPrime(_tokenP).redeem(address(this));
-        assert(outTokenR == maxDraw && success);
+        assert(outTokenR == maxDraw);
     }
 
     /**
@@ -306,42 +291,52 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
      */
     function _exchange(address _tokenP)
         private
-        valid(_tokenP)
         returns (uint256 inTokenU)
     {
-        // Get uniswap exchange address.
-        address exchange = UniswapFactoryInterface(factory).getExchange(IPrime(_tokenP).tokenU());
-
-        // Unwrap WETH in the contract.
-        // Assumes WETH has already been redeemed from the Prime contract and WETH is in the pool.
+        // Get addresses for gas savings.
+        address exchange;
         address tokenS = IPrime(_tokenP).tokenS();
-        assert(tokenS == WETH);
-        IWETH(WETH).withdraw(IERC20(tokenS).balanceOf(address(this)));
-
+        address tokenU = IPrime(_tokenP).tokenU();
         // Get price of 1 ETH denominated in tokenU from compound oracle. 1 ETH = 1e36 / oracle's price.
         // Assumes oracle never returns a value greater than 1e36.
         (uint256 oraclePrice) = marketRatio(_tokenP);
-
         // Get price of 1 ETH denominated in tokenU from uniswap pool.
         uint256 uniPrice = UniswapExchangeInterface(exchange).getEthToTokenInputPrice(ONE_ETHER);
-
         // Calculate the max slippage price. Assumes oracle price is never < 100 wei.
         uint256 slippage = oraclePrice.div(MAX_SLIPPAGE);
-
         // Subtract max slippage amount from uniswap price to get min received tokenU per tokenS.
         uint256 minReceived = uniPrice.sub(slippage);
+        // Initialize outTokenS variable.
+        uint256 outTokenS;
+        if(tokenU == WETH) {
+            exchange = UniswapFactoryInterface(factory).getExchange(tokenS);
+            // Get current balance of tokenS to send to uniswap pool.
+            outTokenS = IERC20(tokenS).balanceOf(address(this));
+            // Convert min received from ETH per DAI to DAI per ETH.
+            minReceived = MANTISSA.div(uniPrice);
+            // Swaps tokenS to ETH.
+            // Min tokenU Received: Amount ETH * minRecieved / 10^18
+            // Deadline = now + 3 minutes.
+            inTokenU = UniswapExchangeInterface(exchange)
+                            .tokenToEthSwapInput(outTokenS, outTokenS.mul(minReceived).div(ONE_ETHER), now + 3 minutes);
 
-        // Store in memory for gas savings.
-        uint256 outEthers = address(this).balance;
-
-        // Swaps ETH to tokenU.
-        // Amount ETH swapped = msg.value sent.
-        // Min tokenU Received: Amount ETH * minRecieved / 10^18
-        // Deadline = now + 3 minutes.
-        inTokenU = UniswapExchangeInterface(exchange)
-                        .ethToTokenSwapInput
-                        .value(outEthers)(outEthers.mul(minReceived).div(ONE_ETHER), now + 3 minutes);
-
+            // Wrap WETH.
+            IWETH(WETH).deposit.value(address(this).balance)();
+        } else {
+            assert(tokenS == WETH);
+            exchange = UniswapFactoryInterface(factory).getExchange(tokenU);
+            // Unwrap WETH.
+            IWETH(WETH).withdraw(IERC20(tokenS).balanceOf(address(this)));
+            // Get balance to send to uniswap pool.
+            outTokenS = address(this).balance;
+            // Swaps ETH to tokenU.
+            // Amount ETH swapped = msg.value sent.
+            // Min tokenU Received: Amount ETH * minRecieved / 10^18
+            // Deadline = now + 3 minutes.
+            inTokenU = UniswapExchangeInterface(exchange)
+                            .ethToTokenSwapInput
+                            .value(outTokenS)(outTokenS.mul(minReceived).div(ONE_ETHER), now + 3 minutes);
+        }
     }
 
     /**

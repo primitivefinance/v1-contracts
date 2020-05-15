@@ -270,6 +270,7 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
 
         // Difference between tokenR balance and cache.
         inTokenR = balanceR.sub(cacheR);
+        require(inTokenR > 0, "ERR_ZERO");
         verifyBalance(balanceS, inTokenR, "ERR_BAL_STRIKE");
 
         // Burn tokenR in the contract. Send tokenS to msg.sender.
