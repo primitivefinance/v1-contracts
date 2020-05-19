@@ -33,7 +33,7 @@ contract PrimeTrader is ReentrancyGuard {
      * @param receiver The newly minted tokens are sent to the receiver address.
      */
     function safeMint(
-        address tokenP,
+        IPrime tokenP,
         uint256 amount,
         address receiver
     )
@@ -42,17 +42,17 @@ contract PrimeTrader is ReentrancyGuard {
         returns (uint256 inTokenU, uint256 outTokenR)
     {
         require(amount > 0, "ERR_ZERO");
-        address tokenU = IPrime(tokenP).tokenU();
+        address tokenU = tokenP.tokenU();
         verifyBalance(
             IERC20(tokenU).balanceOf(msg.sender),
             amount,
             "ERR_BAL_UNDERLYING"
         );
         require(
-            IERC20(tokenU).transferFrom(msg.sender, tokenP, amount),
+            IERC20(tokenU).transferFrom(msg.sender, address(tokenP), amount),
             "ERR_TRANSFER_IN_FAIL"
         );
-        (inTokenU, outTokenR) = IPrime(tokenP).mint(receiver);
+        (inTokenU, outTokenR) = tokenP.mint(receiver);
         emit Mint(msg.sender, inTokenU, outTokenR);
     }
 
@@ -94,6 +94,7 @@ contract PrimeTrader is ReentrancyGuard {
 
     /**
      * @dev Burns Prime Redeem tokens to withdraw available tokenS.
+     * @notice inTokenR = outTokenS
      * @param amount Quantity of Prime Redeem to spend.
      */
     function safeRedeem(
@@ -123,10 +124,7 @@ contract PrimeTrader is ReentrancyGuard {
             amount,
             "ERR_BAL_STRIKE"
         );
-        require(
-            IERC20(tokenR).transferFrom(msg.sender, tokenP, amount),
-            "ERR_TRANSFER_IN_FAIL"
-        );
+        IERC20(tokenR).transferFrom(msg.sender, tokenP, amount);
         (inTokenR) = IPrime(tokenP).redeem(receiver);
         emit Redeem(msg.sender, inTokenR);
     }
@@ -135,6 +133,7 @@ contract PrimeTrader is ReentrancyGuard {
      * @dev Burn Prime and Prime Redeem tokens to withdraw tokenU.
      * @notice Takes paramter for quantity of Primes to burn.
      * The Prime Redeems to burn is equal to the Primes * ratio.
+     * inTokenP = inTokenR / strike ratio = outTokenU
      * @param amount Quantity of Primes to burn.
      */
     function safeClose(
@@ -163,9 +162,8 @@ contract PrimeTrader is ReentrancyGuard {
             "ERR_BAL_PRIME"
         );
 
-        (bool inTransferR) = IERC20(tokenR).transferFrom(msg.sender, tokenP, inTokenR);
-        (bool inTransferP) = IPrime(tokenP).transferFrom(msg.sender, tokenP, amount);
-        require(inTransferR && inTransferP, "ERR_TRANSFER_IN_FAIL");
+        IERC20(tokenR).transferFrom(msg.sender, tokenP, inTokenR);
+        IPrime(tokenP).transferFrom(msg.sender, tokenP, amount);
         (inTokenR, inTokenP, outTokenU) = IPrime(tokenP).close(receiver);
         emit Close(msg.sender, inTokenP);
     }
@@ -197,8 +195,7 @@ contract PrimeTrader is ReentrancyGuard {
             "ERR_BAL_REDEEM"
         );
 
-        (bool inTransferR) = IERC20(tokenR).transferFrom(msg.sender, tokenP, inTokenR);
-        require(inTransferR, "ERR_TRANSFER_IN_FAIL");
+        IERC20(tokenR).transferFrom(msg.sender, tokenP, inTokenR);
         (inTokenR, inTokenP, outTokenU) = IPrime(tokenP).close(receiver);
         emit Close(msg.sender, inTokenP);
     }

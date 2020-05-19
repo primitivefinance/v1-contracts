@@ -12,7 +12,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 contract PrimeRedeem is ERC20 {
     using SafeMath for uint256;
 
-    address public _controller;
+    address public controller;
 
     address public tokenS;
     address public tokenP;
@@ -27,7 +27,7 @@ contract PrimeRedeem is ERC20 {
         public
         ERC20(name, symbol)
     {
-        _controller = msg.sender;
+        controller = msg.sender;
         tokenS = _tokenS;
         tokenP = _tokenP;
     }

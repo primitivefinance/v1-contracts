@@ -98,6 +98,7 @@ interface IPrimeOracle {
     ) external view returns (uint256 extrinsic);
     function calculatePremium(
         address tokenU,
+        address tokenS,
         uint256 volatility,
         uint256 base,
         uint256 price,

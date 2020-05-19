@@ -1,7 +1,7 @@
 pragma solidity ^0.6.2;
 
 /**
- * @title   ERC-20 Binary Option Primitive
+ * @title   ERC-20 Vanilla Option Primitive
  * @author  Primitive
  */
 
@@ -45,7 +45,7 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
         public
         ERC20(name, symbol)
     {
-        require(tokenU != address(this) && tokenS != address(this), "ERR_SELF");
+        require(tokenU != address(0) && tokenS != address(0), "ERR_ADDRESS_ZERO");
         marketId = _marketId;
         factory = msg.sender;
         option = Instruments.PrimeOption(
@@ -178,7 +178,7 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
         outTokenR = inTokenU.mul(option.price).div(option.base);
 
         // Mint the tokens.
-        require(IPrimeRedeem(tokenR).mint(receiver, outTokenR), "ERR_BURN_FAIL");
+        IPrimeRedeem(tokenR).mint(receiver, outTokenR);
         _mint(receiver, inTokenU);
 
         // Update the caches.
@@ -270,6 +270,7 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
 
         // Difference between tokenR balance and cache.
         inTokenR = balanceR.sub(cacheR);
+        require(inTokenR > 0, "ERR_ZERO");
         verifyBalance(balanceS, inTokenR, "ERR_BAL_STRIKE");
 
         // Burn tokenR in the contract. Send tokenS to msg.sender.
