@@ -495,10 +495,6 @@ contract("Pool", (accounts) => {
                 if (balance0P.lt(inTokenPULP)) {
                     return;
                 }
-                console.log("ALICE WITHDRAW", inTokenPULP.toString());
-                console.log("CONTRACT TP", balance0TP.toString());
-                console.log("CONTRACT TP", balance0TP.toString());
-                console.log("WITHDRAW LIQUIDITY", liquidity.toString());
 
                 if (LOG_VERBOSE) console.log("[INITIALSTATE]");
                 if (LOG_VERBOSE) console.log("ALICE U", balance0U.toString());

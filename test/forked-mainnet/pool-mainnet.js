@@ -64,7 +64,8 @@ contract("Pool - forked-mainnet", (accounts) => {
         oracle,
         pool,
         factory,
-        exchange;
+        exchange,
+        id;
 
     const assertBNEqual = (actualBN, expectedBN, message) => {
         assert.equal(actualBN.toString(), expectedBN.toString(), message);
@@ -103,7 +104,9 @@ contract("Pool - forked-mainnet", (accounts) => {
         return deltaU;
     };
 
-    before(async () => {
+    before(async function() {
+        id = await web3.eth.net.getId();
+        if (id !== 999) this.skip();
         DAI = new web3.eth.Contract(daiABI, MAINNET_DAI);
 
         // Initialize our accounts with forked mainnet DAI and WETH.
@@ -253,30 +256,34 @@ contract("Pool - forked-mainnet", (accounts) => {
         };
     });
 
-    describe("Deployment", () => {
-        it("should return the correct name", async () => {
+    describe("Deployment", function() {
+        before(function() {
+            if (id !== 999) this.skip();
+        });
+        it("should return the correct name", async function() {
             expect(await pool.name()).to.be.eq(poolName);
         });
 
-        it("should return the correct symbol", async () => {
+        it("should return the correct symbol", async function() {
             expect(await pool.symbol()).to.be.eq(poolSymbol);
         });
 
-        it("should return the correct weth address", async () => {
+        it("should return the correct weth address", async function() {
             expect((await pool.WETH()).toString().toUpperCase()).to.be.eq(
                 MAINNET_WETH.toUpperCase()
             );
         });
 
-        it("should return the correct oracle address", async () => {
+        it("should return the correct oracle address", async function() {
             expect((await pool.oracle()).toString().toUpperCase()).to.be.eq(
                 oracle.address.toUpperCase()
             );
         });
     });
 
-    describe("deposit", () => {
+    describe("deposit", function() {
         before(async () => {
+            if (id !== 999) this.skip();
             deposit = async (inTokenU) => {
                 inTokenU = new BN(inTokenU);
                 let balance0U = await getBalance(_tokenU, Alice);
@@ -331,17 +338,17 @@ contract("Pool - forked-mainnet", (accounts) => {
             };
         });
 
-        it("should revert if inTokenU is below the min liquidity", async () => {
+        it("should revert if inTokenU is below the min liquidity", async function() {
             await truffleAssert.reverts(pool.deposit(1), ERR_BAL_UNDERLYING);
         });
-        it("should revert if inTokenU is above the user's balance", async () => {
+        it("should revert if inTokenU is above the user's balance", async function() {
             await truffleAssert.reverts(
                 pool.deposit(MILLION_ETHER),
                 ERR_BAL_UNDERLYING
             );
         });
 
-        it("should deposit tokenU and receive tokenPULP", async () => {
+        it("should deposit tokenU and receive tokenPULP", async function() {
             const run = async (runs) => {
                 for (let i = 0; i < runs; i++) {
                     let amt = Math.floor(TEN_ETHER * Math.random()).toString();
@@ -353,8 +360,9 @@ contract("Pool - forked-mainnet", (accounts) => {
         });
     });
 
-    describe("withdraw", () => {
+    describe("withdraw", function() {
         before(async () => {
+            if (id !== 999) this.skip();
             withdraw = async (inTokenPULP) => {
                 inTokenPULP = new BN(inTokenPULP);
                 let balance0U = await getBalance(_tokenU, Alice);
@@ -462,18 +470,18 @@ contract("Pool - forked-mainnet", (accounts) => {
             };
         });
 
-        it("should revert if inTokenU is above the user's balance", async () => {
+        it("should revert if inTokenU is above the user's balance", async function() {
             await truffleAssert.reverts(
                 pool.withdraw(MILLION_ETHER),
                 ERR_BAL_PULP
             );
         });
 
-        it("should revert if inTokenU is 0", async () => {
+        it("should revert if inTokenU is 0", async function() {
             await truffleAssert.reverts(pool.withdraw(0), ERR_BAL_PULP);
         });
 
-        it("should withdraw tokenU by burning tokenPULP", async () => {
+        it("should withdraw tokenU by burning tokenPULP", async function() {
             const run = async (runs) => {
                 for (let i = 0; i < runs; i++) {
                     let amt = Math.floor(HUNDRETH * Math.random()).toString();
@@ -485,8 +493,9 @@ contract("Pool - forked-mainnet", (accounts) => {
         });
     });
 
-    describe("buy", () => {
+    describe("buy", function() {
         before(async () => {
+            if (id !== 999) this.skip();
             buy = async (inTokenS) => {
                 inTokenS = new BN(inTokenS);
                 let balance0U = await getBalance(_tokenU, Alice);
@@ -550,18 +559,18 @@ contract("Pool - forked-mainnet", (accounts) => {
             };
         });
 
-        it("should revert if inTokenU is 0", async () => {
+        it("should revert if inTokenU is 0", async function() {
             await truffleAssert.reverts(pool.buy(0), "ERR_ZERO");
         });
 
-        it("should revert if inTokenU is greater than the pool's balance", async () => {
+        it("should revert if inTokenU is greater than the pool's balance", async function() {
             await truffleAssert.reverts(
                 pool.buy(MILLION_ETHER),
                 ERR_BAL_UNDERLYING
             );
         });
 
-        it("should buy tokenP by paying some premium of tokenU", async () => {
+        it("should buy tokenP by paying some premium of tokenU", async function() {
             const run = async (runs) => {
                 for (let i = 0; i < runs; i++) {
                     let amt = Math.floor(HUNDRETH * Math.random()).toString();
@@ -573,8 +582,9 @@ contract("Pool - forked-mainnet", (accounts) => {
         });
     });
 
-    describe("sell", () => {
+    describe("sell", function() {
         before(async () => {
+            if (id !== 999) this.skip();
             sell = async (inTokenP) => {
                 inTokenP = new BN(inTokenP);
                 let balance0U = await getBalance(_tokenU, Alice);
@@ -672,18 +682,18 @@ contract("Pool - forked-mainnet", (accounts) => {
             };
         });
 
-        it("should revert if inTokenP is 0", async () => {
+        it("should revert if inTokenP is 0", async function() {
             await truffleAssert.reverts(pool.sell(0), ERR_BAL_PRIME);
         });
 
-        it("should revert if inTokenP is greater than the user's balance", async () => {
+        it("should revert if inTokenP is greater than the user's balance", async function() {
             await truffleAssert.reverts(
                 pool.sell(MILLION_ETHER),
                 ERR_BAL_PRIME
             );
         });
 
-        it("should sell tokenP by paying some premium of tokenU", async () => {
+        it("should sell tokenP by paying some premium of tokenU", async function() {
             const run = async (runs) => {
                 for (let i = 0; i < runs; i++) {
                     let amt = Math.floor(HUNDRETH * Math.random()).toString();
@@ -695,8 +705,9 @@ contract("Pool - forked-mainnet", (accounts) => {
         });
     });
 
-    describe("Trader.exercise()", () => {
-        it("utilize the rest of the pool", async () => {
+    describe("Trader.exercise()", function() {
+        it("utilize the rest of the pool", async function() {
+            if (id !== 999) this.skip();
             let balanceCU = new BN(
                 await _tokenU.methods.balanceOf(pool.address).call()
             );
@@ -708,7 +719,8 @@ contract("Pool - forked-mainnet", (accounts) => {
             });
         });
 
-        it("should exercise the options so the pool can redeem them in withdraw", async () => {
+        it("should exercise the options so the pool can redeem them in withdraw", async function() {
+            if (id !== 999) this.skip();
             await trader.safeSwap(
                 prime.address,
                 await prime.balanceOf(Alice),
@@ -717,19 +729,22 @@ contract("Pool - forked-mainnet", (accounts) => {
         });
     });
 
-    describe("Pool.withdraw()", () => {
-        it("should revert if inTokenU is above the user's balance", async () => {
+    describe("Pool.withdraw()", function() {
+        before(function() {
+            if (id !== 999) this.skip();
+        });
+        it("should revert if inTokenU is above the user's balance", async function() {
             await truffleAssert.reverts(
                 pool.withdraw(MILLION_ETHER),
                 ERR_BAL_PULP
             );
         });
 
-        it("should revert if inTokenU is 0", async () => {
+        it("should revert if inTokenU is 0", async function() {
             await truffleAssert.reverts(pool.withdraw(0), ERR_BAL_PULP);
         });
 
-        it("should withdraw tokenU by burning tokenPULP", async () => {
+        it("should withdraw tokenU by burning tokenPULP", async function() {
             const run = async (runs) => {
                 for (let i = 0; i < runs; i++) {
                     let amt = Math.floor(ONE_ETHER * Math.random()).toString();
@@ -740,7 +755,7 @@ contract("Pool - forked-mainnet", (accounts) => {
             await run(2);
         });
 
-        it("should withdraw the remaining assets from the pool", async () => {
+        it("should withdraw the remaining assets from the pool", async function() {
             await withdraw(await pool.totalSupply(), { from: Alice });
             let totalSupply = await getTotalSupply();
             let totalPoolBalance = await getTotalPoolBalance();
@@ -749,8 +764,11 @@ contract("Pool - forked-mainnet", (accounts) => {
         });
     });
 
-    describe("Run Transactions", () => {
-        it("should be able to deposit, withdraw, and buy fluidly", async () => {
+    describe("Run Transactions", function() {
+        before(function() {
+            if (id !== 999) this.skip();
+        });
+        it("should be able to deposit, withdraw, and buy fluidly", async function() {
             let balanceContract = new BN(
                 await _tokenU.methods.balanceOf(pool.address).call()
             );

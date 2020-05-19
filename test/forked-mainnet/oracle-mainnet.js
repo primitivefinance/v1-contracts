@@ -23,11 +23,12 @@ const LOG_EXTRINSIC = false;
 const LOG_SPECIFIC = true;
 
 contract("Oracle contract - mainnet", (accounts) => {
-    let oracle, dai;
+    let oracle, dai, id;
 
     before(async () => {
         oracle = await PrimeOracle.new(MAINNET_ORACLE, MAINNET_WETH);
         dai = MAINNET_DAI;
+        id = await web3.eth.net.getId();
 
         getPriceInDai = async () => {
             let ether = new BN(ONE_ETHER);
@@ -42,8 +43,9 @@ contract("Oracle contract - mainnet", (accounts) => {
         };
     });
 
-    describe("Deployment", () => {
-        it("Should deploy with the correct address and MCD_DAI Feed", async () => {
+    describe("Deployment", function() {
+        it("Should deploy with the correct address and MCD_DAI Feed", async function() {
+            if (id !== 999) this.skip();
             expect(await oracle.oracle()).to.be.equal(MAINNET_ORACLE);
             expect(await oracle.feeds(MAINNET_DAI)).to.be.equal(
                 MAINNET_COMPOUND_DAI
@@ -51,8 +53,9 @@ contract("Oracle contract - mainnet", (accounts) => {
         });
     });
 
-    describe("Calculation General", () => {
-        before(async () => {
+    describe("Calculation General", function() {
+        before(async function() {
+            if (id !== 999) this.skip();
             let ethPrice = fromWei(await getPriceInDai());
             function randomDate(start, end) {
                 let date = Math.floor(+start + Math.random() * (end - start));
@@ -103,7 +106,8 @@ contract("Oracle contract - mainnet", (accounts) => {
                 return premium;
             };
         });
-        it("Calculates the premium for ETH 200 DAI Put Expiring May 29", async () => {
+        it("Calculates the premium for ETH 200 DAI Put Expiring May 29", async function() {
+            if (id !== 999) this.skip();
             let deribit = "0.0765"; // in ethers
             let tokenU = MAINNET_DAI;
             let tokenS = MAINNET_WETH;
@@ -124,7 +128,8 @@ contract("Oracle contract - mainnet", (accounts) => {
             console.log("[DERIBIT PREMIUM]", deribit);
         });
 
-        it("Calculates the premium for ETH 300 DAI Call Expiring June 26", async () => {
+        it("Calculates the premium for ETH 300 DAI Call Expiring June 26", async function() {
+            if (id !== 999) this.skip();
             let deribit = "0.025"; // in ethers
             let tokenU = MAINNET_WETH;
             let tokenS = MAINNET_DAI;
@@ -146,7 +151,8 @@ contract("Oracle contract - mainnet", (accounts) => {
             console.log("[DERIBIT PREMIUM]", deribit);
         });
 
-        it("Calculates premiums for arbritary Put options", async () => {
+        it("Calculates premiums for arbritary Put options", async function() {
+            if (id !== 999) this.skip();
             let tokenU = MAINNET_DAI;
             let tokenS = MAINNET_WETH;
             const run = async (amount) => {
@@ -175,7 +181,8 @@ contract("Oracle contract - mainnet", (accounts) => {
             await run(1);
         });
 
-        it("Calculates premiums for arbritary Call options", async () => {
+        it("Calculates premiums for arbritary Call options", async function() {
+            if (id !== 999) this.skip();
             let tokenU = MAINNET_WETH;
             let tokenS = MAINNET_DAI;
             const run = async (amount) => {
@@ -205,7 +212,7 @@ contract("Oracle contract - mainnet", (accounts) => {
         });
     });
 
-    describe("Calculation Intrinsic", () => {
+    describe("Calculation Intrinsic", function() {
         before(async () => {
             calculateIntrinsic = async (tokenU, tokenS, base, price) => {
                 let intrinsic = await oracle.calculateIntrinsic(
@@ -246,7 +253,8 @@ contract("Oracle contract - mainnet", (accounts) => {
                 return intrinsic;
             };
         });
-        it("Calculates intrinsic for arbritary put options and compares to market", async () => {
+        it("Calculates intrinsic for arbritary put options and compares to market", async function() {
+            if (id !== 999) this.skip();
             let tokenU = MAINNET_DAI;
             let tokenS = MAINNET_WETH;
             const run = async (amount) => {
@@ -264,7 +272,8 @@ contract("Oracle contract - mainnet", (accounts) => {
             await run(5);
         });
 
-        it("Calculates intrinsic for arbritary call options and compares to market", async () => {
+        it("Calculates intrinsic for arbritary call options and compares to market", async function() {
+            if (id !== 999) this.skip();
             let tokenU = MAINNET_WETH;
             let tokenS = MAINNET_DAI;
             const run = async (amount) => {
@@ -283,7 +292,7 @@ contract("Oracle contract - mainnet", (accounts) => {
         });
     });
 
-    describe("Calculation Extrinsic", () => {
+    describe("Calculation Extrinsic", function() {
         before(async () => {
             calculateExtrinsic = async (
                 tokenU,
@@ -304,7 +313,8 @@ contract("Oracle contract - mainnet", (accounts) => {
                 return extrinsic;
             };
         });
-        it("Calculates extrinsic premiums for arbritary options parameters", async () => {
+        it("Calculates extrinsic premiums for arbritary options parameters", async function() {
+            if (id !== 999) this.skip();
             let tokenU = MAINNET_DAI;
             let tokenS = MAINNET_WETH;
             const run = async (amount) => {
@@ -334,8 +344,9 @@ contract("Oracle contract - mainnet", (accounts) => {
         });
     });
 
-    describe("Calculation Specific", () => {
-        it("Calculates premiums for deribit put series expiring Dec 25", async () => {
+    describe("Calculation Specific", function() {
+        it("Calculates premiums for deribit put series expiring Dec 25", async function() {
+            if (id !== 999) this.skip();
             let tokenU = MAINNET_DAI;
             let tokenS = MAINNET_WETH;
             let expiry = "1608897540";
@@ -396,7 +407,8 @@ contract("Oracle contract - mainnet", (accounts) => {
             }
         });
 
-        it("Calculates premiums for deribit call series expiring Dec 25", async () => {
+        it("Calculates premiums for deribit call series expiring Dec 25", async function() {
+            if (id !== 999) this.skip();
             let tokenU = MAINNET_WETH;
             let tokenS = MAINNET_DAI;
             let expiry = "1608897540";
