@@ -6,3 +6,6 @@ artifacts
 
 #Env settings
 .env
+
+coverage
+coverage.json

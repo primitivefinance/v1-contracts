@@ -26,7 +26,7 @@ contract("Oracle contract - mainnet", (accounts) => {
     let oracle, dai;
 
     before(async () => {
-        oracle = await PrimeOracle.new(MAINNET_ORACLE);
+        oracle = await PrimeOracle.new(MAINNET_ORACLE, MAINNET_WETH);
         dai = MAINNET_DAI;
 
         getPriceInDai = async () => {

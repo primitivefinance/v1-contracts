@@ -100,6 +100,10 @@ contract("Pool", (accounts) => {
         let inTokenPULP = new BN(_inTokenPULP);
         let totalSupply = new BN(_totalSupply);
         let totalBalance = new BN(_totalBalance);
+        let zero = new BN(0);
+        if (totalBalance.isZero() || totalSupply.isZero()) {
+            return zero;
+        }
         let outTokenU = inTokenPULP.mul(totalBalance).div(totalSupply);
         return outTokenU;
     };
@@ -133,7 +137,7 @@ contract("Pool", (accounts) => {
         await dai.approve(exchange.address, MILLION_ETHER, { from: Alice });
         await exchange.addLiquidity(1, toWei("100000"), 1604275200, {
             from: Alice,
-            value: toWei("500"),
+            value: toWei("250"),
         });
         await dai.mint(Alice, toWei("1000"));
 
@@ -199,7 +203,7 @@ contract("Pool", (accounts) => {
         );
 
         // Setup prime oracle and feed for dai.
-        oracle = await PrimeOracle.new(oracleLike.address);
+        oracle = await PrimeOracle.new(oracleLike.address, weth.address);
         await oracle.addFeed(dai.address);
 
         pool = await PrimePool.new(
@@ -310,11 +314,6 @@ contract("Pool", (accounts) => {
         it("should return the correct oracle address", async () => {
             expect((await pool.oracle()).toString().toUpperCase()).to.be.eq(
                 oracle.address.toUpperCase()
-            );
-        });
-        it("should return the correct tokenS address", async () => {
-            expect((await pool.WETH()).toString().toUpperCase()).to.be.eq(
-                (await prime.tokenS()).toUpperCase()
             );
         });
         it("should return the correct factory address", async () => {
@@ -438,10 +437,13 @@ contract("Pool", (accounts) => {
         });
  */
         it("should revert on depositEth if tokenU is not WETH", async () => {
-            await truffleAssert.reverts(
-                pool.depositEth({ value: ONE_ETHER }),
-                "ERR_NOT_WETH"
-            );
+            let symbol = await _tokenU.symbol();
+            if (symbol != "WETH") {
+                await truffleAssert.reverts(
+                    pool.depositEth({ value: ONE_ETHER }),
+                    "ERR_NOT_WETH"
+                );
+            }
         });
         it("check volatility", async () => {
             await getVolatilityProxy();
@@ -463,7 +465,13 @@ contract("Pool", (accounts) => {
         before(async () => {
             withdraw = async (inTokenPULP) => {
                 inTokenPULP = new BN(inTokenPULP);
-                let balance0U = await getBalance(_tokenU, Alice);
+                let balance0U;
+                if (tokenU == weth.address) {
+                    balance0U = await getEthBalance(Alice);
+                } else {
+                    balance0U = await getBalance(_tokenU, Alice);
+                }
+
                 let balance0P = await getTokenBalance(pool, Alice);
 
                 let balance0R = await getTokenBalance(redeem, pool.address);
@@ -487,20 +495,34 @@ contract("Pool", (accounts) => {
                 if (balance0P.lt(inTokenPULP)) {
                     return;
                 }
-
-                /* console.log("[INITIALSTATE]");
-                console.log("ALICE U", balance0U.toString());
-                console.log("ALICE P", balance0P.toString());
                 console.log("ALICE WITHDRAW", inTokenPULP.toString());
-                console.log("CONTRACT U", balance0CU.toString());
-                console.log("CONTRACT S", balance0CS.toString());
-                console.log("CONTRACT R", balance0R.toString());
-                console.log("CONTRACT RU", balance0RinU.toString());
-                console.log("CONTRACT TS", balance0TS.toString());
+                console.log("CONTRACT TP", balance0TP.toString());
                 console.log("CONTRACT TP", balance0TP.toString());
                 console.log("WITHDRAW LIQUIDITY", liquidity.toString());
-                console.log("CONTRACT UTILIZED", utilized0.toString());
-                console.log("CONTRACT UNUTILIZED", unutilized0.toString()); */
+
+                if (LOG_VERBOSE) console.log("[INITIALSTATE]");
+                if (LOG_VERBOSE) console.log("ALICE U", balance0U.toString());
+                if (LOG_VERBOSE) console.log("ALICE P", balance0P.toString());
+                if (LOG_VERBOSE)
+                    console.log("ALICE WITHDRAW", inTokenPULP.toString());
+                if (LOG_VERBOSE)
+                    console.log("CONTRACT U", balance0CU.toString());
+                if (LOG_VERBOSE)
+                    console.log("CONTRACT S", balance0CS.toString());
+                if (LOG_VERBOSE)
+                    console.log("CONTRACT R", balance0R.toString());
+                if (LOG_VERBOSE)
+                    console.log("CONTRACT RU", balance0RinU.toString());
+                if (LOG_VERBOSE)
+                    console.log("CONTRACT TS", balance0TS.toString());
+                if (LOG_VERBOSE)
+                    console.log("CONTRACT TP", balance0TP.toString());
+                if (LOG_VERBOSE)
+                    console.log("WITHDRAW LIQUIDITY", liquidity.toString());
+                if (LOG_VERBOSE)
+                    console.log("CONTRACT UTILIZED", utilized0.toString());
+                if (LOG_VERBOSE)
+                    console.log("CONTRACT UNUTILIZED", unutilized0.toString());
                 await getVolatilityProxy();
                 let event = await pool.withdraw(inTokenPULP, {
                     from: Alice,
@@ -515,7 +537,13 @@ contract("Pool", (accounts) => {
                     );
                 });
 
-                let balance1U = await getBalance(_tokenU, Alice);
+                let balance1U;
+                if (tokenU == weth.address) {
+                    balance1U = await getEthBalance(Alice);
+                } else {
+                    balance1U = await getBalance(_tokenU, Alice);
+                }
+
                 let balance1P = await getTokenBalance(pool, Alice);
                 let balance1CU = await getBalance(_tokenU, pool.address);
                 let balance1TS = await getTotalSupply();
@@ -534,27 +562,43 @@ contract("Pool", (accounts) => {
                 let deltaTS = balance1TS.sub(balance0TS);
                 let deltaTP = balance1TP.sub(balance0TP);
 
-                /* console.log("[ENDSTATE]");
-                console.log("ALICE U", balance1U.toString());
-                console.log("ALICE P", balance1P.toString());
-                console.log("ALICE WITHDRAW", inTokenPULP.toString());
-                console.log("CONTRACT U", balance1CU.toString());
-                console.log("CONTRACT S", balance1CS.toString());
-                console.log("CONTRACT R", balance1R.toString());
-                console.log("CONTRACT RU", balance1RinU.toString());
-                console.log("CONTRACT TS", balance1TS.toString());
-                console.log("CONTRACT TP", balance1TP.toString());
-                console.log("WITHDRAW LIQUIDITY", liquidity.toString());
-                console.log("CONTRACT UTILIZED", utilized1.toString());
-                console.log("CONTRACT UNUTILIZED", unutilized1.toString());
-                console.log("DELTA ACTUAL", deltaTP.toString()); */
+                if (LOG_VERBOSE) console.log("[ENDSTATE]");
+                if (LOG_VERBOSE) console.log("ALICE U", balance1U.toString());
+                if (LOG_VERBOSE) console.log("ALICE P", balance1P.toString());
+                if (LOG_VERBOSE)
+                    console.log("ALICE WITHDRAW", inTokenPULP.toString());
+                if (LOG_VERBOSE)
+                    console.log("CONTRACT U", balance1CU.toString());
+                if (LOG_VERBOSE)
+                    console.log("CONTRACT S", balance1CS.toString());
+                if (LOG_VERBOSE)
+                    console.log("CONTRACT R", balance1R.toString());
+                if (LOG_VERBOSE)
+                    console.log("CONTRACT RU", balance1RinU.toString());
+                if (LOG_VERBOSE)
+                    console.log("CONTRACT TS", balance1TS.toString());
+                if (LOG_VERBOSE)
+                    console.log("CONTRACT TP", balance1TP.toString());
+                if (LOG_VERBOSE)
+                    console.log("WITHDRAW LIQUIDITY", liquidity.toString());
+                if (LOG_VERBOSE)
+                    console.log("CONTRACT UTILIZED", utilized1.toString());
+                if (LOG_VERBOSE)
+                    console.log("CONTRACT UNUTILIZED", unutilized1.toString());
+                if (LOG_VERBOSE)
+                    console.log("DELTA ACTUAL", deltaTP.toString());
 
                 let slippage = new BN(MAX_SLIPPAGE);
+                let gas;
+                if (tokenU == weth.address) {
+                    gas = new BN(toWei("0.001"));
+                }
                 let maxValue = liquidity.add(liquidity.div(slippage));
-                let minValue = liquidity.sub(liquidity.div(slippage));
-                /* console.log("[MAXVALUE]", maxValue.toString());
-                console.log("[LIQUIDITY]", liquidity.toString());
-                console.log("[MINVALUE]", minValue.toString()); */
+                let minValue = liquidity.sub(liquidity.div(slippage)).sub(gas);
+                if (LOG_VERBOSE) console.log("[MAXVALUE]", maxValue.toString());
+                if (LOG_VERBOSE)
+                    console.log("[LIQUIDITY]", liquidity.toString());
+                if (LOG_VERBOSE) console.log("[MINVALUE]", minValue.toString());
                 expect(deltaU).to.be.a.bignumber.that.is.at.most(maxValue);
                 expect(deltaU).to.be.a.bignumber.that.is.at.least(minValue);
                 assertBNEqual(deltaP, inTokenPULP.neg());
@@ -834,10 +878,17 @@ contract("Pool", (accounts) => {
             await getVolatilityProxy();
         });
         it("utilize the rest of the pool", async () => {
+            if (tokenU == weth.address) {
+                await _tokenU.deposit({ from: Alice, value: toWei("300") });
+            }
+            await pool.deposit(TEN_ETHER, { from: Alice });
+            console.log((await _tokenU.balanceOf(Alice)).toString());
             let balanceCU = new BN(await _tokenU.balanceOf(pool.address));
             let toCover = balanceCU
-                .mul(new BN(toWei("1")))
-                .div(await prime.base());
+                .mul(await prime.price())
+                .div(await prime.base())
+                .sub(new BN(toWei("0.001"))); // error in division
+            console.log(balanceCU.toString(), toCover.toString());
             await pool.buy(toCover, {
                 from: Alice,
             });
@@ -973,8 +1024,9 @@ contract("Pool", (accounts) => {
             );
 
             // Setup prime oracle and feed for dai.
-            oracle = await PrimeOracle.new(oracleLike.address);
+            oracle = await PrimeOracle.new(oracleLike.address, weth.address);
             await oracle.addFeed(tokenU);
+            await oracle.addFeed(tokenS);
 
             pool = await PrimePool.new(
                 weth.address,

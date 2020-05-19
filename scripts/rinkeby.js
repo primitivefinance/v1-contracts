@@ -5,6 +5,11 @@
 const bre = require("@nomiclabs/buidler");
 const PrimeOption = artifacts.require("PrimeOption");
 const PrimeRedeem = artifacts.require("PrimeRedeem");
+const PrimeTrader = artifacts.require("PrimeTrader.sol");
+const PrimePool = artifacts.require("PrimePool.sol");
+const PrimeOracle = artifacts.require("PrimeOracle.sol");
+const Dai = artifacts.require("DAI");
+const Weth = artifacts.require("WETH9");
 const { web3 } = require("@nomiclabs/buidler");
 
 async function main() {
@@ -13,19 +18,12 @@ async function main() {
     // to make sure everything is compiled
     // await bre.run('compile');
 
-    const rinkebyWeth = "0xc778417e063141139fce010982780140aa0cd5ab";
-    const mainnetWeth = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
-    const mainnetDAI = "0x6b175474e89094c44da98b954eedeac495271d0f";
+    const weth = await Weth.new();
+    const dai = await Dai.new(web3.utils.toWei("1000000"));
+    const trader = await PrimeTrader.new(weth.address);
 
-    let weth;
-    if (network === "rinkeby") {
-        weth = rinkebyWeth;
-    } else {
-        weth = mainnetWeth;
-    }
-
-    const tokenU = weth;
-    const tokenS = mainnetDAI;
+    const tokenU = weth.address;
+    const tokenS = dai.address;
     const marketId = 2;
     const optionName = "Primitive ETH Call 300 DAI Expiring June 26 2020";
     const optionSymbol = "primeETH300C260620";
@@ -63,6 +61,7 @@ async function main() {
     await prime.initTokenR(redeem.address);
     console.log("[prime]", prime.address);
     console.log("[redeem]", redeem.address);
+    console.log("[trader]", trader.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

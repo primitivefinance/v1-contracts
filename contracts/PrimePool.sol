@@ -40,7 +40,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     
     uint256 public constant SECONDS_IN_DAY = 86400;
     uint256 public constant ONE_ETHER = 1 ether;
-    uint256 public constant MAX_SLIPPAGE = 98;
+    uint256 public constant MAX_SLIPPAGE = 95;
     uint256 public constant MIN_VOLATILITY = 10**15;
     uint256 public constant MIN_PREMIUM = 100;
     uint256 public constant MIN_LIQUIDITY = 10**4;
@@ -54,8 +54,6 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     address public factory;
     address public tokenP;
     address public WETH;
-    
-    mapping(uint256 => address) public primes;
 
     event Market(address tokenP);
     event Deposit(address indexed from, uint256 inTokenU, uint256 outTokenPULP);
@@ -89,6 +87,8 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         }
         return true;
     }
+
+    receive() external payable {}
 
     /* =========== MAKER FUNCTIONS =========== */
 
@@ -272,7 +272,6 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
     {
         // Check how many tokenS can be pulled from PrimeOption.sol.
         (uint256 maxDraw) = IPrime(_tokenP).maxDraw();
-        require(maxDraw > 0, "ERR_BAL_STRIKE");
 
         // Push tokenR to _tokenP so we can call redeem() and pull tokenS.
         IERC20(IPrime(_tokenP).tokenR()).transfer(_tokenP, maxDraw);
@@ -294,9 +293,13 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         returns (uint256 inTokenU)
     {
         // Get addresses for gas savings.
-        address exchange;
         address tokenS = IPrime(_tokenP).tokenS();
         address tokenU = IPrime(_tokenP).tokenU();
+        address exchange;
+        if(tokenU == WETH) {
+            exchange = tokenS;
+        } else exchange = tokenU;
+        exchange = UniswapFactoryInterface(factory).getExchange(exchange);
         // Get price of 1 ETH denominated in tokenU from compound oracle. 1 ETH = 1e36 / oracle's price.
         // Assumes oracle never returns a value greater than 1e36.
         (uint256 oraclePrice) = marketRatio(_tokenP);
@@ -309,22 +312,21 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         // Initialize outTokenS variable.
         uint256 outTokenS;
         if(tokenU == WETH) {
-            exchange = UniswapFactoryInterface(factory).getExchange(tokenS);
             // Get current balance of tokenS to send to uniswap pool.
             outTokenS = IERC20(tokenS).balanceOf(address(this));
-            // Convert min received from ETH per DAI to DAI per ETH.
-            minReceived = MANTISSA.div(uniPrice);
+            // Get the minimum amount of ETH received by selling outTokenS at the current price.
+            minReceived = outTokenS.mul(ONE_ETHER).div(minReceived);
             // Swaps tokenS to ETH.
             // Min tokenU Received: Amount ETH * minRecieved / 10^18
             // Deadline = now + 3 minutes.
+            IERC20(tokenS).approve(exchange, outTokenS);
             inTokenU = UniswapExchangeInterface(exchange)
-                            .tokenToEthSwapInput(outTokenS, outTokenS.mul(minReceived).div(ONE_ETHER), now + 3 minutes);
+                            .tokenToEthSwapInput(outTokenS, 1, now + 3 minutes);
 
             // Wrap WETH.
             IWETH(WETH).deposit.value(address(this).balance)();
         } else {
             assert(tokenS == WETH);
-            exchange = UniswapFactoryInterface(factory).getExchange(tokenU);
             // Unwrap WETH.
             IWETH(WETH).withdraw(IERC20(tokenS).balanceOf(address(this)));
             // Get balance to send to uniswap pool.
@@ -419,12 +421,10 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         // Updates the volatility global state variable.
         volatility = calculateVolatilityProxy(_tokenP);
 
-        
-
         // Pulls payment in tokenU from msg.sender and then pushes tokenP (option).
         // WARNING: Two calls to untrusted addresses.
         require(IERC20(tokenU).balanceOf(msg.sender) >= premium, "ERR_BAL_UNDERLYING");
-        require(IERC20(_tokenP).balanceOf(address(this)) >= inTokenP && inTokenP > 0, "ERR_BAL_PRIME");
+        require(IERC20(_tokenP).balanceOf(address(this)) >= inTokenP, "ERR_BAL_PRIME");
         emit Buy(msg.sender, inTokenS, outTokenU, premium);
         (bool received) = IERC20(tokenU).transferFrom(msg.sender, address(this), premium);
         return received && transferU && IPrime(_tokenP).transfer(msg.sender, inTokenP);
@@ -487,7 +487,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         IERC20(tokenR).transfer(tokenP, redeem);
 
         // Transfer prime token to prime contract optimistically.
-        IERC20(_tokenP).transferFrom(msg.sender, tokenP, inTokenP);
+        require(IERC20(_tokenP).transferFrom(msg.sender, tokenP, inTokenP), "ERR_TRANSFER_IN_PRIME");
         
         // Call the close function to have the transferred prime and redeem tokens burned.
         // Returns tokenU.

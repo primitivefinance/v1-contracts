@@ -14,7 +14,7 @@ interface PriceOracleProxy {
 contract PrimeOracle {
     using SafeMath for uint256;
 
-    address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    /* address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; */
     address public constant MCD_DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address public constant COMPOUND_DAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
     address public constant COMPOUND_ETH = 0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5;
@@ -22,6 +22,7 @@ contract PrimeOracle {
     address public constant COMPOUND_USDT = 0xf650C3d88D12dB855b8bf7D11Be6C55A4e07dCC9;
     address public constant COMPOUND_WBTC = 0xC11b1268C1A384e55C48c2391d8d480264A3A7F4;
     address public oracle;
+    address public WETH;
 
     uint256 public constant MIN_PREMIUM = 10**3;
     uint256 public constant ONE_ETHER = 1 ether;
@@ -30,8 +31,9 @@ contract PrimeOracle {
 
     mapping(address => address) public feeds;
 
-    constructor(address _oracle) public {
+    constructor(address _oracle, address _weth) public {
         oracle = _oracle;
+        WETH = _weth;
         feeds[MCD_DAI] = COMPOUND_DAI;
     }
 

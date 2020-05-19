@@ -30,7 +30,7 @@ const LOG_SPECIFIC = false;
 const LOG_VERBOSE = false;
 
 contract("Oracle contract", (accounts) => {
-    let oracle, dai, oracleLike;
+    let oracle, dai, weth, oracleLike;
 
     let Alice = accounts[0];
 
@@ -38,8 +38,10 @@ contract("Oracle contract", (accounts) => {
         oracleLike = await OracleLike.new();
         await oracleLike.setUnderlyingPrice(5e15);
         dai = await Dai.new(MILLION_ETHER);
-        oracle = await PrimeOracle.new(oracleLike.address);
+        weth = await Weth.new();
+        oracle = await PrimeOracle.new(oracleLike.address, weth.address);
         await oracle.addFeed(dai.address);
+        await oracle.addFeed(weth.address);
 
         getPriceInDai = async () => {
             let ether = new BN(ONE_ETHER);
@@ -151,7 +153,7 @@ contract("Oracle contract", (accounts) => {
         it("Calculates the premium for ETH 200 DAI Put Expiring May 29", async () => {
             let deribit = "0.0765"; // in ethers
             let tokenU = dai.address;
-            let tokenS = MAINNET_WETH;
+            let tokenS = weth.address;
             let volatility = 880; // Deribit's IV is 88% as of today May 3, 2020.
             let base = toWei("200");
             let price = toWei("1");
@@ -172,7 +174,7 @@ contract("Oracle contract", (accounts) => {
 
         it("Calculates premiums for arbritary Put options", async () => {
             let tokenU = dai.address;
-            let tokenS = MAINNET_WETH;
+            let tokenS = weth.address;
             const run = async (amount) => {
                 for (let i = 0; i < amount; i++) {
                     let option = generateRandomPutOption();
@@ -200,7 +202,7 @@ contract("Oracle contract", (accounts) => {
         });
 
         it("Calculates premiums for arbritary Call options", async () => {
-            let tokenU = MAINNET_WETH;
+            let tokenU = weth.address;
             let tokenS = dai.address;
             const run = async (amount) => {
                 for (let i = 0; i < amount; i++) {
@@ -276,7 +278,7 @@ contract("Oracle contract", (accounts) => {
         });
         it("Calculates intrinsic for arbritary put options and compares to market", async () => {
             let tokenU = dai.address;
-            let tokenS = MAINNET_WETH;
+            let tokenS = weth.address;
             const run = async (amount) => {
                 for (let i = 0; i < amount; i++) {
                     let option = generateRandomPutOption();
@@ -293,7 +295,7 @@ contract("Oracle contract", (accounts) => {
         });
 
         it("Calculates intrinsic for arbritary call options and compares to market", async () => {
-            let tokenU = MAINNET_WETH;
+            let tokenU = weth.address;
             let tokenS = dai.address;
             const run = async (amount) => {
                 for (let i = 0; i < amount; i++) {
@@ -334,7 +336,7 @@ contract("Oracle contract", (accounts) => {
         });
         it("Calculates extrinsic premiums for arbritary put options parameters", async () => {
             let tokenU = dai.address;
-            let tokenS = MAINNET_WETH;
+            let tokenS = weth.address;
             const run = async (amount) => {
                 for (let i = 0; i < amount; i++) {
                     let option = generateRandomPutOption();
@@ -362,7 +364,7 @@ contract("Oracle contract", (accounts) => {
         });
 
         it("Calculates extrinsic premiums for arbritary call options parameters", async () => {
-            let tokenU = MAINNET_WETH;
+            let tokenU = weth.address;
             let tokenS = dai.address;
             const run = async (amount) => {
                 for (let i = 0; i < amount; i++) {
@@ -394,7 +396,7 @@ contract("Oracle contract", (accounts) => {
     describe("Calculation Specific", () => {
         it("Calculates premiums for deribit put series expiring Dec 25", async () => {
             let tokenU = dai.address;
-            let tokenS = MAINNET_WETH;
+            let tokenS = weth.address;
             let expiry = "1608897540";
             let volatility = 500;
             let date = new Date(+expiry * 1000).toDateString();
@@ -454,7 +456,7 @@ contract("Oracle contract", (accounts) => {
         });
 
         it("Calculates premiums for deribit call series expiring Dec 25", async () => {
-            let tokenU = MAINNET_WETH;
+            let tokenU = weth.address;
             let tokenS = dai.address;
             let expiry = "1608897540";
             let volatility = 1000;

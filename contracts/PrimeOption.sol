@@ -1,7 +1,7 @@
 pragma solidity ^0.6.2;
 
 /**
- * @title   ERC-20 Binary Option Primitive
+ * @title   ERC-20 Vanilla Option Primitive
  * @author  Primitive
  */
 

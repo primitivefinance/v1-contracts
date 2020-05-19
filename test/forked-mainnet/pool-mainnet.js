@@ -184,7 +184,7 @@ contract("Pool - forked-mainnet", (accounts) => {
             prime.address,
             tokenS
         );
-        oracle = await PrimeOracle.new(MAINNET_ORACLE);
+        oracle = await PrimeOracle.new(MAINNET_ORACLE, MAINNET_WETH);
         pool = await PrimePool.new(
             MAINNET_WETH,
             prime.address,
