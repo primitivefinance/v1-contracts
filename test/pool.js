@@ -25,6 +25,7 @@ const {
     ERR_ZERO_LIQUIDITY,
     ERR_PAUSED,
     HUNDRETH,
+    TENTH,
     ONE_ETHER,
     FIVE_ETHER,
     TEN_ETHER,
@@ -878,13 +879,11 @@ contract("Pool", (accounts) => {
                 await _tokenU.deposit({ from: Alice, value: toWei("300") });
             }
             await pool.deposit(TEN_ETHER, { from: Alice });
-            console.log((await _tokenU.balanceOf(Alice)).toString());
             let balanceCU = new BN(await _tokenU.balanceOf(pool.address));
             let toCover = balanceCU
                 .mul(await prime.price())
                 .div(await prime.base())
                 .sub(new BN(toWei("0.001"))); // error in division
-            console.log(balanceCU.toString(), toCover.toString());
             await pool.buy(toCover, {
                 from: Alice,
             });
@@ -920,7 +919,7 @@ contract("Pool", (accounts) => {
         it("should withdraw tokenU by burning tokenPULP", async () => {
             const run = async (runs) => {
                 for (let i = 0; i < runs; i++) {
-                    let amt = Math.floor(ONE_ETHER * Math.random()).toString();
+                    let amt = Math.floor(TENTH * Math.random()).toString();
                     await withdraw(amt);
                 }
             };

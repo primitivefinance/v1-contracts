@@ -21,6 +21,7 @@ const ERR_ZERO_LIQUIDITY = "ERR_ZERO_LIQUIDITY";
 // COMMON AMOUNTS
 const ROUNDING_ERR = 10 ** 8;
 const HUNDRETH = toWei("0.01");
+const TENTH = toWei("0.1");
 const ONE_ETHER = toWei("1");
 const TWO_ETHER = toWei("2");
 const FIVE_ETHER = toWei("5");
@@ -63,6 +64,7 @@ module.exports = {
     ERR_FEED_INVALID,
     ROUNDING_ERR,
     HUNDRETH,
+    TENTH,
     ONE_ETHER,
     TWO_ETHER,
     FIVE_ETHER,
