@@ -58,15 +58,19 @@ npm run coverage
 
 #### Steps to testing using the buidler EVM
 
-Step 1
+Step 1 - Install Dependencies
 
     npm run clean-install
 
-Step 2
+Step 2 - Compile Contracts
 
     npm run compile
 
-Step 3
+Step 3 - Start Buidler EVM Node
+
+    npm run bevm
+
+Step 4 - Run the tests
 
     npm run test
 
@@ -80,7 +84,7 @@ Step 2
 
     npm compile
 
-Step 3
+Step 3 - A forked mainnet node with network ID 999 is required.
 
     npm start:f-mainnet
 
