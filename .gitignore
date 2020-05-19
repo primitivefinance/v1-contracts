@@ -1,3 +1,11 @@
 node_modules
+
+#Buidler files
+cache
+artifacts
+
+#Env settings
 .env
-client
+
+coverage
+coverage.json
