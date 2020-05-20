@@ -263,7 +263,7 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
         // Difference between tokenR balance and cache.
         inTokenR = balanceR;
         require(inTokenR > 0, "ERR_ZERO");
-        verifyBalance(balanceS, inTokenR, "ERR_BAL_STRIKE");
+        require(balanceS >= inTokenR, "ERR_BAL_STRIKE");
 
         // Burn tokenR in the contract. Send tokenS to msg.sender.
         require(
@@ -403,18 +403,5 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
         cacheS > balanceR ?
             draw = balanceR :
             draw = cacheS;
-    }
-
-    /**
-     * @dev Utility function to check if balance is >= minBalance.
-     */
-    function verifyBalance(
-        uint256 balance,
-        uint256 minBalance,
-        string memory errorCode
-    ) internal pure {
-        minBalance == 0 ?
-            require(balance > minBalance, errorCode) :
-            require(balance >= minBalance, errorCode);
     }
 }
