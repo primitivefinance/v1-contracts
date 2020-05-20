@@ -5,13 +5,14 @@ pragma solidity ^0.6.2;
  * @author  Primitive
  */
 
+import "./interfaces/IPrimeOracle.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 interface PriceOracleProxy {
     function getUnderlyingPrice(address cToken) external view returns (uint);
 }
 
-contract PrimeOracle {
+contract PrimeOracle is IPrimeOracle {
     using SafeMath for uint256;
 
     /* address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; */
@@ -66,7 +67,7 @@ contract PrimeOracle {
     )
         public
         view
-        returns (uint256 premium)
+        override returns (uint256 premium)
     {
         // Calculate the parts.
         (uint256 intrinsic) = calculateIntrinsic(tokenU, tokenS, base, price);
@@ -83,11 +84,11 @@ contract PrimeOracle {
      * @dev Gets the market price of tokenU using compound's oracle, which uses the compound
      * version of the token.
      */
-    function marketPrice(address token) public view returns (uint256 market) {
+    function marketPrice(address token) public view override returns (uint256 market) {
         // The compound wrapped cToken. e.g. cToken = DAI, feed = cDAI.
         address feed = feeds[token];
         require(feed != address(0), "ERR_FEED_INVALID");
-        // Returns the price of cToken denominated in ethers.
+        // override Returns the price of cToken denominated in ethers.
         market = PriceOracleProxy(oracle).getUnderlyingPrice(feed);
     }
 
@@ -103,7 +104,7 @@ contract PrimeOracle {
     function calculateIntrinsic(address tokenU, address tokenS, uint256 base, uint256 price)
         public
         view
-        returns (uint256 intrinsic)
+        override returns (uint256 intrinsic)
     {
         // Get the oracle market price.
         uint256 market;
@@ -145,7 +146,7 @@ contract PrimeOracle {
     )
         public
         view
-        returns (uint256 extrinsic)
+        override returns (uint256 extrinsic)
     {
         // Get the oracle market price.
         uint256 market;

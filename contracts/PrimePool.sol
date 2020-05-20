@@ -6,7 +6,9 @@ pragma solidity ^0.6.2;
  */
 
 
-import "./PrimeInterface.sol";
+import "./interfaces/IPrime.sol";
+import "./interfaces/IPrimePool.sol";
+import "./interfaces/IPrimeOracle.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
@@ -32,7 +34,7 @@ interface IWETH {
     function withdraw(uint wad) external;
 }
 
-contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
+contract PrimePool is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
     using SafeMath for uint256;
 
     address public constant COMPOUND_DAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
@@ -427,7 +429,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         require(IERC20(_tokenP).balanceOf(address(this)) >= inTokenP, "ERR_BAL_PRIME");
         emit Buy(msg.sender, inTokenS, outTokenU, premium);
         (bool received) = IERC20(tokenU).transferFrom(msg.sender, address(this), premium);
-        return received && transferU && IPrime(_tokenP).transfer(msg.sender, inTokenP);
+        return received && transferU && IERC20(_tokenP).transfer(msg.sender, inTokenP);
     }
 
     /**

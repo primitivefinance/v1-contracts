@@ -5,23 +5,24 @@ pragma solidity ^0.6.2;
  * @author  Primitive
  */
 
-import "./PrimeInterface.sol";
-import "./Instruments.sol";
+import "./Primitives.sol";
+import "./interfaces/IPrime.sol";
+import "./interfaces/IPrimeRedeem.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 
-contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
+contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
     using SafeMath for uint256;
 
-    address public tokenR;
-    address public factory;
+    address public override tokenR;
+    address public override factory;
 
-    uint256 public cacheU;
-    uint256 public cacheS;
+    uint256 public override cacheU;
+    uint256 public override cacheS;
 
-    Instruments.PrimeOption public option;
+    Primitives.Prime public option;
 
     event Mint(address indexed from, uint256 outTokenP, uint256 outTokenR);
     event Swap(address indexed from, uint256 outTokenU, uint256 inTokenS);
@@ -43,7 +44,7 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
     {
         require(tokenU != address(0) && tokenS != address(0), "ERR_ADDRESS_ZERO");
         factory = msg.sender;
-        option = Instruments.PrimeOption(
+        option = Primitives.Prime(
             tokenU,
             tokenS,
             base,
@@ -76,12 +77,12 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
     /* =========== CACHE & TOKEN GETTER FUNCTIONS =========== */
 
 
-    function getCaches() public view returns (uint256 _cacheU, uint256 _cacheS) {
+    function getCaches() public view override returns (uint256 _cacheU, uint256 _cacheS) {
         _cacheU = cacheU;
         _cacheS = cacheS;
     }
 
-    function getTokens() public view returns (address _tokenU, address _tokenS, address _tokenR) {
+    function getTokens() public view override returns (address _tokenU, address _tokenS, address _tokenR) {
         _tokenU = option.tokenU;
         _tokenS = option.tokenS;
         _tokenR = tokenR;
@@ -154,7 +155,7 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
         nonReentrant
         notExpired
         whenNotPaused
-        returns (uint256 inTokenU, uint256 outTokenR)
+        override returns (uint256 inTokenU, uint256 outTokenR)
     {
         // Current balance of tokenU.
         uint256 balanceU = IERC20(option.tokenU).balanceOf(address(this));
@@ -193,7 +194,7 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
         nonReentrant
         notExpired
         whenNotPaused
-        returns (uint256 inTokenS, uint256 inTokenP, uint256 outTokenU)
+        override returns (uint256 inTokenS, uint256 inTokenP, uint256 outTokenU)
     {
         // Stores addresses in memory for gas savings.
         address _tokenU = option.tokenU;
@@ -251,7 +252,7 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
      * Callable even when expired.
      * @param receiver The inTokenR quantity of tokenS is sent to the receiver address.
      */
-    function redeem(address receiver) external nonReentrant returns (uint256 inTokenR) {
+    function redeem(address receiver) external nonReentrant override returns (uint256 inTokenR) {
         address _tokenS = option.tokenS;
         address _tokenR = tokenR;
 
@@ -294,7 +295,7 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
     function close(address receiver)
         external
         nonReentrant
-        returns (uint256 inTokenR, uint256 inTokenP, uint256 outTokenU)
+        override returns (uint256 inTokenR, uint256 inTokenP, uint256 outTokenU)
     {
         // Stores addresses locally for gas savings.
         address _tokenU = option.tokenU;
@@ -302,7 +303,7 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
 
         // Current balances.
         uint256 balanceU = IERC20(_tokenU).balanceOf(address(this));
-        uint256 balanceR = IPrimeRedeem(_tokenR).balanceOf(address(this));
+        uint256 balanceR = IERC20(_tokenR).balanceOf(address(this));
         uint256 balanceP = balanceOf(address(this));
 
         // Differences between current and cached balances.
@@ -346,7 +347,7 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
 
         // Current balances of tokenU and tokenR.
         balanceU = IERC20(_tokenU).balanceOf(address(this));
-        balanceR = IPrimeRedeem(_tokenR).balanceOf(address(this));
+        balanceR = IERC20(_tokenR).balanceOf(address(this));
 
         // Update the cached balances.
         _fund(balanceU, cacheS);
@@ -357,26 +358,26 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
     /* =========== UTILITY =========== */
 
 
-    function tokenS() public view returns (address) {
+    function tokenS() public view override returns (address) {
         return option.tokenS;
     }
 
-    function tokenU() public view returns (address) {
+    function tokenU() public view override returns (address) {
         return option.tokenU;
     }
 
-    function base() public view returns (uint256) {
+    function base() public view override returns (uint256) {
         return option.base;
     }
-    function price() public view returns (uint256) {
+    function price() public view override returns (uint256) {
         return option.price;
     }
 
-    function expiry() public view returns (uint256) {
+    function expiry() public view override returns (uint256) {
         return option.expiry;
     }
 
-    function prime() public view returns (
+    function prime() public view override returns (
             address _tokenU,
             address _tokenS,
             address _tokenR,
@@ -385,7 +386,7 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
             uint256 _expiry
         )
     {
-        Instruments.PrimeOption memory _prime = option;
+        Primitives.Prime memory _prime = option;
         _tokenU = _prime.tokenU;
         _tokenS = _prime.tokenS;
         _tokenR = tokenR;
@@ -397,8 +398,8 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
     /**
      * @dev Utility function to get the max withdrawable tokenS amount of msg.sender.
      */
-    function maxDraw() public view returns (uint256 draw) {
-        uint256 balanceR = IPrimeRedeem(tokenR).balanceOf(msg.sender);
+    function maxDraw() public view override returns (uint256 draw) {
+        uint256 balanceR = IERC20(tokenR).balanceOf(msg.sender);
         cacheS > balanceR ?
             draw = balanceR :
             draw = cacheS;
