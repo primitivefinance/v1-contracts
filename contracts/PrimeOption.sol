@@ -22,7 +22,7 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
     uint256 public override cacheU;
     uint256 public override cacheS;
 
-    Primitives.Prime public option;
+    Primitives.Option public option;
 
     event Mint(address indexed from, uint256 outTokenP, uint256 outTokenR);
     event Swap(address indexed from, uint256 outTokenU, uint256 inTokenS);
@@ -44,7 +44,7 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
     {
         require(tokenU != address(0) && tokenS != address(0), "ERR_ADDRESS_ZERO");
         factory = msg.sender;
-        option = Primitives.Prime(
+        option = Primitives.Option(
             tokenU,
             tokenS,
             base,
@@ -386,7 +386,7 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
             uint256 _expiry
         )
     {
-        Primitives.Prime memory _prime = option;
+        Primitives.Option memory _prime = option;
         _tokenU = _prime.tokenU;
         _tokenS = _prime.tokenS;
         _tokenR = tokenR;

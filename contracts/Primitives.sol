@@ -8,7 +8,7 @@ library Primitives {
     /* 
      * @notice Vanilla Option.
      */
-    struct Prime {
+    struct Option {
         address tokenU;
         address tokenS;
         uint256 base;
