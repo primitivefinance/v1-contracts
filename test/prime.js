@@ -98,9 +98,6 @@ contract("Prime", (accounts) => {
                 case "s":
                     cache = new BN(await prime.cacheS());
                     break;
-                case "r":
-                    cache = new BN(await prime.cacheR());
-                    break;
             }
             return cache;
         };
@@ -259,7 +256,6 @@ contract("Prime", (accounts) => {
             let result = await prime.getCaches();
             assert.equal(result._cacheU.toString(), "0", "Incorrect cacheU");
             assert.equal(result._cacheS.toString(), "0", "Incorrect cacheS");
-            assert.equal(result._cacheR.toString(), "0", "Incorrect cacheR");
         });
 
         it("should return the correct initial cacheU", async () => {
@@ -275,14 +271,6 @@ contract("Prime", (accounts) => {
                 (await prime.cacheS()).toString(),
                 0,
                 "Incorrect cacheS"
-            );
-        });
-
-        it("should return the correct initial cacheR", async () => {
-            assert.equal(
-                (await prime.cacheR()).toString(),
-                0,
-                "Incorrect cacheR"
             );
         });
 
@@ -425,7 +413,6 @@ contract("Prime", (accounts) => {
 
                     let cacheU = await getCache("u");
                     let cacheS = await getCache("s");
-                    let cacheR = await getCache("r");
 
                     await truffleAssert.eventEmitted(event, "Fund", (ev) => {
                         return (
@@ -434,9 +421,6 @@ contract("Prime", (accounts) => {
                             ) &&
                             expect(ev.cacheS.toString()).to.be.eq(
                                 cacheS.toString()
-                            ) &&
-                            expect(ev.cacheR.toString()).to.be.eq(
-                                cacheR.toString()
                             )
                         );
                     });
@@ -507,7 +491,6 @@ contract("Prime", (accounts) => {
 
                     let cacheU = await getCache("u");
                     let cacheS = await getCache("s");
-                    let cacheR = await getCache("r");
 
                     await truffleAssert.eventEmitted(event, "Fund", (ev) => {
                         return (
@@ -516,9 +499,6 @@ contract("Prime", (accounts) => {
                             ) &&
                             expect(ev.cacheS.toString()).to.be.eq(
                                 cacheS.toString()
-                            ) &&
-                            expect(ev.cacheR.toString()).to.be.eq(
-                                cacheR.toString()
                             )
                         );
                     });
@@ -597,7 +577,6 @@ contract("Prime", (accounts) => {
 
                     let cacheU = await getCache("u");
                     let cacheS = await getCache("s");
-                    let cacheR = await getCache("r");
 
                     await truffleAssert.eventEmitted(event, "Fund", (ev) => {
                         return (
@@ -606,9 +585,6 @@ contract("Prime", (accounts) => {
                             ) &&
                             expect(ev.cacheS.toString()).to.be.eq(
                                 cacheS.toString()
-                            ) &&
-                            expect(ev.cacheR.toString()).to.be.eq(
-                                cacheR.toString()
                             )
                         );
                     });
@@ -691,7 +667,6 @@ contract("Prime", (accounts) => {
 
                     let cacheU = await getCache("u");
                     let cacheS = await getCache("s");
-                    let cacheR = await getCache("r");
 
                     await truffleAssert.eventEmitted(event, "Fund", (ev) => {
                         return (
@@ -700,9 +675,6 @@ contract("Prime", (accounts) => {
                             ) &&
                             expect(ev.cacheS.toString()).to.be.eq(
                                 cacheS.toString()
-                            ) &&
-                            expect(ev.cacheR.toString()).to.be.eq(
-                                cacheR.toString()
                             )
                         );
                     });
@@ -812,24 +784,18 @@ contract("Prime", (accounts) => {
 
                 let cacheU = await getCache("u");
                 let cacheS = await getCache("s");
-                let cacheR = await getCache("r");
-                let balanceR = await getBalance(redeem, tokenP);
                 let balanceU = await getBalance(_tokenU, tokenP);
                 let balanceS = await getBalance(_tokenS, tokenP);
 
                 assertBNEqual(cacheU, balanceU);
                 assertBNEqual(cacheS, balanceS);
-                assertBNEqual(cacheR, balanceR);
 
                 await truffleAssert.eventEmitted(update, "Fund", (ev) => {
                     return (
                         expect(ev.cacheU.toString()).to.be.eq(
                             cacheU.toString()
                         ) &&
-                        expect(ev.cacheS.toString()).to.be.eq(
-                            cacheS.toString()
-                        ) &&
-                        expect(ev.cacheR.toString()).to.be.eq(cacheR.toString())
+                        expect(ev.cacheS.toString()).to.be.eq(cacheS.toString())
                     );
                 });
             });
@@ -860,14 +826,11 @@ contract("Prime", (accounts) => {
 
                 let cacheU = await getCache("u");
                 let cacheS = await getCache("s");
-                let cacheR = await getCache("r");
-                let balanceR = await getBalance(redeem, tokenP);
                 let balanceU = await getBalance(_tokenU, tokenP);
                 let balanceS = await getBalance(_tokenS, tokenP);
 
                 assertBNEqual(cacheU, balanceU);
                 assertBNEqual(cacheS, balanceS);
-                assertBNEqual(cacheR, balanceR);
             });
         });
 
