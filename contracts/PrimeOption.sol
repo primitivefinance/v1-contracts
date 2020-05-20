@@ -14,35 +14,33 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 
 contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
-    using SafeMath for uint256;
-
-    address public override tokenR;
-    address public override factory;
-
-    uint256 public override cacheU;
-    uint256 public override cacheS;
+    using SafeMath for uint;
 
     Primitives.Option public option;
 
-    event Mint(address indexed from, uint256 outTokenP, uint256 outTokenR);
-    event Swap(address indexed from, uint256 outTokenU, uint256 inTokenS);
-    event Redeem(address indexed from, uint256 inTokenR);
-    event Close(address indexed from, uint256 inTokenP);
-    event Fund(uint256 cacheU, uint256 cacheS);
+    address public override tokenR;
+    address public override factory;
+    uint public override cacheU;
+    uint public override cacheS;
+
+    event Mint(address indexed from, uint outTokenP, uint outTokenR);
+    event Swap(address indexed from, uint outTokenU, uint inTokenS);
+    event Redeem(address indexed from, uint inTokenR);
+    event Close(address indexed from, uint inTokenP);
+    event Fund(uint cacheU, uint cacheS);
 
     constructor (
         string memory name,
         string memory symbol,
         address tokenU,
         address tokenS,
-        uint256 base,
-        uint256 price,
-        uint256 expiry
+        uint base,
+        uint price,
+        uint expiry
     )
         public
         ERC20(name, symbol)
     {
-        require(tokenU != address(0) && tokenS != address(0), "ERR_ADDRESS_ZERO");
         factory = msg.sender;
         option = Primitives.Option(
             tokenU,
@@ -59,38 +57,17 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
     }
 
     // Called by factory on deployment once.
-    function initTokenR(address _tokenR) public returns (bool) {
+    function initTokenR(address _tokenR) public {
         require(msg.sender == factory, "ERR_NOT_OWNER");
         tokenR = _tokenR;
-        return true;
     }
 
     function kill() public {
         require(msg.sender == factory, "ERR_NOT_OWNER");
-        if(paused()) {
-            _unpause();
-        } else {
-            _pause();
-        }
+        paused() ? _unpause() : _pause();
     }
 
-    /* =========== CACHE & TOKEN GETTER FUNCTIONS =========== */
-
-
-    function getCaches() public view override returns (uint256 _cacheU, uint256 _cacheS) {
-        _cacheU = cacheU;
-        _cacheS = cacheS;
-    }
-
-    function getTokens() public view override returns (address _tokenU, address _tokenS, address _tokenR) {
-        _tokenU = option.tokenU;
-        _tokenS = option.tokenS;
-        _tokenR = tokenR;
-    }
-
-
-    /* =========== ACCOUNTING FUNCTIONS =========== */
-
+    /* === ACCOUNTING === */
 
     /**
      * @dev Updates the cached balances to the actual current balances.
@@ -104,42 +81,34 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
 
     /**
      * @dev Difference between balances and caches is sent out so balances == caches.
-     * Fixes tokenU, tokenS, tokenR, and tokenP.
+     * Fixes tokenU, tokenS, tokenR, and tokenP balances.
      */
     function take() external nonReentrant {
-        (
-            address _tokenU,
-            address _tokenS,
-            address _tokenR
-        ) = getTokens();
-        IERC20(_tokenU).transfer(msg.sender,
-            IERC20(_tokenU).balanceOf(address(this))
-                .sub(cacheU)
+        (address _tokenU, address _tokenS, address _tokenR) = getTokens();
+        IERC20(_tokenU).transfer(
+            msg.sender, IERC20(_tokenU).balanceOf(address(this)).sub(cacheU)
         );
-        IERC20(_tokenS).transfer(msg.sender,
-            IERC20(_tokenS).balanceOf(address(this))
-                .sub(cacheS)
+        IERC20(_tokenS).transfer(
+            msg.sender, IERC20(_tokenS).balanceOf(address(this)).sub(cacheS)
         );
-        IERC20(_tokenR).transfer(msg.sender,
-            IERC20(_tokenR).balanceOf(address(this))
+        IERC20(_tokenR).transfer(
+            msg.sender, IERC20(_tokenR).balanceOf(address(this))
         );
-        IERC20(address(this)).transfer(msg.sender,
-            IERC20(address(this)).balanceOf(address(this))
+        IERC20(address(this)).transfer(
+            msg.sender, IERC20(address(this)).balanceOf(address(this))
         );
     }
 
     /**
      * @dev Sets the cache balances to new values.
      */
-    function _fund(uint256 balanceU, uint256 balanceS) private {
+    function _fund(uint balanceU, uint balanceS) private {
         cacheU = balanceU;
         cacheS = balanceS;
         emit Fund(balanceU, balanceS);
     }
 
-
-    /* =========== CRITICAL STATE MUTABLE FUNCTIONS =========== */
-
+    /* === FUNCTIONS === */
 
     /**
      * @dev Core function to mint new Prime ERC-20 Options.
@@ -152,22 +121,25 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
      */
     function mint(address receiver)
         external
+        override
         nonReentrant
         notExpired
         whenNotPaused
-        override returns (uint256 inTokenU, uint256 outTokenR)
+        returns (uint inTokenU, uint outTokenR)
     {
-        // Current balance of tokenU.
-        uint256 balanceU = IERC20(option.tokenU).balanceOf(address(this));
+        // Save on gas.
+        uint balanceU = IERC20(option.tokenU).balanceOf(address(this));
+        uint base = option.base;
+        uint price = option.price;
 
-        // Mint inTokenU equal to the difference between current balance and previous balance of tokenU.
+        // Mint inTokenU equal to the difference between current and cached balance of tokenU.
         inTokenU = balanceU.sub(cacheU);
 
         // Make sure outToken is not 0.
-        require(inTokenU.mul(option.price) > 0, "ERR_ZERO");
+        require(inTokenU.mul(price) >= base, "ERR_ZERO");
 
         // Mint outTokenR equal to tokenU * ratio FIX - FURTHER CHECKS
-        outTokenR = inTokenU.mul(option.price).div(option.base);
+        outTokenR = inTokenU.mul(price).div(base);
 
         // Mint the tokens.
         IPrimeRedeem(tokenR).mint(receiver, outTokenR);
@@ -187,23 +159,22 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
      * Only callable when the option is not expired.
      * @param receiver The outTokenU is sent to the receiver address.
      */
-    function swap(
-        address receiver
-    )
+    function swap(address receiver)
         external
+        override
         nonReentrant
         notExpired
         whenNotPaused
-        override returns (uint256 inTokenS, uint256 inTokenP, uint256 outTokenU)
+        returns (uint inTokenS, uint inTokenP, uint outTokenU)
     {
         // Stores addresses in memory for gas savings.
         address _tokenU = option.tokenU;
         address _tokenS = option.tokenS;
 
         // Current balances.
-        uint256 balanceS = IERC20(_tokenS).balanceOf(address(this));
-        uint256 balanceU = IERC20(_tokenU).balanceOf(address(this));
-        uint256 balanceP = balanceOf(address(this));
+        uint balanceS = IERC20(_tokenS).balanceOf(address(this));
+        uint balanceU = IERC20(_tokenU).balanceOf(address(this));
+        uint balanceP = balanceOf(address(this));
 
         // Differences between tokenS balance less cache.
         inTokenS = balanceS.sub(cacheS);
@@ -252,13 +223,18 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
      * Callable even when expired.
      * @param receiver The inTokenR quantity of tokenS is sent to the receiver address.
      */
-    function redeem(address receiver) external nonReentrant override returns (uint256 inTokenR) {
+    function redeem(address receiver)
+        external
+        override
+        nonReentrant
+        returns (uint inTokenR)
+    {
         address _tokenS = option.tokenS;
         address _tokenR = tokenR;
 
         // Current balances.
-        uint256 balanceS = IERC20(_tokenS).balanceOf(address(this));
-        uint256 balanceR = IERC20(_tokenR).balanceOf(address(this));
+        uint balanceS = IERC20(_tokenS).balanceOf(address(this));
+        uint balanceR = IERC20(_tokenR).balanceOf(address(this));
 
         // Difference between tokenR balance and cache.
         inTokenR = balanceR;
@@ -294,17 +270,18 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
      */
     function close(address receiver)
         external
+        override
         nonReentrant
-        override returns (uint256 inTokenR, uint256 inTokenP, uint256 outTokenU)
+        returns (uint inTokenR, uint inTokenP, uint outTokenU)
     {
         // Stores addresses locally for gas savings.
         address _tokenU = option.tokenU;
         address _tokenR = tokenR;
 
         // Current balances.
-        uint256 balanceU = IERC20(_tokenU).balanceOf(address(this));
-        uint256 balanceR = IERC20(_tokenR).balanceOf(address(this));
-        uint256 balanceP = balanceOf(address(this));
+        uint balanceU = IERC20(_tokenU).balanceOf(address(this));
+        uint balanceR = IERC20(_tokenR).balanceOf(address(this));
+        uint balanceP = balanceOf(address(this));
 
         // Differences between current and cached balances.
         inTokenR = balanceR;
@@ -353,37 +330,34 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
         _fund(balanceU, cacheS);
         emit Close(receiver, outTokenU);
     }
-
-
-    /* =========== UTILITY =========== */
-
-
-    function tokenS() public view override returns (address) {
-        return option.tokenS;
+    
+    /* === VIEW === */
+    function getCaches() public view override returns (uint _cacheU, uint _cacheS) {
+        _cacheU = cacheU;
+        _cacheS = cacheS;
     }
 
-    function tokenU() public view override returns (address) {
-        return option.tokenU;
+    function getTokens() public view override returns (
+        address _tokenU, address _tokenS, address _tokenR
+    ) {
+        _tokenU = option.tokenU;
+        _tokenS = option.tokenS;
+        _tokenR = tokenR;
     }
 
-    function base() public view override returns (uint256) {
-        return option.base;
-    }
-    function price() public view override returns (uint256) {
-        return option.price;
-    }
-
-    function expiry() public view override returns (uint256) {
-        return option.expiry;
-    }
+    function tokenS() public view override returns (address) { return option.tokenS; }
+    function tokenU() public view override returns (address) { return option.tokenU;}
+    function base() public view override returns (uint) { return option.base; }
+    function price() public view override returns (uint) { return option.price; }
+    function expiry() public view override returns (uint) { return option.expiry; }
 
     function prime() public view override returns (
             address _tokenU,
             address _tokenS,
             address _tokenR,
-            uint256 _base,
-            uint256 _price,
-            uint256 _expiry
+            uint _base,
+            uint _price,
+            uint _expiry
         )
     {
         Primitives.Option memory _prime = option;
@@ -398,10 +372,8 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
     /**
      * @dev Utility function to get the max withdrawable tokenS amount of msg.sender.
      */
-    function maxDraw() public view override returns (uint256 draw) {
-        uint256 balanceR = IERC20(tokenR).balanceOf(msg.sender);
-        cacheS > balanceR ?
-            draw = balanceR :
-            draw = cacheS;
+    function maxDraw() public view override returns (uint draw) {
+        uint balanceR = IERC20(tokenR).balanceOf(msg.sender);
+        draw = cacheS > balanceR ? balanceR : cacheS;
     }
 }

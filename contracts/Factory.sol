@@ -18,6 +18,7 @@ contract Factory is Ownable, Pausable, ReentrancyGuard {
     string public constant RNAME = "Primitive Strike Redeem";
 
     address public admin;
+    address public feeReceiver;
     uint256 public nonce;
     mapping(uint256 => address) public options;
 
@@ -40,6 +41,10 @@ contract Factory is Ownable, Pausable, ReentrancyGuard {
 
     function kill(uint256 id) external onlyOwner {
         PrimeOption(options[id]).kill();
+    }
+
+    function setFeeReceiver(address _feeReceiver) external onlyOwner {
+        feeReceiver = _feeReceiver;
     }
 
 }

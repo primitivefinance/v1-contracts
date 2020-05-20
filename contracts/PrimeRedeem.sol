@@ -6,42 +6,47 @@ pragma solidity ^0.6.2;
  */
 
 import "./interfaces/IPrimeRedeem.sol";
+import "./interfaces/IPrimitiveFactory.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 
 contract PrimeRedeem is IPrimeRedeem, ERC20 {
-    using SafeMath for uint256;
+    using SafeMath for uint;
 
-    address public override controller;
+    string public constant NAME = "Primitive Strike Redeem";
+    string public constant SYMBOL = "REDEEM";
 
+    uint public fee;
+    address public override factory;
     address public override tokenS;
     address public override tokenP;
 
 
     constructor (
-        string memory name,
-        string memory symbol,
         address _tokenP,
         address _tokenS
     )
         public
-        ERC20(name, symbol)
+        ERC20(NAME, SYMBOL)
     {
-        controller = msg.sender;
+        factory = msg.sender;
         tokenS = _tokenS;
         tokenP = _tokenP;
     }
 
-    function mint(address user, uint256 amount) external override returns(bool)  {
+    function mint(address to, uint amount) external override returns(bool)  {
         require(msg.sender == tokenP, "ERR_NOT_VALID");
-        _mint(user, amount);
+        address feeReceiver = IPrimitiveFactory(factory).feeReceiver();
+        uint _fee = amount.div(fee);
+        _mint(to, amount.sub(_fee));
+        _mint(feeReceiver, _fee);
         return true;
     }
 
-    function burn(address user, uint256 amount) external override returns(bool)  {
+    function burn(address to, uint amount) external override returns(bool)  {
         require(msg.sender == tokenP, "ERR_NOT_VALID");
-        _burn(user, amount);
+        _burn(to, amount);
         return true;
     }
 }
