@@ -20,7 +20,6 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
 
     uint256 public cacheU;
     uint256 public cacheS;
-    uint256 public cacheR;
 
     uint256 public marketId;
 
@@ -30,7 +29,7 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
     event Swap(address indexed from, uint256 outTokenU, uint256 inTokenS);
     event Redeem(address indexed from, uint256 inTokenR);
     event Close(address indexed from, uint256 inTokenP);
-    event Fund(uint256 cacheU, uint256 cacheS, uint256 cacheR);
+    event Fund(uint256 cacheU, uint256 cacheS);
 
     constructor (
         string memory name,
@@ -81,10 +80,9 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
     /* =========== CACHE & TOKEN GETTER FUNCTIONS =========== */
 
 
-    function getCaches() public view returns (uint256 _cacheU, uint256 _cacheS, uint256 _cacheR) {
+    function getCaches() public view returns (uint256 _cacheU, uint256 _cacheS) {
         _cacheU = cacheU;
         _cacheS = cacheS;
-        _cacheR = cacheR;
     }
 
     function getTokens() public view returns (address _tokenU, address _tokenS, address _tokenR) {
@@ -103,8 +101,7 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
     function update() external nonReentrant {
         _fund(
             IERC20(option.tokenU).balanceOf(address(this)),
-            IERC20(option.tokenS).balanceOf(address(this)),
-            IERC20(tokenR).balanceOf(address(this))
+            IERC20(option.tokenS).balanceOf(address(this))
         );
     }
 
@@ -128,7 +125,6 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
         );
         IERC20(_tokenR).transfer(msg.sender,
             IERC20(_tokenR).balanceOf(address(this))
-                .sub(cacheR)
         );
         IERC20(address(this)).transfer(msg.sender,
             IERC20(address(this)).balanceOf(address(this))
@@ -138,11 +134,10 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
     /**
      * @dev Sets the cache balances to new values.
      */
-    function _fund(uint256 balanceU, uint256 balanceS, uint256 balanceR) private {
+    function _fund(uint256 balanceU, uint256 balanceS) private {
         cacheU = balanceU;
         cacheS = balanceS;
-        cacheR = balanceR;
-        emit Fund(balanceU, balanceS, balanceR);
+        emit Fund(balanceU, balanceS);
     }
 
 
@@ -182,7 +177,7 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
         _mint(receiver, inTokenU);
 
         // Update the caches.
-        _fund(balanceU, cacheS, cacheR);
+        _fund(balanceU, cacheS);
         emit Mint(receiver, inTokenU, outTokenR);
     }
 
@@ -204,7 +199,7 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
         whenNotPaused
         returns (uint256 inTokenS, uint256 inTokenP, uint256 outTokenU)
     {
-        // Stores addresses locally for gas savings.
+        // Stores addresses in memory for gas savings.
         address _tokenU = option.tokenU;
         address _tokenS = option.tokenS;
 
@@ -246,7 +241,7 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
         balanceU = IERC20(_tokenU).balanceOf(address(this));
 
         // Update the cached balances.
-        _fund(balanceU, balanceS, cacheR);
+        _fund(balanceU, balanceS);
         emit Swap(receiver, outTokenU, inTokenS);
     }
 
@@ -269,7 +264,7 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
         uint256 balanceR = IERC20(_tokenR).balanceOf(address(this));
 
         // Difference between tokenR balance and cache.
-        inTokenR = balanceR.sub(cacheR);
+        inTokenR = balanceR;
         require(inTokenR > 0, "ERR_ZERO");
         verifyBalance(balanceS, inTokenR, "ERR_BAL_STRIKE");
 
@@ -285,7 +280,7 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
         balanceR = IERC20(_tokenR).balanceOf(address(this));
 
         // Update the cached balances.
-        _fund(cacheU, balanceS, balanceR);
+        _fund(cacheU, balanceS);
         emit Redeem(receiver, inTokenR);
     }
 
@@ -315,7 +310,7 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
         uint256 balanceP = balanceOf(address(this));
 
         // Differences between current and cached balances.
-        inTokenR = balanceR.sub(cacheR);
+        inTokenR = balanceR;
 
         // The quantity of tokenU to send out it still determined by the amount of inTokenR.
         // This outTokenU amount is checked against inTokenP.
@@ -358,7 +353,7 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
         balanceR = IPrimeRedeem(_tokenR).balanceOf(address(this));
 
         // Update the cached balances.
-        _fund(balanceU, cacheS, balanceR);
+        _fund(balanceU, cacheS);
         emit Close(receiver, outTokenU);
     }
 

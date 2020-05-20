@@ -933,7 +933,7 @@ contract("Prime", (accounts) => {
             });
         });
 
-        describe("test bad ERC20", () => {
+        /* describe("test bad ERC20", () => {
             beforeEach(async () => {
                 _tokenU = await BadToken.new(
                     "Bad ERC20 Doesnt Return Bools",
@@ -991,6 +991,6 @@ contract("Prime", (accounts) => {
                 await prime.transfer(tokenP, inTokenP);
                 await truffleAssert.reverts(prime.close(Alice));
             });
-        });
+        }); */
     });
 });
