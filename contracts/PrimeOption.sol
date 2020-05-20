@@ -18,10 +18,10 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
 
     Primitives.Option public option;
 
-    address public override tokenR;
-    address public override factory;
     uint public override cacheU;
     uint public override cacheS;
+    address public override factory;
+    address public override tokenR;
 
     event Mint(address indexed from, uint outTokenP, uint outTokenR);
     event Swap(address indexed from, uint outTokenU, uint inTokenS);
@@ -30,8 +30,6 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
     event Fund(uint cacheU, uint cacheS);
 
     constructor (
-        string memory name,
-        string memory symbol,
         address tokenU,
         address tokenS,
         uint base,
@@ -39,7 +37,7 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
         uint expiry
     )
         public
-        ERC20(name, symbol)
+        ERC20("Primitive V1 Vanilla Option", "PRIME")
     {
         factory = msg.sender;
         option = Primitives.Option(
