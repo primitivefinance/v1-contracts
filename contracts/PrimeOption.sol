@@ -21,8 +21,6 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
     uint256 public cacheU;
     uint256 public cacheS;
 
-    uint256 public marketId;
-
     Instruments.PrimeOption public option;
 
     event Mint(address indexed from, uint256 outTokenP, uint256 outTokenR);
@@ -34,7 +32,6 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
     constructor (
         string memory name,
         string memory symbol,
-        uint256 _marketId,
         address tokenU,
         address tokenS,
         uint256 base,
@@ -45,7 +42,6 @@ contract PrimeOption is ERC20, ReentrancyGuard, Pausable {
         ERC20(name, symbol)
     {
         require(tokenU != address(0) && tokenS != address(0), "ERR_ADDRESS_ZERO");
-        marketId = _marketId;
         factory = msg.sender;
         option = Instruments.PrimeOption(
             tokenU,

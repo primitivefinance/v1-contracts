@@ -13,7 +13,6 @@ contract PrimeOptionTest is PrimeOption {
     constructor(
         string memory name,
         string memory symbol,
-        uint256 _marketId,
         address tokenU,
         address tokenS,
         uint256 base,
@@ -24,7 +23,6 @@ contract PrimeOptionTest is PrimeOption {
         PrimeOption(
             name,
             symbol,
-            _marketId,
             tokenU,
             tokenS,
             base,

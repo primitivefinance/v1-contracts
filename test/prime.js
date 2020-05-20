@@ -47,7 +47,6 @@ contract("Prime", (accounts) => {
         _tokenS = weth;
         tokenU = dai.address;
         tokenS = weth.address;
-        marketId = 1;
         optionName = "ETH Put 200 DAI Expiring May 30 2020";
         optionSymbol = "PRIME";
         redeemName = "ETH Put Redeemable Token";
@@ -60,7 +59,6 @@ contract("Prime", (accounts) => {
             let prime = await PrimeOption.new(
                 optionName,
                 optionSymbol,
-                marketId,
                 tokenU,
                 tokenS,
                 base,
@@ -152,7 +150,6 @@ contract("Prime", (accounts) => {
                 PrimeOption.new(
                     optionName,
                     optionSymbol,
-                    marketId,
                     ZERO_ADDRESS,
                     ZERO_ADDRESS,
                     base,
@@ -176,14 +173,6 @@ contract("Prime", (accounts) => {
                 (await prime.symbol()).toString(),
                 optionSymbol,
                 "Incorrect symbol"
-            );
-        });
-
-        it("should return the correct marketID", async () => {
-            assert.equal(
-                (await prime.marketId()).toString(),
-                marketId,
-                "Incorrect id"
             );
         });
 
@@ -839,7 +828,6 @@ contract("Prime", (accounts) => {
                 prime = await PrimeOptionTest.new(
                     optionName,
                     optionSymbol,
-                    marketId,
                     tokenU,
                     tokenS,
                     base,
@@ -896,7 +884,7 @@ contract("Prime", (accounts) => {
             });
         });
 
-        /* describe("test bad ERC20", () => {
+        describe("test bad ERC20", () => {
             beforeEach(async () => {
                 _tokenU = await BadToken.new(
                     "Bad ERC20 Doesnt Return Bools",
@@ -911,7 +899,6 @@ contract("Prime", (accounts) => {
                 prime = await PrimeOptionTest.new(
                     optionName,
                     optionSymbol,
-                    marketId,
                     tokenU,
                     tokenS,
                     base,
@@ -954,6 +941,6 @@ contract("Prime", (accounts) => {
                 await prime.transfer(tokenP, inTokenP);
                 await truffleAssert.reverts(prime.close(Alice));
             });
-        }); */
+        });
     });
 });
