@@ -5,6 +5,8 @@ const BN = require("bn.js");
 chai.use(require("chai-bn")(BN));
 const Dai = artifacts.require("DAI");
 const Weth = artifacts.require("WETH9");
+const Factory = artifacts.require("Factory");
+const FactoryRedeem = artifacts.require("FactoryRedeem");
 const PrimeOption = artifacts.require("PrimeOption");
 const PrimePool = artifacts.require("PrimePool");
 const PrimeTrader = artifacts.require("PrimeTrader");
@@ -76,7 +78,9 @@ contract("Pool", (accounts) => {
         pool,
         factory,
         exchange,
-        oracleLike;
+        oracleLike,
+        factoryOption,
+        factoryRedeem;
 
     const assertBNEqual = (actualBN, expectedBN, message) => {
         assert.equal(actualBN.toString(), expectedBN.toString(), message);
@@ -123,6 +127,11 @@ contract("Pool", (accounts) => {
         // init tokens
         weth = await Weth.new();
         dai = await Dai.new(MILLION_ETHER);
+
+        // init option factory
+        factoryOption = await Factory.new();
+        factoryRedeem = await FactoryRedeem.new(factoryOption.address);
+        await factoryOption.initialize(factoryRedeem.address);
 
         // init factory
         let initExchange = await UniExchange.new();
@@ -185,23 +194,29 @@ contract("Pool", (accounts) => {
         expiry = "1593129600"; // June 26, 2020, 0:00:00 UTC
 
         trader = await PrimeTrader.new(weth.address);
-        prime = await PrimeOption.new(
-            optionName,
-            optionSymbol,
-            marketId,
-            tokenU,
-            tokenS,
-            base,
-            price,
-            expiry
-        );
+        createPrime = async () => {
+            await factoryOption.deployOption(
+                tokenU,
+                tokenS,
+                base,
+                price,
+                expiry
+            );
+            let id = await factoryOption.getId(
+                tokenU,
+                tokenS,
+                base,
+                price,
+                expiry
+            );
+            let prime = await PrimeOption.at(await factoryOption.options(id));
+            return prime;
+        };
+
+        prime = await createPrime();
         tokenP = prime.address;
-        redeem = await PrimeRedeem.new(
-            redeemName,
-            redeemSymbol,
-            prime.address,
-            tokenS
-        );
+        tokenR = await prime.tokenR();
+        redeem = await PrimeRedeem.at(tokenR);
 
         // Setup prime oracle and feed for dai.
         oracle = await PrimeOracle.new(oracleLike.address, weth.address);
@@ -216,7 +231,6 @@ contract("Pool", (accounts) => {
             poolSymbol
         );
         tokenPULP = pool.address;
-        await prime.initTokenR(redeem.address);
 
         await dai.approve(pool.address, MILLION_ETHER, {
             from: Alice,
@@ -890,7 +904,7 @@ contract("Pool", (accounts) => {
         });
 
         it("should exercise the options so the pool can redeem them in withdraw", async () => {
-            await trader.safeSwap(
+            await trader.safeExercise(
                 prime.address,
                 await prime.balanceOf(Alice),
                 Alice
@@ -976,7 +990,7 @@ contract("Pool", (accounts) => {
                     await runDeposit(i);
                     await runBuy(i);
                     if (new BN(await prime.balanceOf(Alice)).gt(new BN(0))) {
-                        await trader.safeSwap(
+                        await trader.safeExercise(
                             prime.address,
                             await prime.balanceOf(Alice),
                             Alice
@@ -1000,23 +1014,11 @@ contract("Pool", (accounts) => {
             tokenU = _tokenU.address;
             tokenS = _tokenS.address;
             trader = await PrimeTrader.new(weth.address);
-            prime = await PrimeOption.new(
-                optionName,
-                optionSymbol,
-                marketId,
-                tokenU,
-                tokenS,
-                base,
-                price,
-                expiry
-            );
+
+            prime = await createPrime();
             tokenP = prime.address;
-            redeem = await PrimeRedeem.new(
-                redeemName,
-                redeemSymbol,
-                prime.address,
-                tokenS
-            );
+            tokenR = await prime.tokenR();
+            redeem = await PrimeRedeem.at(tokenR);
 
             // Setup prime oracle and feed for dai.
             oracle = await PrimeOracle.new(oracleLike.address, weth.address);
@@ -1032,7 +1034,6 @@ contract("Pool", (accounts) => {
                 poolSymbol
             );
             tokenPULP = pool.address;
-            await prime.initTokenR(redeem.address);
 
             await dai.approve(pool.address, MILLION_ETHER, {
                 from: Alice,
@@ -1155,4 +1156,324 @@ contract("Pool", (accounts) => {
             await run(1);
         });
     });
+
+    /* describe("hegic-like exploit", () => {
+        before(async () => {
+            _tokenU = weth;
+            _tokenS = dai;
+            tokenU = _tokenU.address;
+            tokenS = _tokenS.address;
+            trader = await PrimeTrader.new(weth.address);
+            base = toWei("1");
+            price = toWei("2");
+
+            prime = await createPrime();
+            tokenP = prime.address;
+            tokenR = await prime.tokenR();
+            redeem = await PrimeRedeem.at(tokenR);
+
+            // Setup prime oracle and feed for dai.
+            oracle = await PrimeOracle.new(oracleLike.address, weth.address);
+            await oracleLike.setUnderlyingPrice((2e18).toString());
+            await oracle.addFeed(tokenU);
+            await oracle.addFeed(tokenS);
+
+            pool = await PrimePool.new(
+                weth.address,
+                prime.address,
+                oracle.address,
+                factory.address,
+                poolName,
+                poolSymbol
+            );
+            tokenPULP = pool.address;
+
+            await dai.approve(pool.address, MILLION_ETHER, {
+                from: Alice,
+            });
+            await weth.approve(pool.address, MILLION_ETHER, {
+                from: Alice,
+            });
+            await dai.approve(trader.address, MILLION_ETHER, {
+                from: Alice,
+            });
+            await weth.approve(trader.address, MILLION_ETHER, {
+                from: Alice,
+            });
+            await prime.approve(trader.address, MILLION_ETHER, {
+                from: Alice,
+            });
+
+            await prime.approve(pool.address, MILLION_ETHER, {
+                from: Alice,
+            });
+
+            await prime.approve(prime.address, MILLION_ETHER, {
+                from: Alice,
+            });
+
+            let startEthAlice = await web3.eth.getBalance(Alice);
+            let startEthBob = await web3.eth.getBalance(Bob);
+            let startUAlice = await _tokenU.balanceOf(Alice);
+            let startUBob = await _tokenU.balanceOf(Bob);
+            let startSAlice = await _tokenS.balanceOf(Alice);
+            let startSBob = await _tokenS.balanceOf(Bob);
+            let startPAlice = await prime.balanceOf(Alice);
+            let startPBob = await prime.balanceOf(Bob);
+            let startPULPAlice = await pool.balanceOf(Alice);
+            let startPULPBob = await pool.balanceOf(Bob);
+            let startExchangeDAI = await _tokenS.balanceOf(exchange.address);
+            let startExchangeETH = await web3.eth.getBalance(exchange.address);
+
+            console.log("=== STARTING BALANCES ===");
+            console.log("Alice Eth:", fromWei(startEthAlice));
+            console.log("Bob Eth:", fromWei(startEthBob));
+            console.log("Alice U:", fromWei(startUAlice));
+            console.log("Bob U:", fromWei(startUBob));
+            console.log("Alice S:", fromWei(startSAlice));
+            console.log("Bob S:", fromWei(startSBob));
+            console.log("Alice P:", fromWei(startPAlice));
+            console.log("Bob P:", fromWei(startPBob));
+            console.log("Alice PULP:", fromWei(startPULPAlice));
+            console.log("Bob PULP:", fromWei(startPULPBob));
+            console.log("Exchange Eth:", fromWei(startExchangeETH));
+            console.log("Exchange Dai", fromWei(startExchangeDAI));
+        });
+
+        it("Bob should add initial liquidity to pool", async () => {
+            let balanceEth = await web3.eth.getBalance(Bob);
+            await pool.depositEth({ from: Bob, value: TEN_ETHER });
+            let balanceU = await _tokenU.balanceOf(pool.address);
+            console.log("=== VICTIM DEPOSIT ===");
+            console.log(
+                "[Deposited Eth:]",
+                balanceU.toString(),
+                fromWei(balanceU)
+            );
+            let balanceEthAfter = await web3.eth.getBalance(Bob);
+            let deltaEth = new BN(balanceEthAfter).sub(new BN(balanceEth));
+
+            console.log(
+                "[Bobs Eth Balance Delta:]",
+                deltaEth.toString(),
+                fromWei(deltaEth)
+            );
+        });
+
+        it("should have an LP (Alice) deposit a large sum of liquidity", async () => {
+            await pool.depositEth({ value: HUNDRED_ETHER });
+            let balanceU = await _tokenU.balanceOf(pool.address);
+            console.log("=== MALICIOUS DEPOSIT ===");
+            console.log(
+                "[New ETH Balance:]",
+                balanceU.toString(),
+                fromWei(balanceU)
+            );
+        });
+
+        it("Alice should buy a lot of options from the pool", async () => {
+            // if total tokenU in pool is 110, we should use most of it.
+            let inTokenU = new BN(toWei("105"));
+            let inTokenS = inTokenU.mul(new BN(price)).div(new BN(base));
+            console.log("=== BUY ===");
+            console.log(
+                "[inTokenU:]",
+                inTokenU.toString(),
+                "[inTokenS:]",
+                inTokenS.toString()
+            );
+            // calculate the estimated premium, we need to have enough tokenU to pay it
+            let premiumInU = await getPremium();
+
+            let premiumInS = new BN(premiumInU).mul(
+                new BN(inTokenS).div(new BN(ONE_ETHER))
+            );
+
+            console.log(
+                "[premium in tokenU:]",
+                premiumInU.toString(),
+                fromWei(premiumInU.toString())
+            );
+
+            console.log(
+                "[total premium to pay:]",
+                premiumInS.toString(),
+                fromWei(premiumInS.toString())
+            );
+
+            // get weth, with a little extra just in case
+            await _tokenU.deposit({
+                from: Alice,
+                value: premiumInS.toString(),
+            });
+            await pool.buy(inTokenS, { from: Alice });
+            let balanceU = await _tokenU.balanceOf(pool.address);
+            console.log(
+                "[New ETH Balance:]",
+                balanceU.toString(),
+                fromWei(balanceU)
+            );
+        });
+
+        it("should withdraw the 'not-locked' liquidity", async () => {
+            let unlocked = await _tokenU.balanceOf(pool.address);
+            let inTokenPULP = new BN(unlocked)
+                .mul(await pool.totalSupply())
+                .div(await pool.totalPoolBalance(tokenP));
+            let balanceEth = await web3.eth.getBalance(Alice);
+            await pool.withdraw(inTokenPULP.toString());
+            let balanceU = await _tokenU.balanceOf(pool.address);
+            let balanceEthAfter = await web3.eth.getBalance(Alice);
+            let deltaEth = new BN(balanceEthAfter).sub(new BN(balanceEth));
+            console.log("=== WITHDRAW ===");
+            console.log(
+                "[New ETH Pool Balance:]",
+                balanceU.toString(),
+                fromWei(balanceU)
+            );
+
+            console.log(
+                "[Alice Delta Eth Balance:]",
+                deltaEth.toString(),
+                fromWei(deltaEth)
+            );
+        });
+
+        it("should exercise the option", async () => {
+            console.log("=== EXERCISE ===");
+            let balanceP = await prime.balanceOf(Alice);
+            await trader.safeExercise(tokenP, balanceP, Alice);
+        });
+
+        it("Bob should withdraw remaining assets", async () => {
+            console.log("=== WITHDRAW REMAINING ===");
+            let balancePULP = await pool.balanceOf(Bob);
+            let balanceU = await web3.eth.getBalance(Bob);
+            let balanceS = await _tokenS.balanceOf(Bob);
+            let balanceR = await redeem.balanceOf(pool.address);
+            //await pool.withdraw(balancePULP, { from: Bob });
+            let balanceUAfter = await web3.eth.getBalance(Bob);
+            let balanceSAfter = await _tokenS.balanceOf(Bob);
+            let balancePULPAfter = await pool.balanceOf(Bob);
+            let balanceRAfter = await redeem.balanceOf(pool.address);
+
+            let deltaU = new BN(balanceUAfter).sub(new BN(balanceU));
+            let deltaS = new BN(balanceSAfter).sub(new BN(balanceS));
+            let deltaPULP = new BN(balanceRAfter).sub(new BN(balanceR));
+            let deltaR = new BN(balanceRAfter).sub(new BN(balanceR));
+
+            console.log(
+                "[burned LP tokens]",
+                balancePULP.toString(),
+                fromWei(balancePULP)
+            );
+
+            console.log(
+                "[Bobs LP token balance]",
+                balancePULPAfter.toString(),
+                fromWei(balancePULPAfter)
+            );
+
+            console.log(
+                "[Bobs Eth Balance Delta]",
+                deltaU.toString(),
+                fromWei(deltaU)
+            );
+
+            console.log(
+                "[Bobs tokenS Balance Delta]",
+                deltaS.toString(),
+                fromWei(deltaS)
+            );
+
+            console.log(
+                "[Bobs PULP Balance Delta]",
+                deltaPULP.toString(),
+                fromWei(deltaPULP)
+            );
+
+            console.log(
+                "[Pools redeem balance Delta]",
+                deltaR.toString(),
+                fromWei(deltaR)
+            );
+        });
+
+        it("Alice should withdraw remaining assets", async () => {
+            console.log("=== WITHDRAW REMAINING ===");
+            let balancePULP = await pool.balanceOf(Alice);
+            let balanceU = await web3.eth.getBalance(Alice);
+            let balanceS = await _tokenS.balanceOf(Alice);
+            let balanceR = await redeem.balanceOf(pool.address);
+            //await pool.withdraw(balancePULP, { from: Alice });
+            let balanceUAfter = await web3.eth.getBalance(Alice);
+            let balanceSAfter = await _tokenS.balanceOf(Alice);
+            let balancePULPAfter = await pool.balanceOf(Alice);
+            let balanceRAfter = await redeem.balanceOf(pool.address);
+
+            let deltaU = new BN(balanceUAfter).sub(new BN(balanceU));
+            let deltaS = new BN(balanceSAfter).sub(new BN(balanceS));
+            let deltaPULP = new BN(balancePULPAfter).sub(new BN(balancePULP));
+            let deltaR = new BN(balanceRAfter).sub(new BN(balanceR));
+
+            console.log(
+                "[Alices Eth Balance Delta]",
+                deltaU.toString(),
+                fromWei(deltaU)
+            );
+
+            console.log(
+                "[Alices tokenS Balance Delta]",
+                deltaS.toString(),
+                fromWei(deltaS)
+            );
+
+            console.log(
+                "[Alices PULP Balance Delta]",
+                deltaPULP.toString(),
+                fromWei(deltaPULP)
+            );
+            console.log(
+                "[Pools redeem balance Delta]",
+                deltaR.toString(),
+                fromWei(deltaR)
+            );
+
+            console.log(
+                "Redeem Total Supply",
+                fromWei(await redeem.totalSupply())
+            );
+            console.log("Total PULP SUPPLY", fromWei(await pool.totalSupply()));
+            console.log(
+                "Total Pool Balance",
+                fromWei(await pool.totalPoolBalance(tokenP))
+            );
+            let endEthAlice = await web3.eth.getBalance(Alice);
+            let endEthBob = await web3.eth.getBalance(Bob);
+            let endUAlice = await _tokenU.balanceOf(Alice);
+            let endUBob = await _tokenU.balanceOf(Bob);
+            let endSAlice = await _tokenS.balanceOf(Alice);
+            let endSBob = await _tokenS.balanceOf(Bob);
+            let endPAlice = await prime.balanceOf(Alice);
+            let endPBob = await prime.balanceOf(Bob);
+            let endPULPAlice = await pool.balanceOf(Alice);
+            let endPULPBob = await pool.balanceOf(Bob);
+            let endExchangeDAI = await _tokenS.balanceOf(exchange.address);
+            let endExchangeETH = await web3.eth.getBalance(exchange.address);
+
+            console.log("=== ENDING BALANCES ===");
+            console.log("Alice Eth:", fromWei(endEthAlice));
+            console.log("Bob Eth:", fromWei(endEthBob));
+            console.log("Alice U:", fromWei(endUAlice));
+            console.log("Bob U:", fromWei(endUBob));
+            console.log("Alice S:", fromWei(endSAlice));
+            console.log("Bob S:", fromWei(endSBob));
+            console.log("Alice P:", fromWei(endPAlice));
+            console.log("Bob P:", fromWei(endPBob));
+            console.log("Alice PULP:", fromWei(endPULPAlice));
+            console.log("Bob PULP:", fromWei(endPULPBob));
+            console.log("Exchange Eth:", fromWei(endExchangeETH));
+            console.log("Exchange Dai", fromWei(endExchangeDAI));
+        });
+    }); */
 });

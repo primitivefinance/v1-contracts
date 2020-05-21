@@ -323,7 +323,7 @@ contract PrimePool is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
             // Deadline = now + 3 minutes.
             IERC20(tokenS).approve(exchange, outTokenS);
             inTokenU = UniswapExchangeInterface(exchange)
-                            .tokenToEthSwapInput(outTokenS, 1, now + 3 minutes);
+                            .tokenToEthSwapInput(outTokenS, minReceived, now + 3 minutes);
 
             // Wrap WETH.
             IWETH(WETH).deposit.value(address(this).balance)();
