@@ -89,7 +89,7 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
         (bool inTransferS) = IERC20(tokenS).transferFrom(msg.sender, address(tokenP), inTokenS);
         (bool inTransferP) = IERC20(address(tokenP)).transferFrom(msg.sender, address(tokenP), amount);
         require(inTransferS && inTransferP, "ERR_TRANSFER_IN_FAIL");
-        (inTokenS, inTokenP) = tokenP.swap(receiver, uint(1));
+        (inTokenS, inTokenP) = tokenP.swap(receiver, uint(1), new bytes(0));
         emit Swap(msg.sender, outTokenU, uint(1));
     }
 

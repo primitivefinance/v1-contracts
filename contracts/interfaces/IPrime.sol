@@ -1,7 +1,7 @@
 pragma solidity ^0.6.2;
 
 interface IPrime {
-    function swap(address receiver, uint outTokenU) external returns (
+    function swap(address receiver, uint outTokenU, bytes calldata data) external returns (
         uint inTokenS,
         uint inTokenP
     );

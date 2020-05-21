@@ -8,6 +8,7 @@ pragma solidity ^0.6.2;
 import "./Primitives.sol";
 import "./interfaces/IPrime.sol";
 import "./interfaces/IPrimeRedeem.sol";
+import "./interfaces/IPrimeFlash.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
@@ -158,7 +159,7 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
      * Only callable when the option is not expired.
      * @param receiver The outTokenU is sent to the receiver address.
      */
-    function swap(address receiver, uint outTokenU)
+    function swap(address receiver, uint outTokenU, bytes calldata data)
         external
         override
         nonReentrant
@@ -173,10 +174,11 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
 
         // Require outTokenU > 0, and cacheU > outTokenU.
         require(outTokenU > 0, "ERR_ZERO");
-        require(_cacheU > outTokenU, "ERR_BAL_UNDERLYING");
+        require(_cacheU >= outTokenU, "ERR_BAL_UNDERLYING");
 
         // Optimistically transfer out tokenU.
         IERC20(_tokenU).transfer(receiver, outTokenU);
+        if (data.length > 0) IPrimeFlash(receiver).primitiveFlash(receiver, outTokenU, data);
 
         // Store in memory for gas savings.
         uint balanceS = IERC20(_tokenS).balanceOf(address(this));

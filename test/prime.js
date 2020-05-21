@@ -330,7 +330,7 @@ contract("Prime", (accounts) => {
             });
 
             it("should revert swap function call while paused contract", async () => {
-                await truffleAssert.reverts(prime.swap(Alice), ERR_PAUSED);
+                await truffleAssert.reverts(prime.swap(Alice, inTokenP, []), ERR_PAUSED);
             });
 
             it("should unpause contract", async () => {
@@ -444,7 +444,7 @@ contract("Prime", (accounts) => {
 
                     await prime.transfer(tokenP, inTokenP, { from: Alice });
                     await _tokenS.transfer(tokenP, inTokenS, { from: Alice });
-                    let event = await prime.swap(Alice);
+                    let event = await prime.swap(Alice, inTokenP, []);
 
                     let deltaU = (await getBalance(_tokenU, Alice)).sub(
                         balanceU
@@ -488,7 +488,7 @@ contract("Prime", (accounts) => {
 
             it("revert if 0 tokenS and 0 tokenP were sent to contract", async () => {
                 await truffleAssert.reverts(
-                    prime.swap(Alice),
+                    prime.swap(Alice, 0, []),
                     ERR_BAL_UNDERLYING
                 );
             });
@@ -499,7 +499,7 @@ contract("Prime", (accounts) => {
                 await _tokenS.deposit({ from: Alice, value: price });
                 await _tokenS.transfer(tokenP, price);
                 await truffleAssert.reverts(
-                    prime.swap(Alice, { from: Alice }),
+                    prime.swap(Alice, price, [], { from: Alice }),
                     ERR_BAL_UNDERLYING
                 );
                 await prime.take();
@@ -870,7 +870,7 @@ contract("Prime", (accounts) => {
             });
 
             it("revert when calling swap on an expired prime", async () => {
-                await truffleAssert.reverts(prime.swap(Alice), ERR_EXPIRED);
+                await truffleAssert.reverts(prime.swap(Alice, inTokenP, []), ERR_EXPIRED);
             });
         }); */
 
@@ -922,7 +922,7 @@ contract("Prime", (accounts) => {
                 let inTokenS = toWei("0.5"); // 100 ether (tokenU:base) / 200 (tokenS:price) = 0.5 tokenS
                 await _tokenS.transfer(tokenP, inTokenS);
                 await prime.transfer(tokenP, inTokenP);
-                await truffleAssert.reverts(prime.swap(Alice));
+                await truffleAssert.reverts(prime.swap(Alice, inTokenP, []));
             });
 
             it("should revert on redeem because transfer does not return a boolean", async () => {
