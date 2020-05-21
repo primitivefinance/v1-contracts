@@ -25,8 +25,8 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
     address public override factory;
     uint public constant FEE = 500;
 
-    event Mint(address indexed from, uint outTokenP, uint outTokenR);
-    event Swap(address indexed from, uint outTokenU, uint inTokenS);
+    event Write(address indexed from, uint outTokenP, uint outTokenR);
+    event Exercise(address indexed from, uint outTokenU, uint inTokenS);
     event Redeem(address indexed from, uint inTokenR);
     event Close(address indexed from, uint inTokenP);
     event Fund(uint cacheU, uint cacheS);
@@ -119,7 +119,7 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
      * Only callable when the option is not expired.
      * @param receiver The newly minted tokens are sent to the receiver address.
      */
-    function mint(address receiver)
+    function write(address receiver)
         external
         override
         nonReentrant
@@ -147,7 +147,7 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
 
         // Update the caches.
         _fund(balanceU, cacheS);
-        emit Mint(receiver, inTokenU, outTokenR);
+        emit Write(receiver, inTokenU, outTokenR);
     }
 
     /**
@@ -159,7 +159,7 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
      * Only callable when the option is not expired.
      * @param receiver The outTokenU is sent to the receiver address.
      */
-    function swap(address receiver, uint outTokenU, bytes calldata data)
+    function exercise(address receiver, uint outTokenU, bytes calldata data)
         external
         override
         nonReentrant
@@ -195,7 +195,9 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
         uint netOutTokenU = inTokenU > outTokenU ? 0 : outTokenU.sub(inTokenU);
 
         // Calculate the expected payment of tokenS.
-        uint expected = (uint(0)).add(netOutTokenU.mul(option.price).div(option.base));
+        uint expected = (
+            uint(0)
+        ).add(netOutTokenU.mul(option.price).div(option.base));
 
         // Assumes the cached tokenP balance is 0.
         inTokenP = balanceOf(address(this));
@@ -208,13 +210,13 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
 
         // Update the cached balances.
         _fund(balanceU, balanceS);
-        emit Swap(receiver, outTokenU, inTokenS);
+        emit Exercise(receiver, outTokenU, inTokenS);
     }
 
     /**
      * @dev Burns tokenR to withdraw tokenS at a ratio of 1:1.
      * @notice inTokenR = outTokenS
-     * Should only be called by a contract that checks the balanaces to be sent correctly.
+     * Should only be called by a contract that checks the balances to be sent correctly.
      * Checks the tokenR balance against the previously cached tokenR balance.
      * The difference is the amount of tokenR sent into the contract.
      * The difference is equal to the amount of tokenS sent out.

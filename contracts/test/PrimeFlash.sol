@@ -16,12 +16,12 @@ contract PrimeFlash is IPrimeFlash {
 
     function goodFlashLoan(uint amount) external {
         // trigger the fallback function
-        IPrime(tokenP).swap(address(this), amount, new bytes(1));
+        IPrime(tokenP).exercise(address(this), amount, new bytes(1));
     }
 
     function badFlashLoan(uint amount) external {
         // trigger the fallback function
-        IPrime(tokenP).swap(address(this), amount, new bytes(2));
+        IPrime(tokenP).exercise(address(this), amount, new bytes(2));
     }
 
     function primitiveFlash(

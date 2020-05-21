@@ -17,8 +17,8 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
 
     address payable public weth;
 
-    event Mint(address indexed from, uint256 outTokenP, uint256 outTokenR);
-    event Swap(address indexed from, uint256 outTokenU, uint256 inTokenS);
+    event Write(address indexed from, uint256 outTokenP, uint256 outTokenR);
+    event Exercise(address indexed from, uint256 outTokenU, uint256 inTokenS);
     event Redeem(address indexed from, uint256 inTokenR);
     event Close(address indexed from, uint256 inTokenP);
 
@@ -33,7 +33,7 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
      * @param amount Quantity of Prime options to mint and tokenU to deposit.
      * @param receiver The newly minted tokens are sent to the receiver address.
      */
-    function safeMint(
+    function safeWrite(
         IPrime tokenP,
         uint256 amount,
         address receiver
@@ -53,8 +53,8 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
             IERC20(tokenU).transferFrom(msg.sender, address(tokenP), amount),
             "ERR_TRANSFER_IN_FAIL"
         );
-        (inTokenU, outTokenR) = tokenP.mint(receiver);
-        emit Mint(msg.sender, inTokenU, outTokenR);
+        (inTokenU, outTokenR) = tokenP.write(receiver);
+        emit Write(msg.sender, inTokenU, outTokenR);
     }
 
     /**
@@ -63,7 +63,7 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
      * Calls msg.sender with transferFrom.
      * @param amount Quantity of Primes to use to swap.
      */
-    function safeSwap(
+    function safeExercise(
         IPrime tokenP,
         uint256 amount,
         address receiver
@@ -89,8 +89,8 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
         (bool inTransferS) = IERC20(tokenS).transferFrom(msg.sender, address(tokenP), inTokenS);
         (bool inTransferP) = IERC20(address(tokenP)).transferFrom(msg.sender, address(tokenP), amount);
         require(inTransferS && inTransferP, "ERR_TRANSFER_IN_FAIL");
-        (inTokenS, inTokenP) = tokenP.swap(receiver, uint(1), new bytes(0));
-        emit Swap(msg.sender, outTokenU, uint(1));
+        (inTokenS, inTokenP) = tokenP.exercise(receiver, uint(1), new bytes(0));
+        emit Exercise(msg.sender, outTokenU, uint(1));
     }
 
     /**

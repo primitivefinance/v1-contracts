@@ -114,7 +114,7 @@ contract("Prime", (accounts) => {
             // mint some options so the cacheU is > 0
             let inTokenU = ONE_ETHER;
             await _tokenU.transfer(tokenP, inTokenU);
-            await prime.mint(Alice);
+            await prime.write(Alice);
             await flash.goodFlashLoan(ONE_ETHER);
             expect(ONE_ETHER).to.be.eq((await prime.cacheU()).toString());
         });
@@ -122,7 +122,7 @@ contract("Prime", (accounts) => {
             // mint some options so the cacheU is > 0
             let inTokenU = ONE_ETHER;
             await _tokenU.transfer(tokenP, inTokenU);
-            await prime.mint(Alice);
+            await prime.write(Alice);
             await truffleAssert.reverts(
                 flash.badFlashLoan(ONE_ETHER),
                 ERR_ZERO

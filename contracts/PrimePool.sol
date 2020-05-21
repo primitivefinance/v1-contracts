@@ -403,7 +403,7 @@ contract PrimePool is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
         // If outTokenU is zero because the numerator is smaller than the denominator,
         // or because the inTokenS is 0, the mint function will revert. This is because
         // the mint function only works when tokens are sent into the Prime contract.
-        (uint256 inTokenP, ) = IPrime(_tokenP).mint(address(this));
+        (uint256 inTokenP, ) = IPrime(_tokenP).write(address(this));
         
         // Calculate premium. Denominated in tokenU PER tokenS 'covered'.
         (uint256 premium) = IPrimeOracle(oracle).calculatePremium(
