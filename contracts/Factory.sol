@@ -41,20 +41,20 @@ contract Factory is Ownable, Pausable, ReentrancyGuard {
         returns (address prime)
     {
             prime = address(new PrimeOption(tokenU, tokenS, base, price, expiry));
-            //bytes32 id = keccak256(abi.encodePacked(tokenU, tokenS, base, price, expiry));
-            //options[id] = prime;
-            //address redeem = IFactoryRedeem(factoryRedeem).deploy(prime, tokenS);
-            //PrimeOption(prime).initTokenR(redeem);
+            bytes32 id = keccak256(abi.encodePacked(tokenU, tokenS, base, price, expiry));
+            options[id] = prime;
+            address redeem = IFactoryRedeem(factoryRedeem).deploy(prime, tokenS);
+            PrimeOption(prime).initTokenR(redeem);
             //emit Deploy(msg.sender, prime, id);
     }
 
-    function kill(bytes32 id) external onlyOwner {
+    /* function kill(bytes32 id) external onlyOwner {
         PrimeOption(options[id]).kill();
     }
 
     function setFeeReceiver(address _feeReceiver) external onlyOwner {
         feeReceiver = _feeReceiver;
-    }
+    }*/
 
     function getId(
         address tokenU,
@@ -64,5 +64,5 @@ contract Factory is Ownable, Pausable, ReentrancyGuard {
         uint256 expiry
     ) public view returns (bytes32 id) {
         id = keccak256(abi.encodePacked(tokenU, tokenS, base, price, expiry));
-    }
+    } 
 }
