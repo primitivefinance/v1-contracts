@@ -22,6 +22,7 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
     uint public override cacheS;
     address public override tokenR;
     address public override factory;
+    uint public constant FEE = 500;
 
     event Mint(address indexed from, uint outTokenP, uint outTokenR);
     event Swap(address indexed from, uint outTokenU, uint inTokenS);
@@ -157,40 +158,51 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
      * Only callable when the option is not expired.
      * @param receiver The outTokenU is sent to the receiver address.
      */
-    function swap(address receiver)
+    function swap(address receiver, uint outTokenU)
         external
         override
         nonReentrant
         notExpired
         whenNotPaused
-        returns (uint inTokenS, uint inTokenP, uint outTokenU)
+        returns (uint inTokenS, uint inTokenP)
     {
-        // Store in memory for gas savings.
+        // Store the cached balances and token addresses in memory.
         address _tokenU = option.tokenU;
         address _tokenS = option.tokenS;
+        (uint _cacheU, uint _cacheS) = getCaches();
+
+        // Require outTokenU > 0, and cacheU > outTokenU.
+        require(outTokenU > 0, "ERR_ZERO");
+        require(_cacheU > outTokenU, "ERR_BAL_UNDERLYING");
+
+        // Optimistically transfer out tokenU.
+        IERC20(_tokenU).transfer(receiver, outTokenU);
+
+        // Store in memory for gas savings.
         uint balanceS = IERC20(_tokenS).balanceOf(address(this));
         uint balanceU = IERC20(_tokenU).balanceOf(address(this));
-        uint balanceP = balanceOf(address(this));
 
-        // Differences between tokenS balance and cacheS.
-        inTokenS = balanceS.sub(cacheS);
+        // Calculate the Differences.
+        inTokenS = balanceS.sub(_cacheS);
+        uint inTokenU = balanceU.sub(_cacheU.sub(outTokenU));
+
+        // Require one of the inputs to be greater than 0.
+        require(inTokenS > 0 || inTokenU > 0, "ERR_ZERO");
+
+        // Calculate the net amount of tokenU sent out of the contract.
+        uint netOutTokenU = inTokenU > outTokenU ? 0 : outTokenU.sub(inTokenU);
+
+        // Calculate the expected payment of tokenS.
+        uint expected = (uint(0)).add(netOutTokenU.mul(option.price).div(option.base));
 
         // Assumes the cached tokenP balance is 0.
-        inTokenP = balanceP;
+        inTokenP = balanceOf(address(this));
 
-        // inTokenS * strike ratio = outTokenU, where strike ratio = base / price
-        outTokenU = inTokenS.mul(option.base).div(option.price);
-        require(inTokenP >= outTokenU && outTokenU > 0, "ERR_BAL_UNDERLYING");
+        // Enforce the invariants.
+        require(inTokenS >= expected && inTokenP >= netOutTokenU, "ERR_BAL_INPUT");
 
         // Burn the Prime options at a 1:1 ratio to outTokenU.
         _burn(address(this), inTokenP);
-
-        // Transfer the swapped tokenU to receiver.
-        require(IERC20(_tokenU).transfer(receiver, outTokenU), "ERR_TRANSFER_OUT_FAIL");
-
-        // New balances.
-        balanceS = IERC20(_tokenS).balanceOf(address(this));
-        balanceU = IERC20(_tokenU).balanceOf(address(this));
 
         // Update the cached balances.
         _fund(balanceU, balanceS);
