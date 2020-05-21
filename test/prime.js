@@ -326,11 +326,11 @@ contract("Prime", (accounts) => {
             });
 
             it("should revert mint function call while paused contract", async () => {
-                await truffleAssert.reverts(prime.mint(Alice), ERR_PAUSED);
+                await truffleAssert.reverts(prime.write(Alice), ERR_PAUSED);
             });
 
             it("should revert swap function call while paused contract", async () => {
-                await truffleAssert.reverts(prime.swap(Alice, inTokenP, []), ERR_PAUSED);
+                await truffleAssert.reverts(prime.exercise(Alice, inTokenP, []), ERR_PAUSED);
             });
 
             it("should unpause contract", async () => {
@@ -348,14 +348,14 @@ contract("Prime", (accounts) => {
             });
         });
 
-        describe("mint", () => {
+        describe("write", () => {
             beforeEach(async () => {
                 prime = await createPrime();
                 tokenP = prime.address;
                 tokenR = await prime.tokenR();
                 redeem = await PrimeRedeem.at(tokenR);
 
-                mint = async (inTokenU) => {
+                write = async (inTokenU) => {
                     inTokenU = new BN(inTokenU);
                     let outTokenR = inTokenU
                         .mul(new BN(price))
@@ -366,7 +366,7 @@ contract("Prime", (accounts) => {
                     let balanceR = await getBalance(redeem, Alice);
 
                     await _tokenU.transfer(tokenP, inTokenU, { from: Alice });
-                    let event = await prime.mint(Alice);
+                    let event = await prime.write(Alice);
 
                     let deltaU = (await getBalance(_tokenU, Alice)).sub(
                         balanceU
@@ -380,7 +380,7 @@ contract("Prime", (accounts) => {
                     assertBNEqual(deltaP, inTokenU);
                     assertBNEqual(deltaR, outTokenR);
 
-                    await truffleAssert.eventEmitted(event, "Mint", (ev) => {
+                    await truffleAssert.eventEmitted(event, "Write", (ev) => {
                         return (
                             expect(ev.from).to.be.eq(Alice) &&
                             expect(ev.outTokenP.toString()).to.be.eq(
@@ -409,29 +409,29 @@ contract("Prime", (accounts) => {
             });
 
             it("revert if no tokens were sent to contract", async () => {
-                await truffleAssert.reverts(prime.mint(Alice), ERR_ZERO);
+                await truffleAssert.reverts(prime.write(Alice), ERR_ZERO);
             });
 
             it("mint tokenP and tokenR to Alice", async () => {
                 let inTokenU = ONE_ETHER;
-                await mint(inTokenU);
+                await write(inTokenU);
             });
 
             it("should revert by sending 1 wei of tokenU to tokenP and call mint", async () => {
                 let inTokenU = "1";
                 await _tokenU.transfer(tokenP, inTokenU, { from: Alice });
-                await truffleAssert.reverts(prime.mint(Alice), ERR_ZERO);
+                await truffleAssert.reverts(prime.write(Alice), ERR_ZERO);
             });
         });
 
-        describe("swap", () => {
+        describe("exercise", () => {
             beforeEach(async () => {
                 prime = await createPrime();
                 tokenP = prime.address;
                 tokenR = await prime.tokenR();
                 redeem = await PrimeRedeem.at(tokenR);
 
-                swap = async (inTokenP) => {
+                exercise = async (inTokenP) => {
                     inTokenP = new BN(inTokenP);
                     let inTokenS = inTokenP
                         .mul(new BN(price))
@@ -444,7 +444,7 @@ contract("Prime", (accounts) => {
 
                     await prime.transfer(tokenP, inTokenP, { from: Alice });
                     await _tokenS.transfer(tokenP, inTokenS, { from: Alice });
-                    let event = await prime.swap(Alice, inTokenP, []);
+                    let event = await prime.exercise(Alice, inTokenP, []);
 
                     let deltaU = (await getBalance(_tokenU, Alice)).sub(
                         balanceU
@@ -458,17 +458,21 @@ contract("Prime", (accounts) => {
                     assertBNEqual(deltaP, inTokenP.neg());
                     assertBNEqual(deltaS, inTokenS.neg());
 
-                    await truffleAssert.eventEmitted(event, "Swap", (ev) => {
-                        return (
-                            expect(ev.from).to.be.eq(Alice) &&
-                            expect(ev.outTokenU.toString()).to.be.eq(
-                                outTokenU.toString()
-                            ) &&
-                            expect(ev.inTokenS.toString()).to.be.eq(
-                                inTokenS.toString()
-                            )
-                        );
-                    });
+                    await truffleAssert.eventEmitted(
+                        event,
+                        "Exercise",
+                        (ev) => {
+                            return (
+                                expect(ev.from).to.be.eq(Alice) &&
+                                expect(ev.outTokenU.toString()).to.be.eq(
+                                    outTokenU.toString()
+                                ) &&
+                                expect(ev.inTokenS.toString()).to.be.eq(
+                                    inTokenS.toString()
+                                )
+                            );
+                        }
+                    );
 
                     let cacheU = await getCache("u");
                     let cacheS = await getCache("s");
@@ -488,34 +492,34 @@ contract("Prime", (accounts) => {
 
             it("revert if 0 tokenS and 0 tokenP were sent to contract", async () => {
                 await truffleAssert.reverts(
-                    prime.swap(Alice, 0, []),
+                    prime.exercise(Alice, 0, []),
                     ERR_BAL_UNDERLYING
                 );
             });
 
             it("reverts if outTokenU > inTokenP, not enough tokenP was sent in", async () => {
-                await mint(toWei("0.01"));
+                await write(toWei("0.01"));
                 await prime.transfer(tokenP, toWei("0.01"));
                 await _tokenS.deposit({ from: Alice, value: price });
                 await _tokenS.transfer(tokenP, price);
                 await truffleAssert.reverts(
-                    prime.swap(Alice, price, [], { from: Alice }),
+                    prime.exercise(Alice, price, [], { from: Alice }),
                     ERR_BAL_UNDERLYING
                 );
                 await prime.take();
             });
 
-            it("swaps consecutively", async () => {
+            it("exercises consecutively", async () => {
                 let inTokenP = ONE_ETHER;
-                await mint(inTokenP);
+                await write(inTokenP);
                 await _tokenS.deposit({ from: Alice, value: price });
-                await swap(toWei("0.1"));
-                await swap(toWei("0.34521"));
+                await exercise(toWei("0.1"));
+                await exercise(toWei("0.34521"));
 
                 // Interesting, the two 0s at the end of this are necessary. If they are not 0s, the
                 // returned value will be unequal because the accuracy of the mint is only 10^16.
                 // This should be verified further.
-                await swap("2323234235200");
+                await exercise("2323234235200");
             });
         });
 
@@ -579,7 +583,7 @@ contract("Prime", (accounts) => {
             });
 
             it("reverts if not enough tokenS in prime contract", async () => {
-                await mint(toWei("200"));
+                await write(toWei("200"));
                 await redeem.transfer(tokenP, toWei("1"));
                 await truffleAssert.reverts(
                     prime.redeem(Alice, { from: Alice }),
@@ -593,8 +597,8 @@ contract("Prime", (accounts) => {
                 let inTokenU = new BN(inTokenR)
                     .mul(new BN(base))
                     .div(new BN(price));
-                await mint(inTokenU);
-                await swap(inTokenU);
+                await write(inTokenU);
+                await exercise(inTokenU);
                 await callRedeem(toWei("0.1"));
                 await callRedeem(toWei("0.34521"));
                 await callRedeem("23232342352345");
@@ -665,14 +669,14 @@ contract("Prime", (accounts) => {
 
             it("revert if 0 tokenR were sent to contract", async () => {
                 let inTokenP = ONE_ETHER;
-                await mint(inTokenP);
+                await write(inTokenP);
                 await prime.transfer(tokenP, inTokenP, { from: Alice });
                 await truffleAssert.reverts(prime.close(Alice), ERR_ZERO);
             });
 
             it("revert if 0 tokenP were sent to contract", async () => {
                 let inTokenP = ONE_ETHER;
-                await mint(inTokenP);
+                await write(inTokenP);
                 let inTokenR = new BN(inTokenP)
                     .mul(new BN(price))
                     .div(new BN(base));
@@ -686,7 +690,7 @@ contract("Prime", (accounts) => {
 
             it("revert if not enough tokenP was sent into contract", async () => {
                 let inTokenP = ONE_ETHER;
-                await mint(inTokenP);
+                await write(inTokenP);
                 let inTokenR = new BN(inTokenP)
                     .mul(new BN(price))
                     .div(new BN(base));
@@ -703,7 +707,7 @@ contract("Prime", (accounts) => {
             // This should be verified further.
             it("closes consecutively", async () => {
                 let inTokenU = toWei("200");
-                await mint(inTokenU);
+                await write(inTokenU);
                 await close(toWei("0.1"));
                 await close(toWei("0.34521"));
                 await close("2323234235000");
@@ -722,15 +726,15 @@ contract("Prime", (accounts) => {
                 // Start with 1000 Primes
                 await _tokenU.mint(Alice, THOUSAND_ETHER);
                 let inTokenU = THOUSAND_ETHER;
-                await mint(inTokenU);
+                await write(inTokenU);
                 await close(ONE_ETHER);
-                await swap(toWei("200"));
+                await exercise(toWei("200"));
                 await callRedeem(toWei("0.1"));
                 await close(ONE_ETHER);
-                await swap(ONE_ETHER);
-                await swap(ONE_ETHER);
-                await swap(ONE_ETHER);
-                await swap(ONE_ETHER);
+                await exercise(ONE_ETHER);
+                await exercise(ONE_ETHER);
+                await exercise(ONE_ETHER);
+                await exercise(ONE_ETHER);
                 await callRedeem(toWei("0.23"));
                 await callRedeem(toWei("0.1234"));
                 await callRedeem(toWei("0.15"));
@@ -756,7 +760,7 @@ contract("Prime", (accounts) => {
                     .mul(new BN(price))
                     .div(new BN(base));
                 await _tokenS.deposit({ from: Alice, value: inTokenS });
-                await mint(inTokenU);
+                await write(inTokenU);
                 await _tokenU.transfer(tokenP, inTokenU, { from: Alice });
                 await _tokenS.transfer(tokenP, inTokenS, { from: Alice });
                 await redeem.transfer(tokenP, inTokenS, { from: Alice });
@@ -797,7 +801,7 @@ contract("Prime", (accounts) => {
                     .mul(new BN(price))
                     .div(new BN(base));
                 await _tokenS.deposit({ from: Alice, value: inTokenS });
-                await mint(inTokenU);
+                await write(inTokenU);
                 await _tokenU.transfer(tokenP, inTokenU, { from: Alice });
                 await _tokenS.transfer(tokenP, inTokenS, { from: Alice });
                 await redeem.transfer(tokenP, inTokenS, { from: Alice });
@@ -831,7 +835,7 @@ contract("Prime", (accounts) => {
                 let inTokenU = THOUSAND_ETHER;
                 await _tokenU.mint(Alice, inTokenU);
                 await _tokenU.transfer(tokenP, inTokenU);
-                await prime.mint(Alice);
+                await prime.write(Alice);
                 let expired = "1589386232";
                 await prime.setExpiry(expired);
                 assert.equal(await prime.expiry(), expired);
@@ -866,11 +870,11 @@ contract("Prime", (accounts) => {
             });
 
             it("revert when calling mint on an expired prime", async () => {
-                await truffleAssert.reverts(prime.mint(Alice), ERR_EXPIRED);
+                await truffleAssert.reverts(prime.write(Alice), ERR_EXPIRED);
             });
 
             it("revert when calling swap on an expired prime", async () => {
-                await truffleAssert.reverts(prime.swap(Alice, inTokenP, []), ERR_EXPIRED);
+                await truffleAssert.reverts(prime.exercise(Alice, inTokenP, []), ERR_EXPIRED);
             });
         }); */
 
@@ -914,7 +918,7 @@ contract("Prime", (accounts) => {
                 await _tokenU.mint(Alice, inTokenU);
                 await _tokenS.mint(Alice, inTokenU);
                 await _tokenU.transfer(tokenP, inTokenU);
-                await prime.mint(Alice);
+                await prime.write(Alice);
             });
 
             it("should revert on swap because transfer does not return a boolean", async () => {
@@ -922,7 +926,7 @@ contract("Prime", (accounts) => {
                 let inTokenS = toWei("0.5"); // 100 ether (tokenU:base) / 200 (tokenS:price) = 0.5 tokenS
                 await _tokenS.transfer(tokenP, inTokenS);
                 await prime.transfer(tokenP, inTokenP);
-                await truffleAssert.reverts(prime.swap(Alice, inTokenP, []));
+                await truffleAssert.reverts(prime.exercise(Alice, inTokenP, []));
             });
 
             it("should revert on redeem because transfer does not return a boolean", async () => {

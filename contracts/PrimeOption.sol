@@ -188,8 +188,8 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
         inTokenS = balanceS.sub(_cacheS);
         uint inTokenU = balanceU.sub(_cacheU.sub(outTokenU));
 
-        // Require one of the inputs to be greater than 0.
-        require(inTokenS > 0 || inTokenU > 0, "ERR_ZERO");
+        // Require inTokenS to be greater than zero to at least pay the fee.
+        require(inTokenS > 0, "ERR_ZERO");
 
         // Calculate the net amount of tokenU sent out of the contract.
         uint netOutTokenU = inTokenU > outTokenU ? 0 : outTokenU.sub(inTokenU);
