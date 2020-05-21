@@ -6,40 +6,49 @@ pragma solidity ^0.6.2;
  */
 
 import "./PrimeOption.sol";
-/* import "./PrimeRedeem.sol"; */
+import "./interfaces/IFactoryRedeem.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Factory is Ownable, Pausable, ReentrancyGuard {
     using SafeMath for uint256;
 
-    string public constant SYMBOL = "PRIME";
-    string public constant NAME = "Primitive Vanilla Option";
-    string public constant RSYMBOL = "REDEEM";
-    string public constant RNAME = "Primitive Strike Redeem";
-
     address public admin;
     address public feeReceiver;
-    uint256 public nonce;
-    mapping(uint256 => address) public options;
+    address public factoryRedeem;
 
-    event Deploy(address indexed from, address indexed tokenP, address indexed tokenR);
+    mapping(bytes32 => address) public options;
+
+    event Deploy(address indexed from, address indexed tokenP, bytes32 indexed id);
 
     constructor() public {
         admin = msg.sender;
     }
 
-    function deployOption(address tokenU, address tokenS, uint256 base, uint256 price, uint256 expiry)
-        external nonReentrant whenNotPaused returns (address prime) {
-            /* nonce = nonce.add(1); */
-            uint256 _nonce = nonce;
-            /* prime = address(new PrimeOption(NAME, SYMBOL, 1, tokenU, tokenS, base, price, expiry)); */
-            /* options[_nonce] = prime; */
-            /* address redeem = address(new PrimeRedeem(RNAME, RSYMBOL, prime, tokenS));
-            PrimeOption(prime).initTokenR(redeem); */
-            /* emit Deploy(msg.sender, prime, redeem); */
+    function initialize(address _factoryRedeem) external onlyOwner {
+        factoryRedeem = _factoryRedeem;
     }
 
-    function kill(uint256 id) external onlyOwner {
+    function deployOption(
+        address tokenU,
+        address tokenS,
+        uint256 base,
+        uint256 price,
+        uint256 expiry
+    )
+        external
+        nonReentrant
+        whenNotPaused
+        returns (address prime)
+    {
+            prime = address(new PrimeOption(tokenU, tokenS, base, price, expiry));
+            //bytes32 id = keccak256(abi.encodePacked(tokenU, tokenS, base, price, expiry));
+            //options[id] = prime;
+            //address redeem = IFactoryRedeem(factoryRedeem).deploy(prime, tokenS);
+            //PrimeOption(prime).initTokenR(redeem);
+            //emit Deploy(msg.sender, prime, id);
+    }
+
+    function kill(bytes32 id) external onlyOwner {
         PrimeOption(options[id]).kill();
     }
 
@@ -47,4 +56,13 @@ contract Factory is Ownable, Pausable, ReentrancyGuard {
         feeReceiver = _feeReceiver;
     }
 
+    function getId(
+        address tokenU,
+        address tokenS,
+        uint256 base,
+        uint256 price,
+        uint256 expiry
+    ) public view returns (bytes32 id) {
+        id = keccak256(abi.encodePacked(tokenU, tokenS, base, price, expiry));
+    }
 }

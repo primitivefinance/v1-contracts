@@ -43,22 +43,21 @@ contract("Prime", (accounts) => {
         weth = await Weth.new();
         dai = await Dai.new(THOUSAND_ETHER);
 
+        optionName = "Primitive V1 Vanilla Option";
+        optionSymbol = "PRIME";
+        redeemName = "Primitive Strike Redeem";
+        redeemSymbol = "REDEEM";
+
         _tokenU = dai;
         _tokenS = weth;
         tokenU = dai.address;
         tokenS = weth.address;
-        optionName = "ETH Put 200 DAI Expiring May 30 2020";
-        optionSymbol = "PRIME";
-        redeemName = "ETH Put Redeemable Token";
-        redeemSymbol = "REDEEM";
         base = toWei("200");
         price = toWei("1");
         expiry = "1590868800"; // May 30, 2020, 8PM UTC
 
         createPrime = async () => {
             let prime = await PrimeOption.new(
-                optionName,
-                optionSymbol,
                 tokenU,
                 tokenS,
                 base,
@@ -69,12 +68,7 @@ contract("Prime", (accounts) => {
         };
 
         createRedeem = async () => {
-            let redeem = await PrimeRedeem.new(
-                redeemName,
-                redeemSymbol,
-                tokenP,
-                tokenS
-            );
+            let redeem = await PrimeRedeem.new(tokenP, tokenS);
             return redeem;
         };
         prime = await createPrime();
@@ -145,21 +139,6 @@ contract("Prime", (accounts) => {
         });
     });
     describe("Prime Option", () => {
-        it("should revert if tokenU or tokenS is address zero", async () => {
-            await truffleAssert.reverts(
-                PrimeOption.new(
-                    optionName,
-                    optionSymbol,
-                    ZERO_ADDRESS,
-                    ZERO_ADDRESS,
-                    base,
-                    price,
-                    expiry
-                ),
-                "ERR_ADDRESS_ZERO"
-            );
-        });
-
         it("should return the correct name", async () => {
             assert.equal(
                 (await prime.name()).toString(),

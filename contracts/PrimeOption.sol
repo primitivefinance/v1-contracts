@@ -20,8 +20,8 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
 
     uint public override cacheU;
     uint public override cacheS;
-    address public override factory;
     address public override tokenR;
+    address public override factory;
 
     event Mint(address indexed from, uint outTokenP, uint outTokenR);
     event Swap(address indexed from, uint outTokenU, uint inTokenS);
@@ -165,44 +165,30 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
         whenNotPaused
         returns (uint inTokenS, uint inTokenP, uint outTokenU)
     {
-        // Stores addresses in memory for gas savings.
+        // Store in memory for gas savings.
         address _tokenU = option.tokenU;
         address _tokenS = option.tokenS;
-
-        // Current balances.
         uint balanceS = IERC20(_tokenS).balanceOf(address(this));
         uint balanceU = IERC20(_tokenU).balanceOf(address(this));
         uint balanceP = balanceOf(address(this));
 
-        // Differences between tokenS balance less cache.
+        // Differences between tokenS balance and cacheS.
         inTokenS = balanceS.sub(cacheS);
 
-        // Assumes the cached balance is 0.
-        // This is because the close function burns the Primes received.
-        // Only external transfers will be able to send Primes to this contract.
-        // Close() and swap() are the only function that check for the Primes balance.
+        // Assumes the cached tokenP balance is 0.
         inTokenP = balanceP;
 
-        // inTokenS / ratio = outTokenU
-        outTokenU = inTokenS.mul(option.base).div(option.price); // FIX
-
-        require(inTokenS > 0 && inTokenP > 0, "ERR_ZERO");
-        require(
-            inTokenP >= outTokenU &&
-            balanceU >= outTokenU,
-            "ERR_BAL_UNDERLYING"
-        );
+        // inTokenS * strike ratio = outTokenU, where strike ratio = base / price
+        outTokenU = inTokenS.mul(option.base).div(option.price);
+        require(inTokenP >= outTokenU && outTokenU > 0, "ERR_BAL_UNDERLYING");
 
         // Burn the Prime options at a 1:1 ratio to outTokenU.
         _burn(address(this), inTokenP);
 
         // Transfer the swapped tokenU to receiver.
-        require(
-            IERC20(_tokenU).transfer(receiver, outTokenU),
-            "ERR_TRANSFER_OUT_FAIL"
-        );
+        require(IERC20(_tokenU).transfer(receiver, outTokenU), "ERR_TRANSFER_OUT_FAIL");
 
-        // Current balances.
+        // New balances.
         balanceS = IERC20(_tokenS).balanceOf(address(this));
         balanceU = IERC20(_tokenU).balanceOf(address(this));
 
@@ -240,8 +226,8 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
         require(balanceS >= inTokenR, "ERR_BAL_STRIKE");
 
         // Burn tokenR in the contract. Send tokenS to msg.sender.
+        IPrimeRedeem(_tokenR).burn(address(this), inTokenR);
         require(
-            IPrimeRedeem(_tokenR).burn(address(this), inTokenR) &&
             IERC20(_tokenS).transfer(receiver, inTokenR),
             "ERR_TRANSFER_OUT_FAIL"
         );
@@ -314,8 +300,8 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
         // a user could send only tokenR and receive the proportional amount of tokenU,
         // as long as the amount of outTokenU is less than or equal to
         // the balance of tokenU and tokenP.
+        IPrimeRedeem(_tokenR).burn(address(this), inTokenR);
         require(
-            IPrimeRedeem(_tokenR).burn(address(this), inTokenR) &&
             IERC20(_tokenU).transfer(receiver, outTokenU),
             "ERR_TRANSFER_OUT_FAIL"
         );

@@ -14,16 +14,17 @@ contract PrimeRedeem is IPrimeRedeem, ERC20 {
     using SafeMath for uint;
 
     uint public constant FEE = 500;
-    string private constant NAME = "Primitive Strike Redeem";
-    string private constant SYMBOL = "REDEEM";
     address public override factory;
-    address public override tokenS;
     address public override tokenP;
+    address public override underlying;
 
-    constructor (address _tokenP, address _tokenS) public ERC20(NAME, SYMBOL) {
-        factory = msg.sender;
-        tokenS = _tokenS;
+    constructor (address _factory, address _tokenP, address _underlying)
+        public 
+        ERC20("Primitive Strike Redeem", "REDEEM")
+    {
+        factory = _factory;
         tokenP = _tokenP;
+        underlying = _underlying;
     }
 
     function mint(address to, uint amount) external override {
@@ -32,17 +33,15 @@ contract PrimeRedeem is IPrimeRedeem, ERC20 {
         bool takeFee = feeReceiver != address(0);
         if(!takeFee) {
             _mint(to, amount);
-        } else return mintWithFee(to, amount);
+        } else {
+            uint _fee = amount.div(FEE);
+            _mint(to, amount.sub(_fee));
+            _mint(feeReceiver, _fee);
+        }
     }
 
     function burn(address to, uint amount) external override {
         require(msg.sender == tokenP, "ERR_NOT_VALID");
         _burn(to, amount);
-    }
-
-    function mintWithFee(address to, uint amount) private {
-        uint _fee = amount.div(FEE);
-        _mint(to, amount.sub(_fee));
-        _mint(feeReceiver, _fee);
     }
 }

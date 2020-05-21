@@ -11,8 +11,6 @@ import "../PrimeOption.sol";
 contract PrimeOptionTest is PrimeOption {
 
     constructor(
-        string memory name,
-        string memory symbol,
         address tokenU,
         address tokenS,
         uint256 base,
@@ -21,8 +19,6 @@ contract PrimeOptionTest is PrimeOption {
     )
         public
         PrimeOption(
-            name,
-            symbol,
             tokenU,
             tokenS,
             base,
