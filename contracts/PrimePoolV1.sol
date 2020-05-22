@@ -1,7 +1,7 @@
 pragma solidity ^0.6.2;
 
 /**
- * @title   Pool for Primitive's Vanilla Options
+ * @title   Vanilla Option Pool
  * @author  Primitive
  */
 
@@ -9,9 +9,9 @@ import "./interfaces/IPrime.sol";
 import "./interfaces/IPrimePool.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 contract PrimePoolV1 is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
     using SafeMath for uint;
@@ -20,16 +20,14 @@ contract PrimePoolV1 is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
 
     address public factory;
     address public tokenP;
-    address public weth;
 
     event Deposit(address indexed from, uint inTokenU, uint outTokenPULP);
     event Withdraw(address indexed from, uint inTokenPULP, uint outTokenU, uint outTokenR);
 
-    constructor(address _weth, address _tokenP, address _factory)
+    constructor(address _tokenP, address _factory)
         public
         ERC20("Primitive V1 Pool", "PULP")
     {
-        weth = _weth;
         tokenP = _tokenP;
         factory = _factory;
     }
@@ -118,7 +116,8 @@ contract PrimePoolV1 is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
     }
 
     function totalBalances() public view returns (uint balanceU, uint balanceR) {
-        balanceU = IERC20(IPrime(tokenP).tokenU()).balanceOf(address(this));
-        balanceR = IERC20(IPrime(tokenP).tokenR()).balanceOf(address(this));
+        (address tokenU, , address tokenR) = IPrime(tokenP).getTokens();
+        balanceU = IERC20(tokenU).balanceOf(address(this));
+        balanceR = IERC20(tokenR).balanceOf(address(this));
     }
 } 
