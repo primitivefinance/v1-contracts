@@ -36,8 +36,6 @@ contract PrimePoolV1 is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
 
     function kill() public onlyOwner returns (bool) { paused() ? _unpause() : _pause(); }
 
-    receive() external payable {}
-
     /**
      * @dev Adds liquidity by depositing tokenU. Receives tokenPULP.
      * @param inTokenU The quantity of tokenU to deposit.
