@@ -48,10 +48,10 @@ contract Factory is Ownable, Pausable, ReentrancyGuard {
             //emit Deploy(msg.sender, prime, id);
     }
 
-    /* function kill(bytes32 id) external onlyOwner {
+     function kill(bytes32 id) external onlyOwner {
         PrimeOption(options[id]).kill();
     }
-
+    /*
     function setFeeReceiver(address _feeReceiver) external onlyOwner {
         feeReceiver = _feeReceiver;
     }*/

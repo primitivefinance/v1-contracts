@@ -22,8 +22,6 @@ contract PrimePerpetual is PrimePoolV1 {
 
     uint public volatility;
     uint public fee;
-    address public factory;
-    address public tokenP;
 
     event Market(address tokenP);
     event Mint(address indexed from, uint inTokenS, uint outTokenU);
@@ -41,7 +39,7 @@ contract PrimePerpetual is PrimePoolV1 {
     function mint(uint inTokenS) external nonReentrant whenNotPaused returns (bool) {
         // Store in memory for gas savings.
         address _tokenP = tokenP;
-        (address tokenU, address tokenS, , uint base, uint price, ,) = IPrime(_tokenP).prime();
+        (address tokenU, address tokenS, , uint base, uint price,) = IPrime(_tokenP).prime();
 
 
         // outTokenU = inTokenS * Quantity of tokenU (base) / Quantity of tokenS (price).
@@ -66,7 +64,7 @@ contract PrimePerpetual is PrimePoolV1 {
 
         // Pulls payment in tokenS from msg.sender and then pushes tokenP (option).
         // WARNING: Two calls to untrusted addresses.
-        assert((IERC20(_tokenP).balanceOf(address(this)) >= inTokenP);
+        assert(IERC20(_tokenP).balanceOf(address(this)) >= inTokenP);
         emit Mint(msg.sender, inTokenS, outTokenU);
 
         // Pull tokenS.
@@ -77,13 +75,12 @@ contract PrimePerpetual is PrimePoolV1 {
     }
 
     /**
-     * @dev User Redeems their Insured Dai for Dai
-     * @param amountToRedeem amount of Insured Dai to convert to DAI
+     * @dev Redeem tokenP for tokenS.
      */
     function redeem(uint inTokenP) external nonReentrant returns (bool) {
         address _tokenP = tokenP;
-        address tokenS = IPrime(_tokenP).tokenS();
-        address tokenR = IPrime(_tokenP).tokenR();
+        (address tokenU, address tokenS, address tokenR, uint base, uint price,) =
+            IPrime(_tokenP).prime();
         require(IERC20(_tokenP).balanceOf(msg.sender) >= inTokenP, "ERR_BAL_PRIME");
 
         // Calculate amount of tokenS to push out.
@@ -98,7 +95,7 @@ contract PrimePerpetual is PrimePoolV1 {
         // Transfer redeemed amount to msg.sender and option tokens to prime option.
         IERC20(tokenS).transfer(msg.sender, outTokenS);
         IERC20(_tokenP).transferFrom(msg.sender, _tokenP, inTokenP);
-        IERC20(_tokenR).transfer(_tokenP, outTokenS);
+        IERC20(tokenR).transfer(_tokenP, outTokenS);
 
         // Close the position, allowing the tokenU to return to the pool.
         IPrime(_tokenP).close(address(this));

@@ -41,11 +41,11 @@ contract PrimePool is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
     /* address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; */
     
     uint256 public constant SECONDS_IN_DAY = 86400;
-    uint256 public constant ONE_ETHER = 1 ether;
     uint256 public constant MAX_SLIPPAGE = 95;
     uint256 public constant MIN_VOLATILITY = 10**15;
     uint256 public constant MIN_PREMIUM = 100;
     uint256 public constant MIN_LIQUIDITY = 10**4;
+    uint256 public constant ONE_ETHER = 1 ether;
     uint256 public constant MANTISSA = 10**36;
     uint256 public constant DISCOUNT_RATE = 5;
 

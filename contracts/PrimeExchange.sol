@@ -28,13 +28,8 @@ interface UniswapExchangeInterface {
 contract PrimeExchange is PrimePoolV1 {
     using SafeMath for uint256;
 
-    address public constant COMPOUND_DAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
-    uint256 public constant SECONDS_IN_DAY = 86400;
     uint256 public constant ONE_ETHER = 1 ether;
-    uint256 public constant MAX_SLIPPAGE = 95;
     uint256 public constant MIN_VOLATILITY = 10**15;
-    uint256 public constant MIN_PREMIUM = 100;
-    uint256 public constant MIN_LIQUIDITY = 10**4;
     uint256 public constant MANTISSA = 10**36;
     uint256 public constant DISCOUNT_RATE = 5;
 
@@ -42,8 +37,6 @@ contract PrimeExchange is PrimePoolV1 {
 
     // Assume oracle is compound's price proxy oracle.
     address public oracle;
-    address public factory;
-    address public tokenP;
     address public WETH;
 
     event Market(address tokenP);
