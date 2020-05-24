@@ -55,7 +55,7 @@ contract PrimePoolV1 is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
         );
 
         // Add liquidity to pool and push tokenPULP to depositor.
-        (outTokenPULP) = _addLiquidity(_tokenP, to, inTokenU);
+        (outTokenPULP) = _addLiquidity(_tokenP, to, inTokenU, uint(1));
 
         // Assume we hold the tokenU asset until it is utilized in minting a Prime.
         (success) = IERC20(tokenU).transferFrom(to, address(this), inTokenU);
@@ -64,15 +64,13 @@ contract PrimePoolV1 is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
     /**
      * @dev Private function to mint tokenPULP to depositor.
      */
-    function _addLiquidity(address _tokenP, address to, uint inTokenU)
+    function _addLiquidity(address _tokenP, address to, uint inTokenU, uint totalBalance)
         internal
         returns (uint outTokenPULP)
     {
         // Mint LP tokens proportional to the Total LP Supply and Total Pool Balance.
         uint _totalSupply = totalSupply();
-        (uint balanceU, uint balanceR) = balances();
         (, , , uint base, uint price,) = IPrime(_tokenP).prime();
-        uint totalBalance = balanceU.add(balanceR.mul(base).div(price)); // calculate outstanding
 
         // If liquidity is not intiialized, mint the initial liquidity.
         if(_totalSupply == 0) {
@@ -91,7 +89,11 @@ contract PrimePoolV1 is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
      * @notice  outTokenU = inTokenPULP * Total balanceU / Total Supply tokenPULP
      * @param inTokenPULP The quantity of liquidity tokens to burn.
      */
-    function _withdraw(address to, uint inTokenPULP) internal nonReentrant returns (bool) {
+    function _withdraw(address to, uint inTokenPULP, uint totalBalance)
+        internal
+        nonReentrant
+        returns (bool)
+    {
         // Check tokenPULP balance.
         require(balanceOf(to) >= inTokenPULP && inTokenPULP > 0, "ERR_BAL_PULP");
         
@@ -100,7 +102,6 @@ contract PrimePoolV1 is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
         uint _totalSupply = totalSupply();
         (uint balanceU, uint balanceR) = balances();
         (address tokenU) = IPrime(_tokenP).tokenU();
-        uint totalBalance = totalBalance();
 
         // Calculate output amounts.
         uint outTokenU = inTokenPULP.mul(totalBalance).div(_totalSupply);
@@ -112,15 +113,34 @@ contract PrimePoolV1 is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
         return IERC20(tokenU).transfer(to, outTokenU);
     }
 
+    function _removeLiquidity(address to, uint inTokenPULP, uint totalBalance)
+        internal
+        returns (uint outTokenU)
+    {
+        // Check tokenPULP balance.
+        require(balanceOf(to) >= inTokenPULP && inTokenPULP > 0, "ERR_BAL_PULP");
+        
+        // Store for gas savings.
+        uint _totalSupply = totalSupply();
+
+        // Calculate output amounts.
+        outTokenU = inTokenPULP.mul(totalBalance).div(_totalSupply);
+        require(outTokenU > 0, "ERR_ZERO");
+        // Burn tokenPULP.
+        _burn(to, inTokenPULP);
+        // Push outTokenU to `to` address.
+        emit Withdraw(to, inTokenPULP, outTokenU);
+    }
+
     function balances() public view returns (uint balanceU, uint balanceR) {
         (address tokenU, , address tokenR) = IPrime(tokenP).getTokens();
         balanceU = IERC20(tokenU).balanceOf(address(this));
         balanceR = IERC20(tokenR).balanceOf(address(this));
     }
 
-    function totalBalance() public view returns (uint totalBalance) {
+    /* function totalBalance() public view returns (uint totalBalance) {
         (uint balanceU, uint balanceR) = balances();
         (, , , uint base, uint price,) = IPrime(tokenP).prime();
         totalBalance = balanceU.add(balanceR.mul(price).div(base));
-    }
+    } */
 } 

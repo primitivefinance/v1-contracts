@@ -1,14 +1,9 @@
 const { assert, expect } = require("chai");
 const chai = require("chai");
 const BN = require("bn.js");
-const TestERC20 = artifacts.require("TestERC20");
-const Factory = artifacts.require("Factory");
-const FactoryRedeem = artifacts.require("FactoryRedeem");
-const PrimeOption = artifacts.require("PrimeOption");
-const PrimeRedeem = artifacts.require("PrimeRedeem");
-const PrimePerpetual = artifacts.require("PrimePerpetual");
-const CTokenLike = artifacts.require("CTokenLike");
 chai.use(require("chai-bn")(BN));
+const constants = require("./constants");
+const truffleAssert = require("truffle-assertions");
 
 const { toWei } = web3.utils;
 const { fromWei } = web3.utils;
@@ -29,54 +24,185 @@ const assertWithinError = (actualBN, expectedBN, error, message) => {
     }
 };
 
-const newERC20 = async (name, symbol, totalSupply) => {
-    let erc20 = await TestERC20.new(name, symbol, totalSupply);
-    return erc20;
+const calculateAddLiquidity = (_inTokenU, _totalSupply, _totalBalance) => {
+    let inTokenU = new BN(_inTokenU);
+    let totalSupply = new BN(_totalSupply);
+    let totalBalance = new BN(_totalBalance);
+    if (totalBalance.eq(new BN(0))) {
+        return inTokenU;
+    }
+    let liquidity = inTokenU.mul(totalSupply).div(totalBalance);
+    return liquidity;
 };
 
-const newOptionFactory = async () => {
-    let factory = await Factory.new();
-    let factoryRedeem = await FactoryRedeem.new(factory.address);
-    await factory.initialize(factoryRedeem.address);
-    return factory;
+const calculateRemoveLiquidity = (
+    _inTokenPULP,
+    _totalSupply,
+    _totalBalance
+) => {
+    let inTokenPULP = new BN(_inTokenPULP);
+    let totalSupply = new BN(_totalSupply);
+    let totalBalance = new BN(_totalBalance);
+    let zero = new BN(0);
+    if (totalBalance.isZero() || totalSupply.isZero()) {
+        return zero;
+    }
+    let outTokenU = inTokenPULP.mul(totalBalance).div(totalSupply);
+    return outTokenU;
 };
 
-const newInterestBearing = async (underlying, name, symbol) => {
-    let compound = await CTokenLike.new(underlying, name, symbol);
-    return compound;
+const getTokenBalance = async (token, address) => {
+    let bal = new BN(await token.balanceOf(address));
+    return bal;
 };
 
-const newPrime = async (factory, tokenU, tokenS, base, price, expiry) => {
-    await factory.deployOption(tokenU, tokenS, base, price, expiry);
-    let id = await factory.getId(tokenU, tokenS, base, price, expiry);
-    let prime = await PrimeOption.at(await factory.options(id));
-    return prime;
+const getTotalSupply = async (instance) => {
+    let bal = new BN(await instance.totalSupply());
+    return bal;
 };
 
-const newRedeem = async (prime) => {
-    let tokenR = await prime.tokenR();
-    let redeem = await PrimeRedeem.at(tokenR);
-    return redeem;
+const getTotalBalance = async (instance) => {
+    let bal = new BN(await instance.totalBalance());
+    return bal;
 };
 
-const newPerpetual = async (ctokenU, ctokenS, tokenP, receiver) => {
-    let perpetual = await PrimePerpetual.new(
-        ctokenU,
-        ctokenS,
-        tokenP,
-        receiver
+const withdraw = async (
+    from,
+    inTokenPULP,
+    tokenU,
+    tokenS,
+    pool,
+    prime,
+    redeem
+) => {
+    inTokenPULP = new BN(inTokenPULP);
+    let balance0U = await getTokenBalance(tokenU, from);
+    let balance0P = await getTokenBalance(pool, from);
+    let balance0CU = await getTokenBalance(tokenU, pool.address);
+    let balance0TS = await getTotalSupply(pool);
+    let balance0TP = await getTotalBalance(pool);
+
+    let liquidity = calculateRemoveLiquidity(
+        inTokenPULP,
+        balance0TS,
+        balance0TP
     );
-    return perpetual;
+
+    if (balance0P.lt(inTokenPULP)) {
+        console.error("insufficient token balance");
+        return;
+    }
+
+    let event = await pool.withdraw(inTokenPULP, {
+        from: from,
+    });
+    truffleAssert.eventEmitted(event, "Withdraw", (ev) => {
+        return (
+            expect(ev.from).to.be.eq(from) &&
+            expect(ev.inTokenPULP.toString()).to.be.eq(inTokenPULP.toString())
+        );
+    });
+
+    let balance1U = await getTokenBalance(tokenU, from);
+    let balance1P = await getTokenBalance(pool, from);
+    let balance1CU = await getTokenBalance(tokenU, pool.address);
+    let balance1TS = await getTotalSupply(pool);
+    let balance1TP = await getTotalBalance(pool);
+
+    let deltaU = balance1U.sub(balance0U);
+    let deltaP = balance1P.sub(balance0P);
+    let deltaCU = balance1CU.sub(balance0CU);
+    let deltaTS = balance1TS.sub(balance0TS);
+    let deltaTP = balance1TP.sub(balance0TP);
+
+    let slippage = new BN(constants.PARAMETERS.MAX_SLIPPAGE);
+    let maxValue = liquidity.add(liquidity.div(slippage));
+    let minValue = liquidity.sub(liquidity.div(slippage));
+    expect(deltaU).to.be.a.bignumber.that.is.at.most(maxValue);
+    expect(deltaU).to.be.a.bignumber.that.is.at.least(minValue);
+    assertBNEqual(deltaP, inTokenPULP.neg());
+    assertBNEqual(deltaTS, inTokenPULP.neg());
+    expect(deltaTP).to.be.a.bignumber.that.is.at.least(maxValue.neg());
+    expect(deltaTP).to.be.a.bignumber.that.is.at.most(minValue.neg());
+
+    await verifyOptionInvariants(tokenU, tokenS, prime, redeem);
 };
+
+const deposit = async (from, inTokenU, tokenU, tokenS, prime, redeem, pool) => {
+    inTokenU = new BN(inTokenU);
+    let balance0U = await getBalance(tokenU, from);
+    let balance0P = await getBalance(pool, from);
+    let balance0CU = await getBalance(tokenU, pool.address);
+    let balance0TS = await getTotalSupply(pool);
+    let balance0TP = await getTotalPoolBalance(pool);
+
+    let liquidity = calculateAddLiquidity(inTokenU, balance0TS, balance0TP);
+
+    if (balance0U.lt(inTokenU)) {
+        console.error("insufficient token balance");
+        return;
+    }
+    let depo = await pool.deposit(inTokenU, {
+        from: from,
+    });
+    truffleAssert.eventEmitted(depo, "Deposit", (ev) => {
+        return (
+            expect(ev.from).to.be.eq(from) &&
+            expect(ev.outTokenPULP.toString()).to.be.eq(liquidity.toString())
+        );
+    });
+
+    let balance1U = await getBalance(tokenU, from);
+    let balance1P = await getBalance(pool, from);
+    let balance1CU = await getBalance(tokenU, pool.address);
+    let balance1TS = await getTotalSupply(pool);
+    let balance1TP = await getTotalPoolBalance(pool);
+
+    let deltaU = balance1U.sub(balance0U);
+    let deltaP = balance1P.sub(balance0P);
+    let deltaCU = balance1CU.sub(balance0CU);
+    let deltaTS = balance1TS.sub(balance0TS);
+    let deltaTP = balance1TP.sub(balance0TP);
+
+    assertBNEqual(deltaU, inTokenU.neg());
+    assertBNEqual(deltaP, liquidity);
+    assertBNEqual(deltaCU, inTokenU);
+    assertBNEqual(deltaTS, liquidity);
+    assertBNEqual(deltaTP, inTokenU);
+};
+
+const verifyOptionInvariants = async (tokenU, tokenS, prime, redeem) => {
+    let balanceU = await tokenU.balanceOf(prime.address);
+    let cacheU = await prime.cacheU();
+    let cacheS = await prime.cacheS();
+    let balanceS = await tokenS.balanceOf(prime.address);
+    let balanceP = await prime.balanceOf(prime.address);
+    let balanceR = await redeem.balanceOf(prime.address);
+    let primeTotalSupply = await prime.totalSupply();
+    let redeemTotalSupply = await redeem.totalSupply();
+    let base = new BN(await prime.base());
+    let price = new BN(await prime.price());
+
+    let expectedRedeemTotalSupply = new BN(primeTotalSupply)
+        .mul(price)
+        .div(base)
+        .add(new BN(cacheS));
+
+    assertBNEqual(balanceU, primeTotalSupply);
+    assertBNEqual(cacheU, primeTotalSupply);
+    assertBNEqual(balanceS, cacheS);
+    assertBNEqual(balanceP, new BN(0));
+    assertBNEqual(balanceR, new BN(0));
+    assertBNEqual(redeemTotalSupply, expectedRedeemTotalSupply);
+};
+
 module.exports = {
     toWei,
     fromWei,
     assertBNEqual,
     assertWithinError,
-    newERC20,
-    newPrime,
-    newRedeem,
-    newPerpetual,
-    newOptionFactory,
-    newInterestBearing,
+    calculateAddLiquidity,
+    calculateRemoveLiquidity,
+    withdraw,
+    verifyOptionInvariants,
 };

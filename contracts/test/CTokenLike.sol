@@ -30,7 +30,7 @@ contract CTokenLike is ICToken, ERC20 {
         if(success) { return 0; } else return 1;
     }
 
-    function balanceOfUnderlying(address owner) external override returns (uint) {
+    function balanceOfUnderlying(address owner) external override view returns (uint) {
         return balanceOf(owner);
     }
 }
