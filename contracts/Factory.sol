@@ -63,7 +63,7 @@ contract Factory is Ownable, Pausable, ReentrancyGuard {
         uint256 base,
         uint256 price,
         uint256 expiry
-    ) public view returns (bytes32 id) {
+    ) public pure returns (bytes32 id) {
         id = keccak256(abi.encodePacked(tokenU, tokenS, base, price, expiry));
     } 
 }

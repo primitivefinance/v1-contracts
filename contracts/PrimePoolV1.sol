@@ -41,7 +41,6 @@ contract PrimePoolV1 is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
     function _deposit(address to, uint inTokenU)
         internal
         whenNotPaused
-        nonReentrant
         returns (uint outTokenPULP, bool success)
     {
         // Store locally for gas savings.
@@ -66,14 +65,14 @@ contract PrimePoolV1 is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
      * @dev Private function to mint tokenPULP to depositor.
      */
     function _addLiquidity(address _tokenP, address to, uint inTokenU)
-        private
+        internal
         returns (uint outTokenPULP)
     {
         // Mint LP tokens proportional to the Total LP Supply and Total Pool Balance.
         uint _totalSupply = totalSupply();
-        (uint balanceU, uint balanceR) = totalBalances();
+        (uint balanceU, uint balanceR) = balances();
         (, , , uint base, uint price,) = IPrime(_tokenP).prime();
-        uint totalBalance = balanceU.add(balanceR.mul(price).div(base)); // calculate outstanding
+        uint totalBalance = balanceU.add(balanceR.mul(base).div(price)); // calculate outstanding
 
         // If liquidity is not intiialized, mint the initial liquidity.
         if(_totalSupply == 0) {
@@ -99,9 +98,9 @@ contract PrimePoolV1 is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
         // Store for gas savings.
         address _tokenP = tokenP;
         uint _totalSupply = totalSupply();
-        (uint balanceU, uint balanceR) = totalBalances();
-        (address tokenU, , , uint base, uint price,) = IPrime(_tokenP).prime();
-        uint totalBalance = balanceU.add(balanceR.mul(price).div(base)); // calculate outstanding
+        (uint balanceU, uint balanceR) = balances();
+        (address tokenU) = IPrime(_tokenP).tokenU();
+        uint totalBalance = totalBalance();
 
         // Calculate output amounts.
         uint outTokenU = inTokenPULP.mul(totalBalance).div(_totalSupply);
@@ -113,9 +112,15 @@ contract PrimePoolV1 is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
         return IERC20(tokenU).transfer(to, outTokenU);
     }
 
-    function totalBalances() public view returns (uint balanceU, uint balanceR) {
+    function balances() public view returns (uint balanceU, uint balanceR) {
         (address tokenU, , address tokenR) = IPrime(tokenP).getTokens();
         balanceU = IERC20(tokenU).balanceOf(address(this));
         balanceR = IERC20(tokenR).balanceOf(address(this));
+    }
+
+    function totalBalance() public view returns (uint totalBalance) {
+        (uint balanceU, uint balanceR) = balances();
+        (, , , uint base, uint price,) = IPrime(tokenP).prime();
+        totalBalance = balanceU.add(balanceR.mul(price).div(base));
     }
 } 

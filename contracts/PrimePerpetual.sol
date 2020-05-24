@@ -8,12 +8,7 @@ pragma solidity ^0.6.2;
 import "./PrimePoolV1.sol";
 import "./interfaces/IPrime.sol";
 import "./interfaces/IPrimePool.sol";
-
-interface ICToken {
-    function mint(uint mintAmount) external returns (uint);
-    function redeemUnderlying(uint redeemAmount) external returns (uint);
-    function balanceOfUnderlying(address owner) external returns (uint);
-}
+import "./interfaces/ICToken.sol";
 
 contract PrimePerpetual is PrimePoolV1 {
     using SafeMath for uint;
@@ -33,13 +28,23 @@ contract PrimePerpetual is PrimePoolV1 {
         fee = 1e15;
         cdai = _cdai;
         cusdc = _cusdc;
+        IERC20(ICToken(_cusdc).underlying()).approve(_cusdc, 10000000 ether);
+        IERC20(ICToken(_cdai).underlying()).approve(_cdai, 10000000 ether);
     }
 
     function deposit(uint inTokenU) external whenNotPaused nonReentrant
         returns (uint outTokenPULP, bool success)
     {
-        (outTokenPULP, success) = _deposit(msg.sender, inTokenU);
+        address _tokenP = tokenP;
+        address tokenU = ICToken(cusdc).underlying();
+        (outTokenPULP) = _addLiquidity(_tokenP, msg.sender, inTokenU);
+        require(
+            IERC20(tokenU).transferFrom(msg.sender, address(this), inTokenU) &&
+            inTokenU >= MIN_LIQUIDITY,
+            "ERR_BAL_UNDERLYING"
+        );
         swapToInterestBearing(cusdc, inTokenU);
+        success = true;
     }
 
     /**
