@@ -3,7 +3,7 @@ pragma solidity ^0.6.2;
 import "./IPrime.sol";
 
 interface IPrimeTrader {
-    function safeWrite(IPrime tokenP, uint256 amount, address receiver) external returns (
+    function safeMint(IPrime tokenP, uint256 amount, address receiver) external returns (
         uint256 inTokenU,
         uint256 outTokenR
     );

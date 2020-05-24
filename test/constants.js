@@ -19,6 +19,7 @@ const ERR_FEED_INVALID = "ERR_FEED_INVALID";
 const ERR_ZERO_LIQUIDITY = "ERR_ZERO_LIQUIDITY";
 
 // COMMON AMOUNTS
+const FEE = 1000;
 const ROUNDING_ERR = 10 ** 8;
 const HUNDRETH = toWei("0.01");
 const TENTH = toWei("0.1");

@@ -23,9 +23,9 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
     uint public override cacheS;
     address public override tokenR;
     address public override factory;
-    uint public constant FEE = 500;
+    uint public constant FEE = 1000;
 
-    event Write(address indexed from, uint outTokenP, uint outTokenR);
+    event Mint(address indexed from, uint outTokenP, uint outTokenR);
     event Exercise(address indexed from, uint outTokenU, uint inTokenS);
     event Redeem(address indexed from, uint inTokenR);
     event Close(address indexed from, uint inTokenP);
@@ -62,10 +62,10 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
         tokenR = _tokenR;
     }
 
-    function kill() public {
+    /* function kill() public {
         require(msg.sender == factory, "ERR_NOT_OWNER");
         paused() ? _unpause() : _pause();
-    }
+    } */
 
     /* === ACCOUNTING === */
 
@@ -119,7 +119,7 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
      * Only callable when the option is not expired.
      * @param receiver The newly minted tokens are sent to the receiver address.
      */
-    function write(address receiver)
+    function mint(address receiver)
         external
         override
         nonReentrant
@@ -147,7 +147,7 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
 
         // Update the caches.
         _fund(balanceU, cacheS);
-        emit Write(receiver, inTokenU, outTokenR);
+        emit Mint(receiver, inTokenU, outTokenR);
     }
 
     /**
@@ -169,41 +169,43 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
     {
         // Store the cached balances and token addresses in memory.
         address _tokenU = option.tokenU;
-        address _tokenS = option.tokenS;
         (uint _cacheU, uint _cacheS) = getCaches();
 
         // Require outTokenU > 0, and cacheU > outTokenU.
         require(outTokenU > 0, "ERR_ZERO");
         require(_cacheU >= outTokenU, "ERR_BAL_UNDERLYING");
 
+        // Take fee out of outTokenU.
+        uint _fee = outTokenU.div(FEE);
+        outTokenU = outTokenU.sub(_fee);
+
         // Optimistically transfer out tokenU.
         IERC20(_tokenU).transfer(receiver, outTokenU);
+        IERC20(_tokenU).transfer(factory, _fee);
         if (data.length > 0) IPrimeFlash(receiver).primitiveFlash(receiver, outTokenU, data);
 
         // Store in memory for gas savings.
-        uint balanceS = IERC20(_tokenS).balanceOf(address(this));
+        uint balanceS = IERC20(option.tokenS).balanceOf(address(this));
         uint balanceU = IERC20(_tokenU).balanceOf(address(this));
 
         // Calculate the Differences.
         inTokenS = balanceS.sub(_cacheS);
-        uint inTokenU = balanceU.sub(_cacheU.sub(outTokenU));
+        uint inTokenU = balanceU.sub(_cacheU.sub(outTokenU.add(_fee)));
 
         // Require inTokenS to be greater than zero to at least pay the fee.
-        require(inTokenS > 0, "ERR_ZERO");
+        require(inTokenS > 0 || inTokenU > 0, "ERR_ZERO");
 
         // Calculate the net amount of tokenU sent out of the contract.
         uint netOutTokenU = inTokenU > outTokenU ? 0 : outTokenU.sub(inTokenU);
 
         // Calculate the expected payment of tokenS.
-        uint expected = (
-            uint(0)
-        ).add(netOutTokenU.mul(option.price).div(option.base));
+        uint payment = netOutTokenU.mul(option.price).div(option.base);
 
         // Assumes the cached tokenP balance is 0.
         inTokenP = balanceOf(address(this));
 
         // Enforce the invariants.
-        require(inTokenS >= expected && inTokenP >= netOutTokenU, "ERR_BAL_INPUT");
+        require(inTokenS >= payment && inTokenP >= netOutTokenU, "ERR_BAL_INPUT");
 
         // Burn the Prime options at a 1:1 ratio to outTokenU.
         _burn(address(this), inTokenP);

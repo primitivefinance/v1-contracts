@@ -114,15 +114,18 @@ contract("Prime", (accounts) => {
             // mint some options so the cacheU is > 0
             let inTokenU = ONE_ETHER;
             await _tokenU.transfer(tokenP, inTokenU);
-            await prime.write(Alice);
+            await prime.mint(Alice);
             await flash.goodFlashLoan(ONE_ETHER);
-            expect(ONE_ETHER).to.be.eq((await prime.cacheU()).toString());
+            let fee = new BN(ONE_ETHER).sub(
+                new BN(ONE_ETHER).div(new BN(1000))
+            );
+            expect((await prime.cacheU()).toString()).to.be.eq(fee.toString());
         });
         it("should revert because the flash loan doesnt return the capital", async () => {
             // mint some options so the cacheU is > 0
             let inTokenU = ONE_ETHER;
             await _tokenU.transfer(tokenP, inTokenU);
-            await prime.write(Alice);
+            await prime.mint(Alice);
             await truffleAssert.reverts(
                 flash.badFlashLoan(ONE_ETHER),
                 ERR_ZERO

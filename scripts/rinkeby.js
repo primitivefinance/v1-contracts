@@ -6,8 +6,6 @@ const bre = require("@nomiclabs/buidler");
 const PrimeOption = artifacts.require("PrimeOption");
 const PrimeRedeem = artifacts.require("PrimeRedeem");
 const PrimeTrader = artifacts.require("PrimeTrader.sol");
-const PrimePool = artifacts.require("PrimePool.sol");
-const PrimeOracle = artifacts.require("PrimeOracle.sol");
 const Dai = artifacts.require("DAI");
 const Weth = artifacts.require("WETH9");
 const { web3 } = require("@nomiclabs/buidler");
@@ -24,14 +22,10 @@ async function main() {
 
     const tokenU = weth.address;
     const tokenS = dai.address;
-    const marketId = 2;
-    const optionName = "Primitive ETH Call 300 DAI Expiring June 26 2020";
-    const optionSymbol = "primeETH300C260620";
-    const redeemName = "Primitive Redeem for primeETH300C260620";
-    const redeemSymbol = "redeemETH300C260620";
     const base = web3.utils.toWei("1");
     const price = web3.utils.toWei("300");
     const expiry = "1593129600"; // June 26, 2020, 0:00:00 UTC
+    const factory = "0x619F9Fb924c7e5fd6D21680b9bAc146FffB2D5C3";
     console.log({
         tokenU,
         tokenS,
@@ -40,23 +34,9 @@ async function main() {
         expiry,
     });
 
-    const prime = await PrimeOption.new(
-        optionName,
-        optionSymbol,
-        marketId,
-        tokenU,
-        tokenS,
-        base,
-        price,
-        expiry
-    );
+    const prime = await PrimeOption.new(tokenU, tokenS, base, price, expiry);
 
-    const redeem = await PrimeRedeem.new(
-        redeemName,
-        redeemSymbol,
-        prime.address,
-        tokenS
-    );
+    const redeem = await PrimeRedeem.new(factory, prime.address, tokenS);
 
     await prime.initTokenR(redeem.address);
     console.log("[prime]", prime.address);

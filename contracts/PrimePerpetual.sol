@@ -9,7 +9,7 @@ import "./PrimePoolV1.sol";
 import "./interfaces/IPrime.sol";
 import "./interfaces/IPrimePool.sol";
 
-interface ICDai {
+interface ICToken {
     function mint(uint mintAmount) external returns (uint);
     function redeemUnderlying(uint redeemAmount) external returns (uint);
     function balanceOfUnderlying(address owner) external returns (uint);
@@ -18,23 +18,33 @@ interface ICDai {
 contract PrimePerpetual is PrimePoolV1 {
     using SafeMath for uint;
 
-    address public constant CDAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
+    address public cdai;
+    address public cusdc;
 
-    uint public volatility;
     uint public fee;
 
     event Market(address tokenP);
     event Mint(address indexed from, uint inTokenS, uint outTokenU);
     event Redeem(address indexed from, uint inTokenP, uint outTokenS);
 
-    constructor(address _tokenP, address _factory) public PrimePoolV1(_tokenP, _factory) {
-        volatility = 100;
+    constructor(address _cdai, address _cusdc, address _tokenP, address _factory)
+        public PrimePoolV1(_tokenP, _factory)
+    {
         fee = 1e15;
+        cdai = _cdai;
+        cusdc = _cusdc;
+    }
+
+    function deposit(uint inTokenU) external whenNotPaused nonReentrant
+        returns (uint outTokenPULP, bool success)
+    {
+        (outTokenPULP, success) = _deposit(msg.sender, inTokenU);
+        swapToInterestBearing(cusdc, inTokenU);
     }
 
     /**
      * @dev Mint perpetual.
-     * @notice Deposit tokenS to receive tokenP, which is minted using the pool"s tokenU.
+     * @notice Deposit tokenS to receive tokenP, which is minted using the pool's tokenU.
      */
     function mint(uint inTokenS) external nonReentrant whenNotPaused returns (bool) {
         // Store in memory for gas savings.
@@ -60,7 +70,7 @@ contract PrimePerpetual is PrimePoolV1 {
         // If outTokenU is zero because the numerator is smaller than the denominator,
         // or because the inTokenS is 0, the mint function will revert. This is because
         // the mint function only works when tokens are sent into the Prime contract.
-        (uint inTokenP, ) = IPrime(_tokenP).write(address(this));
+        (uint inTokenP, ) = IPrime(_tokenP).mint(address(this));
 
         // Pulls payment in tokenS from msg.sender and then pushes tokenP (option).
         // WARNING: Two calls to untrusted addresses.
@@ -70,7 +80,7 @@ contract PrimePerpetual is PrimePoolV1 {
         // Pull tokenS.
         (bool received) = IERC20(tokenS).transferFrom(msg.sender, address(this), payment);
         // Swap tokenS to interest bearing version.
-        swapToInterestBearing(payment);
+        swapToInterestBearing(cdai, payment);
         return received && transferU && IERC20(_tokenP).transfer(msg.sender, inTokenP);
     }
 
@@ -79,15 +89,14 @@ contract PrimePerpetual is PrimePoolV1 {
      */
     function redeem(uint inTokenP) external nonReentrant returns (bool) {
         address _tokenP = tokenP;
-        (address tokenU, address tokenS, address tokenR, uint base, uint price,) =
-            IPrime(_tokenP).prime();
+        (, address tokenS, address tokenR, uint base, uint price,) = IPrime(_tokenP).prime();
         require(IERC20(_tokenP).balanceOf(msg.sender) >= inTokenP, "ERR_BAL_PRIME");
 
         // Calculate amount of tokenS to push out.
         uint outTokenS = inTokenP.mul(price).div(base); 
 
         // Swap from interest bearing to push to msg.sender.
-        swapFromInterestBearing(outTokenS);
+        swapFromInterestBearing(cdai, outTokenS);
 
         // Assume this is DAI
         assert(IERC20(tokenS).balanceOf(address(this)) >= outTokenS);
@@ -103,22 +112,24 @@ contract PrimePerpetual is PrimePoolV1 {
     }
 
     /**
-     @dev converts Dai to interest bearing cDai (Compound Protocol)
-     @param amount Dai that will be swapped to cDai
+     * @dev Converts token to compound token.
+     * @param token Address of the underlying token which should be converted to cToken version.
+     * @param amount Quantity of token to convert to cToken.
      */
-    function swapToInterestBearing(uint amount) internal returns (bool) {
-        (uint success ) = ICDai(CDAI).mint(amount);
-        require(success == 0, "ERR_CDAI_MINT");
+    function swapToInterestBearing(address token, uint amount) internal returns (bool) {
+        (uint success ) = ICToken(token).mint(amount);
+        require(success == 0, "ERR_CTOKEN_MINT");
         return success == 0;
     }
 
     /**
-     @dev converts cDai back into Dai
-     @param amount Dai that will be swapped from cDai
+     * @dev Converts compound token back into underlying token.
+     * @param token Address of the underlying token which should be converted from cToken.
+     * @param amount Quantity of token to convert to cToken.
      */
-    function swapFromInterestBearing(uint amount) internal returns (bool) {
-        uint redeemResult = ICDai(CDAI).redeemUnderlying(amount);
-        require(redeemResult == 0, "ERR_REDEEM_CDAI");
+    function swapFromInterestBearing(address token, uint amount) internal returns (bool) {
+        uint redeemResult = ICToken(token).redeemUnderlying(amount);
+        require(redeemResult == 0, "ERR_REDEEM_CTOKEN");
         return redeemResult == 0;
     }
 }

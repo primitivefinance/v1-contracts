@@ -22,7 +22,7 @@ contract PrimePoolV1 is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
     address public tokenP;
 
     event Deposit(address indexed from, uint inTokenU, uint outTokenPULP);
-    event Withdraw(address indexed from, uint inTokenPULP, uint outTokenU, uint outTokenR);
+    event Withdraw(address indexed from, uint inTokenPULP, uint outTokenU);
 
     constructor(address _tokenP, address _factory)
         public
@@ -38,8 +38,8 @@ contract PrimePoolV1 is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
      * @dev Adds liquidity by depositing tokenU. Receives tokenPULP.
      * @param inTokenU The quantity of tokenU to deposit.
      */
-    function deposit(address to, uint inTokenU)
-        external
+    function _deposit(address to, uint inTokenU)
+        internal
         whenNotPaused
         nonReentrant
         returns (uint outTokenPULP, bool success)
@@ -70,16 +70,16 @@ contract PrimePoolV1 is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
         returns (uint outTokenPULP)
     {
         // Mint LP tokens proportional to the Total LP Supply and Total Pool Balance.
-        (uint balanceU, uint balanceR) = totalBalances();
         uint _totalSupply = totalSupply();
+        (uint balanceU, uint balanceR) = totalBalances();
+        (, , , uint base, uint price,) = IPrime(_tokenP).prime();
+        uint totalBalance = balanceU.add(balanceR.mul(price).div(base)); // calculate outstanding
 
         // If liquidity is not intiialized, mint the initial liquidity.
         if(_totalSupply == 0) {
             outTokenPULP = inTokenU.mul(IPrime(_tokenP).price()).div(1 ether);
         } else {
-            uint equityU = inTokenU.mul(_totalSupply).div(balanceU);
-            uint equityR = inTokenU.mul(_totalSupply).div(balanceR);
-            outTokenPULP = equityU.add(equityR);
+            outTokenPULP = inTokenU.mul(_totalSupply).div(totalBalance);
         }
 
         require(outTokenPULP > 0, "ERR_ZERO_LIQUIDITY");
@@ -88,31 +88,29 @@ contract PrimePoolV1 is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
     }
 
     /**
-     * @dev liquidity Provider burns their tokenPULP for proportional amount of tokenU + tokenR.
-     * @notice  outTokenU = inTokenPULP * balanceU / Total Supply tokenPULP, 
-     *          outTokenR = inTokenPULP * balanceR / Total Supply tokenPULP,
+     * @dev liquidity Provider burns their tokenPULP for proportional amount of tokenU.
+     * @notice  outTokenU = inTokenPULP * Total balanceU / Total Supply tokenPULP
      * @param inTokenPULP The quantity of liquidity tokens to burn.
      */
-    function withdraw(address to, uint inTokenPULP) external nonReentrant returns (bool) {
+    function _withdraw(address to, uint inTokenPULP) internal nonReentrant returns (bool) {
         // Check tokenPULP balance.
         require(balanceOf(to) >= inTokenPULP && inTokenPULP > 0, "ERR_BAL_PULP");
         
         // Store for gas savings.
         address _tokenP = tokenP;
-        (uint balanceU, uint balanceR) = totalBalances();
-        (address tokenU, , address tokenR) = IPrime(_tokenP).getTokens();
         uint _totalSupply = totalSupply();
+        (uint balanceU, uint balanceR) = totalBalances();
+        (address tokenU, , , uint base, uint price,) = IPrime(_tokenP).prime();
+        uint totalBalance = balanceU.add(balanceR.mul(price).div(base)); // calculate outstanding
 
         // Calculate output amounts.
-        uint outTokenU = inTokenPULP.mul(balanceU).div(_totalSupply);
-        uint outTokenR = inTokenPULP.mul(balanceR).div(_totalSupply);
-        require(balanceU >= outTokenU && balanceR >= outTokenR, "ERR_BAL_OUTPUT");
-        require(outTokenU > 0 || outTokenR > 0, "ERR_ZERO");
+        uint outTokenU = inTokenPULP.mul(totalBalance).div(_totalSupply);
+        require(balanceU >= outTokenU && outTokenU > 0, "ERR_BAL_INSUFFICIENT");
         // Burn tokenPULP.
         _burn(to, inTokenPULP);
         // Push outTokenU to `to` address.
-        emit Withdraw(to, inTokenPULP, outTokenU, outTokenR);
-        return IERC20(tokenU).transfer(to, outTokenU) && IERC20(tokenR).transfer(to, outTokenR);
+        emit Withdraw(to, inTokenPULP, outTokenU);
+        return IERC20(tokenU).transfer(to, outTokenU);
     }
 
     function totalBalances() public view returns (uint balanceU, uint balanceR) {

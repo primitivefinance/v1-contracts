@@ -1,7 +1,7 @@
 pragma solidity ^0.6.2;
 
 interface IPrime {
-    function write(address receiver) external returns (
+    function mint(address receiver) external returns (
         uint inTokenU,
         uint outTokenR
     );
