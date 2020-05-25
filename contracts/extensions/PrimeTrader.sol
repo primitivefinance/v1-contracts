@@ -6,8 +6,8 @@ pragma solidity ^0.6.2;
  * @author  Primitive
  */
 
-import "./interfaces/IPrime.sol";
-import "./interfaces/IPrimeTrader.sol";
+import "../interfaces/IPrime.sol";
+import "../interfaces/IPrimeTrader.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";

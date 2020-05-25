@@ -5,17 +5,18 @@ pragma solidity ^0.6.2;
  * @author  Primitive
  */
 
-import "./PrimePoolV1.sol";
+import "./extensions/PrimePoolV1.sol";
 import "./interfaces/IPrime.sol";
 import "./interfaces/ICToken.sol";
+import "./interfaces/IPrimePerpetual.sol";
 
-contract PrimePerpetual is PrimePoolV1 {
+contract PrimePerpetual is IPrimePerpetual, PrimePoolV1 {
     using SafeMath for uint;
 
-    address public cdai;
-    address public cusdc;
+    address public override cdai;
+    address public override cusdc;
 
-    uint public fee;
+    uint public override fee;
 
     event Market(address tokenP);
     event Insure(address indexed from, uint inTokenS, uint outTokenU);
@@ -32,7 +33,7 @@ contract PrimePerpetual is PrimePoolV1 {
         IERC20(ICToken(_cdai).underlying()).approve(_cdai, 100000000000 ether);
     }
 
-    function deposit(uint inTokenU) external whenNotPaused nonReentrant
+    function deposit(uint inTokenU) external override whenNotPaused nonReentrant
         returns (uint outTokenPULP, bool success)
     {
         address _tokenP = tokenP;
@@ -48,7 +49,7 @@ contract PrimePerpetual is PrimePoolV1 {
         success = true;
     }
 
-    function withdraw(uint inTokenPULP) external whenNotPaused nonReentrant returns (bool) {
+    function withdraw(uint inTokenPULP) external override whenNotPaused nonReentrant returns (bool) {
         address _tokenP = tokenP;
         address tokenU = ICToken(cusdc).underlying();
         (uint totalBalance) = totalBalance();
@@ -63,7 +64,7 @@ contract PrimePerpetual is PrimePoolV1 {
      * @dev Mint perpetual.
      * @notice Deposit tokenS to receive tokenP, which is minted using the pool's tokenU.
      */
-    function mint(uint inTokenS) external nonReentrant whenNotPaused returns (bool) {
+    function mint(uint inTokenS) external override nonReentrant whenNotPaused returns (bool) {
         // Store in memory for gas savings.
         address _tokenP = tokenP;
         (address tokenU, address tokenS, , uint base, uint price,) = IPrime(_tokenP).prime();
@@ -105,7 +106,7 @@ contract PrimePerpetual is PrimePoolV1 {
     /**
      * @dev Redeem tokenP for tokenS.
      */
-    function redeem(uint inTokenP) external nonReentrant returns (bool) {
+    function redeem(uint inTokenP) external override nonReentrant returns (bool) {
         address _tokenP = tokenP;
         (, address tokenS, address tokenR, uint base, uint price,) = IPrime(_tokenP).prime();
         require(IERC20(_tokenP).balanceOf(msg.sender) >= inTokenP, "ERR_BAL_PRIME");
@@ -129,7 +130,7 @@ contract PrimePerpetual is PrimePoolV1 {
         emit Redemption(msg.sender, inTokenP, outTokenS);
     }
 
-    function exercise(uint inTokenP) external nonReentrant returns (bool) {
+    function exercise(uint inTokenP) external override nonReentrant returns (bool) {
         address _tokenP = tokenP;
         (, address tokenS, address tokenR, uint base, uint price,) = IPrime(_tokenP).prime();
         require(IERC20(_tokenP).balanceOf(msg.sender) >= inTokenP, "ERR_BAL_PRIME");
@@ -174,12 +175,12 @@ contract PrimePerpetual is PrimePoolV1 {
         return redeemResult == 0;
     }
 
-    function interestBalances() public view returns (uint balanceU, uint balanceR) {
+    function interestBalances() public view override returns (uint balanceU, uint balanceR) {
         balanceU = ICToken(cusdc).balanceOfUnderlying(address(this));
         balanceR = ICToken(cdai).balanceOfUnderlying(address(this));
     }
 
-    function totalBalance() public view returns (uint totalBalance) {
+    function totalBalance() public override view returns (uint totalBalance) {
         (uint balanceU,) = interestBalances();
         (, , address tokenR, uint base, uint price,) = IPrime(tokenP).prime();
         totalBalance = balanceU.add(IERC20(tokenR).balanceOf(address(this)).mul(base).div(price));

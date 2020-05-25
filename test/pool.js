@@ -12,7 +12,6 @@ const OracleLike = artifacts.require("OracleLike");
 const utils = require("./utils");
 const setup = require("./setup");
 const constants = require("./constants");
-const { MILLION_ETHER } = constants.VALUES;
 const {
     toWei,
     assertBNEqual,
@@ -30,6 +29,7 @@ const {
     TEN_ETHER,
     HUNDRED_ETHER,
     THOUSAND_ETHER,
+    MILLION_ETHER,
 } = constants.VALUES;
 
 const {

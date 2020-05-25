@@ -5,8 +5,8 @@ pragma solidity ^0.6.2;
  * @author  Primitive
  */
 
-import "./interfaces/IPrime.sol";
-import "./interfaces/IPrimePool.sol";
+import "../interfaces/IPrime.sol";
+import "../interfaces/IPrimePool.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
@@ -18,8 +18,8 @@ contract PrimePoolV1 is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
 
     uint public constant MIN_LIQUIDITY = 10**4;
 
-    address public factory;
-    address public tokenP;
+    address public override factory;
+    address public override tokenP;
 
     event Deposit(address indexed from, uint inTokenU, uint outTokenPULP);
     event Withdraw(address indexed from, uint inTokenPULP, uint outTokenU);
@@ -32,7 +32,7 @@ contract PrimePoolV1 is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
         factory = _factory;
     }
 
-    function kill() public onlyOwner returns (bool) { paused() ? _unpause() : _pause(); }
+    function kill() public override onlyOwner returns (bool) { paused() ? _unpause() : _pause(); }
 
     /**
      * @dev Private function to mint tokenPULP to depositor.
@@ -76,7 +76,7 @@ contract PrimePoolV1 is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
         emit Withdraw(to, inTokenPULP, outTokenU);
     }
 
-    function balances() public view returns (uint balanceU, uint balanceR) {
+    function balances() public override view returns (uint balanceU, uint balanceR) {
         (address tokenU, , address tokenR) = IPrime(tokenP).getTokens();
         balanceU = IERC20(tokenU).balanceOf(address(this));
         balanceR = IERC20(tokenR).balanceOf(address(this));

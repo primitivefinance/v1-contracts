@@ -5,7 +5,7 @@ pragma solidity ^0.6.2;
  * @author  Primitive
  */
 
-import "./interfaces/IPrimeOracle.sol";
+import "../interfaces/IPrimeOracle.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 interface PriceOracleProxy {

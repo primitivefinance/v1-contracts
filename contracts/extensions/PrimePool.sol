@@ -6,9 +6,9 @@ pragma solidity ^0.6.2;
  */
 
 
-import "./interfaces/IPrime.sol";
-import "./interfaces/IPrimePool.sol";
-import "./interfaces/IPrimeOracle.sol";
+import "../interfaces/IPrime.sol";
+import "../interfaces/IPrimePool.sol";
+import "../interfaces/IPrimeOracle.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
@@ -53,8 +53,8 @@ contract PrimePool is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
 
     // Assume oracle is compound's price proxy oracle.
     address public oracle;
-    address public factory;
-    address public tokenP;
+    address public override factory;
+    address public override tokenP;
     address public WETH;
 
     event Market(address tokenP);
@@ -81,7 +81,7 @@ contract PrimePool is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
         volatility = 100;
     }
 
-    function kill() public onlyOwner returns (bool) {
+    function kill() public override onlyOwner returns (bool) {
         if(paused()) {
             _unpause();
         } else {
@@ -576,6 +576,11 @@ contract PrimePool is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
         (bool success, ) = to.call.value(amount)("");
         require(success, "ERR_SEND_ETHER");
         return success;
+    }
+
+    function balances() public override view returns(uint balanceU, uint balanceR) {
+        balanceU = IERC20(IPrime(tokenP).tokenU()).balanceOf(address(this));
+        balanceR = IERC20(IPrime(tokenP).tokenR()).balanceOf(address(this));
     }
 }
 
