@@ -1,95 +1,63 @@
 const { assert, expect } = require("chai");
 const truffleAssert = require("truffle-assertions");
 const BN = require("bn.js");
-const Factory = artifacts.require("Factory");
-const FactoryRedeem = artifacts.require("FactoryRedeem");
-const PrimeOption = artifacts.require("PrimeOption");
-const PrimeRedeem = artifacts.require("PrimeRedeem");
-const PrimeOptionTest = artifacts.require("PrimeOptionTest");
-const Weth = artifacts.require("WETH9");
-const Dai = artifacts.require("DAI");
-const BadToken = artifacts.require("BadERC20");
+const utils = require("./utils");
+const setup = require("./setup");
 const constants = require("./constants");
+const { toWei, assertBNEqual, verifyOptionInvariants } = utils;
+const { newERC20, newWeth, newOptionFactory, newPrimitive } = setup;
 const {
-    ERR_ZERO,
-    ERR_BAL_STRIKE,
-    ERR_BAL_UNDERLYING,
-    ERR_NOT_OWNER,
-    ERR_PAUSED,
-    ERR_EXPIRED,
-    ERR_NOT_VALID,
     ONE_ETHER,
     FIVE_ETHER,
-    HUNDRED_ETHER,
     THOUSAND_ETHER,
-    ZERO_ADDRESS,
-    FEE,
-} = constants;
+    MILLION_ETHER,
+} = constants.VALUES;
+
+const {
+    ERR_BAL_UNDERLYING,
+    ERR_ZERO,
+    ERR_BAL_STRIKE,
+    ERR_NOT_VALID,
+    ERR_NOT_OWNER,
+} = constants.ERR_CODES;
 
 contract("Prime", (accounts) => {
-    // WEB3
-    const { toWei } = web3.utils;
-
     // ACCOUNTS
     const Alice = accounts[0];
     const Bob = accounts[1];
 
     let weth, dai, prime, redeem;
-    let tokenU, tokenS, _tokenU, _tokenS, tokenP, tokenR;
+    let tokenU, tokenS;
     let base, price, expiry;
-    let factory, factoryRedeem;
-
-    const assertBNEqual = (actualBN, expectedBN, message) => {
-        assert.equal(actualBN.toString(), expectedBN.toString(), message);
-    };
+    let factory, Primitive;
 
     before(async () => {
-        weth = await Weth.new();
-        dai = await Dai.new(THOUSAND_ETHER);
-        factory = await Factory.new();
-        factoryRedeem = await FactoryRedeem.new(factory.address);
-        await factory.initialize(factoryRedeem.address);
+        weth = await newWeth();
+        dai = await newERC20("TEST DAI", "DAI", MILLION_ETHER);
+        factory = await newOptionFactory();
 
         optionName = "Primitive V1 Vanilla Option";
         optionSymbol = "PRIME";
         redeemName = "Primitive Strike Redeem";
         redeemSymbol = "REDEEM";
 
-        _tokenU = dai;
-        _tokenS = weth;
-        tokenU = dai.address;
-        tokenS = weth.address;
+        tokenU = dai;
+        tokenS = weth;
         base = toWei("200");
         price = toWei("1");
         expiry = "1590868800"; // May 30, 2020, 8PM UTC
 
-        /* createPrime = async () => {
-            let prime = await PrimeOption.new(
-                tokenU,
-                tokenS,
-                base,
-                price,
-                expiry
-            );
-            return prime;
-        };
+        Primitive = await newPrimitive(
+            factory,
+            tokenU,
+            tokenS,
+            base,
+            price,
+            expiry
+        );
 
-        createRedeem = async () => {
-            let redeem = await PrimeRedeem.new(tokenP, tokenS);
-            return redeem;
-        }; */
-
-        createPrime = async () => {
-            await factory.deployOption(tokenU, tokenS, base, price, expiry);
-            let id = await factory.getId(tokenU, tokenS, base, price, expiry);
-            let prime = await PrimeOption.at(await factory.options(id));
-            return prime;
-        };
-
-        prime = await createPrime();
-        tokenP = prime.address;
-        tokenR = await prime.tokenR();
-        redeem = await PrimeRedeem.at(tokenR);
+        prime = Primitive.prime;
+        redeem = Primitive.redeem;
 
         getBalance = async (token, address) => {
             let bal = new BN(await token.balanceOf(address));
@@ -134,14 +102,14 @@ contract("Prime", (accounts) => {
         it("should return the correct tokenP", async () => {
             assert.equal(
                 (await redeem.tokenP()).toString(),
-                tokenP,
+                prime.address,
                 "Incorrect tokenP"
             );
         });
         it("should return the correct tokenS", async () => {
             assert.equal(
                 (await redeem.underlying()).toString(),
-                tokenS,
+                tokenS.address,
                 "Incorrect tokenS"
             );
         });
@@ -172,7 +140,7 @@ contract("Prime", (accounts) => {
         it("should return the correct tokenU", async () => {
             assert.equal(
                 (await prime.tokenU()).toString(),
-                tokenU,
+                tokenU.address,
                 "Incorrect tokenU"
             );
         });
@@ -180,7 +148,7 @@ contract("Prime", (accounts) => {
         it("should return the correct tokenS", async () => {
             assert.equal(
                 (await prime.tokenS()).toString(),
-                tokenS,
+                tokenS.address,
                 "Incorrect tokenS"
             );
         });
@@ -188,7 +156,7 @@ contract("Prime", (accounts) => {
         it("should return the correct tokenR", async () => {
             assert.equal(
                 (await prime.tokenR()).toString(),
-                tokenR,
+                redeem.address,
                 "Incorrect tokenR"
             );
         });
@@ -219,9 +187,21 @@ contract("Prime", (accounts) => {
 
         it("should return the correct prime", async () => {
             let result = await prime.prime();
-            assert.equal(result._tokenU.toString(), tokenU, "Incorrect expiry");
-            assert.equal(result._tokenS.toString(), tokenS, "Incorrect expiry");
-            assert.equal(result._tokenR.toString(), tokenR, "Incorrect expiry");
+            assert.equal(
+                result._tokenU.toString(),
+                tokenU.address,
+                "Incorrect expiry"
+            );
+            assert.equal(
+                result._tokenS.toString(),
+                tokenS.address,
+                "Incorrect expiry"
+            );
+            assert.equal(
+                result._tokenR.toString(),
+                redeem.address,
+                "Incorrect expiry"
+            );
             assert.equal(result._base.toString(), base, "Incorrect expiry");
             assert.equal(result._price.toString(), price, "Incorrect expiry");
             assert.equal(result._expiry.toString(), expiry, "Incorrect expiry");
@@ -229,9 +209,21 @@ contract("Prime", (accounts) => {
 
         it("should get the tokens", async () => {
             let result = await prime.getTokens();
-            assert.equal(result._tokenU.toString(), tokenU, "Incorrect tokenU");
-            assert.equal(result._tokenS.toString(), tokenS, "Incorrect tokenS");
-            assert.equal(result._tokenR.toString(), tokenR, "Incorrect tokenR");
+            assert.equal(
+                result._tokenU.toString(),
+                tokenU.address,
+                "Incorrect tokenU"
+            );
+            assert.equal(
+                result._tokenS.toString(),
+                tokenS.address,
+                "Incorrect tokenS"
+            );
+            assert.equal(
+                result._tokenR.toString(),
+                redeem.address,
+                "Incorrect tokenR"
+            );
         });
 
         it("should get the caches", async () => {
@@ -283,7 +275,7 @@ contract("Prime", (accounts) => {
         it("should return the correct tokenP for redeem", async () => {
             assert.equal(
                 (await redeem.tokenP()).toString(),
-                tokenP,
+                prime.address,
                 "Incorrect tokenP"
             );
         });
@@ -291,7 +283,7 @@ contract("Prime", (accounts) => {
         it("should return the correct tokenS for redeem", async () => {
             assert.equal(
                 (await redeem.underlying()).toString(),
-                tokenS,
+                tokenS.address,
                 "Incorrect tokenS"
             );
         });
@@ -351,10 +343,17 @@ contract("Prime", (accounts) => {
 
         describe("mint", () => {
             beforeEach(async () => {
-                prime = await createPrime();
-                tokenP = prime.address;
-                tokenR = await prime.tokenR();
-                redeem = await PrimeRedeem.at(tokenR);
+                Primitive = await newPrimitive(
+                    factory,
+                    tokenU,
+                    tokenS,
+                    base,
+                    price,
+                    expiry
+                );
+
+                prime = Primitive.prime;
+                redeem = Primitive.redeem;
 
                 mint = async (inTokenU) => {
                     inTokenU = new BN(inTokenU);
@@ -362,14 +361,16 @@ contract("Prime", (accounts) => {
                         .mul(new BN(price))
                         .div(new BN(base));
 
-                    let balanceU = await getBalance(_tokenU, Alice);
+                    let balanceU = await getBalance(tokenU, Alice);
                     let balanceP = await getBalance(prime, Alice);
                     let balanceR = await getBalance(redeem, Alice);
 
-                    await _tokenU.transfer(tokenP, inTokenU, { from: Alice });
+                    await tokenU.transfer(prime.address, inTokenU, {
+                        from: Alice,
+                    });
                     let event = await prime.mint(Alice);
 
-                    let deltaU = (await getBalance(_tokenU, Alice)).sub(
+                    let deltaU = (await getBalance(tokenU, Alice)).sub(
                         balanceU
                     );
                     let deltaP = (await getBalance(prime, Alice)).sub(balanceP);
@@ -406,6 +407,7 @@ contract("Prime", (accounts) => {
                             )
                         );
                     });
+                    await verifyOptionInvariants(tokenU, tokenS, prime, redeem);
                 };
             });
 
@@ -420,17 +422,26 @@ contract("Prime", (accounts) => {
 
             it("should revert by sending 1 wei of tokenU to tokenP and call mint", async () => {
                 let inTokenU = "1";
-                await _tokenU.transfer(tokenP, inTokenU, { from: Alice });
+                await tokenU.transfer(prime.address, inTokenU, {
+                    from: Alice,
+                });
                 await truffleAssert.reverts(prime.mint(Alice), ERR_ZERO);
             });
         });
 
         describe("exercise", () => {
             beforeEach(async () => {
-                prime = await createPrime();
-                tokenP = prime.address;
-                tokenR = await prime.tokenR();
-                redeem = await PrimeRedeem.at(tokenR);
+                Primitive = await newPrimitive(
+                    factory,
+                    tokenU,
+                    tokenS,
+                    base,
+                    price,
+                    expiry
+                );
+
+                prime = Primitive.prime;
+                redeem = Primitive.redeem;
 
                 exercise = async (inTokenP) => {
                     inTokenP = new BN(inTokenP);
@@ -439,19 +450,23 @@ contract("Prime", (accounts) => {
                         .div(new BN(base));
                     let outTokenU = inTokenP;
 
-                    let balanceU = await getBalance(_tokenU, Alice);
+                    let balanceU = await getBalance(tokenU, Alice);
                     let balanceP = await getBalance(prime, Alice);
-                    let balanceS = await getBalance(_tokenS, Alice);
+                    let balanceS = await getBalance(tokenS, Alice);
 
-                    await prime.transfer(tokenP, inTokenP, { from: Alice });
-                    await _tokenS.transfer(tokenP, inTokenS, { from: Alice });
+                    await prime.transfer(prime.address, inTokenP, {
+                        from: Alice,
+                    });
+                    await tokenS.transfer(prime.address, inTokenS, {
+                        from: Alice,
+                    });
                     let event = await prime.exercise(Alice, inTokenP, []);
 
-                    let deltaU = (await getBalance(_tokenU, Alice)).sub(
+                    let deltaU = (await getBalance(tokenU, Alice)).sub(
                         balanceU
                     );
                     let deltaP = (await getBalance(prime, Alice)).sub(balanceP);
-                    let deltaS = (await getBalance(_tokenS, Alice)).sub(
+                    let deltaS = (await getBalance(tokenS, Alice)).sub(
                         balanceS
                     );
 
@@ -494,6 +509,7 @@ contract("Prime", (accounts) => {
                             )
                         );
                     });
+                    await verifyOptionInvariants(tokenU, tokenS, prime, redeem);
                 };
             });
 
@@ -506,9 +522,9 @@ contract("Prime", (accounts) => {
 
             it("reverts if outTokenU > inTokenP, not enough tokenP was sent in", async () => {
                 await mint(toWei("0.01"));
-                await prime.transfer(tokenP, toWei("0.01"));
-                await _tokenS.deposit({ from: Alice, value: price });
-                await _tokenS.transfer(tokenP, price);
+                await prime.transfer(prime.address, toWei("0.01"));
+                await tokenS.deposit({ from: Alice, value: price });
+                await tokenS.transfer(prime.address, price);
                 await truffleAssert.reverts(
                     prime.exercise(Alice, price, [], { from: Alice }),
                     ERR_BAL_UNDERLYING
@@ -519,7 +535,7 @@ contract("Prime", (accounts) => {
             it("exercises consecutively", async () => {
                 let inTokenP = ONE_ETHER;
                 await mint(inTokenP);
-                await _tokenS.deposit({ from: Alice, value: price });
+                await tokenS.deposit({ from: Alice, value: price });
                 await exercise(toWei("0.1"));
                 await exercise(toWei("0.34521"));
 
@@ -532,22 +548,31 @@ contract("Prime", (accounts) => {
 
         describe("redeem", () => {
             beforeEach(async () => {
-                prime = await createPrime();
-                tokenP = prime.address;
-                tokenR = await prime.tokenR();
-                redeem = await PrimeRedeem.at(tokenR);
+                Primitive = await newPrimitive(
+                    factory,
+                    tokenU,
+                    tokenS,
+                    base,
+                    price,
+                    expiry
+                );
+
+                prime = Primitive.prime;
+                redeem = Primitive.redeem;
 
                 callRedeem = async (inTokenR) => {
                     inTokenR = new BN(inTokenR);
                     let outTokenS = inTokenR;
 
-                    let balanceS = await getBalance(_tokenS, Alice);
+                    let balanceS = await getBalance(tokenS, Alice);
                     let balanceR = await getBalance(redeem, Alice);
 
-                    await redeem.transfer(tokenP, inTokenR, { from: Alice });
+                    await redeem.transfer(prime.address, inTokenR, {
+                        from: Alice,
+                    });
                     let event = await prime.redeem(Alice);
 
-                    let deltaS = (await getBalance(_tokenS, Alice)).sub(
+                    let deltaS = (await getBalance(tokenS, Alice)).sub(
                         balanceS
                     );
                     let deltaR = (await getBalance(redeem, Alice)).sub(
@@ -582,6 +607,7 @@ contract("Prime", (accounts) => {
                             )
                         );
                     });
+                    await verifyOptionInvariants(tokenU, tokenS, prime, redeem);
                 };
             });
 
@@ -591,7 +617,7 @@ contract("Prime", (accounts) => {
 
             it("reverts if not enough tokenS in prime contract", async () => {
                 await mint(toWei("200"));
-                await redeem.transfer(tokenP, toWei("1"));
+                await redeem.transfer(prime.address, toWei("1"));
                 await truffleAssert.reverts(
                     prime.redeem(Alice, { from: Alice }),
                     ERR_BAL_STRIKE
@@ -614,10 +640,17 @@ contract("Prime", (accounts) => {
 
         describe("close", () => {
             beforeEach(async () => {
-                prime = await createPrime();
-                tokenP = prime.address;
-                tokenR = await prime.tokenR();
-                redeem = await PrimeRedeem.at(tokenR);
+                Primitive = await newPrimitive(
+                    factory,
+                    tokenU,
+                    tokenS,
+                    base,
+                    price,
+                    expiry
+                );
+
+                prime = Primitive.prime;
+                redeem = Primitive.redeem;
 
                 close = async (inTokenP) => {
                     inTokenP = new BN(inTokenP);
@@ -627,14 +660,18 @@ contract("Prime", (accounts) => {
                     let outTokenU = inTokenP;
 
                     let balanceR = await getBalance(redeem, Alice);
-                    let balanceU = await getBalance(_tokenU, Alice);
+                    let balanceU = await getBalance(tokenU, Alice);
                     let balanceP = await getBalance(prime, Alice);
 
-                    await prime.transfer(tokenP, inTokenP, { from: Alice });
-                    await redeem.transfer(tokenP, inTokenR, { from: Alice });
+                    await prime.transfer(prime.address, inTokenP, {
+                        from: Alice,
+                    });
+                    await redeem.transfer(prime.address, inTokenR, {
+                        from: Alice,
+                    });
                     let event = await prime.close(Alice);
 
-                    let deltaU = (await getBalance(_tokenU, Alice)).sub(
+                    let deltaU = (await getBalance(tokenU, Alice)).sub(
                         balanceU
                     );
                     let deltaP = (await getBalance(prime, Alice)).sub(balanceP);
@@ -671,13 +708,14 @@ contract("Prime", (accounts) => {
                             )
                         );
                     });
+                    await verifyOptionInvariants(tokenU, tokenS, prime, redeem);
                 };
             });
 
             it("revert if 0 tokenR were sent to contract", async () => {
                 let inTokenP = ONE_ETHER;
                 await mint(inTokenP);
-                await prime.transfer(tokenP, inTokenP, { from: Alice });
+                await prime.transfer(prime.address, inTokenP, { from: Alice });
                 await truffleAssert.reverts(prime.close(Alice), ERR_ZERO);
             });
 
@@ -687,7 +725,9 @@ contract("Prime", (accounts) => {
                 let inTokenR = new BN(inTokenP)
                     .mul(new BN(price))
                     .div(new BN(base));
-                await redeem.transfer(tokenP, inTokenR, { from: Alice });
+                await redeem.transfer(prime.address, inTokenR, {
+                    from: Alice,
+                });
                 await truffleAssert.reverts(prime.close(Alice), ERR_ZERO);
             });
 
@@ -701,8 +741,12 @@ contract("Prime", (accounts) => {
                 let inTokenR = new BN(inTokenP)
                     .mul(new BN(price))
                     .div(new BN(base));
-                await redeem.transfer(tokenP, inTokenR, { from: Alice });
-                await prime.transfer(tokenP, toWei("0.5"), { from: Alice });
+                await redeem.transfer(prime.address, inTokenR, {
+                    from: Alice,
+                });
+                await prime.transfer(prime.address, toWei("0.5"), {
+                    from: Alice,
+                });
                 await truffleAssert.reverts(
                     prime.close(Alice),
                     ERR_BAL_UNDERLYING
@@ -723,15 +767,22 @@ contract("Prime", (accounts) => {
 
         describe("full test", () => {
             beforeEach(async () => {
-                prime = await createPrime();
-                tokenP = prime.address;
-                tokenR = await prime.tokenR();
-                redeem = await PrimeRedeem.at(tokenR);
+                Primitive = await newPrimitive(
+                    factory,
+                    tokenU,
+                    tokenS,
+                    base,
+                    price,
+                    expiry
+                );
+
+                prime = Primitive.prime;
+                redeem = Primitive.redeem;
             });
 
             it("handles multiple transactions", async () => {
                 // Start with 1000 Primes
-                await _tokenU.mint(Alice, THOUSAND_ETHER);
+                await tokenU.mint(Alice, THOUSAND_ETHER);
                 let inTokenU = THOUSAND_ETHER;
                 await mint(inTokenU);
                 await close(ONE_ETHER);
@@ -754,29 +805,42 @@ contract("Prime", (accounts) => {
 
         describe("update", () => {
             beforeEach(async () => {
-                prime = await createPrime();
-                tokenP = prime.address;
-                tokenR = await prime.tokenR();
-                redeem = await PrimeRedeem.at(tokenR);
+                Primitive = await newPrimitive(
+                    factory,
+                    tokenU,
+                    tokenS,
+                    base,
+                    price,
+                    expiry
+                );
+
+                prime = Primitive.prime;
+                redeem = Primitive.redeem;
             });
 
             it("should update the cached balances with the current balances", async () => {
-                await _tokenU.mint(Alice, THOUSAND_ETHER);
+                await tokenU.mint(Alice, THOUSAND_ETHER);
                 let inTokenU = THOUSAND_ETHER;
                 let inTokenS = new BN(inTokenU)
                     .mul(new BN(price))
                     .div(new BN(base));
-                await _tokenS.deposit({ from: Alice, value: inTokenS });
+                await tokenS.deposit({ from: Alice, value: inTokenS });
                 await mint(inTokenU);
-                await _tokenU.transfer(tokenP, inTokenU, { from: Alice });
-                await _tokenS.transfer(tokenP, inTokenS, { from: Alice });
-                await redeem.transfer(tokenP, inTokenS, { from: Alice });
+                await tokenU.transfer(prime.address, inTokenU, {
+                    from: Alice,
+                });
+                await tokenS.transfer(prime.address, inTokenS, {
+                    from: Alice,
+                });
+                await redeem.transfer(prime.address, inTokenS, {
+                    from: Alice,
+                });
                 let update = await prime.update();
 
                 let cacheU = await getCache("u");
                 let cacheS = await getCache("s");
-                let balanceU = await getBalance(_tokenU, tokenP);
-                let balanceS = await getBalance(_tokenS, tokenP);
+                let balanceU = await getBalance(tokenU, prime.address);
+                let balanceS = await getBalance(tokenS, prime.address);
 
                 assertBNEqual(cacheU, balanceU);
                 assertBNEqual(cacheS, balanceS);
@@ -794,33 +858,47 @@ contract("Prime", (accounts) => {
 
         describe("take", () => {
             beforeEach(async () => {
-                prime = await createPrime();
-                tokenP = prime.address;
-                tokenR = await prime.tokenR();
-                redeem = await PrimeRedeem.at(tokenR);
+                Primitive = await newPrimitive(
+                    factory,
+                    tokenU,
+                    tokenS,
+                    base,
+                    price,
+                    expiry
+                );
+
+                prime = Primitive.prime;
+                redeem = Primitive.redeem;
             });
 
             it("should take the balances which are not in the cache", async () => {
-                await _tokenU.mint(Alice, THOUSAND_ETHER);
-                await _tokenU.mint(Alice, THOUSAND_ETHER);
+                await tokenU.mint(Alice, THOUSAND_ETHER);
+                await tokenU.mint(Alice, THOUSAND_ETHER);
                 let inTokenU = THOUSAND_ETHER;
                 let inTokenS = new BN(inTokenU)
                     .mul(new BN(price))
                     .div(new BN(base));
-                await _tokenS.deposit({ from: Alice, value: inTokenS });
+                await tokenS.deposit({ from: Alice, value: inTokenS });
                 await mint(inTokenU);
-                await _tokenU.transfer(tokenP, inTokenU, { from: Alice });
-                await _tokenS.transfer(tokenP, inTokenS, { from: Alice });
-                await redeem.transfer(tokenP, inTokenS, { from: Alice });
+                await tokenU.transfer(prime.address, inTokenU, {
+                    from: Alice,
+                });
+                await tokenS.transfer(prime.address, inTokenS, {
+                    from: Alice,
+                });
+                await redeem.transfer(prime.address, inTokenS, {
+                    from: Alice,
+                });
                 let take = await prime.take();
 
                 let cacheU = await getCache("u");
                 let cacheS = await getCache("s");
-                let balanceU = await getBalance(_tokenU, tokenP);
-                let balanceS = await getBalance(_tokenS, tokenP);
+                let balanceU = await getBalance(tokenU, prime.address);
+                let balanceS = await getBalance(tokenS, prime.address);
 
                 assertBNEqual(cacheU, balanceU);
                 assertBNEqual(cacheS, balanceS);
+                await verifyOptionInvariants(tokenU, tokenS, prime, redeem);
             });
         });
 
@@ -840,8 +918,8 @@ contract("Prime", (accounts) => {
                 tokenR = redeem.address;
                 await prime.initTokenR(tokenR);
                 let inTokenU = THOUSAND_ETHER;
-                await _tokenU.mint(Alice, inTokenU);
-                await _tokenU.transfer(tokenP, inTokenU);
+                await tokenU.mint(Alice, inTokenU);
+                await tokenU.transfer(prime.address, inTokenU);
                 await prime.mint(Alice);
                 let expired = "1589386232";
                 await prime.setExpiry(expired);
@@ -852,18 +930,18 @@ contract("Prime", (accounts) => {
                 let cache0U = await getCache("u");
                 let cache0S = await getCache("s");
                 let balance0R = await redeem.totalSupply();
-                let balance0U = await getBalance(_tokenU, Alice);
-                let balance0CU = await getBalance(_tokenU, tokenP);
-                let balance0S = await getBalance(_tokenS, tokenP);
+                let balance0U = await getBalance(tokenU, Alice);
+                let balance0CU = await getBalance(tokenU, tokenP);
+                let balance0S = await getBalance(tokenS, tokenP);
 
                 let inTokenR = await redeem.balanceOf(Alice);
-                await redeem.transfer(tokenP, inTokenR);
+                await redeem.transfer(prime.address, inTokenR);
                 await prime.close(Alice);
 
                 let balance1R = await redeem.totalSupply();
-                let balance1U = await getBalance(_tokenU, Alice);
-                let balance1CU = await getBalance(_tokenU, tokenP);
-                let balance1S = await getBalance(_tokenS, tokenP);
+                let balance1U = await getBalance(tokenU, Alice);
+                let balance1CU = await getBalance(tokenU, tokenP);
+                let balance1S = await getBalance(tokenS, tokenP);
 
                 let deltaR = balance1R.sub(balance0R);
                 let deltaU = balance1U.sub(balance0U);
@@ -890,16 +968,16 @@ contract("Prime", (accounts) => {
 
         /* describe("test bad ERC20", () => {
             beforeEach(async () => {
-                _tokenU = await BadToken.new(
+                tokenU = await BadToken.new(
                     "Bad ERC20 Doesnt Return Bools",
                     "BADU"
                 );
-                _tokenS = await BadToken.new(
+                tokenS = await BadToken.new(
                     "Bad ERC20 Doesnt Return Bools",
                     "BADS"
                 );
-                tokenU = _tokenU.address;
-                tokenS = _tokenS.address;
+                tokenU = tokenU.address;
+                tokenS = tokenS.address;
                 prime = await PrimeOptionTest.new(
                     optionName,
                     optionSymbol,
@@ -922,26 +1000,26 @@ contract("Prime", (accounts) => {
                 tokenR = await prime.tokenR();
                 redeem = await PrimeRedeem.at(tokenR);
                 let inTokenU = THOUSAND_ETHER;
-                await _tokenU.mint(Alice, inTokenU);
-                await _tokenS.mint(Alice, inTokenU);
-                await _tokenU.transfer(tokenP, inTokenU);
+                await tokenU.mint(Alice, inTokenU);
+                await tokenS.mint(Alice, inTokenU);
+                await tokenU.transfer(prime.address, inTokenU);
                 await prime.mint(Alice);
             });
 
             it("should revert on swap because transfer does not return a boolean", async () => {
                 let inTokenP = HUNDRED_ETHER;
                 let inTokenS = toWei("0.5"); // 100 ether (tokenU:base) / 200 (tokenS:price) = 0.5 tokenS
-                await _tokenS.transfer(tokenP, inTokenS);
-                await prime.transfer(tokenP, inTokenP);
+                await tokenS.transfer(prime.address, inTokenS);
+                await prime.transfer(prime.address, inTokenP);
                 await truffleAssert.reverts(prime.exercise(Alice, inTokenP, []));
             });
 
             it("should revert on redeem because transfer does not return a boolean", async () => {
                 // no way to swap, because it reverts, so we need to send tokenS and call update()
                 let inTokenS = toWei("0.5"); // 100 ether (tokenU:base) / 200 (tokenS:price) = 0.5 tokenS
-                await _tokenS.transfer(tokenP, inTokenS);
+                await tokenS.transfer(prime.address, inTokenS);
                 await prime.update();
-                await redeem.transfer(tokenP, inTokenS);
+                await redeem.transfer(prime.address, inTokenS);
                 await truffleAssert.reverts(prime.redeem(Alice));
             });
 
@@ -949,8 +1027,8 @@ contract("Prime", (accounts) => {
                 // no way to swap, because it reverts, so we need to send tokenS and call update()
                 let inTokenP = HUNDRED_ETHER;
                 let inTokenR = toWei("0.5"); // 100 ether (tokenU:base) / 200 (tokenS:price) = 0.5 tokenS
-                await redeem.transfer(tokenP, inTokenR);
-                await prime.transfer(tokenP, inTokenP);
+                await redeem.transfer(prime.address, inTokenR);
+                await prime.transfer(prime.address, inTokenP);
                 await truffleAssert.reverts(prime.close(Alice));
             });
         }); */

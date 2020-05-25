@@ -7,6 +7,8 @@ const FactoryRedeem = artifacts.require("FactoryRedeem");
 const PrimeOption = artifacts.require("PrimeOption");
 const PrimeRedeem = artifacts.require("PrimeRedeem");
 const PrimePerpetual = artifacts.require("PrimePerpetual");
+const PrimeFlash = artifacts.require("PrimeFlash");
+const Weth = artifacts.require("WETH9");
 const CTokenLike = artifacts.require("CTokenLike");
 chai.use(require("chai-bn")(BN));
 const constants = require("./constants");
@@ -15,6 +17,16 @@ const { MILLION_ETHER } = constants.VALUES;
 const newERC20 = async (name, symbol, totalSupply) => {
     let erc20 = await TestERC20.new(name, symbol, totalSupply);
     return erc20;
+};
+
+const newWeth = async () => {
+    let weth = await Weth.new();
+    return weth;
+};
+
+const newFlash = async (tokenP) => {
+    let flash = await PrimeFlash.new(tokenP);
+    return flash;
 };
 
 const newOptionFactory = async () => {
@@ -52,7 +64,7 @@ const newPerpetual = async (ctokenU, ctokenS, tokenP, receiver) => {
     return perpetual;
 };
 
-const setupOption = async (
+const newPrimitive = async (
     factory,
     underlying,
     strike,
@@ -60,22 +72,23 @@ const setupOption = async (
     price,
     expiry
 ) => {
-    let _tokenU = underlying;
-    let _tokenS = strike;
-    let tokenU = underlying.address;
-    let tokenS = strike.address;
+    let tokenU = underlying;
+    let tokenS = strike;
 
-    let prime = await newPrime(factory, tokenU, tokenS, base, price, expiry);
-    let tokenP = prime.address;
+    let prime = await newPrime(
+        factory,
+        tokenU.address,
+        tokenS.address,
+        base,
+        price,
+        expiry
+    );
     let redeem = await newRedeem(prime);
-    let tokenR = redeem.address;
 
     const Primitive = {
-        _tokenU: _tokenU,
-        _tokenS: _tokenS,
+        tokenU: tokenU,
+        tokenS: tokenS,
         prime: prime,
-        tokenP: tokenP,
-        tokenR: tokenR,
         redeem: redeem,
     };
     return Primitive;
@@ -87,11 +100,13 @@ const approveToken = async (token, owner, spender) => {
 
 module.exports = {
     newERC20,
+    newWeth,
     newPrime,
     newRedeem,
+    newFlash,
     newPerpetual,
     newOptionFactory,
     newInterestBearing,
-    setupOption,
+    newPrimitive,
     approveToken,
 };

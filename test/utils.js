@@ -1,9 +1,9 @@
 const { assert, expect } = require("chai");
 const chai = require("chai");
 const BN = require("bn.js");
-chai.use(require("chai-bn")(BN));
 const constants = require("./constants");
 const truffleAssert = require("truffle-assertions");
+chai.use(require("chai-bn")(BN));
 
 const { toWei } = web3.utils;
 const { fromWei } = web3.utils;
@@ -204,5 +204,6 @@ module.exports = {
     calculateAddLiquidity,
     calculateRemoveLiquidity,
     withdraw,
+    deposit,
     verifyOptionInvariants,
 };

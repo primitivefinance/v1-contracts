@@ -8,7 +8,6 @@ const {
     toWei,
     assertBNEqual,
     calculateAddLiquidity,
-    calculateRemoveLiquidity,
     withdraw,
     assertWithinError,
     verifyOptionInvariants,
@@ -18,10 +17,11 @@ const {
     newInterestBearing,
     newPerpetual,
     newOptionFactory,
-    setupOption,
+    newPrimitive,
     approveToken,
 } = setup;
 const {
+    ZERO,
     ONE_ETHER,
     FIVE_ETHER,
     TEN_ETHER,
@@ -67,7 +67,7 @@ contract("Perpetual", (accounts) => {
         let price = toWei("1");
         let expiry = "7258118400";
 
-        let Primitive = await setupOption(
+        let Primitive = await newPrimitive(
             factory,
             usdc,
             dai,
@@ -80,7 +80,7 @@ contract("Perpetual", (accounts) => {
         perpetual = await newPerpetual(
             cdai.address,
             cusdc.address,
-            Primitive.tokenP,
+            Primitive.prime.address,
             Alice
         );
 
@@ -98,7 +98,7 @@ contract("Perpetual", (accounts) => {
         };
 
         createProtocol = async () => {
-            Primitive = await setupOption(
+            Primitive = await newPrimitive(
                 factory,
                 Tokens.usdc,
                 Tokens.dai,
@@ -109,7 +109,7 @@ contract("Perpetual", (accounts) => {
             perpetual = await newPerpetual(
                 Tokens.cdai.address,
                 Tokens.cusdc.address,
-                Primitive.tokenP,
+                Primitive.prime.address,
                 Alice
             );
 
@@ -149,7 +149,7 @@ contract("Perpetual", (accounts) => {
                 deposit = async (inTokenU) => {
                     inTokenU = new BN(inTokenU);
                     let balance0U = await getTokenBalance(
-                        Primitive._tokenU,
+                        Primitive.tokenU,
                         Alice
                     );
                     let balance0P = await getTokenBalance(perpetual, Alice);
@@ -179,7 +179,7 @@ contract("Perpetual", (accounts) => {
                     });
 
                     let balance1U = await getTokenBalance(
-                        Primitive._tokenU,
+                        Primitive.tokenU,
                         Alice
                     );
                     let balance1P = await getTokenBalance(perpetual, Alice);
@@ -202,8 +202,8 @@ contract("Perpetual", (accounts) => {
                     assertBNEqual(deltaTS, liquidity);
                     assertBNEqual(deltaTP, inTokenU);
                     await verifyOptionInvariants(
-                        Primitive._tokenU,
-                        Primitive._tokenS,
+                        Primitive.tokenU,
+                        Primitive.tokenS,
                         Primitive.prime,
                         Primitive.redeem
                     );
@@ -244,15 +244,15 @@ contract("Perpetual", (accounts) => {
                     await withdraw(
                         from,
                         amount,
-                        Primitive._tokenU,
-                        Primitive._tokenS,
+                        Primitive.tokenU,
+                        Primitive.tokenS,
                         perpetual,
                         Primitive.prime,
                         Primitive.redeem
                     );
                     await verifyOptionInvariants(
-                        Primitive._tokenU,
-                        Primitive._tokenS,
+                        Primitive.tokenU,
+                        Primitive.tokenS,
                         Primitive.prime,
                         Primitive.redeem
                     );
@@ -285,7 +285,7 @@ contract("Perpetual", (accounts) => {
                 mint = async (inTokenS) => {
                     inTokenS = new BN(inTokenS);
                     let balance0U = await getTokenBalance(
-                        Primitive._tokenU,
+                        Primitive.tokenU,
                         Alice
                     );
                     let balance0P = await getTokenBalance(perpetual, Alice);
@@ -294,7 +294,7 @@ contract("Perpetual", (accounts) => {
                         Alice
                     );
                     let balance0S = await getTokenBalance(
-                        Primitive._tokenS,
+                        Primitive.tokenS,
                         Alice
                     );
                     let interestBalances = await perpetual.interestBalances();
@@ -326,7 +326,7 @@ contract("Perpetual", (accounts) => {
                     });
 
                     let balance1U = await getTokenBalance(
-                        Primitive._tokenU,
+                        Primitive.tokenU,
                         Alice
                     );
                     let balance1P = await getTokenBalance(perpetual, Alice);
@@ -335,7 +335,7 @@ contract("Perpetual", (accounts) => {
                         Alice
                     );
                     let balance1S = await getTokenBalance(
-                        Primitive._tokenS,
+                        Primitive.tokenS,
                         Alice
                     );
 
@@ -352,16 +352,16 @@ contract("Perpetual", (accounts) => {
                     let deltaTS = balance1TS.sub(balance0TS);
                     let deltaTP = balance1TP.sub(balance0TP);
 
-                    assertBNEqual(deltaU, new BN(0));
-                    assertBNEqual(deltaP, new BN(0));
+                    assertBNEqual(deltaU, ZERO);
+                    assertBNEqual(deltaP, ZERO);
                     assertBNEqual(deltaPrime, outTokenU);
                     assertBNEqual(deltaS, payment.neg());
                     assertBNEqual(deltaCU, outTokenU.neg());
-                    assertBNEqual(deltaTS, new BN(0));
-                    assertBNEqual(deltaTP, new BN(0));
+                    assertBNEqual(deltaTS, ZERO);
+                    assertBNEqual(deltaTP, ZERO);
                     await verifyOptionInvariants(
-                        Primitive._tokenU,
-                        Primitive._tokenS,
+                        Primitive.tokenU,
+                        Primitive.tokenS,
                         Primitive.prime,
                         Primitive.redeem
                     );
@@ -401,7 +401,7 @@ contract("Perpetual", (accounts) => {
                 redeem = async (inTokenP) => {
                     inTokenP = new BN(inTokenP);
                     let balance0U = await getTokenBalance(
-                        Primitive._tokenU,
+                        Primitive.tokenU,
                         Alice
                     );
                     let balance0P = await getTokenBalance(perpetual, Alice);
@@ -410,7 +410,7 @@ contract("Perpetual", (accounts) => {
                         Alice
                     );
                     let balance0S = await getTokenBalance(
-                        Primitive._tokenS,
+                        Primitive.tokenS,
                         Alice
                     );
                     let interestBalances = await perpetual.interestBalances();
@@ -439,7 +439,7 @@ contract("Perpetual", (accounts) => {
                     });
 
                     let balance1U = await getTokenBalance(
-                        Primitive._tokenU,
+                        Primitive.tokenU,
                         Alice
                     );
                     let balance1P = await getTokenBalance(perpetual, Alice);
@@ -448,7 +448,7 @@ contract("Perpetual", (accounts) => {
                         Alice
                     );
                     let balance1S = await getTokenBalance(
-                        Primitive._tokenS,
+                        Primitive.tokenS,
                         Alice
                     );
 
@@ -465,20 +465,20 @@ contract("Perpetual", (accounts) => {
                     let deltaTS = balance1TS.sub(balance0TS);
                     let deltaTP = balance1TP.sub(balance0TP);
 
-                    assertBNEqual(deltaU, new BN(0));
+                    assertBNEqual(deltaU, ZERO);
                     assertBNEqual(deltaS, outTokenS);
-                    assertBNEqual(deltaP, new BN(0));
+                    assertBNEqual(deltaP, ZERO);
                     assertBNEqual(deltaPrime, inTokenP.neg());
-                    assertBNEqual(deltaCU, new BN(0));
-                    assertBNEqual(deltaTS, new BN(0));
+                    assertBNEqual(deltaCU, ZERO);
+                    assertBNEqual(deltaTS, ZERO);
                     assertWithinError(
                         deltaTP,
                         inTokenP.neg(),
                         constants.PARAMETERS.MAX_ERROR_PTS
                     );
                     await verifyOptionInvariants(
-                        Primitive._tokenU,
-                        Primitive._tokenS,
+                        Primitive.tokenU,
+                        Primitive.tokenS,
                         Primitive.prime,
                         Primitive.redeem
                     );
@@ -517,7 +517,7 @@ contract("Perpetual", (accounts) => {
                 exercise = async (inTokenP) => {
                     inTokenP = new BN(inTokenP);
                     let balance0U = await getTokenBalance(
-                        Primitive._tokenU,
+                        Primitive.tokenU,
                         Alice
                     );
                     let balance0P = await getTokenBalance(perpetual, Alice);
@@ -526,7 +526,7 @@ contract("Perpetual", (accounts) => {
                         Alice
                     );
                     let balance0S = await getTokenBalance(
-                        Primitive._tokenS,
+                        Primitive.tokenS,
                         Alice
                     );
                     let interestBalances = await perpetual.interestBalances();
@@ -555,7 +555,7 @@ contract("Perpetual", (accounts) => {
                     });
 
                     let balance1U = await getTokenBalance(
-                        Primitive._tokenU,
+                        Primitive.tokenU,
                         Alice
                     );
                     let balance1P = await getTokenBalance(perpetual, Alice);
@@ -564,7 +564,7 @@ contract("Perpetual", (accounts) => {
                         Alice
                     );
                     let balance1S = await getTokenBalance(
-                        Primitive._tokenS,
+                        Primitive.tokenS,
                         Alice
                     );
 
@@ -585,19 +585,19 @@ contract("Perpetual", (accounts) => {
                         deltaU,
                         inTokenP.sub(inTokenP.div(new BN(1000)))
                     );
-                    assertBNEqual(deltaS, new BN(0));
-                    assertBNEqual(deltaP, new BN(0));
+                    assertBNEqual(deltaS, ZERO);
+                    assertBNEqual(deltaP, ZERO);
                     assertBNEqual(deltaPrime, outTokenS.neg());
-                    assertBNEqual(deltaCU, new BN(0));
-                    assertBNEqual(deltaTS, new BN(0));
+                    assertBNEqual(deltaCU, ZERO);
+                    assertBNEqual(deltaTS, ZERO);
                     assertWithinError(
                         deltaTP,
-                        new BN(0),
+                        ZERO,
                         constants.PARAMETERS.MAX_ERROR_PTS
                     );
                     await verifyOptionInvariants(
-                        Primitive._tokenU,
-                        Primitive._tokenS,
+                        Primitive.tokenU,
+                        Primitive.tokenS,
                         Primitive.prime,
                         Primitive.redeem
                     );
@@ -646,8 +646,8 @@ contract("Perpetual", (accounts) => {
                     }
                     await Primitive.prime.take();
                     await verifyOptionInvariants(
-                        Primitive._tokenU,
-                        Primitive._tokenS,
+                        Primitive.tokenU,
+                        Primitive.tokenS,
                         Primitive.prime,
                         Primitive.redeem
                     );

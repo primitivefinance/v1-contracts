@@ -4,16 +4,9 @@ const BN = require("bn.js");
 chai.use(require("chai-bn")(BN));
 const PrimeOracle = artifacts.require("PrimeOracle");
 const constants = require("../constants");
-const {
-    ONE_ETHER,
-    MAINNET_DAI,
-    MAINNET_ORACLE,
-    MAINNET_COMPOUND_DAI,
-    MAINNET_WETH,
-    MANTISSA,
-    MAX_SLIPPAGE,
-    MAX_ERROR_PTS,
-} = constants;
+const { ONE_ETHER } = constants.VALUES;
+const { MAX_SLIPPAGE, MAX_ERROR_PTS } = constants.PARAMETERS;
+const { MAINNET_COMPOUND_DAI, MAINNET_DAI, MAINNET_WETH } = constants.ADDRESSES;
 
 const utils = require("../utils");
 const { toWei, fromWei, assertBNEqual, assertWithinError } = utils;

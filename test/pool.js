@@ -19,7 +19,8 @@ const UniExchange = artifacts.require("UniExchange");
 const OracleLike = artifacts.require("OracleLike");
 
 // constant imports
-const common_constants = require("./constants");
+const constants = require("./constants");
+const { MILLION_ETHER } = constants.VALUES;
 const {
     ERR_BAL_UNDERLYING,
     ERR_BAL_PULP,
@@ -33,13 +34,12 @@ const {
     TEN_ETHER,
     HUNDRED_ETHER,
     THOUSAND_ETHER,
-    MILLION_ETHER,
     MAINNET_DAI,
     MAINNET_ORACLE,
     MAINNET_WETH,
     MAINNET_UNI_FACTORY,
     MAX_SLIPPAGE,
-} = common_constants;
+} = constants;
 
 const LOG_VERBOSE = false;
 const LOG_VOL = false;
