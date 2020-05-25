@@ -1,13 +1,12 @@
 pragma solidity ^0.6.2;
 
 /**
- * @title   Vanilla Perpetual Option
+ * @title   Vanilla Perpetual Option Pool
  * @author  Primitive
  */
 
 import "./PrimePoolV1.sol";
 import "./interfaces/IPrime.sol";
-import "./interfaces/IPrimePool.sol";
 import "./interfaces/ICToken.sol";
 
 contract PrimePerpetual is PrimePoolV1 {
@@ -29,8 +28,8 @@ contract PrimePerpetual is PrimePoolV1 {
         fee = 1e15;
         cdai = _cdai;
         cusdc = _cusdc;
-        IERC20(ICToken(_cusdc).underlying()).approve(_cusdc, 10000000 ether);
-        IERC20(ICToken(_cdai).underlying()).approve(_cdai, 10000000 ether);
+        IERC20(ICToken(_cusdc).underlying()).approve(_cusdc, 10000000000 ether);
+        IERC20(ICToken(_cdai).underlying()).approve(_cdai, 100000000000 ether);
     }
 
     function deposit(uint inTokenU) external whenNotPaused nonReentrant
@@ -49,9 +48,7 @@ contract PrimePerpetual is PrimePoolV1 {
         success = true;
     }
 
-    function withdraw(uint inTokenPULP) external whenNotPaused nonReentrant
-        returns (bool)
-    {
+    function withdraw(uint inTokenPULP) external whenNotPaused nonReentrant returns (bool) {
         address _tokenP = tokenP;
         address tokenU = ICToken(cusdc).underlying();
         (uint totalBalance) = totalBalance();

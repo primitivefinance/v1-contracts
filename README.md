@@ -1,3 +1,5 @@
+![](https://raw.githubusercontent.com/primitivefinance/primitive-frontend/develop/src/icons/primitivebannersvg.svg)
+
 # Primitive Protocol
 
 [![](https://img.shields.io/github/stars/primitivefinance/primitive-v1?style=social)](https://img.shields.io/github/stars/primitivefinance/primitive-contracts?style=social)

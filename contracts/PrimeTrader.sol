@@ -33,11 +33,7 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
      * @param amount Quantity of Prime options to mint and tokenU to deposit.
      * @param receiver The newly minted tokens are sent to the receiver address.
      */
-    function safeMint(
-        IPrime tokenP,
-        uint256 amount,
-        address receiver
-    )
+    function safeMint(IPrime tokenP, uint256 amount, address receiver)
         external
         nonReentrant
         override
