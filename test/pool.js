@@ -3,30 +3,26 @@ const truffleAssert = require("truffle-assertions");
 const chai = require("chai");
 const BN = require("bn.js");
 chai.use(require("chai-bn")(BN));
-const Dai = artifacts.require("DAI");
-const Weth = artifacts.require("WETH9");
-const Factory = artifacts.require("Factory");
-const FactoryRedeem = artifacts.require("FactoryRedeem");
-const PrimeOption = artifacts.require("PrimeOption");
 const PrimePool = artifacts.require("PrimePool");
 const PrimeTrader = artifacts.require("PrimeTrader");
-const PrimeRedeem = artifacts.require("PrimeRedeem");
 const PrimeOracle = artifacts.require("PrimeOracle");
-const UniFactoryLike = artifacts.require("UniFactoryLike");
-const UniExchangeLike = artifacts.require("UniExchangeLike");
 const UniFactory = artifacts.require("UniFactory");
 const UniExchange = artifacts.require("UniExchange");
 const OracleLike = artifacts.require("OracleLike");
-
-// constant imports
+const utils = require("./utils");
+const setup = require("./setup");
 const constants = require("./constants");
 const { MILLION_ETHER } = constants.VALUES;
 const {
-    ERR_BAL_UNDERLYING,
-    ERR_BAL_PULP,
-    ERR_BAL_PRIME,
-    ERR_ZERO_LIQUIDITY,
-    ERR_PAUSED,
+    toWei,
+    assertBNEqual,
+    calculateAddLiquidity,
+    calculateRemoveLiquidity,
+    withdraw,
+    verifyOptionInvariants,
+} = utils;
+const { newERC20, newWeth, newOptionFactory, newPrimitive } = setup;
+const {
     HUNDRETH,
     TENTH,
     ONE_ETHER,
@@ -34,34 +30,29 @@ const {
     TEN_ETHER,
     HUNDRED_ETHER,
     THOUSAND_ETHER,
-    MAINNET_DAI,
-    MAINNET_ORACLE,
-    MAINNET_WETH,
-    MAINNET_UNI_FACTORY,
-    MAX_SLIPPAGE,
-} = constants;
+} = constants.VALUES;
+
+const {
+    ERR_BAL_UNDERLYING,
+    ERR_BAL_PULP,
+    ERR_BAL_PRIME,
+    ERR_ZERO_LIQUIDITY,
+    ERR_PAUSED,
+} = constants.ERR_CODES;
+
+const { MAX_SLIPPAGE } = constants.PARAMETERS;
 
 const LOG_VERBOSE = false;
 const LOG_VOL = false;
 
 contract("Pool", (accounts) => {
-    // WEB3
-    const { toWei } = web3.utils;
-    const { fromWei } = web3.utils;
-
     // ACCOUNTS
     const Alice = accounts[0];
     const Bob = accounts[1];
 
-    let DAI,
-        WETH,
-        tokenP,
-        tokenPULP,
-        _tokenU,
-        _tokenS,
+    let tokenPULP,
         tokenU,
         tokenS,
-        marketId,
         poolName,
         poolSymbol,
         optionName,
@@ -79,61 +70,14 @@ contract("Pool", (accounts) => {
         factory,
         exchange,
         oracleLike,
-        factoryOption,
-        factoryRedeem;
-
-    const assertBNEqual = (actualBN, expectedBN, message) => {
-        assert.equal(actualBN.toString(), expectedBN.toString(), message);
-    };
-
-    const calculateAddLiquidity = (_inTokenU, _totalSupply, _totalBalance) => {
-        let inTokenU = new BN(_inTokenU);
-        let totalSupply = new BN(_totalSupply);
-        let totalBalance = new BN(_totalBalance);
-        if (totalBalance.eq(new BN(0))) {
-            return inTokenU;
-        }
-        let liquidity = inTokenU.mul(totalSupply).div(totalBalance);
-        return liquidity;
-    };
-
-    const calculateRemoveLiquidity = (
-        _inTokenPULP,
-        _totalSupply,
-        _totalBalance
-    ) => {
-        let inTokenPULP = new BN(_inTokenPULP);
-        let totalSupply = new BN(_totalSupply);
-        let totalBalance = new BN(_totalBalance);
-        let zero = new BN(0);
-        if (totalBalance.isZero() || totalSupply.isZero()) {
-            return zero;
-        }
-        let outTokenU = inTokenPULP.mul(totalBalance).div(totalSupply);
-        return outTokenU;
-    };
-
-    const calculateBuy = (_inTokenS, _base, _price, _premium) => {
-        let inTokenS = new BN(_inTokenS);
-        let base = new BN(_base);
-        let price = new BN(_price);
-        let outTokenU = inTokenS.mul(base).div(price);
-        let premium = new BN(_premium);
-        let deltaU = outTokenU.sub(premium).neg();
-        return deltaU;
-    };
+        Primitive;
 
     before(async () => {
-        // init tokens
-        weth = await Weth.new();
-        dai = await Dai.new(MILLION_ETHER);
+        weth = await newWeth();
+        dai = await newERC20("TEST DAI", "DAI", MILLION_ETHER);
+        factory = await newOptionFactory();
 
-        // init option factory
-        factoryOption = await Factory.new();
-        factoryRedeem = await FactoryRedeem.new(factoryOption.address);
-        await factoryOption.initialize(factoryRedeem.address);
-
-        // init factory
+        // init factory uni
         let initExchange = await UniExchange.new();
         factory = await UniFactory.new();
         await factory.initializeFactory(initExchange.address);
@@ -164,24 +108,8 @@ contract("Pool", (accounts) => {
             value: FIVE_ETHER,
         });
 
-        /* _tokenU = dai;
-        _tokenS = weth;
-        tokenU = _tokenU.address;
-        tokenS = _tokenS.address;
-        marketId = 1;
-        poolName = "ETH Short Put Pool LP";
-        poolSymbol = "PULP";
-        optionName = "ETH Put 200 DAI Expiring May 30 2020";
-        optionSymbol = "PRIME";
-        redeemName = "ETH Put Redeemable Token";
-        redeemSymbol = "REDEEM";
-        base = toWei("200");
-        price = toWei("1");
-        expiry = "1590868800"; // May 30, 2020, 8PM UTC */
-        _tokenU = weth;
-        _tokenS = dai;
-        tokenU = _tokenU.address;
-        tokenS = _tokenS.address;
+        tokenU = weth;
+        tokenS = dai;
         marketId = 1;
         poolName = "ETH Short Call Pool LP";
         poolSymbol = "PULP";
@@ -193,32 +121,20 @@ contract("Pool", (accounts) => {
         price = toWei("300");
         expiry = "1593129600"; // June 26, 2020, 0:00:00 UTC
 
-        trader = await PrimeTrader.new(weth.address);
-        createPrime = async () => {
-            await factoryOption.deployOption(
-                tokenU,
-                tokenS,
-                base,
-                price,
-                expiry
-            );
-            let id = await factoryOption.getId(
-                tokenU,
-                tokenS,
-                base,
-                price,
-                expiry
-            );
-            let prime = await PrimeOption.at(await factoryOption.options(id));
-            return prime;
-        };
+        Primitive = await newPrimitive(
+            factory,
+            tokenU,
+            tokenS,
+            base,
+            price,
+            expiry
+        );
 
-        prime = await createPrime();
-        tokenP = prime.address;
-        tokenR = await prime.tokenR();
-        redeem = await PrimeRedeem.at(tokenR);
+        prime = Primitive.prime;
+        redeem = Primitive.redeem;
 
         // Setup prime oracle and feed for dai.
+        trader = await PrimeTrader.new(weth.address);
         oracle = await PrimeOracle.new(oracleLike.address, weth.address);
         await oracle.addFeed(dai.address);
 
@@ -277,14 +193,14 @@ contract("Pool", (accounts) => {
         };
 
         getTotalPoolBalance = async () => {
-            let bal = new BN(await pool.totalPoolBalance(tokenP));
+            let bal = new BN(await pool.totalPoolBalance(prime.address));
             return bal;
         };
 
         getPremium = async () => {
             let premium = await oracle.calculatePremium(
-                tokenU,
-                tokenS,
+                tokenU.address,
+                tokenS.address,
                 await pool.volatility(),
                 await prime.base(),
                 await prime.price(),
@@ -295,11 +211,11 @@ contract("Pool", (accounts) => {
         };
 
         getVolatilityProxy = async () => {
-            let vol = await pool.calculateVolatilityProxy(tokenP);
-            let utilized = await pool.totalUtilized(tokenP);
-            let unutilized = await pool.totalUnutilized(tokenP);
-            let totalPoolBalance = await pool.totalPoolBalance(tokenP);
-            let balanceU = await _tokenU.balanceOf(pool.address);
+            let vol = await pool.calculateVolatilityProxy(prime.address);
+            let utilized = await pool.totalUtilized(prime.address);
+            let unutilized = await pool.totalUnutilized(prime.address);
+            let totalPoolBalance = await pool.totalPoolBalance(prime.address);
+            let balanceU = await tokenU.balanceOf(pool.address);
             let balanceR = await getTokenBalance(redeem, pool.address);
             if (LOG_VOL) console.log("UTILIZED", utilized.toString());
             if (LOG_VOL) console.log("UNUTILIZED", unutilized.toString());
@@ -378,9 +294,9 @@ contract("Pool", (accounts) => {
         before(async () => {
             deposit = async (inTokenU) => {
                 inTokenU = new BN(inTokenU);
-                let balance0U = await getBalance(_tokenU, Alice);
+                let balance0U = await getBalance(tokenU, Alice);
                 let balance0P = await getTokenBalance(pool, Alice);
-                let balance0CU = await getBalance(_tokenU, pool.address);
+                let balance0CU = await getBalance(tokenU, pool.address);
                 let balance0TS = await getTotalSupply();
                 let balance0TP = await getTotalPoolBalance();
 
@@ -410,9 +326,9 @@ contract("Pool", (accounts) => {
                     );
                 });
 
-                let balance1U = await getBalance(_tokenU, Alice);
+                let balance1U = await getBalance(tokenU, Alice);
                 let balance1P = await getTokenBalance(pool, Alice);
-                let balance1CU = await getBalance(_tokenU, pool.address);
+                let balance1CU = await getBalance(tokenU, pool.address);
                 let balance1TS = await getTotalSupply();
                 let balance1TP = await getTotalPoolBalance();
 
@@ -442,8 +358,8 @@ contract("Pool", (accounts) => {
 
         // interesting, depositing the min liquidity breaks the next tests (this is a single state pool)
         /* it("should revert if outTokenPULP is 0", async () => {
-            await _tokenU.mint(Alice, THOUSAND_ETHER);
-            await _tokenU.transfer(pool.address, THOUSAND_ETHER, {
+            await tokenU.mint(Alice, THOUSAND_ETHER);
+            await tokenU.transfer(pool.address, THOUSAND_ETHER, {
                 from: Alice,
             });
             let min = await pool.MIN_LIQUIDITY();
@@ -452,7 +368,7 @@ contract("Pool", (accounts) => {
         });
  */
         it("should revert on depositEth if tokenU is not WETH", async () => {
-            let symbol = await _tokenU.symbol();
+            let symbol = await tokenU.symbol();
             if (symbol != "WETH") {
                 await truffleAssert.reverts(
                     pool.depositEth({ value: ONE_ETHER }),
@@ -484,7 +400,7 @@ contract("Pool", (accounts) => {
                 if (tokenU == weth.address) {
                     balance0U = await getEthBalance(Alice);
                 } else {
-                    balance0U = await getBalance(_tokenU, Alice);
+                    balance0U = await getBalance(tokenU, Alice);
                 }
 
                 let balance0P = await getTokenBalance(pool, Alice);
@@ -493,13 +409,13 @@ contract("Pool", (accounts) => {
                 let balance0RinU = balance0R
                     .mul(new BN(base))
                     .div(new BN(price));
-                let balance0CS = await getBalance(_tokenS, pool.address);
-                let balance0CU = await getBalance(_tokenU, pool.address);
+                let balance0CS = await getBalance(tokenS, pool.address);
+                let balance0CU = await getBalance(tokenU, pool.address);
                 let balance0TS = await getTotalSupply();
                 let balance0TP = await getTotalPoolBalance();
 
-                let unutilized0 = await pool.totalUnutilized(tokenP);
-                let utilized0 = await pool.totalUtilized(tokenP);
+                let unutilized0 = await pool.totalUnutilized(prime.address);
+                let utilized0 = await pool.totalUtilized(prime.address);
 
                 let liquidity = calculateRemoveLiquidity(
                     inTokenPULP,
@@ -552,20 +468,20 @@ contract("Pool", (accounts) => {
                 if (tokenU == weth.address) {
                     balance1U = await getEthBalance(Alice);
                 } else {
-                    balance1U = await getBalance(_tokenU, Alice);
+                    balance1U = await getBalance(tokenU, Alice);
                 }
 
                 let balance1P = await getTokenBalance(pool, Alice);
-                let balance1CU = await getBalance(_tokenU, pool.address);
+                let balance1CU = await getBalance(tokenU, pool.address);
                 let balance1TS = await getTotalSupply();
                 let balance1TP = await getTotalPoolBalance();
                 let balance1R = await getTokenBalance(redeem, pool.address);
                 let balance1RinU = balance1R
                     .mul(new BN(base))
                     .div(new BN(price));
-                let balance1CS = await getBalance(_tokenS, pool.address);
-                let unutilized1 = await pool.totalUnutilized(tokenP);
-                let utilized1 = await pool.totalUtilized(tokenP);
+                let balance1CS = await getBalance(tokenS, pool.address);
+                let unutilized1 = await pool.totalUnutilized(prime.address);
+                let utilized1 = await pool.totalUtilized(prime.address);
 
                 let deltaU = balance1U.sub(balance0U);
                 let deltaP = balance1P.sub(balance0P);
@@ -635,15 +551,15 @@ contract("Pool", (accounts) => {
         });
 
         /* it("should revert if outTokenU is 0 but the balanceU is greater than 0", async () => {
-            await _tokenU.mint(Alice, THOUSAND_ETHER);
+            await tokenU.mint(Alice, THOUSAND_ETHER);
             await pool.deposit(THOUSAND_ETHER);
-            await _tokenU.mint(Alice, THOUSAND_ETHER);
-            await _tokenU.transfer(pool.address, THOUSAND_ETHER);
+            await tokenU.mint(Alice, THOUSAND_ETHER);
+            await tokenU.transfer(pool.address, THOUSAND_ETHER);
             await truffleAssert.reverts(pool.withdraw(1), ERR_BAL_UNDERLYING);
         });
 
         it("should revert if removing liquidity and maxdraw is less than required draw", async () => {
-            await _tokenU.mint(Alice, THOUSAND_ETHER);
+            await tokenU.mint(Alice, THOUSAND_ETHER);
             await pool.deposit(THOUSAND_ETHER);
             await truffleAssert.reverts(pool.withdraw(1), ERR_BAL_UNDERLYING);
         }); */
@@ -664,11 +580,11 @@ contract("Pool", (accounts) => {
         before(async () => {
             buy = async (inTokenS) => {
                 inTokenS = new BN(inTokenS);
-                let balance0U = await getBalance(_tokenU, Alice);
+                let balance0U = await getBalance(tokenU, Alice);
                 let balance0P = await getTokenBalance(pool, Alice);
                 let balance0Prime = await getTokenBalance(prime, Alice);
-                let balance0S = await getBalance(_tokenS, Alice);
-                let balance0CU = await getBalance(_tokenU, pool.address);
+                let balance0S = await getBalance(tokenS, Alice);
+                let balance0CU = await getBalance(tokenU, pool.address);
                 let balance0TS = await getTotalSupply();
                 let balance0TP = await getTotalPoolBalance();
 
@@ -700,11 +616,11 @@ contract("Pool", (accounts) => {
                     );
                 });
 
-                let balance1U = await getBalance(_tokenU, Alice);
+                let balance1U = await getBalance(tokenU, Alice);
                 let balance1P = await getTokenBalance(pool, Alice);
                 let balance1Prime = await getTokenBalance(prime, Alice);
-                let balance1S = await getBalance(_tokenS, Alice);
-                let balance1CU = await getBalance(_tokenU, pool.address);
+                let balance1S = await getBalance(tokenS, Alice);
+                let balance1CU = await getBalance(tokenU, pool.address);
                 let balance1TS = await getTotalSupply();
                 let balance1TP = await getTotalPoolBalance();
 
@@ -752,12 +668,12 @@ contract("Pool", (accounts) => {
         before(async () => {
             sell = async (inTokenP) => {
                 inTokenP = new BN(inTokenP);
-                let balance0U = await getBalance(_tokenU, Alice);
+                let balance0U = await getBalance(tokenU, Alice);
                 let balance0P = await getTokenBalance(pool, Alice);
                 let balance0Prime = await getTokenBalance(prime, Alice);
-                let balance0S = await getBalance(_tokenS, Alice);
+                let balance0S = await getBalance(tokenS, Alice);
                 let balance0R = await getBalance(redeem, pool.address);
-                let balance0CU = await getBalance(_tokenU, pool.address);
+                let balance0CU = await getBalance(tokenU, pool.address);
                 let balance0TS = await getTotalSupply();
                 let balance0TP = await getTotalPoolBalance();
 
@@ -800,12 +716,12 @@ contract("Pool", (accounts) => {
                     );
                 });
 
-                let balance1U = await getBalance(_tokenU, Alice);
+                let balance1U = await getBalance(tokenU, Alice);
                 let balance1P = await getTokenBalance(pool, Alice);
                 let balance1Prime = await getTokenBalance(prime, Alice);
                 let balance1R = await getBalance(redeem, pool.address);
-                let balance1S = await getBalance(_tokenS, Alice);
-                let balance1CU = await getBalance(_tokenU, pool.address);
+                let balance1S = await getBalance(tokenS, Alice);
+                let balance1CU = await getBalance(tokenU, pool.address);
                 let balance1TS = await getTotalSupply();
                 let balance1TP = await getTotalPoolBalance();
 
@@ -890,10 +806,10 @@ contract("Pool", (accounts) => {
         });
         it("utilize the rest of the pool", async () => {
             if (tokenU == weth.address) {
-                await _tokenU.deposit({ from: Alice, value: toWei("300") });
+                await tokenU.deposit({ from: Alice, value: toWei("300") });
             }
             await pool.deposit(TEN_ETHER, { from: Alice });
-            let balanceCU = new BN(await _tokenU.balanceOf(pool.address));
+            let balanceCU = new BN(await tokenU.balanceOf(pool.address));
             let toCover = balanceCU
                 .mul(await prime.price())
                 .div(await prime.base())
@@ -1009,16 +925,21 @@ contract("Pool", (accounts) => {
 
     describe("depositEth", () => {
         before(async () => {
-            _tokenU = weth;
-            _tokenS = dai;
-            tokenU = _tokenU.address;
-            tokenS = _tokenS.address;
+            tokenU = weth;
+            tokenS = dai;
             trader = await PrimeTrader.new(weth.address);
 
-            prime = await createPrime();
-            tokenP = prime.address;
-            tokenR = await prime.tokenR();
-            redeem = await PrimeRedeem.at(tokenR);
+            Primitive = await newPrimitive(
+                factory,
+                tokenU,
+                tokenS,
+                base,
+                price,
+                expiry
+            );
+
+            prime = Primitive.prime;
+            redeem = Primitive.redeem;
 
             // Setup prime oracle and feed for dai.
             oracle = await PrimeOracle.new(oracleLike.address, weth.address);
@@ -1062,7 +983,7 @@ contract("Pool", (accounts) => {
                 inTokenU = new BN(inTokenU);
                 let balance0U = await getEthBalance(Alice);
                 let balance0P = await getTokenBalance(pool, Alice);
-                let balance0CU = await getBalance(_tokenU, pool.address);
+                let balance0CU = await getBalance(tokenU, pool.address);
                 let balance0TS = await getTotalSupply();
                 let balance0TP = await getTotalPoolBalance();
 
@@ -1095,7 +1016,7 @@ contract("Pool", (accounts) => {
 
                 let balance1U = await getEthBalance(Alice);
                 let balance1P = await getTokenBalance(pool, Alice);
-                let balance1CU = await getBalance(_tokenU, pool.address);
+                let balance1CU = await getBalance(tokenU, pool.address);
                 let balance1TS = await getTotalSupply();
                 let balance1TP = await getTotalPoolBalance();
 
@@ -1130,8 +1051,8 @@ contract("Pool", (accounts) => {
         });
 
         it("should revert if outTokenPULP is 0", async () => {
-            await _tokenU.deposit({ from: Alice, value: HUNDRED_ETHER });
-            await _tokenU.transfer(pool.address, HUNDRED_ETHER, {
+            await tokenU.deposit({ from: Alice, value: HUNDRED_ETHER });
+            await tokenU.transfer(pool.address, HUNDRED_ETHER, {
                 from: Alice,
             });
             let min = await pool.MIN_LIQUIDITY();

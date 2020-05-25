@@ -6,7 +6,12 @@ const PrimeOracle = artifacts.require("PrimeOracle");
 const constants = require("../constants");
 const { ONE_ETHER } = constants.VALUES;
 const { MAX_SLIPPAGE, MAX_ERROR_PTS } = constants.PARAMETERS;
-const { MAINNET_COMPOUND_DAI, MAINNET_DAI, MAINNET_WETH } = constants.ADDRESSES;
+const {
+    MAINNET_ORACLE,
+    MAINNET_COMPOUND_DAI,
+    MAINNET_DAI,
+    MAINNET_WETH,
+} = constants.ADDRESSES;
 
 const utils = require("../utils");
 const { toWei, fromWei, assertBNEqual, assertWithinError } = utils;
