@@ -9,8 +9,6 @@ const PrimePool = artifacts.require("PrimePool");
 const PrimeTrader = artifacts.require("PrimeTrader");
 const PrimeRedeem = artifacts.require("PrimeRedeem");
 const PrimeOracle = artifacts.require("PrimeOracle");
-const UniFactoryLike = artifacts.require("UniFactoryLike");
-const UniExchangeLike = artifacts.require("UniExchangeLike");
 chai.use(require("chai-bn")(BN));
 
 // constant imports
