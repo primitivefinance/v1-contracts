@@ -43,7 +43,8 @@ contract PrimePoolV1 is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
     {
         // Mint LP tokens proportional to the Total LP Supply and Total Pool Balance.
         uint _totalSupply = totalSupply();
-        (, , , uint base, uint price,) = IPrime(_tokenP).prime();
+        uint base = IPrime(_tokenP).base();
+        uint price = IPrime(_tokenP).price();
 
         // If liquidity is not intiialized, mint the initial liquidity.
         if(_totalSupply == 0) {

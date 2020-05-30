@@ -130,7 +130,7 @@ contract("Oracle contract", (accounts) => {
             let minPremium = await oracle.MIN_PREMIUM();
             let tokenU = dai.address;
             let tokenS = MAINNET_WETH;
-            let expiry = "1590753540"; // May 29 at 11:59 PM.
+            let expiry = "2590753540"; // May 29 at 11:59 PM.
             let premium = await oracle.calculatePremium(
                 tokenU,
                 tokenS,
@@ -141,14 +141,14 @@ contract("Oracle contract", (accounts) => {
             );
             assert.equal(minPremium.toString(), premium.toString());
         });
-        it("Calculates the premium for ETH 200 DAI Put Expiring May 29", async () => {
+        it("Calculates the premium for ETH 200 DAI Put", async () => {
             let deribit = "0.0765"; // in ethers
             let tokenU = dai.address;
             let tokenS = weth.address;
             let volatility = 880; // Deribit's IV is 88% as of today May 3, 2020.
             let base = toWei("200");
             let price = toWei("1");
-            let expiry = "1590753540"; // May 29 at 11:59 PM.
+            let expiry = "2590753540"; // May 29 at 11:59 PM.
             let premium = await oracle.calculatePremium(
                 tokenU,
                 tokenS,

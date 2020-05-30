@@ -50,7 +50,6 @@ contract PrimeAMM is PrimePoolV1 {
 
     receive() external payable {}
 
-
     /**
      * @dev Accepts deposits of underlying tokens.
      * @param inTokenU Quantity of underlyings to deposit.

@@ -17,11 +17,11 @@ const {
     assertBNEqual,
     calculateAddLiquidity,
     calculateRemoveLiquidity,
-    withdraw,
     verifyOptionInvariants,
 } = utils;
 const { newERC20, newWeth, newOptionFactory, newPrimitive } = setup;
 const {
+    ZERO,
     HUNDRETH,
     TENTH,
     ONE_ETHER,
@@ -68,6 +68,7 @@ contract("Pool", (accounts) => {
         oracle,
         pool,
         factory,
+        factoryOption,
         exchange,
         oracleLike,
         Primitive;
@@ -75,7 +76,7 @@ contract("Pool", (accounts) => {
     before(async () => {
         weth = await newWeth();
         dai = await newERC20("TEST DAI", "DAI", MILLION_ETHER);
-        factory = await newOptionFactory();
+        factoryOption = await newOptionFactory();
 
         // init factory uni
         let initExchange = await UniExchange.new();
@@ -122,7 +123,7 @@ contract("Pool", (accounts) => {
         expiry = "1593129600"; // June 26, 2020, 0:00:00 UTC
 
         Primitive = await newPrimitive(
-            factory,
+            factoryOption,
             tokenU,
             tokenS,
             base,
@@ -516,7 +517,7 @@ contract("Pool", (accounts) => {
                     console.log("DELTA ACTUAL", deltaTP.toString());
 
                 let slippage = new BN(MAX_SLIPPAGE);
-                let gas;
+                let gas = ZERO;
                 if (tokenU == weth.address) {
                     gas = new BN(toWei("0.001"));
                 }
@@ -805,7 +806,7 @@ contract("Pool", (accounts) => {
             await getVolatilityProxy();
         });
         it("utilize the rest of the pool", async () => {
-            if (tokenU == weth.address) {
+            if (tokenU.address == weth.address) {
                 await tokenU.deposit({ from: Alice, value: toWei("300") });
             }
             await pool.deposit(TEN_ETHER, { from: Alice });
@@ -930,7 +931,7 @@ contract("Pool", (accounts) => {
             trader = await PrimeTrader.new(weth.address);
 
             Primitive = await newPrimitive(
-                factory,
+                factoryOption,
                 tokenU,
                 tokenS,
                 base,
@@ -943,8 +944,8 @@ contract("Pool", (accounts) => {
 
             // Setup prime oracle and feed for dai.
             oracle = await PrimeOracle.new(oracleLike.address, weth.address);
-            await oracle.addFeed(tokenU);
-            await oracle.addFeed(tokenS);
+            await oracle.addFeed(tokenU.address);
+            await oracle.addFeed(tokenS.address);
 
             pool = await PrimePool.new(
                 weth.address,
