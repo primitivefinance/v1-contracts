@@ -1,90 +1,179 @@
-# Primitive
+# Primitive Protocol
 
-![](https://img.shields.io/github/stars/primitivefinance/primitive-v1?style=social)
-![](https://img.shields.io/twitter/follow/PrimitiveFi?style=social)
-![](https://img.shields.io/discord/168831573876015105?style=social)
+[![](https://img.shields.io/github/stars/primitivefinance/primitive-v1?style=social)](https://img.shields.io/github/stars/primitivefinance/primitive-contracts?style=social)
+![Twitter Follow](https://img.shields.io/twitter/follow/primitivefi?style=social)
+[![Discord](https://img.shields.io/discord/168831573876015105.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/rzRwJ4K)
 
-Primitive is an on-chain options protocol. 
+Primitive is a permissionless options protocol.
 
-It is a powered by the Prime, an ERC-721 digital option. 
-Prime owners can use the Prime to swap assets at a predefined exchange rate, but only for a fixed
-period of time. 
+## Overvie
 
-These Primes have their own value derived by the value of the underlying assets. The holder **can** buy or pseudo-sell the *collateralized asset* for an amount of *strike asset*. The protocol has the ability to support any ERC-20 token.
+We overview the contracts and their functions as well as how to test them.
 
-Buyers pay for the Prime in exchange for the rights granted by it. Sellers provide the collateralized asset and allow the collateral to be purchaseable at the buyer's discrection. They earn the premiums paid by buyers. For a seller to close a position, (i.e. withdraw their collateral) they would need to buy back a matching Prime for the market premium it trades at.
+-   Core Documentation: [Documentation](https://docs.primitive.finance)
+-   Protocol Overview: [Overview](https://docs.google.com/document/d/19neM6bFmTCBdxLygQbDDJubwcLcuMIx8x2Fs-llt9sQ/edit?usp=sharing)
 
-# DApp
-[Primitive.finance](https://www.primitive.finance)
+## Environment
 
-# **Use Cases**
-### Leverage
-Primes give the user the ability to hold a leveraged position at a lower cost than outright owning the assets. Its made possible because purchasing a Prime option is cheaper than purchasing the assets used to collateralize it. This is a *capital efficient* instrument because the user can control a large position without putting 100% of the capital upfront. 
+Our development environment consists of the following:
 
-### Shorting
-It also enables holders to short assets by purchasing Primes with a strike price lower than the market rate. This is a hedging instrument that can reduce the risk exposure to any ERC-20 token supported by the protocol. 
+-   Buidler - Framework
+-   Solidity Visual Auditor - VS Code
+-   Slither - static analyzer
+-   Solium - linter
+-   Web3/Truffle plugins for Buidler
+-   Mocha - testing framework
+-   Chai, chai-bn, and bn.js - unit testing
+-   Truffle assertions - unit testing
+-   Open Zeppelin Contracts - contract dependency
 
-### Upfront Interest
-Users who write the Primes, collateralize and sell them, earn the premiums upfront. Earning this premium upfront saves the time-value-of-money it would have generated if it was a periodic interest payment. Premiums are kept by the sellers. 
+# Contracts
 
-### Returns on any ERC-20
-Another key use case is the ability to earn a return on an ERC-20 token that may not have many ways to earn a return. For example, sBTC (synth bitcoin), is an ERC-20 with currently no platforms that provide interest on deposits. A user with sBTC can collateralize and sell a Prime and therefore earn a premium by selling the option.
+## Mainnet
 
-# What makes Primes Unique?
-
-### Interchange - Ability
-These are are use-cases of options derivatives, an established financial instrument. 
-
-Primes are unique because they can enable **any** established token standard to have its own derivatives market, dependent on the liquidity provided by Prime writers. Not only ERC-20s, but the ERC-721s too! Since Primes are ERC-721 tokens, they could be used as the assets in other Primes, creating a **second-order derivative**.
-
-Tokens like sBTC can have users generate their own returns, as long as there is demand.
-
-# Fees
-Primes are a two-sided instrument that need both buyers and sellers. A healthy amount of suppliers, (perhaps more sellers than buyers), makes the premiums of Primes competitive. This leads to a more accurate equillibrium price and also less slippage for traders. Therefore, to jumpstart liquidity in Primitive's market the seller incentive will need to be attractive.
-
-A 30 basis point fee, 0.30%, from buy orders flows directly into a pool of funds which is output to sellers. This way, sellers will not only earn the premium on their written Primes, but also 0.25% of the system's orders when a sell order is filled. The remaining 0.05% is kept in the pool of funds, but is timelocked. Those funds earn interest and become withdrawable by sellers after an epoch of Primes expire.
-
-# System Architecture
-![](https://user-images.githubusercontent.com/38409137/77393589-9014fc00-6d5a-11ea-804b-87d24ca3614e.png)
-
-`Prime.sol` is the ERC-721 contract which the system surrounds. When a new Prime is minted, it is given the properties defined by the `Instruments.sol` library contract and arguments supplied by the user. 
-
-
-For a Prime to be minted, the collateral amount given as an argument must also be deposited into the `Prime.sol` contract. The contract defines functionality beyond the base ERC-721 contract.
-
-### `Prime.sol`
-- `exercise` swaps the collateral asset with the strike asset if the Prime is not expired. 
-- `close` will burn a matching Prime, allowing withdraw of assets which were deposited as collateral.
-- `withdraw` allows sellers to withdraw strike assets from exercised Primes from the `Prime.sol` contract.
-
-`Exchange.sol` is a contract that enables trading of Primes. It is the DEX for Primes.
-
-- `buyOrder` Buy a Prime that is currently listed for sale on the DEX
-- `buyOrderUnfilled` Offer a bid for a token with properties defined by the user.
-- `sellOrder` Mints then lists a Prime for sale on the DEX.
-
-`Options.sol` defines each option chain. When the `Options.sol` contract is deployed it defines the initial 'option chains' supported by the `Exchange.sol`. 
-
-When a user selects an expiration date and a pair of assets on the frontend interface, the `Options.sol` contract will define the available purchaseable/writable Prime options. 
-
-There is the function `addOptionChain` in `Options.sol`, which is only callable by the owner. This will allow additional option chains to be added to the exchange easily. This data could easily be handled off-chain, but by defining the available options on-chain it allows future decentralization.
-
-`Proxy.sol` will be a contract that bundles transactions. Currently, the `sellOrder` function will:
-- mint
-- approve transfer to dex
-- sell order to list prime
-
-These three transactions leads to an uncomfortable wait time for the user. `Proxy.sol` has permission from the `Prime.sol` contract to mint a prime on behalf of the user and then immediatly list it on the DEX for sale. This reduces the three transactions into one. Much better.
-
-A future iteration of `Proxy.sol` will be able to bundle NFTs. This would allow multiples of Primes to be sold with ease. Currently, singleton Primes are minted and will be scaled from their `baseRatio` using a multiplier. This means, a Prime with a lot of collateral will have to be one large option contract. 
-
-`Proxy.sol` will be able to batch mint and trade Primes so that one large order is 100x Small Primes rather than 1x Big Prime. It provides more liquidity to have 10x 1 ETH / 100 DAI Primes than 1x 10 ETH / 1000 DAI Prime. More user can purchase the smaller ones.
-
-# Etherscan Addresses
-*To be added...*
+| Status | Contract     | Address                                    | Link                                                                                 |
+| :----: | :----------- | :----------------------------------------- | :----------------------------------------------------------------------------------- |
+| Active | Prime Option | 0xced83f96AA38bFe34617ea1F699F9f0022548f61 | [Etherscan](https://etherscan.io/address/0xced83f96aa38bfe34617ea1f699f9f0022548f61) |
+| Active | Prime Redeem | 0xB0A4d596939715f203Fa9E907935938FEdEa715F | [Etherscan](https://etherscan.io/address/0xb0a4d596939715f203fa9e907935938fedea715f) |
+| Active | Prime Trader | 0xff5C103d76586BB55bb33CE01f3dEc9cEe55617f | [Etherscan](https://etherscan.io/address/0xff5c103d76586bb55bb33ce01f3dec9cee55617f) |
+| Paused | Prime Pool   | 0xf7a7126C6eB9c2cC0dB9F936bA4d0D5685662830 | [Etherscan](https://etherscan.io/address/0xf7a7126C6eB9c2cC0dB9F936bA4d0D5685662830) |
 
 # Documentation
-*To be added...*
 
-# Contributing
-*To be added...*
+[Documentation](https://docs.primitive.finance)
+
+# Testing
+
+## Use Docker
+
+```
+docker build -t primitive-contracts
+docker run -it --name primitive primitive
+
+npm run test
+npm run coverage
+```
+
+## Or...
+
+#### Steps to testing using the buidler EVM
+
+Step 1 - Install Dependencies
+
+    npm run clean-install
+
+Step 2 - Compile Contracts
+
+    npm run compile
+
+Step 3 - Start Buidler EVM Node
+
+    npm run bevm
+
+Step 4 - Run the tests
+
+    npm run test
+
+#### Steps to testing using the ganache-cli on forked mainnet
+
+Step 1
+
+    npm i
+
+Step 2
+
+    npm compile
+
+Step 3 - A forked mainnet node with network ID 999 is required.
+
+    npm start:f-mainnet
+
+Step 4
+
+    npm test:f-mainnet
+
+#### Coverage
+
+For coverage, we use buidler's plugin for solidity-coverage.
+
+    npm run coverage
+
+#### Linting
+
+For linting you can run this command which uses the solium linter:
+
+    npm run lint
+
+Solium can also fix some linting errors which can be checked with this command:
+
+    npm run lint:fix
+
+#### Static analysis
+
+For static analysis you can run the contracts through slither with this command:
+
+    npm slither
+
+# Etherscan Addresses
+
+[PrimeOption - Primitive](https://etherscan.io/address/0xced83f96aa38bfe34617ea1f699f9f0022548f61)
+
+[PrimeRedeem - Primitive](https://etherscan.io/address/0xb0a4d596939715f203fa9e907935938fedea715f)
+
+[PrimeTrader - Extension](https://etherscan.io/address/0xff5c103d76586bb55bb33ce01f3dec9cee55617f)
+
+[PrimePool - Extension](https://etherscan.io/address/0xf7a7126C6eB9c2cC0dB9F936bA4d0D5685662830)
+
+## Primitives
+
+### Prime Option
+
+The Prime is a smart token with vanilla option attributes and functionality embedded into the token. It inherits the ERC-20 token standard and adds functionality which matches the specification of a vanilla option.
+
+#### The vanilla option specification:
+
+    - Underlying asset.
+    - Strike Price denominated in $USD.
+    - Expiration date.
+
+#### The Prime specification:
+
+    - Address of underlying token.
+    - Address of stike token.
+    - "Base" value (Amount of underlying tokens).
+    - "Price" value (Amount of strike tokens).
+    - Expiration Date, a UNIX timestamp.
+
+The Base and Price attributes make up the _strike ratio_.
+
+    - Base / Price = Strike Ratio
+
+### Prime Redeem
+
+The Redeem token is a helper token for the Prime which manages the accounting for the underwriters. When underwriters deposit underlying tokens they receive Primes and also a 'receipt' token, the Redeem. This Redeem token is used to withdraw strike tokens from the Prime when the Prime's underlying tokens are exercised, or its used to withdraw underlying tokens when the Primes expire.
+
+## Extensions
+
+### Prime Trader
+
+This is an extension contract to support easier interaction with the Prime Option contract. The Prime
+Option contract operates with _optimistic swap_ technology. It assumes that tokens are sent into it
+before its functions are called. The Prime Option contract does not use any `transferFrom` calls.
+
+The trader does the `transferFrom` call to the user, then it `transfer`s the tokens to the Prime Option contract, and finally it calls one of the functions in the Prime Option contract like `mint`.
+
+The trader contract does this all in a single transaction and it can call any function in the Prime Option contract.
+
+### Prime Pool
+
+This is a liquidity pool contract that has the logic to (1) Accept underlying token deposits. (2) Mint Primes with the underlying tokens. (3) Sell the Primes for premium to buyers.
+
+### Prime Oracle
+
+Feeds a price, the _premium_, to the Prime Pool. The Primes are sold from the pool to buyers at this price given by the oracle.
+
+# Contributing and Discussion
+
+Join our community and protocol developers in the Primitive [Discord](https://discord.gg/rzRwJ4K).
+
+If you have security concerns, email us at [primitive@primitive.finance](mailto:primitive@primitive.finance).
