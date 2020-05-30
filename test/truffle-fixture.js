@@ -3,11 +3,9 @@ const PrimeOption = artifacts.require("PrimeOption");
 const PrimePool = artifacts.require("PrimePool");
 const PrimeTrader = artifacts.require("PrimeTrader");
 const PrimeRedeem = artifacts.require("PrimeRedeem");
-const UniFactoryLike = artifacts.require("UniFactoryLike");
-const UniExchangeLike = artifacts.require("UniExchangeLike");
 
 module.exports = async () => {
-    let totalDai = web3.utils.toWei('100000');
+    let totalDai = web3.utils.toWei("100000");
     const dai = await Dai.new(totalDai);
     Dai.setAsDeployed(dai);
 
@@ -62,5 +60,5 @@ module.exports = async () => {
     const factory = await UniFactoryLike.new(MAINNET_UNI_FACTORY);
     UniFactoryLike.setAsDeployed(factory); */
 
-    console.log('Truffle fixture deployed!')
-}
+    console.log("Truffle fixture deployed!");
+};
