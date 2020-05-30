@@ -8,6 +8,10 @@
 
 Primitive is a permissionless options protocol. Built on Ethereum.
 
+## Risk
+
+The protocol and software is in an alpha stage.
+
 ## Overview
 
 We overview the contracts and their functions as well as how to test them.
