@@ -1,11 +1,14 @@
 pragma solidity ^0.6.2;
 
 /**
- * @title Primitive's Instruments
+ * @title Library of Primitives
  * @author Primitive
  */
-library Instruments {
-    struct PrimeOption {
+library Primitives {
+    /* 
+     * @notice Vanilla Option.
+     */
+    struct Option {
         address tokenU;
         address tokenS;
         uint256 base;

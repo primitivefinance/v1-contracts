@@ -6,7 +6,9 @@ pragma solidity ^0.6.2;
  */
 
 
-import "./PrimeInterface.sol";
+import "../interfaces/IPrime.sol";
+import "../interfaces/IPrimePool.sol";
+import "../interfaces/IPrimeOracle.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
@@ -32,18 +34,18 @@ interface IWETH {
     function withdraw(uint wad) external;
 }
 
-contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
+contract PrimePool is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
     using SafeMath for uint256;
 
     address public constant COMPOUND_DAI = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
     /* address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; */
     
     uint256 public constant SECONDS_IN_DAY = 86400;
-    uint256 public constant ONE_ETHER = 1 ether;
     uint256 public constant MAX_SLIPPAGE = 95;
     uint256 public constant MIN_VOLATILITY = 10**15;
     uint256 public constant MIN_PREMIUM = 100;
     uint256 public constant MIN_LIQUIDITY = 10**4;
+    uint256 public constant ONE_ETHER = 1 ether;
     uint256 public constant MANTISSA = 10**36;
     uint256 public constant DISCOUNT_RATE = 5;
 
@@ -51,8 +53,8 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
 
     // Assume oracle is compound's price proxy oracle.
     address public oracle;
-    address public factory;
-    address public tokenP;
+    address public override factory;
+    address public override tokenP;
     address public WETH;
 
     event Market(address tokenP);
@@ -79,7 +81,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         volatility = 100;
     }
 
-    function kill() public onlyOwner returns (bool) {
+    function kill() public override onlyOwner returns (bool) {
         if(paused()) {
             _unpause();
         } else {
@@ -321,7 +323,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
             // Deadline = now + 3 minutes.
             IERC20(tokenS).approve(exchange, outTokenS);
             inTokenU = UniswapExchangeInterface(exchange)
-                            .tokenToEthSwapInput(outTokenS, 1, now + 3 minutes);
+                            .tokenToEthSwapInput(outTokenS, minReceived, now + 3 minutes);
 
             // Wrap WETH.
             IWETH(WETH).deposit.value(address(this).balance)();
@@ -427,7 +429,7 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         require(IERC20(_tokenP).balanceOf(address(this)) >= inTokenP, "ERR_BAL_PRIME");
         emit Buy(msg.sender, inTokenS, outTokenU, premium);
         (bool received) = IERC20(tokenU).transferFrom(msg.sender, address(this), premium);
-        return received && transferU && IPrime(_tokenP).transfer(msg.sender, inTokenP);
+        return received && transferU && IERC20(_tokenP).transfer(msg.sender, inTokenP);
     }
 
     /**
@@ -574,6 +576,11 @@ contract PrimePool is Ownable, Pausable, ReentrancyGuard, ERC20 {
         (bool success, ) = to.call.value(amount)("");
         require(success, "ERR_SEND_ETHER");
         return success;
+    }
+
+    function balances() public override view returns(uint balanceU, uint balanceR) {
+        balanceU = IERC20(IPrime(tokenP).tokenU()).balanceOf(address(this));
+        balanceR = IERC20(IPrime(tokenP).tokenR()).balanceOf(address(this));
     }
 }
 

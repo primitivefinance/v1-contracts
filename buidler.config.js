@@ -38,6 +38,7 @@ module.exports = {
             },
             chainId: 1,
             from: "0x619F9Fb924c7e5fd6D21680b9bAc146FffB2D5C3",
+            gasPrice: 15000000000,
         },
         rinkeby: {
             url: rinkeby,

@@ -2,38 +2,56 @@ const { assert, expect } = require("chai");
 const chai = require("chai");
 const truffleAssert = require("truffle-assertions");
 const BN = require("bn.js");
+chai.use(require("chai-bn")(BN));
 const daiABI = require("../../contracts/test/abi/dai");
 const Weth = require("../../contracts/test/abi/WETH9.json");
 const PrimeOption = artifacts.require("PrimeOption");
-const PrimePool = artifacts.require("PrimePool");
+const PrimeAMM = artifacts.require("PrimeAMM");
 const PrimeTrader = artifacts.require("PrimeTrader");
 const PrimeRedeem = artifacts.require("PrimeRedeem");
 const PrimeOracle = artifacts.require("PrimeOracle");
-chai.use(require("chai-bn")(BN));
-
-// constant imports
-const common_constants = require("../constants");
+const utils = require("../utils");
+const setup = require("../setup");
+const constants = require("../constants");
 const {
-    ERR_BAL_UNDERLYING,
-    ERR_BAL_PULP,
-    ERR_BAL_PRIME,
-    HUNDRETH,
-    ONE_ETHER,
-    FIVE_ETHER,
-    TEN_ETHER,
-    MILLION_ETHER,
+    toWei,
+    fromWei,
+    assertBNEqual,
+    calculateAddLiquidity,
+    calculateRemoveLiquidity,
+    verifyOptionInvariants,
+} = utils;
+const { newERC20, newWeth, newOptionFactory, newPrime, newRedeem } = setup;
+const {
     TREASURER,
     MAINNET_DAI,
     MAINNET_ORACLE,
     MAINNET_WETH,
     MAINNET_UNI_FACTORY,
-} = common_constants;
+    MAINNET_UNI_ROUTER01,
+} = constants.ADDRESSES;
+const {
+    HUNDRETH,
+    TENTH,
+    ONE_ETHER,
+    FIVE_ETHER,
+    TEN_ETHER,
+    HUNDRED_ETHER,
+    THOUSAND_ETHER,
+    MILLION_ETHER,
+} = constants.VALUES;
 
-contract("Pool - forked-mainnet", (accounts) => {
-    // WEB3
-    const { toWei } = web3.utils;
-    const { fromWei } = web3.utils;
+const {
+    ERR_BAL_UNDERLYING,
+    ERR_BAL_PULP,
+    ERR_BAL_PRIME,
+    ERR_ZERO_LIQUIDITY,
+    ERR_PAUSED,
+} = constants.ERR_CODES;
 
+const { MAX_SLIPPAGE } = constants.PARAMETERS;
+
+contract("AMM - forked-mainnet", (accounts) => {
     // ACCOUNTS
     const Alice = accounts[0];
     const Bob = accounts[1];
@@ -136,28 +154,12 @@ contract("Pool - forked-mainnet", (accounts) => {
             value: FIVE_ETHER,
         });
 
-        /* _tokenU = DAI;
-        _tokenS = WETH;
-        tokenU = MAINNET_DAI;
-        tokenS = MAINNET_WETH;
-        marketId = 1;
-        poolName = "ETH Short Put Pool LP";
-        poolSymbol = "PULP";
-        optionName = "ETH Put 200 DAI Expiring May 30 2020";
-        optionSymbol = "PRIME";
-        redeemName = "ETH Put Redeemable Token";
-        redeemSymbol = "REDEEM";
-        base = toWei("200");
-        price = toWei("1");
-        expiry = "1590868800"; // May 30, 2020, 8PM UTC */
-
         // test for $300 ETH CALL EXPIRING
         _tokenU = WETH;
         _tokenS = DAI;
         tokenU = MAINNET_WETH;
         tokenS = MAINNET_DAI;
-        marketId = 1;
-        poolName = "ETH Short Call Pool LP";
+        poolName = "Primitive V1 Pool";
         poolSymbol = "PULP";
         optionName = "ETH Call 300 DAI Expiring June 26 2020";
         optionSymbol = "PRIME";
@@ -168,38 +170,35 @@ contract("Pool - forked-mainnet", (accounts) => {
         expiry = "1593129600"; // June 26, 2020, 0:00:00 UTC
 
         trader = await PrimeTrader.new(MAINNET_WETH);
-        prime = await PrimeOption.new(
-            optionName,
-            optionSymbol,
-            marketId,
-            tokenU,
-            tokenS,
+        factory = await newOptionFactory();
+        prime = await newPrime(
+            factory,
+            _tokenU._address,
+            _tokenS._address,
             base,
             price,
             expiry
         );
-        tokenP = prime.address;
-        redeem = await PrimeRedeem.new(
-            redeemName,
-            redeemSymbol,
-            prime.address,
-            tokenS
-        );
+        redeem = await newRedeem(prime);
+
+        Primitive = {
+            tokenU: tokenU,
+            tokenS: tokenS,
+            prime: prime,
+            redeem: redeem,
+        };
+
         oracle = await PrimeOracle.new(MAINNET_ORACLE, MAINNET_WETH);
-        pool = await PrimePool.new(
+        pool = await PrimeAMM.new(
             MAINNET_WETH,
             prime.address,
             oracle.address,
-            MAINNET_UNI_FACTORY,
-            poolName,
-            poolSymbol
+            Alice,
+            MAINNET_UNI_ROUTER01
         );
         tokenPULP = pool.address;
-        await prime.initTokenR(redeem.address);
-
-        factory = await UniFactoryLike.new(MAINNET_UNI_FACTORY);
-        const exchangeAddress = await factory.getExchange(MAINNET_DAI);
-        exchange = await UniExchangeLike.new(exchangeAddress);
+        tokenP = prime.address;
+        tokenR = redeem.address;
 
         await DAI.methods.approve(pool.address, MILLION_ETHER).send({
             from: Alice,
@@ -719,7 +718,7 @@ contract("Pool - forked-mainnet", (accounts) => {
 
         it("should exercise the options so the pool can redeem them in withdraw", async function() {
             if (id !== 999) this.skip();
-            await trader.safeSwap(
+            await trader.safeExercise(
                 prime.address,
                 await prime.balanceOf(Alice),
                 Alice
@@ -797,7 +796,7 @@ contract("Pool - forked-mainnet", (accounts) => {
                     await runDeposit(i);
                     await runBuy(i);
                     if (new BN(await prime.balanceOf(Alice)).gt(new BN(0))) {
-                        await trader.safeSwap(
+                        await trader.safeExercise(
                             prime.address,
                             await prime.balanceOf(Alice),
                             Alice

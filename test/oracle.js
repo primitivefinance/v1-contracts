@@ -4,25 +4,16 @@ const chai = require("chai");
 const BN = require("bn.js");
 chai.use(require("chai-bn")(BN));
 const PrimeOracle = artifacts.require("PrimeOracle");
-const constants = require("./constants");
-const Dai = artifacts.require("DAI");
-const Weth = artifacts.require("WETH9");
 const OracleLike = artifacts.require("OracleLike");
-const {
-    ONE_ETHER,
-    MILLION_ETHER,
-    MAINNET_DAI,
-    MAINNET_ORACLE,
-    MAINNET_COMPOUND_DAI,
-    MAINNET_WETH,
-    MANTISSA,
-    MAX_SLIPPAGE,
-    MAX_ERROR_PTS,
-    ERR_FEED_INVALID,
-} = constants;
-
 const utils = require("./utils");
-const { toWei, fromWei, assertBNEqual, assertWithinError } = utils;
+const setup = require("./setup");
+const constants = require("./constants");
+const { toWei, fromWei, assertWithinError } = utils;
+const { newERC20, newWeth } = setup;
+const { ONE_ETHER, MILLION_ETHER } = constants.VALUES;
+const { ERR_FEED_INVALID } = constants.ERR_CODES;
+const { MAX_SLIPPAGE, MAX_ERROR_PTS } = constants.PARAMETERS;
+const { MAINNET_COMPOUND_DAI, MAINNET_DAI, MAINNET_WETH } = constants.ADDRESSES;
 
 const LOG_INTRINSIC = false;
 const LOG_EXTRINSIC = false;
@@ -37,8 +28,8 @@ contract("Oracle contract", (accounts) => {
     before(async () => {
         oracleLike = await OracleLike.new();
         await oracleLike.setUnderlyingPrice(5e15);
-        dai = await Dai.new(MILLION_ETHER);
-        weth = await Weth.new();
+        dai = await newERC20("TEST DAI", "DAI", MILLION_ETHER);
+        weth = await newWeth();
         oracle = await PrimeOracle.new(oracleLike.address, weth.address);
         await oracle.addFeed(dai.address);
         await oracle.addFeed(weth.address);
@@ -139,7 +130,7 @@ contract("Oracle contract", (accounts) => {
             let minPremium = await oracle.MIN_PREMIUM();
             let tokenU = dai.address;
             let tokenS = MAINNET_WETH;
-            let expiry = "1590753540"; // May 29 at 11:59 PM.
+            let expiry = "2590753540"; // May 29 at 11:59 PM.
             let premium = await oracle.calculatePremium(
                 tokenU,
                 tokenS,
@@ -150,14 +141,14 @@ contract("Oracle contract", (accounts) => {
             );
             assert.equal(minPremium.toString(), premium.toString());
         });
-        it("Calculates the premium for ETH 200 DAI Put Expiring May 29", async () => {
+        it("Calculates the premium for ETH 200 DAI Put", async () => {
             let deribit = "0.0765"; // in ethers
             let tokenU = dai.address;
             let tokenS = weth.address;
             let volatility = 880; // Deribit's IV is 88% as of today May 3, 2020.
             let base = toWei("200");
             let price = toWei("1");
-            let expiry = "1590753540"; // May 29 at 11:59 PM.
+            let expiry = "2590753540"; // May 29 at 11:59 PM.
             let premium = await oracle.calculatePremium(
                 tokenU,
                 tokenS,
