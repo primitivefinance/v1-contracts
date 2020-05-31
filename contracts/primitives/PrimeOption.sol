@@ -19,11 +19,11 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
 
     Primitives.Option public option;
 
+    uint public constant FEE = 1000;
     uint public override cacheU;
     uint public override cacheS;
     address public override tokenR;
     address public override factory;
-    uint public constant FEE = 1000;
 
     event Mint(address indexed from, uint outTokenP, uint outTokenR);
     event Exercise(address indexed from, uint outTokenU, uint inTokenS);
@@ -56,16 +56,15 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
         _;
     }
 
-    // Called by factory on deployment once.
-    function initTokenR(address _tokenR) public {
+    function initTokenR(address _tokenR) external {
         require(msg.sender == factory, "ERR_NOT_OWNER");
         tokenR = _tokenR;
     }
 
-    /* function kill() public {
+    function kill() external {
         require(msg.sender == factory, "ERR_NOT_OWNER");
         paused() ? _unpause() : _pause();
-    } */
+    }
 
     /* === ACCOUNTING === */
 
