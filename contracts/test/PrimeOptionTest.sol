@@ -6,7 +6,7 @@ pragma solidity ^0.6.2;
  */
 
 
-import "../PrimeOption.sol";
+import "../primitives/PrimeOption.sol";
 
 contract PrimeOptionTest is PrimeOption {
 

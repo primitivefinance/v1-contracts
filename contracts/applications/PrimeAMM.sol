@@ -5,13 +5,13 @@ pragma solidity ^0.6.2;
  * @author  Primitive
  */
 
-import "./extensions/PrimePoolV1.sol";
-import "./interfaces/IWETH.sol";
-import "./interfaces/IPrime.sol";
-import "./interfaces/IPrimePool.sol";
-import "./interfaces/IPrimeOracle.sol";
-import "./interfaces/IUniswapV2Factory.sol";
-import "./interfaces/IUniswapV2Router01.sol";
+import "../extensions/PrimePoolV1.sol";
+import "../interfaces/IWETH.sol";
+import "../interfaces/IPrime.sol";
+import "../interfaces/IPrimePool.sol";
+import "../interfaces/IPrimeOracle.sol";
+import "../interfaces/IUniswapV2Factory.sol";
+import "../interfaces/IUniswapV2Router01.sol";
 
 contract PrimeAMM is PrimePoolV1 {
     using SafeMath for uint;

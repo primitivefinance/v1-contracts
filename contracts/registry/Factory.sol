@@ -5,8 +5,8 @@ pragma solidity ^0.6.2;
  * @author Primitive
  */
 
-import "./PrimeOption.sol";
-import "./interfaces/IFactoryRedeem.sol";
+import "../primitives/PrimeOption.sol";
+import "../interfaces/IFactoryRedeem.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Factory is Ownable, Pausable, ReentrancyGuard {

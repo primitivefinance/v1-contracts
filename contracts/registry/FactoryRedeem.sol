@@ -5,7 +5,7 @@ pragma solidity ^0.6.2;
  * @author Primitive
  */
 
-import "./PrimeRedeem.sol";
+import "../primitives/PrimeRedeem.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract FactoryRedeem is Ownable {

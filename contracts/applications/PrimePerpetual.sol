@@ -5,10 +5,10 @@ pragma solidity ^0.6.2;
  * @author  Primitive
  */
 
-import "./extensions/PrimePoolV1.sol";
-import "./interfaces/IPrime.sol";
-import "./interfaces/ICToken.sol";
-import "./interfaces/IPrimePerpetual.sol";
+import "../extensions/PrimePoolV1.sol";
+import "../interfaces/IPrime.sol";
+import "../interfaces/ICToken.sol";
+import "../interfaces/IPrimePerpetual.sol";
 
 contract PrimePerpetual is IPrimePerpetual, PrimePoolV1 {
     using SafeMath for uint;
@@ -90,16 +90,16 @@ contract PrimePerpetual is IPrimePerpetual, PrimePoolV1 {
         // or because the inTokenS is 0, the mint function will revert. This is because
         // the mint function only works when tokens are sent into the Prime contract.
         (uint inTokenP, ) = IPrime(_tokenP).mint(address(this));
-
+        assert(IERC20(_tokenP).balanceOf(address(this)) >= inTokenP);
+        
         // Pulls payment in tokenS from msg.sender and then pushes tokenP (option).
         // WARNING: Two calls to untrusted addresses.
-        assert(IERC20(_tokenP).balanceOf(address(this)) >= inTokenP);
-        emit Insure(msg.sender, inTokenS, outTokenU);
 
         // Pull tokenS.
         (bool received) = IERC20(tokenS).transferFrom(msg.sender, address(this), payment);
         // Swap tokenS to interest bearing version.
         swapToInterestBearing(cdai, payment);
+        emit Insure(msg.sender, inTokenS, outTokenU);
         return received && transferU && IERC20(_tokenP).transfer(msg.sender, inTokenP);
     }
 
