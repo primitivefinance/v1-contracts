@@ -162,7 +162,6 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
 
         // Require outTokenU > 0, and cacheU > outTokenU.
         require(outTokenU > 0, "ERR_ZERO");
-        require(_cacheU >= outTokenU, "ERR_BAL_UNDERLYING");
 
         // Optimistically transfer out tokenU.
         IERC20(_tokenU).transfer(receiver, outTokenU);
@@ -219,7 +218,6 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
         // Difference between tokenR balance and cache.
         inTokenR = balanceR;
         require(inTokenR > 0, "ERR_ZERO");
-        require(balanceS >= inTokenR, "ERR_BAL_STRIKE");
 
         // Burn tokenR in the contract. Send tokenS to msg.sender.
         IPrimeRedeem(_tokenR).burn(address(this), inTokenR);
@@ -333,13 +331,5 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
         _base = _prime.base;
         _price = _prime.price;
         _expiry = _prime.expiry;
-    }
-
-    /**
-     * @dev Utility function to get the max withdrawable tokenS amount of msg.sender.
-     */
-    function maxDraw() public view override returns (uint draw) {
-        uint balanceR = IERC20(tokenR).balanceOf(msg.sender);
-        draw = cacheS > balanceR ? balanceR : cacheS;
     }
 }

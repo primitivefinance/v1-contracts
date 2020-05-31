@@ -1,7 +1,7 @@
 pragma solidity ^0.6.2;
 
 /**
- * @title Option Factory Contract
+ * @title Protocol Registry Contract for Deployed Options
  * @author Primitive
  */
 
@@ -10,7 +10,9 @@ import "../interfaces/IFactoryRedeem.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Factory is Ownable, Pausable, ReentrancyGuard {
-    using SafeMath for uint256;
+    using SafeMath for uint;
+
+    uint public constant WEEK_SECONDS = 604800;
 
     address public admin;
     address public feeReceiver;
@@ -31,21 +33,24 @@ contract Factory is Ownable, Pausable, ReentrancyGuard {
     function deployOption(
         address tokenU,
         address tokenS,
-        uint256 base,
-        uint256 price,
-        uint256 expiry
+        uint base,
+        uint price,
+        uint8 week
     )
         external
         nonReentrant
         whenNotPaused
         returns (address prime)
     {
-            prime = address(new PrimeOption(tokenU, tokenS, base, price, expiry));
-            bytes32 id = keccak256(abi.encodePacked(tokenU, tokenS, base, price, expiry));
-            options[id] = prime;
-            address redeem = IFactoryRedeem(factoryRedeem).deploy(prime, tokenS);
-            PrimeOption(prime).initTokenR(redeem);
-            //emit Deploy(msg.sender, prime, id);
+        require(tokenU != tokenS && tokenU != address(0) && tokenS != address(0), "ERR_ADDRESS");
+        uint expiry = week == uint8(0) ? uint(-1) : now.add(uint(week).mul(WEEK_SECONDS));
+        bytes32 id = keccak256(abi.encodePacked(tokenU, tokenS, base, price, expiry));
+        require(options[id] == address(0), "ERR_OPTION_DEPLOYED");
+        prime = address(new PrimeOption(tokenU, tokenS, base, price, expiry));
+        options[id] = prime;
+        address redeem = IFactoryRedeem(factoryRedeem).deploy(prime, tokenS);
+        PrimeOption(prime).initTokenR(redeem);
+        //emit Deploy(msg.sender, prime, id);
     }
 
     /* function kill(bytes32 id) external onlyOwner {
@@ -60,9 +65,9 @@ contract Factory is Ownable, Pausable, ReentrancyGuard {
     function getId(
         address tokenU,
         address tokenS,
-        uint256 base,
-        uint256 price,
-        uint256 expiry
+        uint base,
+        uint price,
+        uint expiry
     ) public pure returns (bytes32 id) {
         id = keccak256(abi.encodePacked(tokenU, tokenS, base, price, expiry));
     } 
