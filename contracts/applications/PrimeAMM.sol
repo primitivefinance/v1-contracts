@@ -29,7 +29,7 @@ contract PrimeAMM is PrimePoolV1 {
     address public router;
 
     event Market(address tokenP);
-    event Buy(address indexed from, uint inTokenS, uint outTokenU, uint premium);
+    event Buy(address indexed from, uint outTokenU, uint premium);
     event Sell(address indexed from, uint inTokenP, uint premium);
 
     constructor(
@@ -38,7 +38,7 @@ contract PrimeAMM is PrimePoolV1 {
         address _oracle,
         address _factory,
         address _router
-    ) 
+    )
         public
         PrimePoolV1(_tokenP, _factory)
     {
@@ -54,7 +54,10 @@ contract PrimeAMM is PrimePoolV1 {
      * @dev Accepts deposits of underlying tokens.
      * @param inTokenU Quantity of underlyings to deposit.
      */
-    function deposit(uint inTokenU) external whenNotPaused nonReentrant
+    function deposit(uint inTokenU)
+        external
+        whenNotPaused
+        nonReentrant
         returns (uint outTokenPULP, bool success)
     {
         address _tokenP = tokenP;
@@ -123,14 +126,12 @@ contract PrimeAMM is PrimePoolV1 {
     }
 
     /**
-     * @dev Purchase ETH Put.
-     * @notice An eth put is 200 DAI / 1 ETH. The right to swap 1 ETH (tokenS) for 200 Dai (tokenU).
-     * As a user, you want to cover ETH, so you pay in ETH. Every 1 Quantity of ETH covers 200 DAI.
-     * A user specifies the amount of ETH they want covered, i.e. the amount of ETH they can swap.
-     * @param inTokenS The quantity of tokenS (ETH) to 'cover' with an option. Denominated in tokenS (WETH).
+     * @dev Purchase option tokens from the pool.
+     * @notice The underlying token is what is purchasable using the strike token.
+     * @param outTokenP The quantity of options to buy, which allow the purchase of 1:1 tokenU.
      * @return bool True if the msg.sender receives tokenP.
      */
-    function buy(uint inTokenS) external nonReentrant returns (bool) {
+    function buy(uint outTokenP) external nonReentrant returns (bool) {
         // Store in memory for gas savings.
         address _tokenP = tokenP;
         (
@@ -142,24 +143,11 @@ contract PrimeAMM is PrimePoolV1 {
             uint expiry
         ) = IPrime(_tokenP).prime();
 
-        // Optimistically mint tokenP.
+        // Optimistically mint option tokens to the msg.sender.
+        _write(msg.sender, outTokenP);
 
-        // outTokenU = inTokenS * Quantity of tokenU (base) / Quantity of tokenS (price).
-        // Units = tokenS * tokenU / tokenS = tokenU.
-        uint outTokenU = inTokenS.mul(base).div(price); 
-
-        // Transfer tokenU (assume DAI) to option contract using Pool funds.
-        // We do this because the mint function in the Prime contract will check the balance,
-        // against its previously cached balance. The difference is the amount of tokens that were
-        // deposited, which determines how many Primes to mint.
-        require(IERC20(tokenU).balanceOf(address(this)) >= outTokenU, "ERR_BAL_UNDERLYING");
-        (bool transferU) = IERC20(tokenU).transfer(_tokenP, outTokenU);
-
-        // Mint Prime and Prime Redeem to this contract.
-        // If outTokenU is zero because the numerator is smaller than the denominator,
-        // or because the inTokenS is 0, the mint function will revert. This is because
-        // the mint function only works when tokens are sent into the Prime contract.
-        (uint inTokenP, ) = IPrime(_tokenP).mint(address(this));
+        // Calculates and then updates the volatility global state variable.
+        volatility = calculateVolatilityProxy(_tokenP);
         
         // Calculate premium. Denominated in tokenU PER tokenS 'covered'.
         (uint premium) = IPrimeOracle(oracle).calculatePremium(
@@ -171,25 +159,18 @@ contract PrimeAMM is PrimePoolV1 {
             expiry
         );
         
-        // Calculate total premium to pay, total premium = premium per tokenS * inTokenS.
-        // Units = tokenS * (tokenU / tokenS) / 10^18 units = tokenU.
-        premium = inTokenS.mul(premium).div(ONE_ETHER);
+        // Calculate total premium to pay. Premium should be in underlying token units.
+        premium = outTokenP.mul(premium).div(ONE_ETHER);
         require(premium > 0, "ERR_PREMIUM_ZERO");
 
-        // Updates the volatility global state variable.
-        volatility = calculateVolatilityProxy(_tokenP);
-
         // Pulls payment in tokenU from msg.sender and then pushes tokenP (option).
-        // WARNING: Two calls to untrusted addresses.
-        require(IERC20(tokenU).balanceOf(msg.sender) >= premium, "ERR_BAL_UNDERLYING");
-        require(IERC20(_tokenP).balanceOf(address(this)) >= inTokenP, "ERR_BAL_PRIME");
-        emit Buy(msg.sender, inTokenS, outTokenU, premium);
-        (bool received) = IERC20(tokenU).transferFrom(msg.sender, address(this), premium);
-        return received && transferU && IERC20(_tokenP).transfer(msg.sender, inTokenP);
+        // WARNING: Call to untrusted address msg.sender.
+        emit Buy(msg.sender, outTokenU, premium);
+        return IERC20(tokenU).transferFrom(msg.sender, address(this), premium);
     }
 
     /**
-     * @dev Sell Prime options back to the pool.
+     * @dev Sell options to the pool.
      * @notice The pool buys options at a discounted rate based on the current premium price.
      * @param inTokenP The amount of Prime option tokens that are being sold.
      */
@@ -239,11 +220,12 @@ contract PrimeAMM is PrimePoolV1 {
         IERC20(tokenR).transfer(tokenP, redeem);
 
         // Transfer prime token to prime contract optimistically.
-        require(IERC20(_tokenP).transferFrom(msg.sender, tokenP, inTokenP), "ERR_TRANSFER_IN_PRIME");
+        IERC20(_tokenP).transferFrom(msg.sender, tokenP, inTokenP);
         
         // Call the close function to have the transferred prime and redeem tokens burned.
         // Returns tokenU.
-        IPrime(_tokenP).close(address(this));
+        (,, uint outTokenU) = IPrime(_tokenP).close(address(this));
+        assert(inTokenP == outTokenU);
 
         // Pay out the total premium to the seller.
         emit Sell(msg.sender, inTokenP, premium);

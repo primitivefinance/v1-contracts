@@ -72,7 +72,7 @@ contract PrimePoolV1 is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
         emit Withdraw(to, inTokenPULP, outTokenU);
     }
 
-    function _mint(address receiver, uint outTokenU) internal returns (uint outTokenP) {
+    function _write(address receiver, uint outTokenU) internal returns (uint outTokenP) {
         address _tokenP = tokenP;
 
         // Transfer underlying tokens to option contract.
@@ -97,7 +97,7 @@ contract PrimePoolV1 is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
         (, outTokenU) = IPrime(_tokenP).exercise(receiver, inTokenP, new bytes(0));
     }
 
-    function _flash(address receiver, uint outTokenU, bytes calldata data)
+    function _flash(address receiver, uint outTokenU, bytes memory data)
         internal
         returns (bool)
     {
@@ -123,7 +123,7 @@ contract PrimePoolV1 is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
         IERC20(_tokenP).transferFrom(msg.sender, _tokenP, inTokenP);
         
         // Call the close function to have the receive underlying tokens.
-        outTokenU = IPrime(_tokenP).close(address(this));
+        (,,outTokenU) = IPrime(_tokenP).close(address(this));
     }
 
     function balances() public override view returns (uint balanceU, uint balanceR) {
