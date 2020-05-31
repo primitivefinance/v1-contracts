@@ -82,13 +82,13 @@ contract PrimePoolV1 is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
         (outTokenP, ) = IPrime(_tokenP).mint(receiver);
     }
 
-    function _exercise(address receiver, uint inTokenS, uint inTokenP)
+    function _exercise(address receiver, uint outTokenS, uint inTokenP)
         internal
         returns (uint outTokenU)
     {
         address _tokenP = tokenP;
         // Transfer strike token to option contract.
-        IERC20(IPrime(_tokenP).tokenS()).transfer(_tokenP, inTokenS);
+        IERC20(IPrime(_tokenP).tokenS()).transfer(_tokenP, outTokenS);
 
         // Transfer prime token to option contract.
         IERC20(_tokenP).transferFrom(msg.sender, _tokenP, inTokenP);
@@ -114,10 +114,10 @@ contract PrimePoolV1 is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
         inTokenS = IPrime(_tokenP).redeem(receiver);
     }
 
-    function _close(uint inTokenR, uint inTokenP) internal returns (uint outTokenU) {
+    function _close(uint outTokenR, uint inTokenP) internal returns (uint outTokenU) {
         address _tokenP = tokenP;
         // Transfer redeem to the option contract.
-        IERC20(IPrime(_tokenP).tokenR()).transfer(_tokenP, inTokenR);
+        IERC20(IPrime(_tokenP).tokenR()).transfer(_tokenP, outTokenR);
 
         // Transfer prime token to prime contract.
         IERC20(_tokenP).transferFrom(msg.sender, _tokenP, inTokenP);

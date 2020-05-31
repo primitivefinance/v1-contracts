@@ -105,20 +105,19 @@ contract PrimeAMM is PrimePoolV1 {
         returns (uint outTokenR)
     {
         // Check how many tokenS can be pulled from PrimeOption.sol.
-        uint maxDraw = uint(5); // todo: implement internal calculation to check max draw.
+        uint balanceR = IERC20(tokenR).balanceOf(address(this);
+        uint maxDraw = balanceR > cacheS ? cacheS : balanceR;
 
-        // Push tokenR to _tokenP so we can call redeem() and pull tokenS.
-        IERC20(tokenR).transfer(_tokenP, maxDraw);
-
-        // Call redeem function to pull tokenS.
-        outTokenR = IPrime(_tokenP).redeem(address(this));
+        // Redeem tokens.
+        (outTokenR) = _redeem(address(this), maxDraw);
         assert(outTokenR == maxDraw);
+
         address[] memory path = new address[](2);
         path[0] = tokenU;
         path[1] = tokenS;
         IUniswapV2Router01(router).swapExactTokensForTokens(
             outTokenR,
-            outTokenR,
+            0,
             path,
             address(this),
             now + 3 minutes
@@ -214,17 +213,10 @@ contract PrimeAMM is PrimePoolV1 {
         require(IERC20(tokenU).balanceOf(address(this)) >= premium, "ERR_BAL_UNDERLYING");
         
         // Calculate amount of redeem needed to close position with inTokenU.
-        uint redeem = inTokenP.mul(price).div(base);
-
-        // Transfer redeem to prime token optimistically.
-        IERC20(tokenR).transfer(tokenP, redeem);
-
-        // Transfer prime token to prime contract optimistically.
-        IERC20(_tokenP).transferFrom(msg.sender, tokenP, inTokenP);
+        uint outTokenR = inTokenP.mul(price).div(base);
         
-        // Call the close function to have the transferred prime and redeem tokens burned.
-        // Returns tokenU.
-        (,, uint outTokenU) = IPrime(_tokenP).close(address(this));
+        // Call the close function to close the option position and receive underlyings.
+        (uint outTokenU) = _close(outTokenR, inTokenP);
         assert(inTokenP == outTokenU);
 
         // Pay out the total premium to the seller.

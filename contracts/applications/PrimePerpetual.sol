@@ -69,7 +69,6 @@ contract PrimePerpetual is IPrimePerpetual, PrimePoolV1 {
         address _tokenP = tokenP;
         (address tokenU, address tokenS, , uint base, uint price,) = IPrime(_tokenP).prime();
 
-
         // outTokenU = inTokenS * Quantity of tokenU (base) / Quantity of tokenS (price).
         // Units = tokenS * tokenU / tokenS = tokenU.
         uint outTokenU = inTokenS.mul(base).div(price);
@@ -82,25 +81,13 @@ contract PrimePerpetual is IPrimePerpetual, PrimePoolV1 {
         // against its previously cached balance. The difference is the amount of tokens that were
         // deposited, which determines how many Primes to mint.
         swapFromInterestBearing(cusdc, outTokenU);
-        require(IERC20(tokenU).balanceOf(address(this)) >= outTokenU, "ERR_BAL_UNDERLYING");
-        (bool transferU) = IERC20(tokenU).transfer(_tokenP, outTokenU);
-
-        // Mint Prime and Prime Redeem to this contract.
-        // If outTokenU is zero because the numerator is smaller than the denominator,
-        // or because the inTokenS is 0, the mint function will revert. This is because
-        // the mint function only works when tokens are sent into the Prime contract.
-        (uint inTokenP, ) = IPrime(_tokenP).mint(address(this));
-        assert(IERC20(_tokenP).balanceOf(address(this)) >= inTokenP);
-        
-        // Pulls payment in tokenS from msg.sender and then pushes tokenP (option).
-        // WARNING: Two calls to untrusted addresses.
+        (uint inTokenP,) = _write(msg.sender, outTokenU);
 
         // Pull tokenS.
-        (bool received) = IERC20(tokenS).transferFrom(msg.sender, address(this), payment);
+        IERC20(tokenS).transferFrom(msg.sender, address(this), payment);
         // Swap tokenS to interest bearing version.
-        swapToInterestBearing(cdai, payment);
         emit Insure(msg.sender, inTokenS, outTokenU);
-        return received && transferU && IERC20(_tokenP).transfer(msg.sender, inTokenP);
+        return swapToInterestBearing(cdai, payment);
     }
 
     /**
@@ -117,16 +104,11 @@ contract PrimePerpetual is IPrimePerpetual, PrimePoolV1 {
         // Swap from interest bearing to push to msg.sender.
         swapFromInterestBearing(cdai, outTokenS);
 
-        // Assume this is DAI
-        assert(IERC20(tokenS).balanceOf(address(this)) >= outTokenS);
-
         // Transfer redeemed amount to msg.sender and option tokens to prime option.
         IERC20(tokenS).transfer(msg.sender, outTokenS);
-        IERC20(_tokenP).transferFrom(msg.sender, _tokenP, inTokenP);
-        IERC20(tokenR).transfer(_tokenP, outTokenS);
 
-        // Close the position, allowing the tokenU to return to the pool.
-        IPrime(_tokenP).close(address(this));
+        // Close the option position by burning prime and redeem tokens.
+        _close(outTokenS, inTokenP);
         emit Redemption(msg.sender, inTokenP, outTokenS);
     }
 
@@ -141,15 +123,8 @@ contract PrimePerpetual is IPrimePerpetual, PrimePoolV1 {
         // Swap from interest bearing to push to msg.sender.
         swapFromInterestBearing(cdai, outTokenS);
 
-        // Assume this is DAI
-        assert(IERC20(tokenS).balanceOf(address(this)) >= outTokenS);
-
-        // Transfer strike and option tokens to prime option in order to exercise.
-        IERC20(tokenS).transfer(_tokenP, outTokenS);
-        IERC20(_tokenP).transferFrom(msg.sender, _tokenP, inTokenP);
-
-        // Close the position, allowing the tokenU to return to the pool.
-        IPrime(_tokenP).exercise(msg.sender, inTokenP, new bytes(0));
+        // Exercise the options.
+        _exercise(msg.sender, outTokenS, inTokenP);
         emit Swap(msg.sender, inTokenP, outTokenS);
     }
 
