@@ -13,7 +13,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
-    using SafeMath for uint256;
+    using SafeMath for uint;
 
     address payable public weth;
 
@@ -26,11 +26,11 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
      * @param amount Quantity of Prime options to mint and tokenU to deposit.
      * @param receiver The newly minted tokens are sent to the receiver address.
      */
-    function safeMint(IPrime tokenP, uint256 amount, address receiver)
+    function safeMint(IPrime tokenP, uint amount, address receiver)
         external
         override
         nonReentrant
-        returns (uint256 inTokenU, uint256 outTokenR)
+        returns (uint inTokenU, uint outTokenR)
     {
         require(amount > 0, "ERR_ZERO");
         IERC20(tokenP.tokenU()).transferFrom(msg.sender, address(tokenP), amount);
@@ -46,13 +46,13 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
      */
     function safeExercise(
         IPrime tokenP,
-        uint256 amount,
+        uint amount,
         address receiver
     )
         external
         override
         nonReentrant
-        returns (uint256 inTokenS, uint256 inTokenP, uint256 outTokenU)
+        returns (uint inTokenS, uint inTokenP, uint outTokenU)
     {
         require(amount > 0, "ERR_ZERO");
         inTokenS = amount.mul(tokenP.price()).div(tokenP.base());
@@ -68,11 +68,11 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
      * @param amount Quantity of Redeems to burn.
      * @param receiver The strike tokens are sent to the receiver address.
      */
-    function safeRedeem(IPrime tokenP, uint256 amount, address receiver)
+    function safeRedeem(IPrime tokenP, uint amount, address receiver)
         external
         override
         nonReentrant
-        returns (uint256 inTokenR)
+        returns (uint inTokenR)
     {
         require(amount > 0, "ERR_ZERO");
         // There can be the case there is no available tokenS to redeem, causing a revert.
@@ -88,11 +88,11 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
      * @param amount Quantity of Primes to burn.
      * @param receiver The underlying tokens are sent to the receiver address.
      */
-    function safeClose(IPrime tokenP, uint256 amount, address receiver)
+    function safeClose(IPrime tokenP, uint amount, address receiver)
         external
         override
         nonReentrant
-        returns (uint256 inTokenR, uint256 inTokenP, uint256 outTokenU)
+        returns (uint inTokenR, uint inTokenP, uint outTokenU)
     {
         require(amount > 0, "ERR_ZERO");
         inTokenR = amount.mul(tokenP.price()).div(tokenP.base());
@@ -107,11 +107,11 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
      * @param amount Quantity of Redeems to burn.
      * @param receiver The underlying tokens are sent to the receiver address.
      */
-    function safeUnwind(IPrime tokenP, uint256 amount, address receiver)
+    function safeUnwind(IPrime tokenP, uint amount, address receiver)
         external
         override
         nonReentrant
-        returns (uint256 inTokenR, uint256 inTokenP, uint256 outTokenU)
+        returns (uint inTokenR, uint inTokenP, uint outTokenU)
     {
         require(amount > 0, "ERR_ZERO");
         require(tokenP.expiry() < block.timestamp, "ERR_NOT_EXPIRED");
