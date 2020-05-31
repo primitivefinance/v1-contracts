@@ -273,7 +273,7 @@ contract PrimePool is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
         returns (uint256 outTokenR)
     {
         // Check how many tokenS can be pulled from PrimeOption.sol.
-        (uint256 maxDraw) = IPrime(_tokenP).maxDraw();
+        uint256 maxDraw = uint(0);
 
         // Push tokenR to _tokenP so we can call redeem() and pull tokenS.
         IERC20(IPrime(_tokenP).tokenR()).transfer(_tokenP, maxDraw);

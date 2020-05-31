@@ -1,7 +1,7 @@
 pragma solidity ^0.6.2;
 
 /**
- * @title Redeem Factory Contract
+ * @title Protocol Factory Contract for Redeems
  * @author Primitive
  */
 
@@ -11,9 +11,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract FactoryRedeem is Ownable {
     using SafeMath for uint256;
 
-    constructor(address _factory) public { transferOwnership(_factory); }
+    constructor(address factory) public { transferOwnership(factory); }
 
-    function deploy(address tokenP, address underlying) external returns (address redeem) {
+    function deploy(address tokenP, address underlying) external onlyOwner returns (address redeem) {
         redeem = address(new PrimeRedeem(owner(), tokenP, underlying));
     }
 }

@@ -102,7 +102,7 @@ contract PrimeAMM is PrimePoolV1 {
         returns (uint outTokenR)
     {
         // Check how many tokenS can be pulled from PrimeOption.sol.
-        (uint maxDraw) = IPrime(_tokenP).maxDraw();
+        uint maxDraw = uint(5); // todo: implement internal calculation to check max draw.
 
         // Push tokenR to _tokenP so we can call redeem() and pull tokenS.
         IERC20(tokenR).transfer(_tokenP, maxDraw);

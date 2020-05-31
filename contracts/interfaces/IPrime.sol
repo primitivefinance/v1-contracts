@@ -27,7 +27,6 @@ interface IPrime {
     function cacheU() external view returns (uint);
     function cacheS() external view returns (uint);
     function factory() external view returns (address);
-    function maxDraw() external view returns (uint draw);
     function getCaches() external view returns (uint _cacheU, uint _cacheS);
     function getTokens() external view returns (address _tokenU, address _tokenS, address _tokenR);
     function prime() external view returns (
@@ -38,4 +37,5 @@ interface IPrime {
             uint _price,
             uint _expiry
     );
+    function initTokenR(address tokenR) external;
 }

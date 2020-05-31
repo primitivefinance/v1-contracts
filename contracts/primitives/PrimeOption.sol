@@ -56,7 +56,7 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
         _;
     }
 
-    function initTokenR(address _tokenR) external {
+    function initTokenR(address _tokenR) external override {
         require(msg.sender == factory, "ERR_NOT_OWNER");
         tokenR = _tokenR;
     }
