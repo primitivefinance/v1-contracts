@@ -111,12 +111,8 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
     /* === FUNCTIONS === */
 
     /**
-     * @dev Core function to mint new Prime ERC-20 Options.
-     * @notice inTokenU = outTokenP, inTokenU * ratio = outTokenR
-     * Checks the balance of the contract against the token's 'cache',
-     * The difference is the amount of tokenU sent into the contract.
-     * The difference determines how many Primes and Redeems to mint.
-     * Only callable when the option is not expired.
+     * @dev Mints options at a 1:1 ratio to underlying token deposits.
+     * @notice inTokenU = outTokenP, inTokenU / strike ratio = outTokenR.
      * @param receiver The newly minted tokens are sent to the receiver address.
      */
     function mint(address receiver)
@@ -134,12 +130,8 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
 
         // Mint inTokenU equal to the difference between current and cached balance of tokenU.
         inTokenU = balanceU.sub(cacheU);
-
-        // Make sure outToken is not 0.
-        require(inTokenU.mul(price) >= base, "ERR_ZERO");
-
-        // Mint outTokenR equal to tokenU * ratio FIX - FURTHER CHECKS
         outTokenR = inTokenU.mul(price).div(base);
+        require(outTokenR > 0, "ERR_ZERO");
 
         // Mint the tokens.
         IPrimeRedeem(tokenR).mint(receiver, outTokenR);
@@ -151,13 +143,11 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
     }
 
     /**
-     * @dev Swap tokenS to tokenU at a rate of tokenS / ratio = tokenU.
-     * @notice inTokenS / ratio = outTokenU && inTokenP >= outTokenU
-     * Checks the balance against the previously cached balance.
-     * The difference is the amount of tokenS sent into the contract.
-     * The difference determines how much tokenU to send out.
-     * Only callable when the option is not expired.
+     * @dev Sends out underlying tokens then checks to make sure they are returned or paid for.
+     * @notice If the underlying tokens are returned, only the fee has to be paid.
      * @param receiver The outTokenU is sent to the receiver address.
+     * @param outTokenU Quantity of underlyings to transfer to receiver optimistically.
+     * @param data Passing in any abritrary data will trigger the flash callback function.
      */
     function exercise(address receiver, uint outTokenU, bytes calldata data)
         external
@@ -175,7 +165,7 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
         require(outTokenU > 0, "ERR_ZERO");
         require(_cacheU >= outTokenU, "ERR_BAL_UNDERLYING");
 
-        // Take fee out of outTokenU.
+        // Take fee out of requested underlying tokens.
         uint _fee = outTokenU.div(FEE);
         outTokenU = outTokenU.sub(_fee);
 
@@ -217,12 +207,7 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
 
     /**
      * @dev Burns tokenR to withdraw tokenS at a ratio of 1:1.
-     * @notice inTokenR = outTokenS
-     * Should only be called by a contract that checks the balances to be sent correctly.
-     * Checks the tokenR balance against the previously cached tokenR balance.
-     * The difference is the amount of tokenR sent into the contract.
-     * The difference is equal to the amount of tokenS sent out.
-     * Callable even when expired.
+     * @notice inTokenR = outTokenS. Only callable when strike tokens are in the contract.
      * @param receiver The inTokenR quantity of tokenS is sent to the receiver address.
      */
     function redeem(address receiver)
@@ -233,8 +218,6 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
     {
         address _tokenS = option.tokenS;
         address _tokenR = tokenR;
-
-        // Current balances.
         uint balanceS = IERC20(_tokenS).balanceOf(address(this));
         uint balanceR = IERC20(_tokenR).balanceOf(address(this));
 
@@ -260,14 +243,8 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
     }
 
     /**
-     * @dev Burn Prime and Prime Redeem tokens to withdraw tokenU.
-     * @notice inTokenR / ratio = outTokenU && inTokenP >= outTokenU
-     * Checks the balances against the previously cached balances.
-     * The difference between the tokenR balance and cache is the inTokenR.
-     * The balance of tokenP is equal to the inTokenP.
-     * The outTokenU is equal to the inTokenR / ratio.
-     * The contract requires the inTokenP >= outTokenU and the balanceU >= outTokenU.
-     * The contract burns the inTokenR and inTokenP amounts.
+     * @dev Burn Prime and Prime Redeem tokens to withdraw underlying tokens.
+     * @notice inTokenR / ratio = outTokenU && inTokenP >= outTokenU.
      * @param receiver The outTokenU is sent to the receiver address.
      */
     function close(address receiver)
@@ -276,11 +253,9 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
         nonReentrant
         returns (uint inTokenR, uint inTokenP, uint outTokenU)
     {
-        // Stores addresses locally for gas savings.
+        // Stores addresses and balances locally for gas savings.
         address _tokenU = option.tokenU;
         address _tokenR = tokenR;
-
-        // Current balances.
         uint balanceU = IERC20(_tokenU).balanceOf(address(this));
         uint balanceR = IERC20(_tokenR).balanceOf(address(this));
         uint balanceP = balanceOf(address(this));
@@ -289,35 +264,29 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
         inTokenR = balanceR;
 
         // The quantity of tokenU to send out it still determined by the amount of inTokenR.
+        // inTokenR is in units of strike tokens, which is converted to underlying tokens
+        // by multiplying inTokenR by the strike ratio: base / price.
         // This outTokenU amount is checked against inTokenP.
         // inTokenP must be greater than or equal to outTokenU.
         // balanceP must be greater than or equal to outTokenU.
         // Neither inTokenR or inTokenP can be zero.
         outTokenU = inTokenR.mul(option.base).div(option.price);
 
-        // Assumes the cached balance is 0.
-        // This is because the close function burns the Primes received.
-        // Only external transfers will be able to send Primes to this contract.
-        // Close() and swap() are the only function that check for the Primes balance.
+        // Assumes the cached balance is 0 so inTokenP = balance of tokenP.
         // If option is expired, tokenP does not need to be sent in. Only tokenR.
         inTokenP = option.expiry > block.timestamp ? balanceP : outTokenU;
-
         require(inTokenR > 0 && inTokenP > 0, "ERR_ZERO");
         require(inTokenP >= outTokenU && balanceU >= outTokenU, "ERR_BAL_UNDERLYING");
 
-        // Burn inTokenR and inTokenP.
+        // Burn Prime tokens. Prime tokens are only sent into contract when not expired.
         if(option.expiry > block.timestamp) {
             _burn(address(this), inTokenP);
         }
 
-        // Send outTokenU to user.
+        // Send underlying tokens to user.
+        // Burn tokenR held in the contract.
         // User does not receive extra tokenU if there was extra tokenP in the contract.
         // User receives outTokenU proportional to inTokenR.
-        // Amount of inTokenP must be greater than outTokenU.
-        // If tokenP was sent to the contract from an external call,
-        // a user could send only tokenR and receive the proportional amount of tokenU,
-        // as long as the amount of outTokenU is less than or equal to
-        // the balance of tokenU and tokenP.
         IPrimeRedeem(_tokenR).burn(address(this), inTokenR);
         require(
             IERC20(_tokenU).transfer(receiver, outTokenU),
