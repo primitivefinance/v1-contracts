@@ -33,8 +33,7 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
         returns (uint256 inTokenU, uint256 outTokenR)
     {
         require(amount > 0, "ERR_ZERO");
-        address tokenU = tokenP.tokenU();
-        IERC20(tokenU).transferFrom(msg.sender, address(tokenP), amount);
+        IERC20(tokenP.tokenU()).transferFrom(msg.sender, address(tokenP), amount);
         (inTokenU, outTokenR) = tokenP.mint(receiver);
     }
 
@@ -56,10 +55,8 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
         returns (uint256 inTokenS, uint256 inTokenP, uint256 outTokenU)
     {
         require(amount > 0, "ERR_ZERO");
-        address tokenS = tokenP.tokenS();
-
         inTokenS = amount.mul(tokenP.price()).div(tokenP.base());
-        IERC20(tokenS).transferFrom(msg.sender, address(tokenP), inTokenS);
+        IERC20(tokenP.tokenS()).transferFrom(msg.sender, address(tokenP), inTokenS);
         IERC20(address(tokenP)).transferFrom(msg.sender, address(tokenP), amount);
         (inTokenS, inTokenP) = tokenP.exercise(receiver, amount, new bytes(0));
     }
@@ -78,11 +75,8 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
         returns (uint256 inTokenR)
     {
         require(amount > 0, "ERR_ZERO");
-        address tokenS = tokenP.tokenS();
-        address tokenR = tokenP.tokenR();
-
         // There can be the case there is no available tokenS to redeem, causing a revert.
-        IERC20(tokenR).transferFrom(msg.sender, address(tokenP), amount);
+        IERC20(tokenP.tokenR()).transferFrom(msg.sender, address(tokenP), amount);
         (inTokenR) = tokenP.redeem(receiver);
     }
 
@@ -101,10 +95,8 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
         returns (uint256 inTokenR, uint256 inTokenP, uint256 outTokenU)
     {
         require(amount > 0, "ERR_ZERO");
-        address tokenR = tokenP.tokenR();
-
         inTokenR = amount.mul(tokenP.price()).div(tokenP.base());
-        IERC20(tokenR).transferFrom(msg.sender, address(tokenP), inTokenR);
+        IERC20(tokenP.tokenR()).transferFrom(msg.sender, address(tokenP), inTokenR);
         IERC20(address(tokenP)).transferFrom(msg.sender, address(tokenP), amount);
         (inTokenR, inTokenP, outTokenU) = tokenP.close(receiver);
     }
@@ -123,10 +115,8 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
     {
         require(amount > 0, "ERR_ZERO");
         require(tokenP.expiry() < block.timestamp, "ERR_NOT_EXPIRED");
-        address tokenR = tokenP.tokenR();
-
         inTokenR = amount.mul(tokenP.price()).div(tokenP.base());
-        IERC20(tokenR).transferFrom(msg.sender, address(tokenP), inTokenR);
+        IERC20(tokenP.tokenR()).transferFrom(msg.sender, address(tokenP), inTokenR);
         (inTokenR, inTokenP, outTokenU) = tokenP.close(receiver);
     }
 }
