@@ -165,13 +165,8 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
         require(outTokenU > 0, "ERR_ZERO");
         require(_cacheU >= outTokenU, "ERR_BAL_UNDERLYING");
 
-        // Take fee out of requested underlying tokens.
-        uint _fee = outTokenU.div(FEE);
-        outTokenU = outTokenU.sub(_fee);
-
         // Optimistically transfer out tokenU.
         IERC20(_tokenU).transfer(receiver, outTokenU);
-        IERC20(_tokenU).transfer(factory, _fee);
         if (data.length > 0) IPrimeFlash(receiver).primitiveFlash(receiver, outTokenU, data);
 
         // Store in memory for gas savings.
@@ -180,22 +175,23 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
 
         // Calculate the Differences.
         inTokenS = balanceS.sub(_cacheS);
-        uint inTokenU = balanceU.sub(_cacheU.sub(outTokenU.add(_fee)));
-
-        // Require inTokenS to be greater than zero to at least pay the fee.
+        uint inTokenU = balanceU.sub(_cacheU.sub(outTokenU)); // will be > 0 if tokenU returned.
         require(inTokenS > 0 || inTokenU > 0, "ERR_ZERO");
 
-        // Calculate the net amount of tokenU sent out of the contract.
-        uint netOutTokenU = inTokenU > outTokenU ? 0 : outTokenU.sub(inTokenU);
+        // Add the fee to the total required payment.
+        outTokenU = outTokenU.add(outTokenU.div(FEE));
+
+        // Calculate the remaining amount of tokenU that needs to be paid for.
+        uint remainder = inTokenU > outTokenU ? 0 : outTokenU.sub(inTokenU);
 
         // Calculate the expected payment of tokenS.
-        uint payment = netOutTokenU.mul(option.price).div(option.base);
+        uint payment = remainder.mul(option.price).div(option.base);
 
         // Assumes the cached tokenP balance is 0.
         inTokenP = balanceOf(address(this));
 
         // Enforce the invariants.
-        require(inTokenS >= payment && inTokenP >= netOutTokenU, "ERR_BAL_INPUT");
+        require(inTokenS >= payment && inTokenP >= remainder, "ERR_BAL_INPUT");
 
         // Burn the Prime options at a 1:1 ratio to outTokenU.
         _burn(address(this), inTokenP);
