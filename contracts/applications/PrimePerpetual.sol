@@ -81,7 +81,7 @@ contract PrimePerpetual is IPrimePerpetual, PrimePoolV1 {
         // against its previously cached balance. The difference is the amount of tokens that were
         // deposited, which determines how many Primes to mint.
         swapFromInterestBearing(cusdc, outTokenU);
-        (uint inTokenP,) = _write(msg.sender, outTokenU);
+        (uint inTokenP) = _write(msg.sender, outTokenU);
 
         // Pull tokenS.
         IERC20(tokenS).transferFrom(msg.sender, address(this), payment);

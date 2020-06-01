@@ -16,6 +16,7 @@ const {
     newERC20,
     newInterestBearing,
     newPerpetual,
+    newRegistry,
     newOptionFactory,
     newPrimitive,
     approveToken,
@@ -43,11 +44,18 @@ contract("Perpetual", (accounts) => {
     const Alice = accounts[0];
     const Bob = accounts[1];
 
-    let Primitive, Tokens, Parameters, factory, perpetual;
+    let Primitive,
+        Tokens,
+        Parameters,
+        factory,
+        perpetual,
+        registry,
+        factoryOption;
 
     before(async () => {
         // setup a factory to create the option from
-        factory = await newOptionFactory();
+        factory = await newRegistry();
+        factoryOption = await newOptionFactory(factory);
         let usdc = await newERC20("Test USDC", "USDC", THOUSAND_ETHER);
         let dai = await newERC20("Test DAI", "DAI", THOUSAND_ETHER);
 

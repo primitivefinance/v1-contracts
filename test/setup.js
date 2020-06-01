@@ -7,6 +7,7 @@ const FactoryRedeem = artifacts.require("FactoryRedeem");
 const PrimeOption = artifacts.require("PrimeOption");
 const PrimeRedeem = artifacts.require("PrimeRedeem");
 const PrimePerpetual = artifacts.require("PrimePerpetual");
+const Registry = artifacts.require("Registry");
 const PrimeFlash = artifacts.require("PrimeFlash");
 const Weth = artifacts.require("WETH9");
 const CTokenLike = artifacts.require("CTokenLike");
@@ -29,10 +30,15 @@ const newFlash = async (tokenP) => {
     return flash;
 };
 
-const newOptionFactory = async () => {
-    let factory = await Factory.new();
-    let factoryRedeem = await FactoryRedeem.new(factory.address);
-    await factory.initialize(factoryRedeem.address);
+const newRegistry = async () => {
+    let registry = await Registry.new();
+    return registry;
+};
+
+const newOptionFactory = async (registry) => {
+    let factory = await Factory.new(registry.address);
+    let factoryRedeem = await FactoryRedeem.new(registry.address);
+    await registry.initialize(factory.address, factoryRedeem.address);
     return factory;
 };
 
@@ -41,10 +47,13 @@ const newInterestBearing = async (underlying, name, symbol) => {
     return compound;
 };
 
-const newPrime = async (factory, tokenU, tokenS, base, price, expiry) => {
-    await factory.deployOption(tokenU, tokenS, base, price, expiry);
-    let id = await factory.getId(tokenU, tokenS, base, price, expiry);
-    let prime = await PrimeOption.at(await factory.options(id));
+const newPrime = async (factory, tokenU, tokenS, base, price, weeks) => {
+    await factory.deployOption(tokenU, tokenS, base, price, weeks);
+    let prime = await PrimeOption.at(
+        await factory.activeOptions(
+            ((await factory.optionsLength()) - 1).toString()
+        )
+    );
     return prime;
 };
 
@@ -105,6 +114,7 @@ module.exports = {
     newRedeem,
     newFlash,
     newPerpetual,
+    newRegistry,
     newOptionFactory,
     newInterestBearing,
     newPrimitive,

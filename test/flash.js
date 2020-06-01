@@ -7,7 +7,14 @@ const utils = require("./utils");
 const { toWei } = utils;
 const { ONE_ETHER, THOUSAND_ETHER } = constants.VALUES;
 const { ERR_ZERO } = constants.ERR_CODES;
-const { newERC20, newWeth, newFlash, newOptionFactory, newPrimitive } = setup;
+const {
+    newERC20,
+    newWeth,
+    newFlash,
+    newRegistry,
+    newOptionFactory,
+    newPrimitive,
+} = setup;
 
 contract("Prime", (accounts) => {
     // ACCOUNTS
@@ -15,18 +22,19 @@ contract("Prime", (accounts) => {
 
     let tokenU, tokenS, tokenP;
     let base, price, expiry;
-    let factory, flash, prime;
+    let factory, flash, prime, registry;
     let Primitive;
 
     before(async () => {
-        factory = await newOptionFactory();
+        factory = await newRegistry();
+        factoryOption = await newOptionFactory(factory);
 
         // option parameters
         tokenU = await newERC20("Test DAI", "DAI", THOUSAND_ETHER);
         tokenS = await newWeth();
         base = toWei("200");
         price = toWei("1");
-        expiry = "1590868800"; // May 30, 2020, 8PM UTC
+        expiry = "1690868800"; // May 30, 2020, 8PM UTC
 
         Primitive = await newPrimitive(
             factory,

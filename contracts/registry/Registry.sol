@@ -21,6 +21,7 @@ contract Registry is Ownable, Pausable, ReentrancyGuard {
     address public feeReceiver;
     address public factory;
     address public factoryRedeem;
+    address[] public activeOptions;
 
     mapping(bytes32 => address) public options;
 
@@ -38,7 +39,7 @@ contract Registry is Ownable, Pausable, ReentrancyGuard {
         address tokenS,
         uint base,
         uint price,
-        uint8 week
+        uint expiry
     )
         external
         nonReentrant
@@ -47,13 +48,14 @@ contract Registry is Ownable, Pausable, ReentrancyGuard {
     {
         // Do appropriate checks and calculate the expiry timestamp.
         require(tokenU != tokenS && tokenU != address(0) && tokenS != address(0), "ERR_ADDRESS");
-        uint expiry = week == uint8(0) ? uint(-1) : now.add(uint(week).mul(WEEK_SECONDS));
+        /* uint expiry = week == uint8(0) ? uint(-1) : now.add(uint(week).mul(WEEK_SECONDS)); */
         bytes32 id = getId(tokenU, tokenS, base, price, expiry);
-        require(options[id] == address(0), "ERR_OPTION_DEPLOYED");
+        /* require(options[id] == address(0), "ERR_OPTION_DEPLOYED"); */
 
         // Deploy option and redeem.
         prime = IFactory(factory).deploy(tokenU, tokenS, base, price, expiry);
         options[id] = prime;
+        activeOptions.push(prime);
         address redeem = IFactoryRedeem(factoryRedeem).deploy(prime, tokenS);
 
         IFactory(factory).initialize(prime, redeem);
@@ -66,6 +68,10 @@ contract Registry is Ownable, Pausable, ReentrancyGuard {
 
     function setFeeReceiver(address _feeReceiver) external onlyOwner {
         feeReceiver = _feeReceiver;
+    }
+
+    function optionsLength() public view returns (uint len) {
+        len = activeOptions.length;
     }
 
     function getId(

@@ -566,7 +566,7 @@ contract PrimePool is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
     function marketRatio(address _tokenP) public view returns(uint256 oraclePrice) {
         address _tokenU = IPrime(_tokenP).tokenU();
         address token = _tokenU == WETH ? IPrime(_tokenP).tokenS() : _tokenU;
-        oraclePrice = MANTISSA.div(IPrimeOracle(oracle).marketPrice(token));
+        oraclePrice = MANTISSA.div(IPrimeOracle(oracle).marketPrice());
     }
 
     /**

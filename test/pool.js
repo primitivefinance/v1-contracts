@@ -19,7 +19,13 @@ const {
     calculateRemoveLiquidity,
     verifyOptionInvariants,
 } = utils;
-const { newERC20, newWeth, newOptionFactory, newPrimitive } = setup;
+const {
+    newERC20,
+    newWeth,
+    newRegistry,
+    newOptionFactory,
+    newPrimitive,
+} = setup;
 const {
     ZERO,
     HUNDRETH,
@@ -69,6 +75,7 @@ contract("Pool", (accounts) => {
         pool,
         factory,
         factoryOption,
+        factoryRegistry,
         exchange,
         oracleLike,
         Primitive;
@@ -76,7 +83,8 @@ contract("Pool", (accounts) => {
     before(async () => {
         weth = await newWeth();
         dai = await newERC20("TEST DAI", "DAI", MILLION_ETHER);
-        factoryOption = await newOptionFactory();
+        factoryRegistry = await newRegistry();
+        factoryOption = await newOptionFactory(factoryRegistry);
 
         // init factory uni
         let initExchange = await UniExchange.new();
@@ -120,10 +128,10 @@ contract("Pool", (accounts) => {
         redeemSymbol = "REDEEM";
         base = toWei("1");
         price = toWei("300");
-        expiry = "1593129600"; // June 26, 2020, 0:00:00 UTC
+        expiry = "4"; // June 26, 2020, 0:00:00 UTC
 
         Primitive = await newPrimitive(
-            factoryOption,
+            factoryRegistry,
             tokenU,
             tokenS,
             base,

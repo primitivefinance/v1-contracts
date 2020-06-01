@@ -31,8 +31,6 @@ contract("Oracle contract", (accounts) => {
         dai = await newERC20("TEST DAI", "DAI", MILLION_ETHER);
         weth = await newWeth();
         oracle = await PrimeOracle.new(oracleLike.address, weth.address);
-        await oracle.addFeed(dai.address);
-        await oracle.addFeed(weth.address);
 
         getPriceInDai = async () => {
             let ether = new BN(ONE_ETHER);
@@ -47,7 +45,7 @@ contract("Oracle contract", (accounts) => {
         };
     });
 
-    describe("Deployment", () => {
+    /* describe("Deployment", () => {
         it("should deploy with the correct address and MCD_DAI Feed", async () => {
             expect(await oracle.oracle()).to.be.equal(oracleLike.address);
             expect(await oracle.feeds(MAINNET_DAI)).to.be.equal(
@@ -61,7 +59,7 @@ contract("Oracle contract", (accounts) => {
                 ERR_FEED_INVALID
             );
         });
-    });
+    }); */
 
     describe("Calculation General", () => {
         before(async () => {
@@ -119,7 +117,6 @@ contract("Oracle contract", (accounts) => {
         it("sets the market price and then gets it", async () => {
             let underlyingPrice = 5e15;
             await oracleLike.setUnderlyingPrice(underlyingPrice);
-            await oracle.addFeed(dai.address);
             assert.equal(
                 (await oracle.marketPrice(dai.address)).toString(),
                 underlyingPrice.toString()

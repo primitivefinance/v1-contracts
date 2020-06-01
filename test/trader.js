@@ -6,7 +6,13 @@ const utils = require("./utils");
 const setup = require("./setup");
 const constants = require("./constants");
 const { toWei, assertBNEqual, verifyOptionInvariants } = utils;
-const { newERC20, newWeth, newOptionFactory, newPrimitive } = setup;
+const {
+    newERC20,
+    newWeth,
+    newRegistry,
+    newOptionFactory,
+    newPrimitive,
+} = setup;
 const {
     ONE_ETHER,
     FIVE_ETHER,
@@ -32,12 +38,13 @@ contract("Trader", (accounts) => {
     let trader, weth, dai, prime, redeem;
     let tokenU, tokenS;
     let base, price, expiry;
-    let factory, Primitive;
+    let factory, Primitive, registry;
 
     before(async () => {
         weth = await newWeth();
         dai = await newERC20("TEST DAI", "DAI", THOUSAND_ETHER);
-        factory = await newOptionFactory();
+        factory = await newRegistry();
+        factoryOption = await newOptionFactory(factory);
 
         optionName = "Primitive V1 Vanilla Option";
         optionSymbol = "PRIME";
@@ -48,7 +55,7 @@ contract("Trader", (accounts) => {
         tokenS = weth;
         base = toWei("200");
         price = toWei("1");
-        expiry = "1590868800"; // May 30, 2020, 8PM UTC
+        expiry = "1690868800"; // May 30, 2020, 8PM UTC
 
         Primitive = await newPrimitive(
             factory,

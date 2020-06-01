@@ -17,6 +17,11 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
 
     address payable public weth;
 
+    event Mint(address indexed from, uint256 outTokenP, uint256 outTokenR);
+    event Exercise(address indexed from, uint256 outTokenU, uint256 inTokenS);
+    event Redeem(address indexed from, uint256 inTokenR);
+    event Close(address indexed from, uint256 inTokenP);
+
     constructor (address payable _weth) public { weth = _weth; }
 
     /**
@@ -35,6 +40,7 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
         require(amount > 0, "ERR_ZERO");
         IERC20(tokenP.tokenU()).transferFrom(msg.sender, address(tokenP), amount);
         (inTokenU, outTokenR) = tokenP.mint(receiver);
+        emit Mint(msg.sender, inTokenU, outTokenR);
     }
 
     /**
@@ -78,6 +84,7 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
         // There can be the case there is no available tokenS to redeem, causing a revert.
         IERC20(tokenP.tokenR()).transferFrom(msg.sender, address(tokenP), amount);
         (inTokenR) = tokenP.redeem(receiver);
+        emit Redeem(msg.sender, inTokenR);
     }
 
     /**
@@ -99,6 +106,7 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
         IERC20(tokenP.tokenR()).transferFrom(msg.sender, address(tokenP), inTokenR);
         IERC20(address(tokenP)).transferFrom(msg.sender, address(tokenP), amount);
         (inTokenR, inTokenP, outTokenU) = tokenP.close(receiver);
+        emit Close(msg.sender, inTokenP);
     }
 
     /**
@@ -118,5 +126,6 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
         inTokenR = amount.mul(tokenP.price()).div(tokenP.base());
         IERC20(tokenP.tokenR()).transferFrom(msg.sender, address(tokenP), inTokenR);
         (inTokenR, inTokenP, outTokenU) = tokenP.close(receiver);
+        emit Close(msg.sender, inTokenP);
     }
 }

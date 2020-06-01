@@ -105,7 +105,8 @@ contract PrimeAMM is PrimePoolV1 {
         returns (uint outTokenR)
     {
         // Check how many tokenS can be pulled from PrimeOption.sol.
-        uint balanceR = IERC20(tokenR).balanceOf(address(this);
+        uint balanceR = IERC20(tokenR).balanceOf(address(this));
+        uint cacheS = IPrime(_tokenP).cacheS();
         uint maxDraw = balanceR > cacheS ? cacheS : balanceR;
 
         // Redeem tokens.
@@ -143,7 +144,7 @@ contract PrimeAMM is PrimePoolV1 {
         ) = IPrime(_tokenP).prime();
 
         // Optimistically mint option tokens to the msg.sender.
-        _write(msg.sender, outTokenP);
+        (uint outTokenU) = _write(msg.sender, outTokenP);
 
         // Calculates and then updates the volatility global state variable.
         volatility = calculateVolatilityProxy(_tokenP);
@@ -282,7 +283,7 @@ contract PrimeAMM is PrimePoolV1 {
     function marketRatio(address _tokenP) public view returns(uint oraclePrice) {
         address _tokenU = IPrime(_tokenP).tokenU();
         address token = _tokenU == WETH ? IPrime(_tokenP).tokenS() : _tokenU;
-        oraclePrice = MANTISSA.div(IPrimeOracle(oracle).marketPrice(token));
+        oraclePrice = MANTISSA.div(IPrimeOracle(oracle).marketPrice());
     }
 
     /**
