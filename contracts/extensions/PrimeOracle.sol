@@ -89,7 +89,8 @@ contract PrimeOracle is IPrimeOracle {
         // If the underlying is WETH, the option is a call. Intrinsic = (S - K).
         // Else if the strike is WETH, the option is a put. Intrinsic = (K - S).
         (uint market) = marketPrice();
-        intrinsic = tokenU == weth ? market.sub(price) : base.sub(market);
+        if(tokenU == weth) { intrinsic = market > price ? market.sub(price) : uint(0); }
+        else intrinsic = base > market ? base.sub(market) : uint(0);
     }
 
     /**
