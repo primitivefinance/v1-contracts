@@ -1,7 +1,7 @@
 pragma solidity ^0.6.2;
 
 /**
- * @title   Vanilla Option Exchange
+ * @title   Vanilla Option Automated Market Maker
  * @author  Primitive
  */
 
@@ -16,14 +16,12 @@ import "../interfaces/IUniswapV2Router01.sol";
 contract PrimeAMM is PrimePoolV1 {
     using SafeMath for uint;
 
-    uint public constant ONE_ETHER = 1 ether;
-    uint public constant MIN_VOLATILITY = 10**15;
     uint public constant MANTISSA = 10**36;
+    uint public constant ONE_ETHER = 1 ether;
     uint public constant DISCOUNT_RATE = 5;
-
+    uint public constant MIN_VOLATILITY = 10**15;
     uint public volatility;
 
-    // Assume oracle is compound's price proxy oracle.
     address public oracle;
     address public WETH;
     address public router;
@@ -45,7 +43,7 @@ contract PrimeAMM is PrimePoolV1 {
         WETH = _weth;
         oracle = _oracle;
         router = _router;
-        volatility = 100;
+        volatility = 500;
     }
 
     receive() external payable {}
@@ -54,10 +52,7 @@ contract PrimeAMM is PrimePoolV1 {
      * @dev Accepts deposits of underlying tokens.
      * @param inTokenU Quantity of underlyings to deposit.
      */
-    function deposit(uint inTokenU)
-        external
-        whenNotPaused
-        nonReentrant
+    function deposit(uint inTokenU) external whenNotPaused nonReentrant
         returns (uint outTokenPULP, bool success)
     {
         address _tokenP = tokenP;
@@ -253,7 +248,7 @@ contract PrimeAMM is PrimePoolV1 {
         // The utilized amount of tokenU is therefore this calculation:
         // (tokenR = tokenS = WETH) * Quantity of tokenU (base) / Quantity of tokenS (price).
         ( , , address tokenR, , uint price, ) = IPrime(_tokenP).prime();
-        (uint oraclePrice) = marketRatio(_tokenP);
+        (uint oraclePrice) = marketRatio();
         utilized = IERC20(tokenR).balanceOf(address(this)).mul(oraclePrice).div(price);
     }
 
@@ -280,10 +275,8 @@ contract PrimeAMM is PrimePoolV1 {
      * @notice Assumes the getUnderlyingPrice function call from the oracle never returns
      * a value greater than 1e36 (MANTISSA).
      */
-    function marketRatio(address _tokenP) public view returns(uint oraclePrice) {
-        address _tokenU = IPrime(_tokenP).tokenU();
-        address token = _tokenU == WETH ? IPrime(_tokenP).tokenS() : _tokenU;
-        oraclePrice = MANTISSA.div(IPrimeOracle(oracle).marketPrice());
+    function marketRatio() public view returns(uint oraclePrice) {
+        oraclePrice = IPrimeOracle(oracle).marketPrice();
     }
 
     /**

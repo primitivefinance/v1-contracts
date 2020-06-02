@@ -6,6 +6,7 @@ pragma solidity ^0.6.2;
  */
 
 import "../interfaces/IPrime.sol";
+import "../interfaces/IRegistry.sol";
 import "../interfaces/IFactory.sol";
 import "../interfaces/IFactoryRedeem.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -13,7 +14,7 @@ import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-contract Registry is Ownable, Pausable, ReentrancyGuard {
+contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
     using SafeMath for uint;
 
     uint public constant WEEK_SECONDS = 604800;
