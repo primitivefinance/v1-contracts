@@ -17,7 +17,7 @@ const { MAINNET_COMPOUND_DAI, MAINNET_DAI, MAINNET_WETH } = constants.ADDRESSES;
 
 const LOG_INTRINSIC = false;
 const LOG_EXTRINSIC = false;
-const LOG_SPECIFIC = true;
+const LOG_SPECIFIC = false;
 const LOG_VERBOSE = false;
 
 contract("Oracle contract", (accounts) => {

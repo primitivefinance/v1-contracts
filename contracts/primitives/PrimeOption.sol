@@ -179,19 +179,19 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
         // Add the fee to the total required payment.
         //outTokenU = outTokenU.add(outTokenU.div(FEE));
 
-        uint feeToPay = outTokenU.add(outTokenU.div(FEE));
+        uint feeToPay = outTokenU.div(FEE);
 
         // Calculate the remaining amount of tokenU that needs to be paid for.
-        uint remainder = inTokenU > feeToPay ? 0 : feeToPay.sub(inTokenU);
+        uint remainder = inTokenU > outTokenU ? 0 : outTokenU.sub(inTokenU);
 
         // Calculate the expected payment of tokenS.
-        uint payment = remainder.mul(option.price).div(option.base);
+        uint payment = remainder.add(feeToPay).mul(option.price).div(option.base);
 
         // Assumes the cached tokenP balance is 0.
         inTokenP = balanceOf(address(this));
 
         // Enforce the invariants.
-        require(inTokenS >= payment && inTokenP >= outTokenU, "ERR_BAL_INPUT");
+        require(inTokenS >= payment && inTokenP >= remainder, "ERR_BAL_INPUT");
 
         // Burn the Prime options at a 1:1 ratio to outTokenU.
         _burn(address(this), inTokenP);

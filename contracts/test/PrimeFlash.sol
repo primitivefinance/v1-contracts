@@ -30,10 +30,12 @@ contract PrimeFlash is IPrimeFlash {
         bytes calldata data
     ) external override{
         // just return the tokenU to the prime contract
-        address tokenU = IPrime(tokenP).tokenU();
+        (address tokenU, address tokenS, , uint base, uint price,) = IPrime(tokenP).prime();
+        uint payment = outTokenU.div(1000).mul(price).div(base);
         bool good = keccak256(abi.encodePacked(data)) == keccak256(abi.encodePacked(new bytes(1)));
         if(good) {
             IERC20(tokenU).transfer(tokenP, outTokenU);
+            IERC20(tokenS).transfer(tokenP, payment);
         }
     }
 }

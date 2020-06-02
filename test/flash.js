@@ -52,14 +52,20 @@ contract("Prime", (accounts) => {
     describe("Prime Flash", () => {
         it("execute a flash loan that returns the outTokenU", async () => {
             // mint some options so the cacheU is > 0
-            let inTokenU = ONE_ETHER;
+            let inTokenU = new BN(ONE_ETHER);
+            let flashFee = inTokenU
+                .div(new BN(1000))
+                .mul(new BN(price))
+                .div(new BN(base));
             await tokenU.transfer(prime.address, inTokenU);
             await prime.mint(Alice);
+            if ((await tokenS.symbol()) == "WETH")
+                await tokenS.deposit({ value: flashFee });
+            await tokenS.transfer(flash.address, flashFee);
             await flash.goodFlashLoan(ONE_ETHER);
-            let fee = new BN(ONE_ETHER).sub(
-                new BN(ONE_ETHER).div(new BN(1000))
+            expect((await prime.cacheS()).toString()).to.be.eq(
+                flashFee.toString()
             );
-            expect((await prime.cacheU()).toString()).to.be.eq(fee.toString());
         });
         it("should revert because the flash loan doesnt return the capital", async () => {
             // mint some options so the cacheU is > 0

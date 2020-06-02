@@ -4,8 +4,7 @@ module.exports = {
         "./interfaces",
         "./tokens",
         "./test",
-        "./PrimeExchange.sol",
-        "./PrimePool.sol",
+        "./PrimePerpetual.sol",
     ],
     providerOptions: {
         default_balance_ether: "1000",
