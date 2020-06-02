@@ -210,7 +210,8 @@ contract PrimeAMM is PrimePool {
         
         // Calculate amount of redeem needed to close position with inTokenU.
         uint outTokenR = inTokenP.mul(price).div(base);
-        
+        require(IERC20(tokenR).balanceOf(address(this)) >= outTokenR, "ERR_BAL_REDEEM");
+
         // Call the close function to close the option position and receive underlyings.
         (uint outTokenU) = _close(outTokenR, inTokenP);
         assert(inTokenP == outTokenU);

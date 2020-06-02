@@ -33,6 +33,7 @@ const {
     ERR_BAL_UNDERLYING,
 } = constants.ERR_CODES;
 
+const { ZERO_ADDRESS } = constants.ADDRESSES;
 const PrimeOptionTest = artifacts.require("PrimeOptionTest");
 
 contract("Prime Option Contract", (accounts) => {
@@ -85,6 +86,42 @@ contract("Prime Option Contract", (accounts) => {
             }
             return cache;
         };
+    });
+
+    describe("Registry", () => {
+        it("should set the fee receiver", async () => {
+            await registry.setFeeReceiver(Alice);
+            assert.equal(
+                (await redeem.feeReceiver()).toString(),
+                Alice,
+                "Incorrect fee receiver"
+            );
+            await registry.optionsLength();
+        });
+
+        it("should get the option", async () => {
+            let option = await registry.getOption(
+                tokenU.address,
+                tokenS.address,
+                base,
+                price,
+                expiry
+            );
+            assert.equal(option, prime.address, "Incorrect option address");
+        });
+
+        it("reverts if one of the tokens in an option is address zero", async () => {
+            await truffleAssert.reverts(
+                registry.deployOption(
+                    ZERO_ADDRESS,
+                    tokenS.address,
+                    base,
+                    price,
+                    expiry
+                ),
+                "ERR_ADDRESS"
+            );
+        });
     });
 
     describe("Prime Redeem", () => {
@@ -260,7 +297,6 @@ contract("Prime Option Contract", (accounts) => {
             );
         });
 
-        // TODO: Factory contract needs a way to kill the contract
         describe("kill", () => {
             it("revert if msg.sender is not owner", async () => {
                 await truffleAssert.reverts(
