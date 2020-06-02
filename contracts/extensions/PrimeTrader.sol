@@ -61,8 +61,11 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
         returns (uint inTokenS, uint inTokenP, uint outTokenU)
     {
         require(amount > 0, "ERR_ZERO");
+        require(IERC20(address(tokenP)).balanceOf(msg.sender) >= amount, "ERR_BAL_PRIME");
         inTokenS = amount.mul(tokenP.price()).div(tokenP.base());
-        IERC20(tokenP.tokenS()).transferFrom(msg.sender, address(tokenP), inTokenS);
+        uint fee = inTokenS.div(1000);
+        require(IERC20(tokenP.tokenS()).balanceOf(msg.sender) >= inTokenS, "ERR_BAL_STRIKE");
+        IERC20(tokenP.tokenS()).transferFrom(msg.sender, address(tokenP), inTokenS.add(fee));
         IERC20(address(tokenP)).transferFrom(msg.sender, address(tokenP), amount);
         (inTokenS, inTokenP) = tokenP.exercise(receiver, amount, new bytes(0));
     }
@@ -81,6 +84,7 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
         returns (uint inTokenR)
     {
         require(amount > 0, "ERR_ZERO");
+        require(IERC20(tokenP.tokenR()).balanceOf(msg.sender) >= amount, "ERR_BAL_REDEEM");
         // There can be the case there is no available tokenS to redeem, causing a revert.
         IERC20(tokenP.tokenR()).transferFrom(msg.sender, address(tokenP), amount);
         (inTokenR) = tokenP.redeem(receiver);
@@ -102,7 +106,9 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
         returns (uint inTokenR, uint inTokenP, uint outTokenU)
     {
         require(amount > 0, "ERR_ZERO");
+        require(IERC20(address(tokenP)).balanceOf(msg.sender) >= amount, "ERR_BAL_PRIME");
         inTokenR = amount.mul(tokenP.price()).div(tokenP.base());
+        require(IERC20(tokenP.tokenR()).balanceOf(msg.sender) >= inTokenR, "ERR_BAL_REDEEM");
         IERC20(tokenP.tokenR()).transferFrom(msg.sender, address(tokenP), inTokenR);
         IERC20(address(tokenP)).transferFrom(msg.sender, address(tokenP), amount);
         (inTokenR, inTokenP, outTokenU) = tokenP.close(receiver);
@@ -124,6 +130,7 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
         require(amount > 0, "ERR_ZERO");
         require(tokenP.expiry() < block.timestamp, "ERR_NOT_EXPIRED");
         inTokenR = amount.mul(tokenP.price()).div(tokenP.base());
+        require(IERC20(tokenP.tokenR()).balanceOf(msg.sender) >= inTokenR, "ERR_BAL_REDEEM");
         IERC20(tokenP.tokenR()).transferFrom(msg.sender, address(tokenP), inTokenR);
         (inTokenR, inTokenP, outTokenU) = tokenP.close(receiver);
         emit Close(msg.sender, inTokenP);

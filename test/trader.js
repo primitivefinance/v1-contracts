@@ -10,6 +10,8 @@ const {
     newERC20,
     newWeth,
     newRegistry,
+    newBadERC20,
+    newTestRedeem,
     newOptionFactory,
     newPrimitive,
 } = setup;
@@ -17,6 +19,7 @@ const {
     ONE_ETHER,
     FIVE_ETHER,
     TEN_ETHER,
+    HUNDRED_ETHER,
     THOUSAND_ETHER,
     MILLION_ETHER,
 } = constants.VALUES;
@@ -29,6 +32,8 @@ const {
     ERR_BAL_REDEEM,
     ERR_NOT_EXPIRED,
 } = constants.ERR_CODES;
+
+const PrimeOptionTest = artifacts.require("PrimeOptionTest");
 
 contract("Trader", (accounts) => {
     // ACCOUNTS
@@ -45,11 +50,6 @@ contract("Trader", (accounts) => {
         dai = await newERC20("TEST DAI", "DAI", THOUSAND_ETHER);
         factory = await newRegistry();
         factoryOption = await newOptionFactory(factory);
-
-        optionName = "Primitive V1 Vanilla Option";
-        optionSymbol = "PRIME";
-        redeemName = "Primitive Strike Redeem";
-        redeemSymbol = "REDEEM";
 
         tokenU = dai;
         tokenS = weth;
@@ -213,18 +213,21 @@ contract("Trader", (accounts) => {
                 let deltaP = (await getBalance(prime, Alice)).sub(balanceP);
                 let deltaS = (await getBalance(tokenS, Alice)).sub(balanceS);
 
-                assertBNEqual(deltaU, inTokenU.sub(inTokenU.div(new BN(1000))));
+                assertBNEqual(deltaU, inTokenU);
                 assertBNEqual(deltaP, inTokenP.neg());
-                assertBNEqual(deltaS, inTokenS.neg());
+                assertBNEqual(
+                    deltaS,
+                    inTokenS.add(inTokenS.div(new BN(1000))).neg()
+                );
 
                 await truffleAssert.eventEmitted(exercise, "Exercise", (ev) => {
                     return (
                         expect(ev.from).to.be.eq(Alice) &&
                         expect(ev.outTokenU.toString()).to.be.eq(
-                            inTokenU.sub(inTokenU.div(new BN(1000))).toString()
+                            inTokenU.toString()
                         ) &&
                         expect(ev.inTokenS.toString()).to.be.eq(
-                            inTokenS.toString()
+                            inTokenS.add(inTokenS.div(new BN(1000))).toString()
                         )
                     );
                 });
@@ -241,8 +244,7 @@ contract("Trader", (accounts) => {
 
         it("should revert if user does not have enough prime tokens", async () => {
             await truffleAssert.reverts(
-                trader.safeExercise(prime.address, MILLION_ETHER, Alice),
-                ERR_BAL_PRIME
+                trader.safeExercise(prime.address, MILLION_ETHER, Alice)
             );
         });
 
@@ -409,8 +411,14 @@ contract("Trader", (accounts) => {
         });
 
         it("should revert if user does not have enough redeem tokens", async () => {
+            await trader.safeMint(prime.address, ONE_ETHER, Bob);
+            await redeem.transfer(Alice, await redeem.balanceOf(Bob), {
+                from: Bob,
+            });
             await truffleAssert.reverts(
-                trader.safeClose(prime.address, MILLION_ETHER, Alice),
+                trader.safeClose(prime.address, ONE_ETHER, Bob, {
+                    from: Bob,
+                }),
                 ERR_BAL_REDEEM
             );
         });
@@ -487,29 +495,19 @@ contract("Trader", (accounts) => {
         });
     });
 
-    /*  describe("safeUnwind", () => {
+    describe("safeUnwind", () => {
         beforeEach(async () => {
             trader = await PrimeTrader.new(weth.address);
             prime = await PrimeOptionTest.new(
-                optionName,
-                optionSymbol,
-                marketId,
-                tokenU,
-                tokenS,
+                tokenU.address,
+                tokenS.address,
                 base,
                 price,
                 expiry
             );
-
-            prime.address = prime.address;
-            redeem = await PrimeRedeem.new(
-                redeemName,
-                redeemSymbol,
-                prime.address,
-                tokenS
-            );
+            redeem = await newTestRedeem(Alice, prime.address, tokenU.address);
+            await prime.setTokenR(redeem.address);
             tokenR = redeem.address;
-            await prime.initTokenR(tokenR);
 
             await tokenU.approve(trader.address, MILLION_ETHER, {
                 from: Alice,
@@ -552,7 +550,11 @@ contract("Trader", (accounts) => {
                 let balanceP = await getBalance(prime, Alice);
                 let balanceR = await getBalance(redeem, Alice);
 
-                let event = await trader.safeUnwind(prime.address, inTokenP, Alice);
+                let event = await trader.safeUnwind(
+                    prime.address,
+                    inTokenP,
+                    Alice
+                );
 
                 let deltaU = (await getBalance(tokenU, Alice)).sub(balanceU);
                 let deltaP = (await getBalance(prime, Alice)).sub(balanceP);
@@ -584,19 +586,12 @@ contract("Trader", (accounts) => {
         });
 
         it("should revert if user does not have enough redeem tokens", async () => {
-            await truffleAssert.reverts(
-                trader.safeUnwind(prime.address, MILLION_ETHER, Alice),
-                ERR_BAL_REDEEM
-            );
-        });
-
-        it("should revert if user does not have enough prime tokens", async () => {
-            await redeem.transfer(Alice, await redeem.balanceOf(Bob), {
-                from: Bob,
+            await redeem.transfer(Bob, await redeem.balanceOf(Alice), {
+                from: Alice,
             });
             await truffleAssert.reverts(
-                trader.safeUnwind(prime.address, await prime.balanceOf(Bob), Bob, {
-                    from: Bob,
+                trader.safeUnwind(prime.address, ONE_ETHER, Alice, {
+                    from: Alice,
                 }),
                 ERR_BAL_REDEEM
             );
@@ -607,39 +602,21 @@ contract("Trader", (accounts) => {
             await safeUnwind(ONE_ETHER);
             await safeUnwind(toWei("2.5433451"));
         });
-    }); */
+    });
 
-    /* describe("test bad ERC20", () => {
+    describe("test bad ERC20", () => {
         beforeEach(async () => {
-            tokenU = await BadToken.new(
-                "Bad ERC20 Doesnt Return Bools",
-                "BADU"
-            );
-            tokenS = await BadToken.new(
-                "Bad ERC20 Doesnt Return Bools",
-                "BADS"
-            );
-            tokenU = tokenU.address;
-            tokenS = tokenS.address;
-            tokenU = prime = await PrimeOptionTest.new(
-                optionName,
-                optionSymbol,
-                marketId,
-                tokenU,
-                tokenS,
+            tokenU = await newBadERC20("Bad ERC20 Doesnt Return Bools", "BADU");
+            tokenS = await newBadERC20("Bad ERC20 Doesnt Return Bools", "BADS");
+            prime = await PrimeOptionTest.new(
+                tokenU.address,
+                tokenS.address,
                 base,
                 price,
                 expiry
             );
-            prime.address = prime.address;
-            redeem = await PrimeRedeem.new(
-                redeemName,
-                redeemSymbol,
-                prime.address,
-                tokenS
-            );
-            tokenR = redeem.address;
-            await prime.initTokenR(tokenR);
+            redeem = await newTestRedeem(Alice, prime.address, tokenU.address);
+            await prime.setTokenR(redeem.address);
             let inTokenU = THOUSAND_ETHER;
             await tokenU.mint(Alice, inTokenU);
             await tokenS.mint(Alice, inTokenU);
@@ -684,70 +661,5 @@ contract("Trader", (accounts) => {
                 trader.safeUnwind(prime.address, inTokenP, Alice)
             );
         });
-    }); */
-
-    /* describe("verifyBalance", () => {
-        beforeEach(async () => {
-            tokenU = await BadToken.new(
-                "Bad ERC20 Doesnt Return Bools",
-                "BADU"
-            );
-            tokenS = await BadToken.new(
-                "Bad ERC20 Doesnt Return Bools",
-                "BADS"
-            );
-            tokenU = tokenU.address;
-            tokenS = tokenS.address;
-            tokenU = prime = await PrimeOptionTest.new(
-                optionName,
-                optionSymbol,
-                marketId,
-                tokenU,
-                tokenS,
-                base,
-                1,
-                expiry
-            );
-            prime.address = prime.address;
-            redeem = await PrimeRedeem.new(
-                redeemName,
-                redeemSymbol,
-                prime.address,
-                tokenS
-            );
-            tokenR = redeem.address;
-            await prime.initTokenR(tokenR);
-            let inTokenU = THOUSAND_ETHER;
-            await tokenU.mint(Alice, inTokenU);
-            await tokenS.mint(Alice, inTokenU);
-            await tokenU.transfer(prime.address, inTokenU);
-            await prime.mint(Alice);
-        });
-
-        it("should revert on swap because inTokenS is 0", async () => {
-            await tokenS.transfer(Bob, await tokenS.balanceOf(Alice), {
-                from: Alice,
-            });
-            await truffleAssert.reverts(
-                trader.safeExercise(prime.address, 1, Alice),
-                ERR_BAL_STRIKE
-            );
-        });
-
-        it("should revert on close because inTokenR is 0", async () => {
-            await redeem.transfer(Bob, await redeem.balanceOf(Alice), {
-                from: Alice,
-            });
-            await truffleAssert.reverts(
-                trader.safeClose(prime.address, 1, Alice),
-                ERR_BAL_REDEEM
-            );
-        });
-        it("should revert on unWind because inTokenR is 0", async () => {
-            let expired = "1589386232";
-            await prime.setExpiry(expired);
-            assert.equal(await prime.expiry(), expired);
-            await truffleAssert.reverts(trader.safeUnwind(prime.address, 1, Alice));
-        });
-    }); */
+    });
 });
