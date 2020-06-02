@@ -30,7 +30,7 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
 
     constructor() public { transferOwnership(msg.sender); }
 
-    function initialize(address _factory, address _factoryRedeem) external onlyOwner {
+    function initialize(address _factory, address _factoryRedeem) external override onlyOwner {
         factory = _factory;
         factoryRedeem = _factoryRedeem;
     }
@@ -43,6 +43,7 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
         uint expiry
     )
         external
+        override
         nonReentrant
         whenNotPaused
         returns (address prime)
@@ -63,15 +64,15 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
         emit Deploy(msg.sender, prime, id);
     }
 
-    function kill(address prime) external onlyOwner {
+    function kill(address prime) external override onlyOwner {
         IFactory(factory).kill(prime);
     }
 
-    function setFeeReceiver(address _feeReceiver) external onlyOwner {
+    function setFeeReceiver(address _feeReceiver) external override onlyOwner {
         feeReceiver = _feeReceiver;
     }
 
-    function optionsLength() public view returns (uint len) {
+    function optionsLength() public view override returns (uint len) {
         len = activeOptions.length;
     }
 

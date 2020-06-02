@@ -177,10 +177,12 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
         require(inTokenS > 0 || inTokenU > 0, "ERR_ZERO");
 
         // Add the fee to the total required payment.
-        outTokenU = outTokenU.add(outTokenU.div(FEE));
+        //outTokenU = outTokenU.add(outTokenU.div(FEE));
+
+        uint feeToPay = outTokenU.add(outTokenU.div(FEE));
 
         // Calculate the remaining amount of tokenU that needs to be paid for.
-        uint remainder = inTokenU > outTokenU ? 0 : outTokenU.sub(inTokenU);
+        uint remainder = inTokenU > feeToPay ? 0 : feeToPay.sub(inTokenU);
 
         // Calculate the expected payment of tokenS.
         uint payment = remainder.mul(option.price).div(option.base);
@@ -189,7 +191,7 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
         inTokenP = balanceOf(address(this));
 
         // Enforce the invariants.
-        require(inTokenS >= payment && inTokenP >= remainder, "ERR_BAL_INPUT");
+        require(inTokenS >= payment && inTokenP >= outTokenU, "ERR_BAL_INPUT");
 
         // Burn the Prime options at a 1:1 ratio to outTokenU.
         _burn(address(this), inTokenP);
@@ -218,6 +220,7 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
         // Difference between tokenR balance and cache.
         inTokenR = balanceR;
         require(inTokenR > 0, "ERR_ZERO");
+        require(balanceS >= inTokenR, "ERR_BAL_STRIKE");
 
         // Burn tokenR in the contract. Send tokenS to msg.sender.
         IPrimeRedeem(_tokenR).burn(address(this), inTokenR);

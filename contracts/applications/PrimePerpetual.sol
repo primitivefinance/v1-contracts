@@ -5,12 +5,12 @@ pragma solidity ^0.6.2;
  * @author  Primitive
  */
 
-import "../extensions/PrimePoolV1.sol";
+import "../extensions/PrimePool.sol";
 import "../interfaces/IPrime.sol";
 import "../interfaces/ICToken.sol";
 import "../interfaces/IPrimePerpetual.sol";
 
-contract PrimePerpetual is IPrimePerpetual, PrimePoolV1 {
+contract PrimePerpetual is IPrimePerpetual, PrimePool {
     using SafeMath for uint;
 
     address public override cdai;
@@ -24,7 +24,7 @@ contract PrimePerpetual is IPrimePerpetual, PrimePoolV1 {
     event Swap(address indexed from, uint inTokenP, uint outTokenS);
 
     constructor(address _cdai, address _cusdc, address _tokenP, address _factory)
-        public PrimePoolV1(_tokenP, _factory)
+        public PrimePool(_tokenP, _factory)
     {
         fee = 1e15;
         cdai = _cdai;

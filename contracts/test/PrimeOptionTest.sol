@@ -25,10 +25,14 @@ contract PrimeOptionTest is PrimeOption {
             price,
             expiry
         )
-    {}
+    { }
 
     function setExpiry(uint256 expiry) public {
         option.expiry = expiry;
+    }
+
+    function setTokenR(address redeem) public {
+        tokenR = redeem;
     }
 
 }

@@ -5,7 +5,7 @@ pragma solidity ^0.6.2;
  * @author  Primitive
  */
 
-import "../extensions/PrimePoolV1.sol";
+import "../extensions/PrimePool.sol";
 import "../interfaces/IWETH.sol";
 import "../interfaces/IPrime.sol";
 import "../interfaces/IPrimePool.sol";
@@ -13,7 +13,7 @@ import "../interfaces/IPrimeOracle.sol";
 import "../interfaces/IUniswapV2Factory.sol";
 import "../interfaces/IUniswapV2Router01.sol";
 
-contract PrimeAMM is PrimePoolV1 {
+contract PrimeAMM is PrimePool {
     using SafeMath for uint;
 
     uint public constant MANTISSA = 10**36;
@@ -38,7 +38,7 @@ contract PrimeAMM is PrimePoolV1 {
         address _router
     )
         public
-        PrimePoolV1(_tokenP, _factory)
+        PrimePool(_tokenP, _factory)
     {
         WETH = _weth;
         oracle = _oracle;
