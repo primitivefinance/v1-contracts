@@ -4,6 +4,7 @@ const chai = require("chai");
 const BN = require("bn.js");
 chai.use(require("chai-bn")(BN));
 const PrimeOracle = artifacts.require("PrimeOracle");
+const PrimeOracleTest = artifacts.require("PrimeOracleTest");
 const OracleLike = artifacts.require("OracleLike");
 const utils = require("./utils");
 const setup = require("./setup");
@@ -11,9 +12,6 @@ const constants = require("./constants");
 const { toWei, fromWei, assertWithinError } = utils;
 const { newERC20, newWeth } = setup;
 const { ONE_ETHER, MILLION_ETHER } = constants.VALUES;
-const { ERR_FEED_INVALID } = constants.ERR_CODES;
-const { MAX_SLIPPAGE, MAX_ERROR_PTS, MANTISSA } = constants.PARAMETERS;
-const { MAINNET_COMPOUND_DAI, MAINNET_DAI, MAINNET_WETH } = constants.ADDRESSES;
 
 const LOG_INTRINSIC = false;
 const LOG_EXTRINSIC = false;
@@ -560,6 +558,17 @@ contract("Oracle contract", (accounts) => {
                 };
                 if (LOG_SPECIFIC) console.log(results);
             }
+        });
+    });
+
+    describe("Test SQRT", () => {
+        it("Tests the sqrt function branches", async () => {
+            let oracle = await PrimeOracleTest.new(
+                oracleLike.address,
+                weth.address
+            );
+            let sqrt = await oracle.testSqrt(1);
+            assert.equal(sqrt.toString(), "1");
         });
     });
 });
