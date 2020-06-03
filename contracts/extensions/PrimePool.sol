@@ -98,15 +98,6 @@ contract PrimePool is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
         (, outTokenU) = IPrime(_tokenP).exercise(receiver, inTokenP, new bytes(0));
     }
 
-    function _flash(address receiver, uint outTokenU, bytes memory data)
-        internal
-        returns (bool)
-    {
-        // Call the exercise function to receive underlying tokens.
-        IPrime(tokenP).exercise(receiver, outTokenU, data);
-        return true;
-    }
-
     function _redeem(address receiver, uint outTokenR) internal returns (uint inTokenS) {
         address _tokenP = tokenP;
         // Push tokenR to _tokenP so we can call redeem() and pull tokenS.

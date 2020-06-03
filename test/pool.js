@@ -537,7 +537,6 @@ contract("PAMM Test", (accounts) => {
             await pool.deposit(ONE_ETHER);
             let balanceU = await tokenU.balanceOf(pool.address);
             await weth.deposit({ value: ONE_ETHER });
-            await weth.deposit({ value: HUNDRED_ETHER });
             await pool.buy(balanceU);
             await trader.safeExercise(
                 prime.address,
@@ -854,9 +853,6 @@ contract("PAMM Test", (accounts) => {
             await getVolatilityProxy();
         });
         it("utilize the rest of the pool", async () => {
-            if (tokenU.address == weth.address) {
-                await tokenU.deposit({ from: Alice, value: HUNDRED_ETHER });
-            }
             await pool.deposit(ONE_ETHER, { from: Alice });
             let balanceCU = new BN(await tokenU.balanceOf(pool.address));
             await pool.buy(balanceCU, {
@@ -884,6 +880,7 @@ contract("PAMM Test", (accounts) => {
         });
 
         it("should swap tokenR -> tokenS -> tokenU for user to withdraw", async () => {
+            await deposit(ONE_ETHER);
             const run = async (runs) => {
                 for (let i = 0; i < runs; i++) {
                     let amt = Math.floor(TENTH * Math.random()).toString();
@@ -921,7 +918,7 @@ contract("PAMM Test", (accounts) => {
             });
         });
         it("should be able to deposit, withdraw, and buy fluidly", async () => {
-            await deposit(ONE_ETHER);
+            await deposit(TEN_ETHER);
             await buy(ONE_ETHER);
             const runDeposit = async (runs) => {
                 for (let i = 0; i < runs; i++) {
