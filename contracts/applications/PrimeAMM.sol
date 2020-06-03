@@ -143,7 +143,7 @@ contract PrimeAMM is PrimePool {
         ) = IPrime(_tokenP).prime();
 
         // Optimistically mint option tokens to the msg.sender.
-        (uint outTokenU) = _write(msg.sender, outTokenP);
+        (outTokenP) = _write(msg.sender, outTokenP);
 
         // Calculates and then updates the volatility global state variable.
         volatility = calculateVolatilityProxy(_tokenP);
@@ -159,14 +159,14 @@ contract PrimeAMM is PrimePool {
         );
         
         // Calculate total premium to pay. Premium should be in underlying token units.
-        premium = MANTISSA.div(outTokenP.mul(premium).div(ONE_ETHER));
+        premium = outTokenP.mul(premium).div(ONE_ETHER);
         require(premium > 0, "ERR_PREMIUM_ZERO");
 
         // Pulls payment in tokenU from msg.sender and then pushes tokenP (option).
         // WARNING: Call to untrusted address msg.sender.
-        emit Buy(msg.sender, outTokenU, premium);
+        emit Buy(msg.sender, outTokenP, premium);
         IERC20(tokenU).transferFrom(msg.sender, address(this), premium);
-        return IERC20(_tokenP).transfer(msg.sender, outTokenU);
+        return IERC20(_tokenP).transfer(msg.sender, outTokenP);
     }
 
     /**
