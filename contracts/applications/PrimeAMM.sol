@@ -272,15 +272,6 @@ contract PrimeAMM is PrimePool {
         // Utilized assets are held in the Prime contract waiting to be exercised or expired.
         totalBalance = totalUnutilized(_tokenP).add(totalUtilized(_tokenP));
     }
-
-    /**
-     * @dev Utility function to get the market ratio of tokenS denominated in tokenU.
-     * @notice Assumes the getUnderlyingPrice function call from the oracle never returns
-     * a value greater than 1e36 (MANTISSA).
-     */
-    function marketRatio() public view returns(uint oraclePrice) {
-        oraclePrice = IPrimeOracle(oracle).marketPrice();
-    }
 }
 
     

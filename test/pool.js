@@ -220,7 +220,7 @@ contract("PAMM Test", (accounts) => {
 
     describe("Deployment", () => {
         it("should return the correct weth address", async () => {
-            expect((await pool.WETH()).toString().toUpperCase()).to.be.eq(
+            expect((await pool.weth()).toString().toUpperCase()).to.be.eq(
                 weth.address.toUpperCase()
             );
         });
