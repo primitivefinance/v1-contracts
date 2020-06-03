@@ -48,7 +48,7 @@ const {
     ERR_PAUSED,
 } = constants.ERR_CODES;
 
-const { MAX_SLIPPAGE } = constants.PARAMETERS;
+const { MAX_SLIPPAGE, MANTISSA } = constants.PARAMETERS;
 
 const LOG_VERBOSE = false;
 const LOG_VOL = false;
@@ -308,13 +308,6 @@ contract("PAMM Test", (accounts) => {
                     balance0TP
                 );
                 await getVolatilityProxy();
-                /* console.log(
-                    inTokenU.toString(),
-                    balance0CU.toString(),
-                    balance0TS.toString(),
-                    balance0TP.toString(),
-                    liquidity.toString()
-                ); */
                 let depo = await pool.deposit(inTokenU, {
                     from: Alice,
                 });
@@ -584,20 +577,27 @@ contract("PAMM Test", (accounts) => {
             });
             buy = async (inTokenU) => {
                 inTokenU = new BN(inTokenU);
-                let balance0U = await getBalance(tokenU, Alice);
+                let balance0U = await getTokenBalance(tokenU, Alice);
                 let balance0P = await getTokenBalance(pool, Alice);
                 let balance0Prime = await getTokenBalance(prime, Alice);
-                let balance0S = await getBalance(tokenS, Alice);
-                let balance0CU = await getBalance(tokenU, pool.address);
+                let balance0S = await getTokenBalance(tokenS, Alice);
+                let balance0CU = await getTokenBalance(tokenU, pool.address);
                 let balance0TS = await getTotalSupply();
                 let balance0TP = await getTotalPoolBalance();
                 let premium = await getPremium();
                 premium = premium.mul(inTokenU).div(new BN(toWei("1")));
 
                 await getVolatilityProxy();
+                console.log("PREMIUM BEFORE", (await getPremium()).toString());
+                console.log("ALICE WETH BEFORE", balance0U.toString());
                 let event = await pool.buy(inTokenU, {
                     from: Alice,
                 });
+                console.log(
+                    "ALICE WETH AFTER",
+                    (await getTokenBalance(tokenU, Alice)).toString()
+                );
+                console.log("PREMIUM AFTER", (await getPremium()).toString());
                 await getVolatilityProxy();
                 truffleAssert.eventEmitted(event, "Buy", (ev) => {
                     return (
@@ -608,11 +608,11 @@ contract("PAMM Test", (accounts) => {
                     );
                 });
 
-                let balance1U = await getBalance(tokenU, Alice);
+                let balance1U = await getTokenBalance(tokenU, Alice);
                 let balance1P = await getTokenBalance(pool, Alice);
                 let balance1Prime = await getTokenBalance(prime, Alice);
-                let balance1S = await getBalance(tokenS, Alice);
-                let balance1CU = await getBalance(tokenU, pool.address);
+                let balance1S = await getTokenBalance(tokenS, Alice);
+                let balance1CU = await getTokenBalance(tokenU, pool.address);
                 let balance1TS = await getTotalSupply();
                 let balance1TP = await getTotalPoolBalance();
 
@@ -682,18 +682,14 @@ contract("PAMM Test", (accounts) => {
             });
             sell = async (inTokenP) => {
                 inTokenP = new BN(inTokenP);
-                let balance0U = await getBalance(tokenU, Alice);
+                let balance0U = await getTokenBalance(tokenU, Alice);
                 let balance0P = await getTokenBalance(pool, Alice);
                 let balance0Prime = await getTokenBalance(prime, Alice);
-                let balance0S = await getBalance(tokenS, Alice);
-                let balance0R = await getBalance(redeem, pool.address);
-                let balance0CU = await getBalance(tokenU, pool.address);
+                let balance0S = await getTokenBalance(tokenS, Alice);
+                let balance0R = await getTokenBalance(redeem, pool.address);
+                let balance0CU = await getTokenBalance(tokenU, pool.address);
                 let balance0TS = await getTotalSupply();
                 let balance0TP = await getTotalPoolBalance();
-
-                let premium = await getPremium();
-                premium = premium.mul(inTokenP).div(new BN(toWei("1")));
-                let outTokenR = inTokenP.mul(new BN(price)).div(new BN(base));
 
                 if (LOG_VERBOSE) console.log("[INITIALSTATE]");
                 if (LOG_VERBOSE) console.log("ALICE U", balance0U.toString());
@@ -710,12 +706,6 @@ contract("PAMM Test", (accounts) => {
                 if (LOG_VERBOSE)
                     console.log("ESTIMATED PREMIUM", premium.toString());
                 await getVolatilityProxy();
-                console.log(
-                    "ALICE P BAL",
-                    (await prime.balanceOf(Alice)).toString(),
-                    "INTOKENP",
-                    inTokenP.toString()
-                );
                 let event = await pool.sell(inTokenP, {
                     from: Alice,
                 });
@@ -729,11 +719,11 @@ contract("PAMM Test", (accounts) => {
                     );
                 });
 
-                let balance1U = await getBalance(tokenU, Alice);
+                let balance1U = await getTokenBalance(tokenU, Alice);
                 let balance1P = await getTokenBalance(pool, Alice);
                 let balance1Prime = await getTokenBalance(prime, Alice);
-                let balance1R = await getBalance(redeem, pool.address);
-                let balance1S = await getBalance(tokenS, Alice);
+                let balance1R = await getTokenBalance(redeem, pool.address);
+                let balance1S = await getTokenBalance(tokenS, Alice);
                 let balance1CU = await getBalance(tokenU, pool.address);
                 let balance1TS = await getTotalSupply();
                 let balance1TP = await getTotalPoolBalance();
@@ -761,7 +751,14 @@ contract("PAMM Test", (accounts) => {
                 if (LOG_VERBOSE)
                     console.log("ESTIMATED PREMIUM", premium.toString());
 
-                let discountedPremium = premium.sub(premium.div(new BN(5)));
+                let premium = await getPremium();
+                premium = premium.sub(premium.div(new BN(5)));
+                premium = premium.mul(inTokenP).div(new BN(toWei("1")));
+
+                let discountedPremium =
+                    tokenU.address == weth.address
+                        ? new BN(await pool.MANTISSA()).div(premium)
+                        : premium;
                 let expectedDeltaU = deltaR
                     .mul(new BN(base))
                     .div(new BN(price));
@@ -802,26 +799,20 @@ contract("PAMM Test", (accounts) => {
         });
 
         it("should sell tokenP by paying some premium of tokenU", async () => {
-            await deposit(ONE_ETHER);
+            await deposit(TEN_ETHER);
             await buy(ONE_ETHER);
-            await sell(await pool.totalUtilized(prime.address));
+            await sell(
+                (
+                    (await pool.totalUtilized(prime.address)) - toWei("0.001")
+                ).toString()
+            );
         });
 
         it("should sell multiple orders of tokenP by paying some premium of tokenU", async () => {
-            await deposit(FIVE_ETHER);
-            await buy(ONE_ETHER);
-            console.log(
-                "ALICE BALANCE P BEFORE RUN",
-                (await prime.balanceOf(Alice)).toString()
-            );
+            await deposit(FIFTY_ETHER);
+            await buy(FIVE_ETHER);
             const run = async (runs) => {
                 for (let i = 0; i < runs; i++) {
-                    console.log(
-                        "[POOL REDEEM BAL",
-                        (await redeem.balanceOf(pool.address)).toString(),
-                        base.toString(),
-                        price.toString()
-                    );
                     let amt = Math.floor(HUNDRETH * Math.random()).toString();
                     await sell(amt);
                 }
@@ -919,11 +910,11 @@ contract("PAMM Test", (accounts) => {
             });
         });
         it("should be able to deposit, withdraw, and buy fluidly", async () => {
-            await deposit(FIFTY_ETHER);
+            await deposit(HUNDRED_ETHER);
             await buy(ONE_ETHER);
             const runDeposit = async (runs) => {
                 for (let i = 0; i < runs; i++) {
-                    let amt = Math.floor(TEN_ETHER * Math.random()).toString();
+                    let amt = Math.floor(ONE_ETHER * Math.random()).toString();
                     await deposit(amt);
                 }
             };
@@ -938,7 +929,6 @@ contract("PAMM Test", (accounts) => {
             const runBuy = async (runs) => {
                 for (let i = 0; i < runs; i++) {
                     let amt = Math.floor(ONE_ETHER * Math.random()).toString();
-                    console.log("BUY", amt.toString());
                     await buy(amt);
                 }
             };
@@ -973,14 +963,18 @@ contract("PAMM Test", (accounts) => {
         });
     });
 
-    /* describe("depositEth", () => {
-        before(async () => {
-            tokenU = weth;
-            tokenS = dai;
-            trader = await PrimeTrader.new(weth.address);
+    describe("Run Transactions with new option", () => {
+        beforeEach(async function() {
+            // Setup option parameters.
+            tokenU = dai;
+            tokenS = weth;
+            base = toWei("300");
+            price = toWei("1");
+            expiry = "1690868800"; // June 26, 2020, 0:00:00 UTC
 
+            // Call the deployOption function.
             Primitive = await newPrimitive(
-                factoryOption,
+                registry,
                 tokenU,
                 tokenS,
                 base,
@@ -988,143 +982,84 @@ contract("PAMM Test", (accounts) => {
                 expiry
             );
 
+            // Setup option contract instances.
             prime = Primitive.prime;
             redeem = Primitive.redeem;
 
-            // Setup prime oracle and feed for dai.
-            oracle = await PrimeOracle.new(oracleLike.address, weth.address);
-            await oracle.addFeed(tokenU.address);
-            await oracle.addFeed(tokenS.address);
-
-            pool = await PrimePool.new(
+            pool = await PrimeAMM.new(
                 weth.address,
                 prime.address,
                 oracle.address,
-                factory.address,
-                poolName,
-                poolSymbol
+                registry.address,
+                router.address
             );
-            tokenPULP = pool.address;
-
+            await prime.approve(trader.address, MILLION_ETHER, {
+                from: Alice,
+            });
+            await prime.approve(prime.address, MILLION_ETHER, {
+                from: Alice,
+            });
             await dai.approve(pool.address, MILLION_ETHER, {
                 from: Alice,
             });
             await weth.approve(pool.address, MILLION_ETHER, {
                 from: Alice,
             });
-            await dai.approve(trader.address, MILLION_ETHER, {
-                from: Alice,
-            });
-            await weth.approve(trader.address, MILLION_ETHER, {
-                from: Alice,
-            });
-            await prime.approve(trader.address, MILLION_ETHER, {
-                from: Alice,
-            });
-
             await prime.approve(pool.address, MILLION_ETHER, {
                 from: Alice,
             });
-
-            await prime.approve(prime.address, MILLION_ETHER, {
-                from: Alice,
-            });
-            depositEth = async (inTokenU) => {
-                inTokenU = new BN(inTokenU);
-                let balance0U = await getEthBalance(Alice);
-                let balance0P = await getTokenBalance(pool, Alice);
-                let balance0CU = await getBalance(tokenU, pool.address);
-                let balance0TS = await getTotalSupply();
-                let balance0TP = await getTotalPoolBalance();
-
-                let liquidity = calculateAddLiquidity(
-                    inTokenU,
-                    balance0TS,
-                    balance0TP
-                );
-
-                if (balance0U.lt(inTokenU)) {
-                    return;
-                }
-                await getVolatilityProxy();
-                let depo = await pool.depositEth({
-                    from: Alice,
-                    value: inTokenU,
-                });
-                await getVolatilityProxy();
-                truffleAssert.eventEmitted(depo, "Deposit", (ev) => {
-                    return (
-                        expect(ev.from).to.be.eq(Alice) &&
-                        expect(ev.inTokenU.toString()).to.be.eq(
-                            inTokenU.toString()
-                        ) &&
-                        expect(ev.outTokenPULP.toString()).to.be.eq(
-                            liquidity.toString()
-                        )
-                    );
-                });
-
-                let balance1U = await getEthBalance(Alice);
-                let balance1P = await getTokenBalance(pool, Alice);
-                let balance1CU = await getBalance(tokenU, pool.address);
-                let balance1TS = await getTotalSupply();
-                let balance1TP = await getTotalPoolBalance();
-
-                let deltaU = balance1U.sub(balance0U);
-                let deltaP = balance1P.sub(balance0P);
-                let deltaCU = balance1CU.sub(balance0CU);
-                let deltaTS = balance1TS.sub(balance0TS);
-                let deltaTP = balance1TP.sub(balance0TP);
-
-                assertBNEqual(deltaU, inTokenU.neg());
-                let slippage = new BN(MAX_SLIPPAGE);
-                let maxValue = inTokenU.add(inTokenU.div(slippage));
-                let minValue = inTokenU.sub(inTokenU.div(slippage));
-                expect(deltaU).to.be.a.bignumber.that.is.at.least(
-                    maxValue.neg()
-                );
-                expect(deltaU).to.be.a.bignumber.that.is.at.most(
-                    minValue.neg()
-                );
-                assertBNEqual(deltaP, liquidity);
-                assertBNEqual(deltaCU, inTokenU);
-                assertBNEqual(deltaTS, liquidity);
-                assertBNEqual(deltaTP, inTokenU);
-            };
         });
-
-        it("should revert if inTokenU is below the min liquidity", async () => {
-            await truffleAssert.reverts(
-                pool.depositEth({ value: 1 }),
-                ERR_BAL_UNDERLYING
-            );
-        });
-
-        it("should revert if outTokenPULP is 0", async () => {
-            await tokenU.deposit({ from: Alice, value: HUNDRED_ETHER });
-            await tokenU.transfer(pool.address, HUNDRED_ETHER, {
-                from: Alice,
-            });
-            let min = await pool.MIN_LIQUIDITY();
-            await pool.deposit(min);
-            await truffleAssert.reverts(
-                pool.depositEth({ value: min }),
-                ERR_ZERO_LIQUIDITY
-            );
-        });
-        it("check volatility", async () => {
-            await getVolatilityProxy();
-        });
-
-        it("should depositEth tokenU and receive tokenPULP", async () => {
-            const run = async (runs) => {
+        it("should be able to deposit, withdraw, and buy fluidly", async () => {
+            await deposit(FIFTY_ETHER);
+            await buy(ONE_ETHER);
+            const runDeposit = async (runs) => {
                 for (let i = 0; i < runs; i++) {
                     let amt = Math.floor(TEN_ETHER * Math.random()).toString();
-                    await depositEth(amt);
+                    await deposit(amt);
                 }
             };
 
-            await run(1);
+            const runWithdraw = async (runs) => {
+                for (let i = 0; i < runs; i++) {
+                    let amt = Math.floor(HUNDRETH * Math.random()).toString();
+                    await withdraw(amt);
+                }
+            };
+
+            const runBuy = async (runs) => {
+                for (let i = 0; i < runs; i++) {
+                    let amt = Math.floor(ONE_ETHER * Math.random()).toString();
+                    await buy(amt);
+                }
+            };
+
+            const runSell = async (runs) => {
+                for (let i = 0; i < runs; i++) {
+                    let amt = Math.floor(HUNDRETH * Math.random()).toString();
+                    await sell(amt);
+                }
+            };
+
+            const run = async (runs) => {
+                for (let i = 0; i < runs; i++) {
+                    await getVolatilityProxy();
+                    await runDeposit(1);
+                    await runBuy(1);
+                    if (new BN(await prime.balanceOf(Alice)).gt(new BN(0))) {
+                        await trader.safeExercise(
+                            prime.address,
+                            await prime.balanceOf(Alice),
+                            Alice
+                        );
+                    }
+                    await runBuy(1);
+                    await runSell(1);
+                    await runWithdraw(1);
+                    await getVolatilityProxy();
+                }
+            };
+
+            await run(3);
         });
-    }); */
+    });
 });

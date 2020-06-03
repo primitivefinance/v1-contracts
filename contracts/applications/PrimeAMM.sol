@@ -158,6 +158,7 @@ contract PrimeAMM is PrimePool {
         
         // Calculate total premium to pay. Premium should be in underlying token units.
         premium = outTokenP.mul(premium).div(ONE_ETHER);
+        if(tokenU == weth) premium = MANTISSA.div(premium);
         require(premium > 0, "ERR_PREMIUM_ZERO");
 
         // Pulls payment in tokenU from msg.sender and then pushes tokenP (option).
@@ -207,6 +208,7 @@ contract PrimeAMM is PrimePool {
         // Calculate total premium.
         // Units: tokenU * (tokenU / tokenS) / 10^18 units = total quantity tokenU price.
         premium = inTokenP.mul(premium).div(ONE_ETHER);
+        if(tokenU == weth) { premium = MANTISSA.div(premium); }
 
         // Check to see if pool has the premium to pay out.
         require(IERC20(tokenU).balanceOf(address(this)) >= premium, "ERR_BAL_UNDERLYING");
@@ -217,7 +219,7 @@ contract PrimeAMM is PrimePool {
 
         // Call the close function to close the option position and receive underlyings.
         (uint outTokenU) = _close(outTokenR, inTokenP);
-        assert(inTokenP == outTokenU);
+        assert(inTokenP >= outTokenU);
 
         // Pay out the total premium to the seller.
         emit Sell(msg.sender, inTokenP, premium);

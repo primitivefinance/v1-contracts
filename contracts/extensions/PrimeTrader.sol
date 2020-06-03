@@ -62,10 +62,10 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
     {
         require(amount > 0, "ERR_ZERO");
         require(IERC20(address(tokenP)).balanceOf(msg.sender) >= amount, "ERR_BAL_PRIME");
-        inTokenS = amount.mul(tokenP.price()).div(tokenP.base());
-        uint fee = inTokenS.div(1000);
+        inTokenS = amount.add(amount.div(1000)).mul(tokenP.price()).div(tokenP.base());
+        //uint fee = inTokenS.div(1000);
         require(IERC20(tokenP.tokenS()).balanceOf(msg.sender) >= inTokenS, "ERR_BAL_STRIKE");
-        IERC20(tokenP.tokenS()).transferFrom(msg.sender, address(tokenP), inTokenS.add(fee));
+        IERC20(tokenP.tokenS()).transferFrom(msg.sender, address(tokenP), inTokenS);
         IERC20(address(tokenP)).transferFrom(msg.sender, address(tokenP), amount);
         (inTokenS, inTokenP) = tokenP.exercise(receiver, amount, new bytes(0));
     }

@@ -56,7 +56,6 @@ contract PrimePerpetual is IPrimePerpetual, PrimePool {
         (uint outTokenU) = _removeLiquidity(msg.sender, inTokenPULP, totalBalance);
         swapFromInterestBearing(cusdc, outTokenU);
         (uint balanceU,) = balances();
-        require(balanceU >= outTokenU, "ERR_BAL_INSUFFICIENT");
         return IERC20(tokenU).transfer(msg.sender, outTokenU);
     }
 
@@ -136,7 +135,7 @@ contract PrimePerpetual is IPrimePerpetual, PrimePool {
      * @param amount Quantity of token to convert to cToken.
      */
     function swapToInterestBearing(address token, uint amount) internal returns (bool) {
-        (uint success ) = ICToken(token).mint(amount);
+        (uint success) = ICToken(token).mint(amount);
         require(success == 0, "ERR_CTOKEN_MINT");
         return success == 0;
     }
