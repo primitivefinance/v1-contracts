@@ -24,7 +24,7 @@ contract PrimeAMM is PrimePool {
     uint public volatility;
 
     address public oracle;
-    address public WETH;
+    address public weth;
     address public router;
 
     event Market(address tokenP);
@@ -41,14 +41,12 @@ contract PrimeAMM is PrimePool {
         public
         PrimePool(_tokenP, _factory)
     {
-        WETH = _weth;
+        weth = _weth;
         oracle = _oracle;
         router = _router;
         volatility = 500;
         IERC20(IPrime(_tokenP).tokenS()).approve(_router, 100000000 ether);
     }
-
-    receive() external payable {}
 
     /**
      * @dev Accepts deposits of underlying tokens.
@@ -110,7 +108,7 @@ contract PrimeAMM is PrimePool {
         assert(outTokenR == maxDraw);
 
         uint market = IPrimeOracle(oracle).marketPrice();
-        uint minOut = tokenS == WETH ? market : outTokenR.mul(ONE_ETHER).div(market);
+        uint minOut = tokenS == weth ? market : outTokenR.mul(ONE_ETHER).div(market);
 
         address[] memory path = new address[](2);
         path[0] = tokenS;
@@ -244,15 +242,15 @@ contract PrimeAMM is PrimePool {
      * @dev Calculates the amount of utilized tokenU assets outstanding.
      */
     function totalUtilized(address _tokenP) public view returns (uint utilized) {
-        // Assume tokenR is proportional to tokenS (WETH) at a 1:1 ratio.
+        // Assume tokenR is proportional to tokenS (weth) at a 1:1 ratio.
         // TokenR is always minted proportionally to the ratio between tokenU and tokenS (strike price).
         // Assume a ratio of 200 DAI per 1 ETH.
         // If 200 tokenU is used to mint a Prime, it will return 1 tokenR.
         // 1 tokenR * 200 (base) / 1 (price) = 200 tokenU utilized.
         // The returned value for `utilized` should always be greater than 1.
-        // TokenR is redeemable to tokenS at a 1:1 ratio (1 tokenR can be redeemed for 1 WETH).
+        // TokenR is redeemable to tokenS at a 1:1 ratio (1 tokenR can be redeemed for 1 weth).
         // The utilized amount of tokenU is therefore this calculation:
-        // (tokenR = tokenS = WETH) * Quantity of tokenU (base) / Quantity of tokenS (price).
+        // (tokenR = tokenS = weth) * Quantity of tokenU (base) / Quantity of tokenS (price).
         ( , , address tokenR, uint base, uint price, ) = IPrime(_tokenP).prime();
         utilized = IERC20(tokenR).balanceOf(address(this)).mul(base).div(price);
     }
@@ -282,15 +280,6 @@ contract PrimeAMM is PrimePool {
      */
     function marketRatio() public view returns(uint oraclePrice) {
         oraclePrice = IPrimeOracle(oracle).marketPrice();
-    }
-
-    /**
-     * @dev Utility function to send ethers safely.
-     */
-    function sendEther(address to, uint amount) private returns (bool) {
-        (bool success, ) = to.call.value(amount)("");
-        require(success, "ERR_SEND_ETHER");
-        return success;
     }
 }
 
