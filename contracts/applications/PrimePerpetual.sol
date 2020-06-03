@@ -81,13 +81,14 @@ contract PrimePerpetual is IPrimePerpetual, PrimePool {
         // against its previously cached balance. The difference is the amount of tokens that were
         // deposited, which determines how many Primes to mint.
         swapFromInterestBearing(cusdc, outTokenU);
-        (uint inTokenP) = _write(msg.sender, outTokenU);
+        (uint outTokenP) = _write(outTokenU);
 
         // Pull tokenS.
         IERC20(tokenS).transferFrom(msg.sender, address(this), payment);
         // Swap tokenS to interest bearing version.
         emit Insure(msg.sender, inTokenS, outTokenU);
-        return swapToInterestBearing(cdai, payment);
+        swapToInterestBearing(cdai, payment);
+        return IERC20(_tokenP).transfer(msg.sender, outTokenP);
     }
 
     /**
@@ -118,7 +119,8 @@ contract PrimePerpetual is IPrimePerpetual, PrimePool {
         require(IERC20(_tokenP).balanceOf(msg.sender) >= inTokenP, "ERR_BAL_PRIME");
 
         // Calculate amount of tokenS to push out.
-        uint outTokenS = inTokenP.mul(price).div(base); 
+        uint outTokenS = inTokenP.mul(price).div(base);
+        outTokenS = outTokenS.add(outTokenS.div(IPrime(_tokenP).FEE()));
 
         // Swap from interest bearing to push to msg.sender.
         swapFromInterestBearing(cdai, outTokenS);

@@ -54,8 +54,8 @@ contract("Perpetual", (accounts) => {
 
     before(async () => {
         // setup a factory to create the option from
-        factory = await newRegistry();
-        factoryOption = await newOptionFactory(factory);
+        registry = await newRegistry();
+        factoryOption = await newOptionFactory(registry);
         let usdc = await newERC20("Test USDC", "USDC", THOUSAND_ETHER);
         let dai = await newERC20("Test DAI", "DAI", THOUSAND_ETHER);
 
@@ -76,7 +76,7 @@ contract("Perpetual", (accounts) => {
         let expiry = "7258118400";
 
         let Primitive = await newPrimitive(
-            factory,
+            registry,
             usdc,
             dai,
             base,
@@ -107,7 +107,7 @@ contract("Perpetual", (accounts) => {
 
         createProtocol = async () => {
             Primitive = await newPrimitive(
-                factory,
+                registry,
                 Tokens.usdc,
                 Tokens.dai,
                 Parameters.base,
@@ -351,7 +351,6 @@ contract("Perpetual", (accounts) => {
                     let balance1CU = new BN(interestBalances.balanceU);
                     let balance1TS = await getTotalSupply(perpetual);
                     let balance1TP = await getTotalPoolBalance(perpetual);
-
                     let deltaU = balance1U.sub(balance0U);
                     let deltaP = balance1P.sub(balance0P);
                     let deltaS = balance1S.sub(balance0S);
@@ -557,7 +556,9 @@ contract("Perpetual", (accounts) => {
                                 inTokenP.toString()
                             ) &&
                             expect(ev.outTokenS.toString()).to.be.eq(
-                                outTokenS.toString()
+                                outTokenS
+                                    .add(outTokenS.div(new BN(1000)))
+                                    .toString()
                             )
                         );
                     });
@@ -589,10 +590,7 @@ contract("Perpetual", (accounts) => {
                     let deltaTS = balance1TS.sub(balance0TS);
                     let deltaTP = balance1TP.sub(balance0TP);
 
-                    assertBNEqual(
-                        deltaU,
-                        inTokenP.sub(inTokenP.div(new BN(1000)))
-                    );
+                    assertBNEqual(deltaU, inTokenP);
                     assertBNEqual(deltaS, ZERO);
                     assertBNEqual(deltaP, ZERO);
                     assertBNEqual(deltaPrime, outTokenS.neg());

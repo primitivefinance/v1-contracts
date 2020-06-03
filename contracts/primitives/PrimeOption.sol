@@ -19,7 +19,7 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
 
     Primitives.Option public option;
 
-    uint public constant FEE = 1000;
+    uint public override constant FEE = 1000;
     uint public override cacheU;
     uint public override cacheS;
     address public override tokenR;

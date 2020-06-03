@@ -58,7 +58,7 @@ contract PrimeOracle is IPrimeOracle {
         premium = (extrinsic.add(intrinsic));
 
         // If the premium is 0, return a minimum value.
-        premium = premium > 0 ? premium : MIN_PREMIUM;
+        premium = premium > MIN_PREMIUM ? premium : MIN_PREMIUM;
     }
 
     /**

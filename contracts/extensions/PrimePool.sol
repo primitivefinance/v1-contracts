@@ -72,7 +72,7 @@ contract PrimePool is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
         emit Withdraw(to, inTokenPULP, outTokenU);
     }
 
-    function _write(address receiver, uint outTokenU) internal returns (uint outTokenP) {
+    function _write(uint outTokenU) internal returns (uint outTokenP) {
         address _tokenP = tokenP;
         address tokenU = IPrime(_tokenP).tokenU();
         require(IERC20(tokenU).balanceOf(address(this)) >= outTokenU, "ERR_BAL_UNDERLYING");

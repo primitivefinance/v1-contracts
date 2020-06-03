@@ -50,7 +50,7 @@ const {
 const { MAX_SLIPPAGE } = constants.PARAMETERS;
 
 const LOG_VERBOSE = false;
-const LOG_VOL = true;
+const LOG_VOL = false;
 
 contract("PAMM Test", (accounts) => {
     // ACCOUNTS
@@ -117,7 +117,7 @@ contract("PAMM Test", (accounts) => {
 
         // Setup starting liquidity in test router.
         await dai.mint(router.address, toWei("1000"));
-        await weth.deposit({ value: toWei("100") });
+        await weth.deposit({ value: toWei("800") });
         await weth.transfer(router.address, toWei("100"));
 
         // Deploy a pool contract.
@@ -537,7 +537,7 @@ contract("PAMM Test", (accounts) => {
             await pool.deposit(ONE_ETHER);
             let balanceU = await tokenU.balanceOf(pool.address);
             await weth.deposit({ value: ONE_ETHER });
-            await weth.deposit({ value: THOUSAND_ETHER });
+            await weth.deposit({ value: HUNDRED_ETHER });
             await pool.buy(balanceU);
             await trader.safeExercise(
                 prime.address,
@@ -645,7 +645,7 @@ contract("PAMM Test", (accounts) => {
         });
 
         it("should buy tokenP by paying some premium of tokenU", async () => {
-            await deposit(ONE_ETHER);
+            await deposit(TEN_ETHER);
             await buy(ONE_ETHER);
         });
 
@@ -855,7 +855,7 @@ contract("PAMM Test", (accounts) => {
         });
         it("utilize the rest of the pool", async () => {
             if (tokenU.address == weth.address) {
-                await tokenU.deposit({ from: Alice, value: THOUSAND_ETHER });
+                await tokenU.deposit({ from: Alice, value: HUNDRED_ETHER });
             }
             await pool.deposit(ONE_ETHER, { from: Alice });
             let balanceCU = new BN(await tokenU.balanceOf(pool.address));

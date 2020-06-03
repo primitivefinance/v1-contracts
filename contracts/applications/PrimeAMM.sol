@@ -143,7 +143,7 @@ contract PrimeAMM is PrimePool {
         ) = IPrime(_tokenP).prime();
 
         // Optimistically mint option tokens to the msg.sender.
-        (outTokenP) = _write(msg.sender, outTokenP);
+        (outTokenP) = _write(outTokenP);
 
         // Calculates and then updates the volatility global state variable.
         volatility = calculateVolatilityProxy(_tokenP);

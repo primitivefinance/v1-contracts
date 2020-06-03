@@ -127,6 +127,25 @@ contract("Oracle contract", (accounts) => {
             };
         });
 
+        it("gets a zero premium, so returns the minimum", async () => {
+            let underlyingPrice = (0).toString();
+            let expiry = "2590753540"; // May 29 at 11:59 PM.
+            await oracleLike.setUnderlyingPrice(underlyingPrice);
+            let premium = await oracle.calculatePremium(
+                dai.address,
+                weth.address,
+                0,
+                1,
+                1,
+                expiry
+            );
+
+            assert.equal(
+                premium.toString(),
+                (await oracle.MIN_PREMIUM()).toString()
+            );
+        });
+
         it("sets the market price and then gets it", async () => {
             let underlyingPrice = (2.4e20).toString();
             await oracleLike.setUnderlyingPrice(underlyingPrice);
@@ -283,6 +302,25 @@ contract("Oracle contract", (accounts) => {
                 oracle.calculateIntrinsic(dai.address, dai.address, "1", "1"),
                 "ERR_ONLY_WETH_SUPPORT"
             );
+        });
+
+        it("should return 0 when call and market < strike", async () => {
+            let premium = await oracle.calculateIntrinsic(
+                weth.address,
+                dai.address,
+                toWei("1"),
+                ((await oracle.marketPrice()) + toWei("0.001")).toString()
+            );
+            assert.equal(premium.toString(), "0");
+        });
+        it("should return 0 when put and market > strike", async () => {
+            let premium = await oracle.calculateIntrinsic(
+                dai.address,
+                weth.address,
+                ((await oracle.marketPrice()) - toWei("0.001")).toString(),
+                toWei("1")
+            );
+            assert.equal(premium.toString(), "0");
         });
         it("Calculates intrinsic for arbritary put options and compares to market", async () => {
             let tokenU = dai.address;
