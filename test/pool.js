@@ -34,6 +34,7 @@ const {
     ONE_ETHER,
     FIVE_ETHER,
     TEN_ETHER,
+    FIFTY_ETHER,
     HUNDRED_ETHER,
     THOUSAND_ETHER,
     MILLION_ETHER,
@@ -918,7 +919,7 @@ contract("PAMM Test", (accounts) => {
             });
         });
         it("should be able to deposit, withdraw, and buy fluidly", async () => {
-            await deposit(TEN_ETHER);
+            await deposit(FIFTY_ETHER);
             await buy(ONE_ETHER);
             const runDeposit = async (runs) => {
                 for (let i = 0; i < runs; i++) {

@@ -18,6 +18,7 @@ const {
 const {
     ONE_ETHER,
     FIVE_ETHER,
+    FIFTY_ETHER,
     HUNDRED_ETHER,
     THOUSAND_ETHER,
     MILLION_ETHER,
@@ -69,6 +70,8 @@ contract("Prime Option Contract", (accounts) => {
 
         prime = Primitive.prime;
         redeem = Primitive.redeem;
+
+        await weth.deposit({ value: FIFTY_ETHER });
 
         getBalance = async (token, address) => {
             let bal = new BN(await token.balanceOf(address));
@@ -509,9 +512,16 @@ contract("Prime Option Contract", (accounts) => {
                 };
             });
 
-            it("revert if 0 tokenS and 0 tokenP were sent to contract", async () => {
+            it("revert if 0 tokenU requested to be taken out", async () => {
                 await truffleAssert.reverts(
                     prime.exercise(Alice, 0, []),
+                    ERR_ZERO
+                );
+            });
+
+            it("revert if not enough underlying tokens to take", async () => {
+                await truffleAssert.reverts(
+                    prime.exercise(Alice, ONE_ETHER, []),
                     ERR_BAL_UNDERLYING
                 );
             });
@@ -526,6 +536,23 @@ contract("Prime Option Contract", (accounts) => {
                     ERR_BAL_UNDERLYING
                 );
                 await prime.take();
+            });
+
+            it("reverts if 0 tokenS and 0 tokenU are sent into contract", async () => {
+                await mint(FIVE_ETHER);
+                await truffleAssert.reverts(
+                    prime.exercise(Alice, ONE_ETHER, [], { from: Alice }),
+                    ERR_ZERO
+                );
+            });
+
+            it("should revert because no tokenP were sent to contract", async () => {
+                await mint(FIVE_ETHER);
+                await tokenS.transfer(prime.address, price);
+                await truffleAssert.reverts(
+                    prime.exercise(Alice, ONE_ETHER, [], { from: Alice }),
+                    "ERR_BAL_INPUT"
+                );
             });
 
             it("exercises consecutively", async () => {

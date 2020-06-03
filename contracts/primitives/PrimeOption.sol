@@ -162,6 +162,7 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
 
         // Require outTokenU > 0, and cacheU > outTokenU.
         require(outTokenU > 0, "ERR_ZERO");
+        require(IERC20(_tokenU).balanceOf(address(this)) >= outTokenU, "ERR_BAL_UNDERLYING");
 
         // Optimistically transfer out tokenU.
         IERC20(_tokenU).transfer(receiver, outTokenU);
