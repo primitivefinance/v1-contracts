@@ -52,7 +52,7 @@ contract PrimePool is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
             outTokenPULP = inTokenU.mul(_totalSupply).div(totalBalance);
         }
 
-        require(outTokenPULP > uint(0) && outTokenPULP >= MIN_LIQUIDITY, "ERR_LIQUIDITY");
+        require(outTokenPULP > uint(0) && outTokenPULP >= MIN_LIQUIDITY, "ERR_ZERO_LIQUIDITY");
         _mint(to, outTokenPULP);
         emit Deposit(to, inTokenU, outTokenPULP);
     }
@@ -74,12 +74,13 @@ contract PrimePool is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
 
     function _write(address receiver, uint outTokenU) internal returns (uint outTokenP) {
         address _tokenP = tokenP;
-
+        address tokenU = IPrime(_tokenP).tokenU();
+        require(IERC20(tokenU).balanceOf(address(this)) >= outTokenU, "ERR_BAL_UNDERLYING");
         // Transfer underlying tokens to option contract.
-        IERC20(IPrime(_tokenP).tokenU()).transfer(_tokenP, outTokenU);
+        IERC20(tokenU).transfer(_tokenP, outTokenU);
 
         // Mint Prime and Prime Redeem to the receiver.
-        (outTokenP, ) = IPrime(_tokenP).mint(receiver);
+        (outTokenP, ) = IPrime(_tokenP).mint(address(this));
     }
 
     function _exercise(address receiver, uint outTokenS, uint inTokenP)

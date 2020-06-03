@@ -60,8 +60,7 @@ contract PrimeAMM is PrimePool {
         (uint totalBalance) = totalPoolBalance(_tokenP);
         (outTokenPULP) = _addLiquidity(_tokenP, msg.sender, inTokenU, totalBalance);
         require(
-            IERC20(tokenU).transferFrom(msg.sender, address(this), inTokenU) &&
-            inTokenU >= MIN_LIQUIDITY,
+            IERC20(tokenU).transferFrom(msg.sender, address(this), inTokenU),
             "ERR_BAL_UNDERLYING"
         );
         success = true;
@@ -108,12 +107,15 @@ contract PrimeAMM is PrimePool {
         (outTokenR) = _redeem(address(this), maxDraw);
         assert(outTokenR == maxDraw);
 
+        uint market = IPrimeOracle(oracle).marketPrice();
+        uint min = tokenU == WETH ? market : outTokenR.mul(ONE_ETHER).div(market);
+
         address[] memory path = new address[](2);
-        path[0] = tokenU;
-        path[1] = tokenS;
+        path[0] = tokenS;
+        path[1] = tokenU;
         IUniswapV2Router01(router).swapExactTokensForTokens(
             outTokenR,
-            0,
+            min,
             path,
             address(this),
             now + 3 minutes
@@ -161,7 +163,8 @@ contract PrimeAMM is PrimePool {
         // Pulls payment in tokenU from msg.sender and then pushes tokenP (option).
         // WARNING: Call to untrusted address msg.sender.
         emit Buy(msg.sender, outTokenU, premium);
-        return IERC20(tokenU).transferFrom(msg.sender, address(this), premium);
+        IERC20(tokenU).transferFrom(msg.sender, address(this), premium);
+        return IERC20(_tokenP).transfer(msg.sender, outTokenU);
     }
 
     /**
@@ -248,9 +251,8 @@ contract PrimeAMM is PrimePool {
         // TokenR is redeemable to tokenS at a 1:1 ratio (1 tokenR can be redeemed for 1 WETH).
         // The utilized amount of tokenU is therefore this calculation:
         // (tokenR = tokenS = WETH) * Quantity of tokenU (base) / Quantity of tokenS (price).
-        ( , , address tokenR, , uint price, ) = IPrime(_tokenP).prime();
-        (uint oraclePrice) = marketRatio();
-        utilized = IERC20(tokenR).balanceOf(address(this)).mul(oraclePrice).div(price);
+        ( , , address tokenR, uint base, uint price, ) = IPrime(_tokenP).prime();
+        utilized = IERC20(tokenR).balanceOf(address(this)).mul(base).div(price);
     }
 
     /**

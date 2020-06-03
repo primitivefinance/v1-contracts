@@ -92,7 +92,7 @@ contract("Prime Option Contract", (accounts) => {
         it("should set the fee receiver", async () => {
             await registry.setFeeReceiver(Alice);
             assert.equal(
-                (await redeem.feeReceiver()).toString(),
+                (await registry.feeReceiver()).toString(),
                 Alice,
                 "Incorrect fee receiver"
             );

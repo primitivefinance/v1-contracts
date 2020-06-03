@@ -280,12 +280,7 @@ contract("Oracle contract", (accounts) => {
 
         it("should revert is neither token is WETH", async () => {
             await truffleAssert.reverts(
-                await oracle.calculateIntrinsic(
-                    dai.address,
-                    dai.address,
-                    "1",
-                    "1"
-                ),
+                oracle.calculateIntrinsic(dai.address, dai.address, "1", "1"),
                 "ERR_ONLY_WETH_SUPPORT"
             );
         });
