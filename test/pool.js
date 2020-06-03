@@ -538,8 +538,12 @@ contract("PAMM Test", (accounts) => {
             let balanceU = await tokenU.balanceOf(pool.address);
             await weth.deposit({ value: ONE_ETHER });
             await pool.buy(balanceU);
+            await trader.safeExercise(
+                prime.address,
+                await prime.balanceOf(Alice),
+                Alice
+            );
             await getVolatilityProxy();
-            console.log((await prime.balanceOf(Alice)).toString());
             await truffleAssert.reverts(
                 pool.withdraw(balanceU),
                 "ERR_BAL_INSUFFICIENT"

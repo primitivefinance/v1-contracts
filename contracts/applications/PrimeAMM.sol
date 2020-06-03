@@ -17,6 +17,7 @@ contract PrimeAMM is PrimePool {
     using SafeMath for uint;
 
     uint public constant MANTISSA = 10**36;
+    uint public constant SLIPPAGE = 10**10;
     uint public constant ONE_ETHER = 1 ether;
     uint public constant DISCOUNT_RATE = 5;
     uint public constant MIN_VOLATILITY = 10**15;
@@ -44,6 +45,7 @@ contract PrimeAMM is PrimePool {
         oracle = _oracle;
         router = _router;
         volatility = 500;
+        IERC20(IPrime(_tokenP).tokenS()).approve(_router, 100000000 ether);
     }
 
     receive() external payable {}
@@ -108,14 +110,14 @@ contract PrimeAMM is PrimePool {
         assert(outTokenR == maxDraw);
 
         uint market = IPrimeOracle(oracle).marketPrice();
-        uint min = tokenU == WETH ? market : outTokenR.mul(ONE_ETHER).div(market);
+        uint minOut = tokenS == WETH ? market : outTokenR.mul(ONE_ETHER).div(market);
 
         address[] memory path = new address[](2);
         path[0] = tokenS;
         path[1] = tokenU;
         IUniswapV2Router01(router).swapExactTokensForTokens(
             outTokenR,
-            min,
+            minOut.sub(minOut.div(SLIPPAGE)),
             path,
             address(this),
             now + 3 minutes
@@ -157,7 +159,7 @@ contract PrimeAMM is PrimePool {
         );
         
         // Calculate total premium to pay. Premium should be in underlying token units.
-        premium = outTokenP.mul(premium).div(ONE_ETHER);
+        premium = MANTISSA.div(outTokenP.mul(premium).div(ONE_ETHER));
         require(premium > 0, "ERR_PREMIUM_ZERO");
 
         // Pulls payment in tokenU from msg.sender and then pushes tokenP (option).
