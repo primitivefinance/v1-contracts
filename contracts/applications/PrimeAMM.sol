@@ -58,7 +58,7 @@ contract PrimeAMM is PrimePool {
         address _tokenP = tokenP;
         address tokenU = IPrime(_tokenP).tokenU();
         (uint totalBalance) = totalPoolBalance(_tokenP);
-        (outTokenPULP) = _addLiquidity(_tokenP, msg.sender, inTokenU, totalBalance);
+        (outTokenPULP) = _addLiquidity(msg.sender, inTokenU, totalBalance);
         require(
             IERC20(tokenU).transferFrom(msg.sender, address(this), inTokenU),
             "ERR_BAL_UNDERLYING"
@@ -82,7 +82,7 @@ contract PrimeAMM is PrimePool {
 
         // If not enough available liquidity to draw, redeem and swap strike tokens.
         if(balanceU < outTokenU) {
-            (uint outTokenR) = _redeemAndSwapStrike(_tokenP, tokenU, tokenS, tokenR);
+            _redeemAndSwapStrike(_tokenP, tokenU, tokenS, tokenR);
         }
         require(balanceU >= outTokenU, "ERR_BAL_INSUFFICIENT");
         return IERC20(tokenU).transfer(msg.sender, outTokenU);

@@ -9,8 +9,7 @@ interface IPrimeTrader {
     );
     function safeExercise(IPrime tokenP, uint amount, address receiver) external returns (
         uint inTokenS,
-        uint inTokenP,
-        uint outTokenU
+        uint inTokenP
     );
     function safeRedeem(IPrime tokenP, uint amount, address receiver) external returns (
         uint inTokenR

@@ -37,19 +37,18 @@ contract PrimePool is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
     /**
      * @dev Private function to mint tokenPULP to depositor.
      */
-    function _addLiquidity(address _tokenP, address to, uint inTokenU, uint totalBalance)
+    function _addLiquidity(address to, uint inTokenU, uint poolBalance)
         internal
         returns (uint outTokenPULP)
     {
         // Mint LP tokens proportional to the Total LP Supply and Total Pool Balance.
         uint _totalSupply = totalSupply();
-        uint price = IPrime(_tokenP).price();
 
         // If liquidity is not intiialized, mint the initial liquidity.
         if(_totalSupply == 0) {
             outTokenPULP = inTokenU;
         } else {
-            outTokenPULP = inTokenU.mul(_totalSupply).div(totalBalance);
+            outTokenPULP = inTokenU.mul(_totalSupply).div(poolBalance);
         }
 
         require(outTokenPULP > uint(0) && outTokenPULP >= MIN_LIQUIDITY, "ERR_ZERO_LIQUIDITY");
@@ -57,7 +56,7 @@ contract PrimePool is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
         emit Deposit(to, inTokenU, outTokenPULP);
     }
 
-    function _removeLiquidity(address to, uint inTokenPULP, uint totalBalance)
+    function _removeLiquidity(address to, uint inTokenPULP, uint poolBalance)
         internal
         returns (uint outTokenU)
     {
@@ -65,7 +64,7 @@ contract PrimePool is IPrimePool, Ownable, Pausable, ReentrancyGuard, ERC20 {
         uint _totalSupply = totalSupply();
 
         // Calculate output amounts.
-        outTokenU = inTokenPULP.mul(totalBalance).div(_totalSupply);
+        outTokenU = inTokenPULP.mul(poolBalance).div(_totalSupply);
         require(outTokenU > uint(0), "ERR_ZERO");
         // Burn tokenPULP.
         _burn(to, inTokenPULP);

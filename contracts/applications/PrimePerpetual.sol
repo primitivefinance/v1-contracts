@@ -36,10 +36,9 @@ contract PrimePerpetual is IPrimePerpetual, PrimePool {
     function deposit(uint inTokenU) external override whenNotPaused nonReentrant
         returns (uint outTokenPULP, bool success)
     {
-        address _tokenP = tokenP;
         address tokenU = ICToken(cusdc).underlying();
-        (uint totalBalance) = totalBalance();
-        (outTokenPULP) = _addLiquidity(_tokenP, msg.sender, inTokenU, totalBalance);
+        (uint poolBalance) = totalBalance();
+        (outTokenPULP) = _addLiquidity(msg.sender, inTokenU, poolBalance);
         require(
             IERC20(tokenU).transferFrom(msg.sender, address(this), inTokenU) &&
             inTokenU >= MIN_LIQUIDITY,
@@ -50,12 +49,10 @@ contract PrimePerpetual is IPrimePerpetual, PrimePool {
     }
 
     function withdraw(uint inTokenPULP) external override whenNotPaused nonReentrant returns (bool) {
-        address _tokenP = tokenP;
         address tokenU = ICToken(cusdc).underlying();
-        (uint totalBalance) = totalBalance();
-        (uint outTokenU) = _removeLiquidity(msg.sender, inTokenPULP, totalBalance);
+        (uint poolBalance) = totalBalance();
+        (uint outTokenU) = _removeLiquidity(msg.sender, inTokenPULP, poolBalance);
         swapFromInterestBearing(cusdc, outTokenU);
-        (uint balanceU,) = balances();
         return IERC20(tokenU).transfer(msg.sender, outTokenU);
     }
 
@@ -66,7 +63,7 @@ contract PrimePerpetual is IPrimePerpetual, PrimePool {
     function mint(uint inTokenS) external override nonReentrant whenNotPaused returns (bool) {
         // Store in memory for gas savings.
         address _tokenP = tokenP;
-        (address tokenU, address tokenS, , uint base, uint price,) = IPrime(_tokenP).prime();
+        (, address tokenS, , uint base, uint price,) = IPrime(_tokenP).prime();
 
         // outTokenU = inTokenS * Quantity of tokenU (base) / Quantity of tokenS (price).
         // Units = tokenS * tokenU / tokenS = tokenU.
@@ -95,7 +92,7 @@ contract PrimePerpetual is IPrimePerpetual, PrimePool {
      */
     function redeem(uint inTokenP) external override nonReentrant returns (bool) {
         address _tokenP = tokenP;
-        (, address tokenS, address tokenR, uint base, uint price,) = IPrime(_tokenP).prime();
+        (, address tokenS, , uint base, uint price,) = IPrime(_tokenP).prime();
         require(IERC20(_tokenP).balanceOf(msg.sender) >= inTokenP, "ERR_BAL_PRIME");
 
         // Calculate amount of tokenS to push out.
@@ -114,7 +111,7 @@ contract PrimePerpetual is IPrimePerpetual, PrimePool {
 
     function exercise(uint inTokenP) external override nonReentrant returns (bool) {
         address _tokenP = tokenP;
-        (, address tokenS, address tokenR, uint base, uint price,) = IPrime(_tokenP).prime();
+        (, , , uint base, uint price,) = IPrime(_tokenP).prime();
         require(IERC20(_tokenP).balanceOf(msg.sender) >= inTokenP, "ERR_BAL_PRIME");
 
         // Calculate amount of tokenS to push out.
@@ -156,10 +153,10 @@ contract PrimePerpetual is IPrimePerpetual, PrimePool {
         balanceR = ICToken(cdai).balanceOfUnderlying(address(this));
     }
 
-    function totalBalance() public override view returns (uint totalBalance) {
+    function totalBalance() public override view returns (uint poolBalance) {
         (uint balanceU,) = interestBalances();
         (, , address tokenR, uint base, uint price,) = IPrime(tokenP).prime();
-        totalBalance = balanceU.add(IERC20(tokenR).balanceOf(address(this)).mul(base).div(price));
+        poolBalance = balanceU.add(IERC20(tokenR).balanceOf(address(this)).mul(base).div(price));
     }
 }
 

@@ -53,7 +53,7 @@ module.exports = {
         useColors: true,
     },
     etherscan: {
-        url: "https://api.etherscan.io/api",
+        url: "https://api-rinkeby.etherscan.io/api",
         apiKey: ETHERSCAN_APY_KEY,
     },
     gasReporter: {

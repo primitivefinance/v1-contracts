@@ -37,6 +37,6 @@ interface IPrime {
             uint _price,
             uint _expiry
     );
-    function initTokenR(address tokenR) external;
+    function initTokenR(address _tokenR) external;
     function FEE() external view returns (uint);
 }

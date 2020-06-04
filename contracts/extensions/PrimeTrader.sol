@@ -50,15 +50,11 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
      * @param amount Quantity of Prime options to exercise.
      * @param receiver The underlying tokens are sent to the receiver address.
      */
-    function safeExercise(
-        IPrime tokenP,
-        uint amount,
-        address receiver
-    )
+    function safeExercise(IPrime tokenP, uint amount, address receiver)
         external
         override
         nonReentrant
-        returns (uint inTokenS, uint inTokenP, uint outTokenU)
+        returns (uint inTokenS, uint inTokenP)
     {
         require(amount > 0, "ERR_ZERO");
         require(IERC20(address(tokenP)).balanceOf(msg.sender) >= amount, "ERR_BAL_PRIME");
