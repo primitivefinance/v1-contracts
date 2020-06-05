@@ -27,7 +27,6 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
     mapping(bytes32 => address) public options;
 
     event Deploy(address indexed from, address indexed tokenP, bytes32 indexed id);
-
     constructor() public { transferOwnership(msg.sender); }
 
     function initialize(address _factory, address _factoryRedeem) external override onlyOwner {
@@ -35,13 +34,7 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
         factoryRedeem = _factoryRedeem;
     }
 
-    function deployOption(
-        address tokenU,
-        address tokenS,
-        uint base,
-        uint price,
-        uint expiry
-    )
+    function deployOption(address tokenU, address tokenS, uint base, uint price, uint expiry)
         external
         override
         nonReentrant
@@ -76,23 +69,13 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
         len = activeOptions.length;
     }
 
-    function getId(
-        address tokenU,
-        address tokenS,
-        uint base,
-        uint price,
-        uint expiry
-    ) public pure returns (bytes32 id) {
+    function getId(address tokenU, address tokenS, uint base, uint price, uint expiry)
+        public pure returns (bytes32 id) {
         id = keccak256(abi.encodePacked(tokenU, tokenS, base, price, expiry));
     }
 
-    function getOption(
-        address tokenU,
-        address tokenS,
-        uint base,
-        uint price,
-        uint expiry
-    ) public view returns (address option) {
+    function getOption(address tokenU, address tokenS, uint base, uint price, uint expiry)
+        public view returns (address option) {
         option = options[getId(tokenU, tokenS, base, price, expiry)];
     }
 }
