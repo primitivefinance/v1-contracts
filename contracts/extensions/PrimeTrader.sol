@@ -1,8 +1,8 @@
 pragma solidity ^0.6.2;
 
 /**
- * @title   Primitive's Trader Contract
- * @notice  Safely interacts with the Prime Vanilla Option Primitive
+ * @title   Trader
+ * @notice  Abstracts the interfacing with the protocol for ease-of-use.
  * @author  Primitive
  */
 
@@ -13,7 +13,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
-    using SafeMath for uint256;
+    using SafeMath for uint;
 
     address payable public weth;
 
@@ -22,144 +22,90 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
     event Redeem(address indexed from, uint256 inTokenR);
     event Close(address indexed from, uint256 inTokenP);
 
-    constructor (address payable _weth) public {
-        weth = _weth;
-    }
+    constructor (address payable _weth) public { weth = _weth; }
 
     /**
      * @dev Mint Primes by depositing tokenU.
      * @notice Also mints Prime Redeem tokens. Calls msg.sender with transferFrom.
-     * @param tokenP The address of the Prime Option to trade with.
+     * @param tokenP The address of the Prime Option contract.
      * @param amount Quantity of Prime options to mint and tokenU to deposit.
      * @param receiver The newly minted tokens are sent to the receiver address.
      */
-    function safeMint(IPrime tokenP, uint256 amount, address receiver)
+    function safeMint(IPrime tokenP, uint amount, address receiver)
         external
-        nonReentrant
         override
-        returns (uint256 inTokenU, uint256 outTokenR)
+        nonReentrant
+        returns (uint inTokenU, uint outTokenR)
     {
         require(amount > 0, "ERR_ZERO");
-        address tokenU = tokenP.tokenU();
-        verifyBalance(
-            IERC20(tokenU).balanceOf(msg.sender),
-            amount,
-            "ERR_BAL_UNDERLYING"
-        );
-        require(
-            IERC20(tokenU).transferFrom(msg.sender, address(tokenP), amount),
-            "ERR_TRANSFER_IN_FAIL"
-        );
+        IERC20(tokenP.tokenU()).transferFrom(msg.sender, address(tokenP), amount);
         (inTokenU, outTokenR) = tokenP.mint(receiver);
         emit Mint(msg.sender, inTokenU, outTokenR);
     }
 
     /**
-     * @dev Swaps tokenS to tokenU using ratio as the exchange rate.
+     * @dev Swaps tokenS to tokenU using the strike ratio as the exchange rate.
      * @notice Burns Prime, contract receives tokenS, user receives tokenU.
-     * Calls msg.sender with transferFrom.
-     * @param amount Quantity of Primes to use to swap.
+     * @param tokenP The address of the Prime Option contract.
+     * @param amount Quantity of Prime options to exercise.
+     * @param receiver The underlying tokens are sent to the receiver address.
      */
-    function safeExercise(
-        IPrime tokenP,
-        uint256 amount,
-        address receiver
-    )
+    function safeExercise(IPrime tokenP, uint amount, address receiver)
         external
+        override
         nonReentrant
-        override returns (uint256 inTokenS, uint256 inTokenP, uint256 outTokenU)
+        returns (uint inTokenS, uint inTokenP)
     {
         require(amount > 0, "ERR_ZERO");
-        address tokenS = tokenP.tokenS();
-        verifyBalance(
-            IERC20(address(tokenP)).balanceOf(msg.sender),
-            amount,
-            "ERR_BAL_PRIME"
-        );
-
-        inTokenS = amount.mul(tokenP.price()).div(tokenP.base());
-        verifyBalance(
-            IERC20(tokenS).balanceOf(msg.sender),
-            inTokenS,
-            "ERR_BAL_STRIKE"
-        );
-        (bool inTransferS) = IERC20(tokenS).transferFrom(msg.sender, address(tokenP), inTokenS);
-        (bool inTransferP) = IERC20(address(tokenP)).transferFrom(msg.sender, address(tokenP), amount);
-        require(inTransferS && inTransferP, "ERR_TRANSFER_IN_FAIL");
+        require(IERC20(address(tokenP)).balanceOf(msg.sender) >= amount, "ERR_BAL_PRIME");
+        inTokenS = amount.add(amount.div(1000)).mul(tokenP.price()).div(tokenP.base());
+        //uint fee = inTokenS.div(1000);
+        require(IERC20(tokenP.tokenS()).balanceOf(msg.sender) >= inTokenS, "ERR_BAL_STRIKE");
+        IERC20(tokenP.tokenS()).transferFrom(msg.sender, address(tokenP), inTokenS);
+        IERC20(address(tokenP)).transferFrom(msg.sender, address(tokenP), amount);
         (inTokenS, inTokenP) = tokenP.exercise(receiver, amount, new bytes(0));
     }
 
     /**
      * @dev Burns Prime Redeem tokens to withdraw available tokenS.
-     * @notice inTokenR = outTokenS
-     * @param amount Quantity of Prime Redeem to spend.
+     * @notice inTokenR = outTokenS.
+     * @param tokenP The address of the Prime Option contract.
+     * @param amount Quantity of Redeems to burn.
+     * @param receiver The strike tokens are sent to the receiver address.
      */
-    function safeRedeem(
-        IPrime tokenP,
-        uint256 amount,
-        address receiver
-    )
+    function safeRedeem(IPrime tokenP, uint amount, address receiver)
         external
+        override
         nonReentrant
-        override returns (uint256 inTokenR)
+        returns (uint inTokenR)
     {
         require(amount > 0, "ERR_ZERO");
-        address tokenS = tokenP.tokenS();
-        address tokenR = tokenP.tokenR();
-
-        verifyBalance(
-            IERC20(tokenR).balanceOf(msg.sender),
-            amount,
-            "ERR_BAL_REDEEM"
-        );
-
-        // There can be the case there is no available tokenS to redeem.
-        // This is the first verification of a tokenS balance to draw from.
-        // There is a second verification in the redeem() function.
-        verifyBalance(
-            IERC20(tokenS).balanceOf(address(tokenP)),
-            amount,
-            "ERR_BAL_STRIKE"
-        );
-        IERC20(tokenR).transferFrom(msg.sender, address(tokenP), amount);
+        require(IERC20(tokenP.tokenR()).balanceOf(msg.sender) >= amount, "ERR_BAL_REDEEM");
+        // There can be the case there is no available tokenS to redeem, causing a revert.
+        IERC20(tokenP.tokenR()).transferFrom(msg.sender, address(tokenP), amount);
         (inTokenR) = tokenP.redeem(receiver);
         emit Redeem(msg.sender, inTokenR);
     }
 
     /**
      * @dev Burn Prime and Prime Redeem tokens to withdraw tokenU.
-     * @notice Takes paramter for quantity of Primes to burn.
-     * The Prime Redeems to burn is equal to the Primes * ratio.
+     * @notice The Prime Redeems to burn is equal to the Primes * strike ratio.
      * inTokenP = inTokenR / strike ratio = outTokenU
+     * @param tokenP The address of the Prime Option contract.
      * @param amount Quantity of Primes to burn.
+     * @param receiver The underlying tokens are sent to the receiver address.
      */
-    function safeClose(
-        IPrime tokenP,
-        uint256 amount,
-        address receiver
-    )
+    function safeClose(IPrime tokenP, uint amount, address receiver)
         external
+        override
         nonReentrant
-        override returns (uint256 inTokenR, uint256 inTokenP, uint256 outTokenU)
+        returns (uint inTokenR, uint inTokenP, uint outTokenU)
     {
         require(amount > 0, "ERR_ZERO");
-        address tokenR = tokenP.tokenR();
-
+        require(IERC20(address(tokenP)).balanceOf(msg.sender) >= amount, "ERR_BAL_PRIME");
         inTokenR = amount.mul(tokenP.price()).div(tokenP.base());
-
-        verifyBalance(
-            IERC20(tokenR).balanceOf(msg.sender),
-            inTokenR,
-            "ERR_BAL_REDEEM"
-        );
-
-        verifyBalance(
-            IERC20(address(tokenP)).balanceOf(msg.sender),
-            amount,
-            "ERR_BAL_PRIME"
-        );
-
-        IERC20(tokenR).transferFrom(msg.sender, address(tokenP), inTokenR);
+        require(IERC20(tokenP.tokenR()).balanceOf(msg.sender) >= inTokenR, "ERR_BAL_REDEEM");
+        IERC20(tokenP.tokenR()).transferFrom(msg.sender, address(tokenP), inTokenR);
         IERC20(address(tokenP)).transferFrom(msg.sender, address(tokenP), amount);
         (inTokenR, inTokenP, outTokenU) = tokenP.close(receiver);
         emit Close(msg.sender, inTokenP);
@@ -167,43 +113,22 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
 
     /**
      * @dev Burn Prime Redeem tokens to withdraw tokenU and tokenS from expired options.
-     * @notice Takes paramter for quantity of Primes to burn.
-     * The Prime Redeems to burn is equal to the Primes * ratio.
-     * @param amount Quantity of tokenU to withdraw.
+     * @param tokenP The address of the Prime Option contract.
+     * @param amount Quantity of Redeems to burn.
+     * @param receiver The underlying tokens are sent to the receiver address.
      */
-    function safeUnwind(
-        IPrime tokenP,
-        uint256 amount,
-        address receiver
-    )
+    function safeUnwind(IPrime tokenP, uint amount, address receiver)
         external
+        override
         nonReentrant
-        override returns (uint256 inTokenR, uint256 inTokenP, uint256 outTokenU)
+        returns (uint inTokenR, uint inTokenP, uint outTokenU)
     {
         require(amount > 0, "ERR_ZERO");
         require(tokenP.expiry() < block.timestamp, "ERR_NOT_EXPIRED");
-        address tokenR = tokenP.tokenR();
-
         inTokenR = amount.mul(tokenP.price()).div(tokenP.base());
-
-        verifyBalance(
-            IERC20(tokenR).balanceOf(msg.sender),
-            inTokenR,
-            "ERR_BAL_REDEEM"
-        );
-
-        IERC20(tokenR).transferFrom(msg.sender, address(tokenP), inTokenR);
+        require(IERC20(tokenP.tokenR()).balanceOf(msg.sender) >= inTokenR, "ERR_BAL_REDEEM");
+        IERC20(tokenP.tokenR()).transferFrom(msg.sender, address(tokenP), inTokenR);
         (inTokenR, inTokenP, outTokenU) = tokenP.close(receiver);
         emit Close(msg.sender, inTokenP);
-    }
-
-    function verifyBalance(
-        uint256 balance,
-        uint256 minBalance,
-        string memory errorCode
-    ) internal pure {
-        minBalance == 0 ?
-            require(balance > minBalance, errorCode) :
-            require(balance >= minBalance, errorCode);
     }
 }

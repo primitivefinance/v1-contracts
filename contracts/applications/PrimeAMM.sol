@@ -1,35 +1,34 @@
 pragma solidity ^0.6.2;
 
 /**
- * @title   Vanilla Option Exchange
+ * @title   Vanilla Option Automated Market Maker
  * @author  Primitive
  */
 
-import "./extensions/PrimePoolV1.sol";
-import "./interfaces/IWETH.sol";
-import "./interfaces/IPrime.sol";
-import "./interfaces/IPrimePool.sol";
-import "./interfaces/IPrimeOracle.sol";
-import "./interfaces/IUniswapV2Factory.sol";
-import "./interfaces/IUniswapV2Router01.sol";
+import "../extensions/PrimePool.sol";
+import "../interfaces/IWETH.sol";
+import "../interfaces/IPrime.sol";
+import "../interfaces/IPrimePool.sol";
+import "../interfaces/IPrimeOracle.sol";
+import "../interfaces/IUniswapV2Factory.sol";
+import "../interfaces/IUniswapV2Router01.sol";
 
-contract PrimeAMM is PrimePoolV1 {
+contract PrimeAMM is PrimePool {
     using SafeMath for uint;
 
-    uint public constant ONE_ETHER = 1 ether;
-    uint public constant MIN_VOLATILITY = 10**15;
     uint public constant MANTISSA = 10**36;
+    uint public constant SLIPPAGE = 10**10;
+    uint public constant ONE_ETHER = 1 ether;
     uint public constant DISCOUNT_RATE = 5;
-
+    uint public constant MIN_VOLATILITY = 10**15;
     uint public volatility;
 
-    // Assume oracle is compound's price proxy oracle.
     address public oracle;
-    address public WETH;
+    address public weth;
     address public router;
 
     event Market(address tokenP);
-    event Buy(address indexed from, uint inTokenS, uint outTokenU, uint premium);
+    event Buy(address indexed from, uint outTokenU, uint premium);
     event Sell(address indexed from, uint inTokenP, uint premium);
 
     constructor(
@@ -38,17 +37,16 @@ contract PrimeAMM is PrimePoolV1 {
         address _oracle,
         address _factory,
         address _router
-    ) 
+    )
         public
-        PrimePoolV1(_tokenP, _factory)
+        PrimePool(_tokenP, _factory)
     {
-        WETH = _weth;
+        weth = _weth;
         oracle = _oracle;
         router = _router;
-        volatility = 100;
+        volatility = 500;
+        IERC20(IPrime(_tokenP).tokenS()).approve(_router, 100000000 ether);
     }
-
-    receive() external payable {}
 
     /**
      * @dev Accepts deposits of underlying tokens.
@@ -60,10 +58,9 @@ contract PrimeAMM is PrimePoolV1 {
         address _tokenP = tokenP;
         address tokenU = IPrime(_tokenP).tokenU();
         (uint totalBalance) = totalPoolBalance(_tokenP);
-        (outTokenPULP) = _addLiquidity(_tokenP, msg.sender, inTokenU, totalBalance);
+        (outTokenPULP) = _addLiquidity(msg.sender, inTokenU, totalBalance);
         require(
-            IERC20(tokenU).transferFrom(msg.sender, address(this), inTokenU) &&
-            inTokenU >= MIN_LIQUIDITY,
+            IERC20(tokenU).transferFrom(msg.sender, address(this), inTokenU),
             "ERR_BAL_UNDERLYING"
         );
         success = true;
@@ -85,7 +82,7 @@ contract PrimeAMM is PrimePoolV1 {
 
         // If not enough available liquidity to draw, redeem and swap strike tokens.
         if(balanceU < outTokenU) {
-            (uint outTokenR) = _redeemAndSwapStrike(_tokenP, tokenU, tokenS, tokenR);
+            _redeemAndSwapStrike(_tokenP, tokenU, tokenS, tokenR);
         }
         require(balanceU >= outTokenU, "ERR_BAL_INSUFFICIENT");
         return IERC20(tokenU).transfer(msg.sender, outTokenU);
@@ -102,20 +99,23 @@ contract PrimeAMM is PrimePoolV1 {
         returns (uint outTokenR)
     {
         // Check how many tokenS can be pulled from PrimeOption.sol.
-        (uint maxDraw) = IPrime(_tokenP).maxDraw();
+        uint balanceR = IERC20(tokenR).balanceOf(address(this));
+        uint cacheS = IPrime(_tokenP).cacheS();
+        uint maxDraw = balanceR > cacheS ? cacheS : balanceR;
 
-        // Push tokenR to _tokenP so we can call redeem() and pull tokenS.
-        IERC20(tokenR).transfer(_tokenP, maxDraw);
-
-        // Call redeem function to pull tokenS.
-        outTokenR = IPrime(_tokenP).redeem(address(this));
+        // Redeem tokens.
+        (outTokenR) = _redeem(address(this), maxDraw);
         assert(outTokenR == maxDraw);
+
+        uint market = IPrimeOracle(oracle).marketPrice();
+        uint minOut = tokenS == weth ? market : outTokenR.mul(ONE_ETHER).div(market);
+
         address[] memory path = new address[](2);
-        path[0] = tokenU;
-        path[1] = tokenS;
+        path[0] = tokenS;
+        path[1] = tokenU;
         IUniswapV2Router01(router).swapExactTokensForTokens(
             outTokenR,
-            outTokenR,
+            minOut.sub(minOut.div(SLIPPAGE)),
             path,
             address(this),
             now + 3 minutes
@@ -123,14 +123,12 @@ contract PrimeAMM is PrimePoolV1 {
     }
 
     /**
-     * @dev Purchase ETH Put.
-     * @notice An eth put is 200 DAI / 1 ETH. The right to swap 1 ETH (tokenS) for 200 Dai (tokenU).
-     * As a user, you want to cover ETH, so you pay in ETH. Every 1 Quantity of ETH covers 200 DAI.
-     * A user specifies the amount of ETH they want covered, i.e. the amount of ETH they can swap.
-     * @param inTokenS The quantity of tokenS (ETH) to 'cover' with an option. Denominated in tokenS (WETH).
+     * @dev Purchase option tokens from the pool.
+     * @notice The underlying token is what is purchasable using the strike token.
+     * @param outTokenP The quantity of options to buy, which allow the purchase of 1:1 tokenU.
      * @return bool True if the msg.sender receives tokenP.
      */
-    function buy(uint inTokenS) external nonReentrant returns (bool) {
+    function buy(uint outTokenP) external nonReentrant returns (bool) {
         // Store in memory for gas savings.
         address _tokenP = tokenP;
         (
@@ -142,24 +140,11 @@ contract PrimeAMM is PrimePoolV1 {
             uint expiry
         ) = IPrime(_tokenP).prime();
 
-        // Optimistically mint tokenP.
+        // Optimistically mint option tokens to the msg.sender.
+        (outTokenP) = _write(outTokenP);
 
-        // outTokenU = inTokenS * Quantity of tokenU (base) / Quantity of tokenS (price).
-        // Units = tokenS * tokenU / tokenS = tokenU.
-        uint outTokenU = inTokenS.mul(base).div(price); 
-
-        // Transfer tokenU (assume DAI) to option contract using Pool funds.
-        // We do this because the mint function in the Prime contract will check the balance,
-        // against its previously cached balance. The difference is the amount of tokens that were
-        // deposited, which determines how many Primes to mint.
-        require(IERC20(tokenU).balanceOf(address(this)) >= outTokenU, "ERR_BAL_UNDERLYING");
-        (bool transferU) = IERC20(tokenU).transfer(_tokenP, outTokenU);
-
-        // Mint Prime and Prime Redeem to this contract.
-        // If outTokenU is zero because the numerator is smaller than the denominator,
-        // or because the inTokenS is 0, the mint function will revert. This is because
-        // the mint function only works when tokens are sent into the Prime contract.
-        (uint inTokenP, ) = IPrime(_tokenP).mint(address(this));
+        // Calculates and then updates the volatility global state variable.
+        volatility = calculateVolatilityProxy(_tokenP);
         
         // Calculate premium. Denominated in tokenU PER tokenS 'covered'.
         (uint premium) = IPrimeOracle(oracle).calculatePremium(
@@ -171,25 +156,20 @@ contract PrimeAMM is PrimePoolV1 {
             expiry
         );
         
-        // Calculate total premium to pay, total premium = premium per tokenS * inTokenS.
-        // Units = tokenS * (tokenU / tokenS) / 10^18 units = tokenU.
-        premium = inTokenS.mul(premium).div(ONE_ETHER);
+        // Calculate total premium to pay. Premium should be in underlying token units.
+        premium = outTokenP.mul(premium).div(ONE_ETHER);
+        if(tokenU == weth) premium = MANTISSA.div(premium);
         require(premium > 0, "ERR_PREMIUM_ZERO");
 
-        // Updates the volatility global state variable.
-        volatility = calculateVolatilityProxy(_tokenP);
-
         // Pulls payment in tokenU from msg.sender and then pushes tokenP (option).
-        // WARNING: Two calls to untrusted addresses.
-        require(IERC20(tokenU).balanceOf(msg.sender) >= premium, "ERR_BAL_UNDERLYING");
-        require(IERC20(_tokenP).balanceOf(address(this)) >= inTokenP, "ERR_BAL_PRIME");
-        emit Buy(msg.sender, inTokenS, outTokenU, premium);
-        (bool received) = IERC20(tokenU).transferFrom(msg.sender, address(this), premium);
-        return received && transferU && IERC20(_tokenP).transfer(msg.sender, inTokenP);
+        // WARNING: Call to untrusted address msg.sender.
+        emit Buy(msg.sender, outTokenP, premium);
+        IERC20(tokenU).transferFrom(msg.sender, address(this), premium);
+        return IERC20(_tokenP).transfer(msg.sender, outTokenP);
     }
 
     /**
-     * @dev Sell Prime options back to the pool.
+     * @dev Sell options to the pool.
      * @notice The pool buys options at a discounted rate based on the current premium price.
      * @param inTokenP The amount of Prime option tokens that are being sold.
      */
@@ -228,22 +208,18 @@ contract PrimeAMM is PrimePoolV1 {
         // Calculate total premium.
         // Units: tokenU * (tokenU / tokenS) / 10^18 units = total quantity tokenU price.
         premium = inTokenP.mul(premium).div(ONE_ETHER);
+        if(tokenU == weth) { premium = MANTISSA.div(premium); }
 
         // Check to see if pool has the premium to pay out.
         require(IERC20(tokenU).balanceOf(address(this)) >= premium, "ERR_BAL_UNDERLYING");
         
         // Calculate amount of redeem needed to close position with inTokenU.
-        uint redeem = inTokenP.mul(price).div(base);
+        uint outTokenR = inTokenP.mul(price).div(base);
+        require(IERC20(tokenR).balanceOf(address(this)) >= outTokenR, "ERR_BAL_REDEEM");
 
-        // Transfer redeem to prime token optimistically.
-        IERC20(tokenR).transfer(tokenP, redeem);
-
-        // Transfer prime token to prime contract optimistically.
-        require(IERC20(_tokenP).transferFrom(msg.sender, tokenP, inTokenP), "ERR_TRANSFER_IN_PRIME");
-        
-        // Call the close function to have the transferred prime and redeem tokens burned.
-        // Returns tokenU.
-        IPrime(_tokenP).close(address(this));
+        // Call the close function to close the option position and receive underlyings.
+        (uint outTokenU) = _close(outTokenR, inTokenP);
+        assert(inTokenP >= outTokenU);
 
         // Pay out the total premium to the seller.
         emit Sell(msg.sender, inTokenP, premium);
@@ -268,18 +244,17 @@ contract PrimeAMM is PrimePoolV1 {
      * @dev Calculates the amount of utilized tokenU assets outstanding.
      */
     function totalUtilized(address _tokenP) public view returns (uint utilized) {
-        // Assume tokenR is proportional to tokenS (WETH) at a 1:1 ratio.
+        // Assume tokenR is proportional to tokenS (weth) at a 1:1 ratio.
         // TokenR is always minted proportionally to the ratio between tokenU and tokenS (strike price).
         // Assume a ratio of 200 DAI per 1 ETH.
         // If 200 tokenU is used to mint a Prime, it will return 1 tokenR.
         // 1 tokenR * 200 (base) / 1 (price) = 200 tokenU utilized.
         // The returned value for `utilized` should always be greater than 1.
-        // TokenR is redeemable to tokenS at a 1:1 ratio (1 tokenR can be redeemed for 1 WETH).
+        // TokenR is redeemable to tokenS at a 1:1 ratio (1 tokenR can be redeemed for 1 weth).
         // The utilized amount of tokenU is therefore this calculation:
-        // (tokenR = tokenS = WETH) * Quantity of tokenU (base) / Quantity of tokenS (price).
-        ( , , address tokenR, , uint price, ) = IPrime(_tokenP).prime();
-        (uint oraclePrice) = marketRatio(_tokenP);
-        utilized = IERC20(tokenR).balanceOf(address(this)).mul(oraclePrice).div(price);
+        // (tokenR = tokenS = weth) * Quantity of tokenU (base) / Quantity of tokenS (price).
+        ( , , address tokenR, uint base, uint price, ) = IPrime(_tokenP).prime();
+        utilized = IERC20(tokenR).balanceOf(address(this)).mul(base).div(price);
     }
 
     /**
@@ -298,26 +273,6 @@ contract PrimeAMM is PrimePoolV1 {
         // Unutilized is the balance of tokenU in the contract. Utilized is outstanding tokenU.
         // Utilized assets are held in the Prime contract waiting to be exercised or expired.
         totalBalance = totalUnutilized(_tokenP).add(totalUtilized(_tokenP));
-    }
-
-    /**
-     * @dev Utility function to get the market ratio of tokenS denominated in tokenU.
-     * @notice Assumes the getUnderlyingPrice function call from the oracle never returns
-     * a value greater than 1e36 (MANTISSA).
-     */
-    function marketRatio(address _tokenP) public view returns(uint oraclePrice) {
-        address _tokenU = IPrime(_tokenP).tokenU();
-        address token = _tokenU == WETH ? IPrime(_tokenP).tokenS() : _tokenU;
-        oraclePrice = MANTISSA.div(IPrimeOracle(oracle).marketPrice(token));
-    }
-
-    /**
-     * @dev Utility function to send ethers safely.
-     */
-    function sendEther(address to, uint amount) private returns (bool) {
-        (bool success, ) = to.call.value(amount)("");
-        require(success, "ERR_SEND_ETHER");
-        return success;
     }
 }
 
