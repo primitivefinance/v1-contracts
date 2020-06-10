@@ -64,8 +64,8 @@ async function main() {
     router = await UniRouter.new(dai.address, weth.address, oracle.address);
 
     // Seed router with liquidity.
-    await dai.mint(router.address, toWei("1000"));
-    await weth.mint(router.address, toWei("1000"));
+    await dai.mint(router.address, MILLION_ETHER);
+    await weth.mint(router.address, MILLION_ETHER);
 
     // Deploy a pool contract.
     pool = await PrimeAMM.new(
