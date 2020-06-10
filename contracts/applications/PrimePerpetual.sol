@@ -5,12 +5,12 @@ pragma solidity ^0.6.2;
  * @author  Primitive
  */
 
-import "./extensions/PrimePoolV1.sol";
-import "./interfaces/IPrime.sol";
-import "./interfaces/ICToken.sol";
-import "./interfaces/IPrimePerpetual.sol";
+import "../extensions/PrimePool.sol";
+import "../interfaces/IPrime.sol";
+import "../interfaces/ICToken.sol";
+import "../interfaces/IPrimePerpetual.sol";
 
-contract PrimePerpetual is IPrimePerpetual, PrimePoolV1 {
+contract PrimePerpetual is IPrimePerpetual, PrimePool {
     using SafeMath for uint;
 
     address public override cdai;
@@ -24,7 +24,7 @@ contract PrimePerpetual is IPrimePerpetual, PrimePoolV1 {
     event Swap(address indexed from, uint inTokenP, uint outTokenS);
 
     constructor(address _cdai, address _cusdc, address _tokenP, address _factory)
-        public PrimePoolV1(_tokenP, _factory)
+        public PrimePool(_tokenP, _factory)
     {
         fee = 1e15;
         cdai = _cdai;
@@ -36,10 +36,9 @@ contract PrimePerpetual is IPrimePerpetual, PrimePoolV1 {
     function deposit(uint inTokenU) external override whenNotPaused nonReentrant
         returns (uint outTokenPULP, bool success)
     {
-        address _tokenP = tokenP;
         address tokenU = ICToken(cusdc).underlying();
-        (uint totalBalance) = totalBalance();
-        (outTokenPULP) = _addLiquidity(_tokenP, msg.sender, inTokenU, totalBalance);
+        (uint poolBalance) = totalBalance();
+        (outTokenPULP) = _addLiquidity(msg.sender, inTokenU, poolBalance);
         require(
             IERC20(tokenU).transferFrom(msg.sender, address(this), inTokenU) &&
             inTokenU >= MIN_LIQUIDITY,
@@ -50,13 +49,10 @@ contract PrimePerpetual is IPrimePerpetual, PrimePoolV1 {
     }
 
     function withdraw(uint inTokenPULP) external override whenNotPaused nonReentrant returns (bool) {
-        address _tokenP = tokenP;
         address tokenU = ICToken(cusdc).underlying();
-        (uint totalBalance) = totalBalance();
-        (uint outTokenU) = _removeLiquidity(msg.sender, inTokenPULP, totalBalance);
+        (uint poolBalance) = totalBalance();
+        (uint outTokenU) = _removeLiquidity(msg.sender, inTokenPULP, poolBalance);
         swapFromInterestBearing(cusdc, outTokenU);
-        (uint balanceU,) = balances();
-        require(balanceU >= outTokenU, "ERR_BAL_INSUFFICIENT");
         return IERC20(tokenU).transfer(msg.sender, outTokenU);
     }
 
@@ -67,8 +63,7 @@ contract PrimePerpetual is IPrimePerpetual, PrimePoolV1 {
     function mint(uint inTokenS) external override nonReentrant whenNotPaused returns (bool) {
         // Store in memory for gas savings.
         address _tokenP = tokenP;
-        (address tokenU, address tokenS, , uint base, uint price,) = IPrime(_tokenP).prime();
-
+        (, address tokenS, , uint base, uint price,) = IPrime(_tokenP).prime();
 
         // outTokenU = inTokenS * Quantity of tokenU (base) / Quantity of tokenS (price).
         // Units = tokenS * tokenU / tokenS = tokenU.
@@ -82,25 +77,14 @@ contract PrimePerpetual is IPrimePerpetual, PrimePoolV1 {
         // against its previously cached balance. The difference is the amount of tokens that were
         // deposited, which determines how many Primes to mint.
         swapFromInterestBearing(cusdc, outTokenU);
-        require(IERC20(tokenU).balanceOf(address(this)) >= outTokenU, "ERR_BAL_UNDERLYING");
-        (bool transferU) = IERC20(tokenU).transfer(_tokenP, outTokenU);
-
-        // Mint Prime and Prime Redeem to this contract.
-        // If outTokenU is zero because the numerator is smaller than the denominator,
-        // or because the inTokenS is 0, the mint function will revert. This is because
-        // the mint function only works when tokens are sent into the Prime contract.
-        (uint inTokenP, ) = IPrime(_tokenP).mint(address(this));
-
-        // Pulls payment in tokenS from msg.sender and then pushes tokenP (option).
-        // WARNING: Two calls to untrusted addresses.
-        assert(IERC20(_tokenP).balanceOf(address(this)) >= inTokenP);
-        emit Insure(msg.sender, inTokenS, outTokenU);
+        (uint outTokenP) = _write(outTokenU);
 
         // Pull tokenS.
-        (bool received) = IERC20(tokenS).transferFrom(msg.sender, address(this), payment);
+        IERC20(tokenS).transferFrom(msg.sender, address(this), payment);
         // Swap tokenS to interest bearing version.
+        emit Insure(msg.sender, inTokenS, outTokenU);
         swapToInterestBearing(cdai, payment);
-        return received && transferU && IERC20(_tokenP).transfer(msg.sender, inTokenP);
+        return IERC20(_tokenP).transfer(msg.sender, outTokenP);
     }
 
     /**
@@ -108,7 +92,7 @@ contract PrimePerpetual is IPrimePerpetual, PrimePoolV1 {
      */
     function redeem(uint inTokenP) external override nonReentrant returns (bool) {
         address _tokenP = tokenP;
-        (, address tokenS, address tokenR, uint base, uint price,) = IPrime(_tokenP).prime();
+        (, address tokenS, , uint base, uint price,) = IPrime(_tokenP).prime();
         require(IERC20(_tokenP).balanceOf(msg.sender) >= inTokenP, "ERR_BAL_PRIME");
 
         // Calculate amount of tokenS to push out.
@@ -117,39 +101,28 @@ contract PrimePerpetual is IPrimePerpetual, PrimePoolV1 {
         // Swap from interest bearing to push to msg.sender.
         swapFromInterestBearing(cdai, outTokenS);
 
-        // Assume this is DAI
-        assert(IERC20(tokenS).balanceOf(address(this)) >= outTokenS);
-
         // Transfer redeemed amount to msg.sender and option tokens to prime option.
         IERC20(tokenS).transfer(msg.sender, outTokenS);
-        IERC20(_tokenP).transferFrom(msg.sender, _tokenP, inTokenP);
-        IERC20(tokenR).transfer(_tokenP, outTokenS);
 
-        // Close the position, allowing the tokenU to return to the pool.
-        IPrime(_tokenP).close(address(this));
+        // Close the option position by burning prime and redeem tokens.
+        _close(outTokenS, inTokenP);
         emit Redemption(msg.sender, inTokenP, outTokenS);
     }
 
     function exercise(uint inTokenP) external override nonReentrant returns (bool) {
         address _tokenP = tokenP;
-        (, address tokenS, address tokenR, uint base, uint price,) = IPrime(_tokenP).prime();
+        (, , , uint base, uint price,) = IPrime(_tokenP).prime();
         require(IERC20(_tokenP).balanceOf(msg.sender) >= inTokenP, "ERR_BAL_PRIME");
 
         // Calculate amount of tokenS to push out.
-        uint outTokenS = inTokenP.mul(price).div(base); 
+        uint outTokenS = inTokenP.mul(price).div(base);
+        outTokenS = outTokenS.add(outTokenS.div(IPrime(_tokenP).FEE()));
 
         // Swap from interest bearing to push to msg.sender.
         swapFromInterestBearing(cdai, outTokenS);
 
-        // Assume this is DAI
-        assert(IERC20(tokenS).balanceOf(address(this)) >= outTokenS);
-
-        // Transfer strike and option tokens to prime option in order to exercise.
-        IERC20(tokenS).transfer(_tokenP, outTokenS);
-        IERC20(_tokenP).transferFrom(msg.sender, _tokenP, inTokenP);
-
-        // Close the position, allowing the tokenU to return to the pool.
-        IPrime(_tokenP).exercise(msg.sender, inTokenP, new bytes(0));
+        // Exercise the options.
+        _exercise(msg.sender, outTokenS, inTokenP);
         emit Swap(msg.sender, inTokenP, outTokenS);
     }
 
@@ -159,7 +132,7 @@ contract PrimePerpetual is IPrimePerpetual, PrimePoolV1 {
      * @param amount Quantity of token to convert to cToken.
      */
     function swapToInterestBearing(address token, uint amount) internal returns (bool) {
-        (uint success ) = ICToken(token).mint(amount);
+        (uint success) = ICToken(token).mint(amount);
         require(success == 0, "ERR_CTOKEN_MINT");
         return success == 0;
     }
@@ -180,10 +153,10 @@ contract PrimePerpetual is IPrimePerpetual, PrimePoolV1 {
         balanceR = ICToken(cdai).balanceOfUnderlying(address(this));
     }
 
-    function totalBalance() public override view returns (uint totalBalance) {
+    function totalBalance() public override view returns (uint poolBalance) {
         (uint balanceU,) = interestBalances();
         (, , address tokenR, uint base, uint price,) = IPrime(tokenP).prime();
-        totalBalance = balanceU.add(IERC20(tokenR).balanceOf(address(this)).mul(base).div(price));
+        poolBalance = balanceU.add(IERC20(tokenR).balanceOf(address(this)).mul(base).div(price));
     }
 }
 

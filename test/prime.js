@@ -5,23 +5,39 @@ const utils = require("./utils");
 const setup = require("./setup");
 const constants = require("./constants");
 const { toWei, assertBNEqual, verifyOptionInvariants } = utils;
-const { newERC20, newWeth, newOptionFactory, newPrimitive } = setup;
+const {
+    newERC20,
+    newWeth,
+    newRegistry,
+    newOptionFactory,
+    newPrimitive,
+    newTestOption,
+    newTestRedeem,
+    newBadERC20,
+} = setup;
 const {
     ONE_ETHER,
     FIVE_ETHER,
+    FIFTY_ETHER,
+    HUNDRED_ETHER,
     THOUSAND_ETHER,
     MILLION_ETHER,
 } = constants.VALUES;
 
 const {
-    ERR_BAL_UNDERLYING,
     ERR_ZERO,
-    ERR_BAL_STRIKE,
+    ERR_PAUSED,
+    ERR_EXPIRED,
     ERR_NOT_VALID,
     ERR_NOT_OWNER,
+    ERR_BAL_STRIKE,
+    ERR_BAL_UNDERLYING,
 } = constants.ERR_CODES;
 
-contract("Prime", (accounts) => {
+const { ZERO_ADDRESS } = constants.ADDRESSES;
+const PrimeOptionTest = artifacts.require("PrimeOptionTest");
+
+contract("Prime Option Contract", (accounts) => {
     // ACCOUNTS
     const Alice = accounts[0];
     const Bob = accounts[1];
@@ -29,26 +45,22 @@ contract("Prime", (accounts) => {
     let weth, dai, prime, redeem;
     let tokenU, tokenS;
     let base, price, expiry;
-    let factory, Primitive;
+    let registry, factoryOption, Primitive;
 
     before(async () => {
         weth = await newWeth();
         dai = await newERC20("TEST DAI", "DAI", MILLION_ETHER);
-        factory = await newOptionFactory();
-
-        optionName = "Primitive V1 Vanilla Option";
-        optionSymbol = "PRIME";
-        redeemName = "Primitive Strike Redeem";
-        redeemSymbol = "REDEEM";
+        registry = await newRegistry();
+        factoryOption = await newOptionFactory(registry);
 
         tokenU = dai;
         tokenS = weth;
         base = toWei("200");
         price = toWei("1");
-        expiry = "1590868800"; // May 30, 2020, 8PM UTC
+        expiry = "1690868800"; // May 30, 2020, 8PM UTC
 
         Primitive = await newPrimitive(
-            factory,
+            registry,
             tokenU,
             tokenS,
             base,
@@ -58,6 +70,8 @@ contract("Prime", (accounts) => {
 
         prime = Primitive.prime;
         redeem = Primitive.redeem;
+
+        await weth.deposit({ value: FIFTY_ETHER });
 
         getBalance = async (token, address) => {
             let bal = new BN(await token.balanceOf(address));
@@ -77,26 +91,48 @@ contract("Prime", (accounts) => {
         };
     });
 
+    describe("Registry", () => {
+        it("should set the fee receiver", async () => {
+            await registry.setFeeReceiver(Alice);
+            assert.equal(
+                (await registry.feeReceiver()).toString(),
+                Alice,
+                "Incorrect fee receiver"
+            );
+            await registry.optionsLength();
+        });
+
+        it("should get the option", async () => {
+            let option = await registry.getOption(
+                tokenU.address,
+                tokenS.address,
+                base,
+                price,
+                expiry
+            );
+            assert.equal(option, prime.address, "Incorrect option address");
+        });
+
+        it("reverts if one of the tokens in an option is address zero", async () => {
+            await truffleAssert.reverts(
+                registry.deployOption(
+                    ZERO_ADDRESS,
+                    tokenS.address,
+                    base,
+                    price,
+                    expiry
+                ),
+                "ERR_ADDRESS"
+            );
+        });
+    });
+
     describe("Prime Redeem", () => {
         it("should return the correct controller", async () => {
             assert.equal(
                 (await redeem.factory()).toString(),
-                factory.address,
+                registry.address,
                 "Incorrect controller"
-            );
-        });
-        it("should return the correct name", async () => {
-            assert.equal(
-                (await redeem.name()).toString(),
-                redeemName,
-                "Incorrect name"
-            );
-        });
-        it("should return the correct symbol", async () => {
-            assert.equal(
-                (await redeem.symbol()).toString(),
-                redeemSymbol,
-                "Incorrect symbol"
             );
         });
         it("should return the correct tokenP", async () => {
@@ -121,22 +157,6 @@ contract("Prime", (accounts) => {
         });
     });
     describe("Prime Option", () => {
-        it("should return the correct name", async () => {
-            assert.equal(
-                (await prime.name()).toString(),
-                optionName,
-                "Incorrect name"
-            );
-        });
-
-        it("should return the correct symbol", async () => {
-            assert.equal(
-                (await prime.symbol()).toString(),
-                optionSymbol,
-                "Incorrect symbol"
-            );
-        });
-
         it("should return the correct tokenU", async () => {
             assert.equal(
                 (await prime.tokenU()).toString(),
@@ -251,24 +271,8 @@ contract("Prime", (accounts) => {
         it("should return the correct initial factory", async () => {
             assert.equal(
                 (await prime.factory()).toString(),
-                factory.address,
+                factoryOption.address,
                 "Incorrect factory"
-            );
-        });
-
-        it("should return the correct name for redeem", async () => {
-            assert.equal(
-                (await redeem.name()).toString(),
-                redeemName,
-                "Incorrect name"
-            );
-        });
-
-        it("should return the correct symbol for redeem", async () => {
-            assert.equal(
-                (await redeem.symbol()).toString(),
-                redeemSymbol,
-                "Incorrect symbol"
             );
         });
 
@@ -291,21 +295,12 @@ contract("Prime", (accounts) => {
         it("should return the correct controller for redeem", async () => {
             assert.equal(
                 (await redeem.factory()).toString(),
-                factory.address,
+                registry.address,
                 "Incorrect factory"
             );
         });
 
-        it("should return the max draw", async () => {
-            assert.equal(
-                (await prime.maxDraw()).toString(),
-                "0",
-                "Incorrect Max Draw - Should be 0"
-            );
-        });
-
-        // TODO: Factory contract needs a way to kill the contract
-        /* describe("kill", () => {
+        describe("kill", () => {
             it("revert if msg.sender is not owner", async () => {
                 await truffleAssert.reverts(
                     prime.kill({ from: Bob }),
@@ -314,7 +309,7 @@ contract("Prime", (accounts) => {
             });
 
             it("should pause contract", async () => {
-                await prime.kill();
+                await registry.kill(prime.address);
                 assert.equal(await prime.paused(), true);
             });
 
@@ -323,14 +318,17 @@ contract("Prime", (accounts) => {
             });
 
             it("should revert swap function call while paused contract", async () => {
-                await truffleAssert.reverts(prime.exercise(Alice, inTokenP, []), ERR_PAUSED);
+                await truffleAssert.reverts(
+                    prime.exercise(Alice, 1, []),
+                    ERR_PAUSED
+                );
             });
 
             it("should unpause contract", async () => {
-                await prime.kill();
+                await registry.kill(prime.address);
                 assert.equal(await prime.paused(), false);
             });
-        }); */
+        });
 
         describe("initTokenR", () => {
             it("revert if msg.sender is not owner", async () => {
@@ -344,7 +342,7 @@ contract("Prime", (accounts) => {
         describe("mint", () => {
             beforeEach(async () => {
                 Primitive = await newPrimitive(
-                    factory,
+                    registry,
                     tokenU,
                     tokenS,
                     base,
@@ -432,7 +430,7 @@ contract("Prime", (accounts) => {
         describe("exercise", () => {
             beforeEach(async () => {
                 Primitive = await newPrimitive(
-                    factory,
+                    registry,
                     tokenU,
                     tokenS,
                     base,
@@ -448,18 +446,24 @@ contract("Prime", (accounts) => {
                     let inTokenS = inTokenP
                         .mul(new BN(price))
                         .div(new BN(base));
+                    let fee = inTokenP
+                        .div(new BN(1000))
+                        .mul(new BN(price))
+                        .div(new BN(base));
                     let outTokenU = inTokenP;
 
                     let balanceU = await getBalance(tokenU, Alice);
                     let balanceP = await getBalance(prime, Alice);
                     let balanceS = await getBalance(tokenS, Alice);
-
+                    if (tokenU.address == weth.address)
+                        await tokenS.deposit({ value: fee.add(inTokenS) });
                     await prime.transfer(prime.address, inTokenP, {
                         from: Alice,
                     });
-                    await tokenS.transfer(prime.address, inTokenS, {
+                    await tokenS.transfer(prime.address, inTokenS.add(fee), {
                         from: Alice,
                     });
+
                     let event = await prime.exercise(Alice, inTokenP, []);
 
                     let deltaU = (await getBalance(tokenU, Alice)).sub(
@@ -471,12 +475,9 @@ contract("Prime", (accounts) => {
                     );
 
                     // 1000 = fee
-                    assertBNEqual(
-                        deltaU,
-                        outTokenU.sub(outTokenU.div(new BN(1000)))
-                    );
+                    assertBNEqual(deltaU, outTokenU);
                     assertBNEqual(deltaP, inTokenP.neg());
-                    assertBNEqual(deltaS, inTokenS.neg());
+                    assertBNEqual(deltaS, inTokenS.add(fee).neg());
 
                     await truffleAssert.eventEmitted(
                         event,
@@ -485,12 +486,10 @@ contract("Prime", (accounts) => {
                             return (
                                 expect(ev.from).to.be.eq(Alice) &&
                                 expect(ev.outTokenU.toString()).to.be.eq(
-                                    outTokenU
-                                        .sub(outTokenU.div(new BN(1000)))
-                                        .toString()
+                                    outTokenU.toString()
                                 ) &&
                                 expect(ev.inTokenS.toString()).to.be.eq(
-                                    inTokenS.toString()
+                                    inTokenS.add(fee).toString()
                                 )
                             );
                         }
@@ -513,9 +512,16 @@ contract("Prime", (accounts) => {
                 };
             });
 
-            it("revert if 0 tokenS and 0 tokenP were sent to contract", async () => {
+            it("revert if 0 tokenU requested to be taken out", async () => {
                 await truffleAssert.reverts(
                     prime.exercise(Alice, 0, []),
+                    ERR_ZERO
+                );
+            });
+
+            it("revert if not enough underlying tokens to take", async () => {
+                await truffleAssert.reverts(
+                    prime.exercise(Alice, ONE_ETHER, []),
                     ERR_BAL_UNDERLYING
                 );
             });
@@ -530,6 +536,23 @@ contract("Prime", (accounts) => {
                     ERR_BAL_UNDERLYING
                 );
                 await prime.take();
+            });
+
+            it("reverts if 0 tokenS and 0 tokenU are sent into contract", async () => {
+                await mint(FIVE_ETHER);
+                await truffleAssert.reverts(
+                    prime.exercise(Alice, ONE_ETHER, [], { from: Alice }),
+                    ERR_ZERO
+                );
+            });
+
+            it("should revert because no tokenP were sent to contract", async () => {
+                await mint(FIVE_ETHER);
+                await tokenS.transfer(prime.address, price);
+                await truffleAssert.reverts(
+                    prime.exercise(Alice, ONE_ETHER, [], { from: Alice }),
+                    "ERR_BAL_INPUT"
+                );
             });
 
             it("exercises consecutively", async () => {
@@ -549,7 +572,7 @@ contract("Prime", (accounts) => {
         describe("redeem", () => {
             beforeEach(async () => {
                 Primitive = await newPrimitive(
-                    factory,
+                    registry,
                     tokenU,
                     tokenS,
                     base,
@@ -641,7 +664,7 @@ contract("Prime", (accounts) => {
         describe("close", () => {
             beforeEach(async () => {
                 Primitive = await newPrimitive(
-                    factory,
+                    registry,
                     tokenU,
                     tokenS,
                     base,
@@ -768,7 +791,7 @@ contract("Prime", (accounts) => {
         describe("full test", () => {
             beforeEach(async () => {
                 Primitive = await newPrimitive(
-                    factory,
+                    registry,
                     tokenU,
                     tokenS,
                     base,
@@ -806,7 +829,7 @@ contract("Prime", (accounts) => {
         describe("update", () => {
             beforeEach(async () => {
                 Primitive = await newPrimitive(
-                    factory,
+                    registry,
                     tokenU,
                     tokenS,
                     base,
@@ -859,7 +882,7 @@ contract("Prime", (accounts) => {
         describe("take", () => {
             beforeEach(async () => {
                 Primitive = await newPrimitive(
-                    factory,
+                    registry,
                     tokenU,
                     tokenS,
                     base,
@@ -902,27 +925,31 @@ contract("Prime", (accounts) => {
             });
         });
 
-        /* describe("test expired", () => {
+        describe("test expired", () => {
             beforeEach(async () => {
                 prime = await PrimeOptionTest.new(
-                    optionName,
-                    optionSymbol,
-                    tokenU,
-                    tokenS,
+                    tokenU.address,
+                    tokenS.address,
                     base,
                     price,
                     expiry
                 );
-                tokenP = prime.address;
-                redeem = await createRedeem();
-                tokenR = redeem.address;
-                await prime.initTokenR(tokenR);
+                redeem = await newTestRedeem(
+                    Alice,
+                    prime.address,
+                    tokenU.address
+                );
+                await prime.setTokenR(redeem.address);
                 let inTokenU = THOUSAND_ETHER;
                 await tokenU.mint(Alice, inTokenU);
                 await tokenU.transfer(prime.address, inTokenU);
                 await prime.mint(Alice);
                 let expired = "1589386232";
                 await prime.setExpiry(expired);
+            });
+
+            it("should be expired", async () => {
+                let expired = "1589386232";
                 assert.equal(await prime.expiry(), expired);
             });
 
@@ -931,8 +958,8 @@ contract("Prime", (accounts) => {
                 let cache0S = await getCache("s");
                 let balance0R = await redeem.totalSupply();
                 let balance0U = await getBalance(tokenU, Alice);
-                let balance0CU = await getBalance(tokenU, tokenP);
-                let balance0S = await getBalance(tokenS, tokenP);
+                let balance0CU = await getBalance(tokenU, prime.address);
+                let balance0S = await getBalance(tokenS, prime.address);
 
                 let inTokenR = await redeem.balanceOf(Alice);
                 await redeem.transfer(prime.address, inTokenR);
@@ -940,8 +967,8 @@ contract("Prime", (accounts) => {
 
                 let balance1R = await redeem.totalSupply();
                 let balance1U = await getBalance(tokenU, Alice);
-                let balance1CU = await getBalance(tokenU, tokenP);
-                let balance1S = await getBalance(tokenS, tokenP);
+                let balance1CU = await getBalance(tokenU, prime.address);
+                let balance1S = await getBalance(tokenS, prime.address);
 
                 let deltaR = balance1R.sub(balance0R);
                 let deltaU = balance1U.sub(balance0U);
@@ -959,46 +986,38 @@ contract("Prime", (accounts) => {
             });
 
             it("revert when calling swap on an expired prime", async () => {
-                await truffleAssert.reverts(prime.exercise(Alice, inTokenP, []), ERR_EXPIRED);
+                await truffleAssert.reverts(
+                    prime.exercise(Alice, 1, []),
+                    ERR_EXPIRED
+                );
             });
-        }); */
+        });
 
-        // TODO: Fix the bad erc test cases, they need a test factory which deploys
-        // PrimeOptionTest contract.
-
-        /* describe("test bad ERC20", () => {
+        describe("test bad ERC20", () => {
             beforeEach(async () => {
-                tokenU = await BadToken.new(
+                tokenU = await newBadERC20(
                     "Bad ERC20 Doesnt Return Bools",
                     "BADU"
                 );
-                tokenS = await BadToken.new(
+                tokenS = await newBadERC20(
                     "Bad ERC20 Doesnt Return Bools",
                     "BADS"
                 );
-                tokenU = tokenU.address;
-                tokenS = tokenS.address;
                 prime = await PrimeOptionTest.new(
-                    optionName,
-                    optionSymbol,
-                    tokenU,
-                    tokenS,
+                    tokenU.address,
+                    tokenS.address,
                     base,
                     price,
                     expiry
                 );
-                await factory.deployOption(tokenU, tokenS, base, price, expiry);
-                let id = await factory.getId(
-                    tokenU,
-                    tokenS,
-                    base,
-                    price,
-                    expiry
+                redeem = await newTestRedeem(
+                    Alice,
+                    prime.address,
+                    tokenU.address
                 );
-                prime = await PrimeOption.at(await factory.option(id));
+                await prime.setTokenR(redeem.address);
                 tokenP = prime.address;
                 tokenR = await prime.tokenR();
-                redeem = await PrimeRedeem.at(tokenR);
                 let inTokenU = THOUSAND_ETHER;
                 await tokenU.mint(Alice, inTokenU);
                 await tokenS.mint(Alice, inTokenU);
@@ -1011,7 +1030,9 @@ contract("Prime", (accounts) => {
                 let inTokenS = toWei("0.5"); // 100 ether (tokenU:base) / 200 (tokenS:price) = 0.5 tokenS
                 await tokenS.transfer(prime.address, inTokenS);
                 await prime.transfer(prime.address, inTokenP);
-                await truffleAssert.reverts(prime.exercise(Alice, inTokenP, []));
+                await truffleAssert.reverts(
+                    prime.exercise(Alice, inTokenP, [])
+                );
             });
 
             it("should revert on redeem because transfer does not return a boolean", async () => {
@@ -1031,6 +1052,6 @@ contract("Prime", (accounts) => {
                 await prime.transfer(prime.address, inTokenP);
                 await truffleAssert.reverts(prime.close(Alice));
             });
-        }); */
+        });
     });
 });

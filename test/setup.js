@@ -2,11 +2,14 @@ const { assert, expect } = require("chai");
 const chai = require("chai");
 const BN = require("bn.js");
 const TestERC20 = artifacts.require("TestERC20");
+const BadERC20 = artifacts.require("BadERC20");
 const Factory = artifacts.require("Factory");
 const FactoryRedeem = artifacts.require("FactoryRedeem");
 const PrimeOption = artifacts.require("PrimeOption");
+const PrimeOptionTest = artifacts.require("PrimeOptionTest");
 const PrimeRedeem = artifacts.require("PrimeRedeem");
 const PrimePerpetual = artifacts.require("PrimePerpetual");
+const Registry = artifacts.require("Registry");
 const PrimeFlash = artifacts.require("PrimeFlash");
 const Weth = artifacts.require("WETH9");
 const CTokenLike = artifacts.require("CTokenLike");
@@ -16,6 +19,11 @@ const { MILLION_ETHER } = constants.VALUES;
 
 const newERC20 = async (name, symbol, totalSupply) => {
     let erc20 = await TestERC20.new(name, symbol, totalSupply);
+    return erc20;
+};
+
+const newBadERC20 = async (name, symbol) => {
+    let erc20 = await BadERC20.new(name, symbol);
     return erc20;
 };
 
@@ -29,10 +37,15 @@ const newFlash = async (tokenP) => {
     return flash;
 };
 
-const newOptionFactory = async () => {
-    let factory = await Factory.new();
-    let factoryRedeem = await FactoryRedeem.new(factory.address);
-    await factory.initialize(factoryRedeem.address);
+const newRegistry = async () => {
+    let registry = await Registry.new();
+    return registry;
+};
+
+const newOptionFactory = async (registry) => {
+    let factory = await Factory.new(registry.address);
+    let factoryRedeem = await FactoryRedeem.new(registry.address);
+    await registry.initialize(factory.address, factoryRedeem.address);
     return factory;
 };
 
@@ -41,10 +54,23 @@ const newInterestBearing = async (underlying, name, symbol) => {
     return compound;
 };
 
+const newTestOption = async (tokenU, tokenS, base, price, expiry) => {
+    let prime = await PrimeOptionTest.new(tokenU, tokenS, base, price, expiry);
+    return prime;
+};
+
+const newTestRedeem = async (factory, prime, underlying) => {
+    let redeem = await PrimeRedeem.new(factory, prime, underlying);
+    return redeem;
+};
+
 const newPrime = async (factory, tokenU, tokenS, base, price, expiry) => {
     await factory.deployOption(tokenU, tokenS, base, price, expiry);
-    let id = await factory.getId(tokenU, tokenS, base, price, expiry);
-    let prime = await PrimeOption.at(await factory.options(id));
+    let prime = await PrimeOption.at(
+        await factory.activeOptions(
+            ((await factory.optionsLength()) - 1).toString()
+        )
+    );
     return prime;
 };
 
@@ -65,7 +91,7 @@ const newPerpetual = async (ctokenU, ctokenS, tokenP, receiver) => {
 };
 
 const newPrimitive = async (
-    factory,
+    registry,
     underlying,
     strike,
     base,
@@ -76,7 +102,7 @@ const newPrimitive = async (
     let tokenS = strike;
 
     let prime = await newPrime(
-        factory,
+        registry,
         tokenU.address,
         tokenS.address,
         base,
@@ -100,11 +126,15 @@ const approveToken = async (token, owner, spender) => {
 
 module.exports = {
     newERC20,
+    newBadERC20,
     newWeth,
     newPrime,
     newRedeem,
+    newTestRedeem,
     newFlash,
     newPerpetual,
+    newTestOption,
+    newRegistry,
     newOptionFactory,
     newInterestBearing,
     newPrimitive,

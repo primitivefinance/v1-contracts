@@ -1,15 +1,20 @@
 # Primitives
 
 ## Documentation
+
 Documentation is also [here](https://docs.primitive.finance).
 
 ## Overview
 
-We design smart tokens. These are tokens that inherit the ERC-20 standard and add extra functions to fulfill a specification.
+We design base unit primitives, which we call smart tokens. These are tokens that inherit the ERC-20 standard and add extra functions to fulfill a specification.
 
 Smart tokens can be designed to fulfill the specifications of more complex financial instruments like options, synthetics, and stablecoins.
 
 We designed the first smart token with the options market of DeFi in mind.
+
+## Directory Structure
+
+The folders are structured in a way to organize the three components of the protocol: primitives, extensions, and applications. We also have a registry folder which is the factory that deploys and tracks these contracts.
 
 ## The Prime
 
@@ -19,29 +24,29 @@ This token gives the holder the ability to swap two assets at a fixed exchange r
 
 #### The vanilla option specification:
 
-* Underlying asset.
-* Strike Price denominated in $USD.
-* Expiration date.
-* Buy/Sell underlying asset for strike price.
+-   Underlying asset.
+-   Strike Price denominated in \$USD.
+-   Expiration date.
+-   Buy/Sell underlying asset for strike price.
 
 #### The Prime specification:
 
-* Address of underlying token.
-* Address of strike token.
-* "Base" value \(amount of underlying tokens\).
-* "Price" value \(strike price\).
-* Expiration Date, a UNIX timestamp.
+-   Address of underlying token.
+-   Address of strike token.
+-   "Base" value \(amount of underlying tokens\).
+-   "Price" value \(strike price\).
+-   Expiration Date, a UNIX timestamp.
 
 #### Four Token Design
 
 The Prime contract accepts certain tokens as inputs and knows what tokens to output. There are four critical tokens that are in this system:
 
-| Name | Function  | Example |
-| :--- | :--- | :--- |
-| Prime | Vanilla Option | Right to sell ETH for DAI \(ETH Put\) |
-| Redeem | Underwriter's receipt | Redeem for ETH |
-| Underlying | Token that is purchasable | DAI |
-| Strike | Token that is used to purchase underlying | ETH |
+| Name       | Function                                  | Example                               |
+| :--------- | :---------------------------------------- | :------------------------------------ |
+| Prime      | Vanilla Option                            | Right to sell ETH for DAI \(ETH Put\) |
+| Redeem     | Underwriter's receipt                     | Redeem for ETH                        |
+| Underlying | Token that is purchasable                 | DAI                                   |
+| Strike     | Token that is used to purchase underlying | ETH                                   |
 
 The simplicity in the system comes from this four token design, which makes the input/output calculations simple accounting formulas.
 
@@ -116,24 +121,24 @@ This is the full constructor of the Prime contract:
 
 The name, symbol, and marketId will be the identifiers for the option contract. There will be extension contracts which will track these identifiers in a global list of Prime options outstanding.
 
-* `string memory name, <-----`
-* `string memory symbol, <-----`
-* `uint256 _marketId, <-----`
-* `address tokenU,`
-* `address tokenS,`
-* `uint256 base,` 
-* `uint256 price,` 
-* `uint256 expiry`
+-   `string memory name, <-----`
+-   `string memory symbol, <-----`
+-   `uint256 _marketId, <-----`
+-   `address tokenU,`
+-   `address tokenS,`
+-   `uint256 base,`
+-   `uint256 price,`
+-   `uint256 expiry`
 
 #### Choosing the Assets
 
 We choose the underlying asset based on what the user wants to buy, WETH, and we give it a strike price based on the strike asset, which we choose to be stablecoin, like DAI.
 
-* `address tokenU, <-----`
-* `address tokenS, <-----`
-* `uint256 base,` 
-* `uint256 price,` 
-* `uint256 expiry`
+-   `address tokenU, <-----`
+-   `address tokenS, <-----`
+-   `uint256 base,`
+-   `uint256 price,`
+-   `uint256 expiry`
 
 #### Choosing the ratio between the assets
 
@@ -141,27 +146,27 @@ The user wants to buy the WETH at a rate of 1 WETH per 200 DAI. WETH is the unde
 
 The rate for this Prime is:
 
-* `1 WETH / 200 DAI`
-* `Base / Price`
-* `Buy 200 DAI for 1 WETH per 1 Prime you own`
+-   `1 WETH / 200 DAI`
+-   `Base / Price`
+-   `Buy 200 DAI for 1 WETH per 1 Prime you own`
 
 You are changing these values:
 
-* `address tokenU,`
-* `address tokenS,`
-* `uint256 base, <-----`
-* `uint256 price, <-----`
-* `uint256 expiry`
+-   `address tokenU,`
+-   `address tokenS,`
+-   `uint256 base, <-----`
+-   `uint256 price, <-----`
+-   `uint256 expiry`
 
 #### Choosing the expiration date
 
 Lets also make the Prime expire at some future point of time, say June of 2020. We can pass an _expiration_ date into the constructor's parameters.
 
-* `address tokenU,`
-* `address tokenS,`
-* `uint256 base,`
-* `uint256 price,`
-* `uint256 expiry <-----`
+-   `address tokenU,`
+-   `address tokenS,`
+-   `uint256 base,`
+-   `uint256 price,`
+-   `uint256 expiry <-----`
 
 Now that we have all the ingredients, we can make a Prime and then use it.
 
@@ -171,13 +176,13 @@ To mint Primes we need to send it the underlying assets. The contract knows how 
 
 If we send 1 WETH to this contract, the amount of outputted Primes is equal to this input which is:
 
-* `1 WETH Input = 1 Prime Output.`
+-   `1 WETH Input = 1 Prime Output.`
 
 The contract also outputs redeem tokens. The amount of Redeems to output is proportional to the input of WETH and the _rate_ of the Prime.
 
-* `1 WETH (Input) / (1 WETH (Base) / 200 DAI (Price)) = 200 Redeems to Output.`
-* `Rate = Base / Price.`
-* `Input Underlying / Rate = Output Redeem.`
+-   `1 WETH (Input) / (1 WETH (Base) / 200 DAI (Price)) = 200 Redeems to Output.`
+-   `Rate = Base / Price.`
+-   `Input Underlying / Rate = Output Redeem.`
 
 #### Swapping, also called Exercising
 
@@ -189,8 +194,8 @@ A Prime has the right to swap to the underlying asset at a 1:1 ratio. If underly
 
 The contract knows how to handle this.
 
-* `200 DAI * (1 WETH / 200 DAI) = 1 WETH.`
-* `Input Strike Tokens (DAI) * (Base (Quantity of WETH) / Price (Quantity of DAI)) = Output Underlying Tokens.`
+-   `200 DAI * (1 WETH / 200 DAI) = 1 WETH.`
+-   `Input Strike Tokens (DAI) * (Base (Quantity of WETH) / Price (Quantity of DAI)) = Output Underlying Tokens.`
 
 #### Redeeming
 
@@ -198,7 +203,7 @@ Since we just bought the 1 WETH for 200 DAI, where does the DAI go and who gets 
 
 The DAI goes to the Prime contract and it is redeemable at a 1:1 ratio using the Redeem token.
 
-* `Input Redeem = Output Strike (DAI).`
+-   `Input Redeem = Output Strike (DAI).`
 
 #### Closing
 
@@ -206,7 +211,7 @@ What about the case where we want to withdraw our underlying assets that we used
 
 If you minted 1 Prime and 200 Redeems in exchange for 1 WETH, you need to send the contract 1 Prime and 200 Redeems in order to withdraw 1 WETH.
 
-* `Input Redeem Tokens * Rate & Prime Tokens = Output Underlying Tokens.`
+-   `Input Redeem Tokens * Rate & Prime Tokens = Output Underlying Tokens.`
 
 ### Expiration
 
@@ -256,8 +261,6 @@ This formula takes into account the time until expiration, and the demand of the
 $$
 \frac{Strike}{Market} \times ImpliedVol \times \sqrt{T} \times \frac{1}{SecondsInDay}
 $$
-
-
 
 We use demand as a proxy for the Implied Volatility value. How do we get the demand for the option?
 

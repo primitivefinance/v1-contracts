@@ -1,6 +1,6 @@
 pragma solidity ^0.6.2;
 interface IPrimeOracle {
-    function marketPrice(address tokenU) external view returns (uint256 market);
+    function marketPrice() external view returns (uint256 market);
     function calculateIntrinsic(
         address tokenU,
         address tokenS,
