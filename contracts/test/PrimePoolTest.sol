@@ -17,16 +17,7 @@ contract PrimePoolTest is PrimePool {
         address _factory,
         string memory name,
         string memory symbol
-    ) 
-        public 
-        PrimePool(
-        _weth,
-        _tokenP,
-        _oracle,
-        _factory,
-        name,
-        symbol
-    ) {}
+    ) public PrimePool(_factory, _tokenP) {}
 }
 
     

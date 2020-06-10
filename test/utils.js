@@ -179,21 +179,12 @@ const verifyOptionInvariants = async (tokenU, tokenS, prime, redeem) => {
     let balanceP = await prime.balanceOf(prime.address);
     let balanceR = await redeem.balanceOf(prime.address);
     let primeTotalSupply = await prime.totalSupply();
-    let redeemTotalSupply = await redeem.totalSupply();
-    let base = new BN(await prime.base());
-    let price = new BN(await prime.price());
-
-    let expectedRedeemTotalSupply = new BN(primeTotalSupply)
-        .mul(price)
-        .div(base)
-        .add(new BN(cacheS));
 
     assertBNEqual(balanceU, primeTotalSupply);
     assertBNEqual(cacheU, primeTotalSupply);
     assertBNEqual(balanceS, cacheS);
     assertBNEqual(balanceP, new BN(0));
     assertBNEqual(balanceR, new BN(0));
-    assertBNEqual(redeemTotalSupply, expectedRedeemTotalSupply);
 };
 
 module.exports = {

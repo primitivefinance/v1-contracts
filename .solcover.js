@@ -1,12 +1,5 @@
 module.exports = {
-    skipFiles: [
-        "./Primitives.sol",
-        "./interfaces",
-        "./tokens",
-        "./test",
-        "./PrimeExchange.sol",
-        "./PrimePool.sol",
-    ],
+    skipFiles: ["./Primitives.sol", "./interfaces", "./tokens", "./test"],
     providerOptions: {
         default_balance_ether: "1000",
     },

@@ -3,11 +3,22 @@
 // When running the script with `buidler run <script>` you'll find the Buidler
 // Runtime Environment's members available in the global scope.
 const bre = require("@nomiclabs/buidler");
-const PrimeOption = artifacts.require("PrimeOption");
-const PrimeRedeem = artifacts.require("PrimeRedeem");
+const setup = require("../test/setup");
+const constants = require("../test/constants");
+const utils = require("../test/utils");
+const { toWei } = utils;
+const {
+    newERC20,
+    newWeth,
+    newRegistry,
+    newOptionFactory,
+    newPrimitive,
+} = setup;
+const { MILLION_ETHER } = constants.VALUES;
+const UniRouter = artifacts.require("UniRouter");
 const PrimeTrader = artifacts.require("PrimeTrader.sol");
-const Dai = artifacts.require("DAI");
-const Weth = artifacts.require("WETH9");
+const PrimeOracle = artifacts.require("PrimeOracle");
+const PrimeAMM = artifacts.require("PrimeAMM");
 const { web3 } = require("@nomiclabs/buidler");
 
 async function main() {
@@ -16,32 +27,65 @@ async function main() {
     // to make sure everything is compiled
     // await bre.run('compile');
 
-    const weth = await Weth.new();
-    const dai = await Dai.new(web3.utils.toWei("1000000"));
-    const trader = await PrimeTrader.new(weth.address);
+    const ORACLE = "0x0bF4e7bf3e1f6D6Dc29AA516A33134985cC3A5aA";
 
-    const tokenU = weth.address;
-    const tokenS = dai.address;
-    const base = web3.utils.toWei("1");
-    const price = web3.utils.toWei("300");
-    const expiry = "1593129600"; // June 26, 2020, 0:00:00 UTC
-    const factory = "0x619F9Fb924c7e5fd6D21680b9bAc146FffB2D5C3";
-    console.log({
+    // Setup tokens
+    weth = await newERC20("TEST WETH", "WETH", MILLION_ETHER);
+    dai = await newERC20("TEST DAI", "DAI", MILLION_ETHER);
+
+    // Setup factories
+    registry = await newRegistry();
+    factoryOption = await newOptionFactory(registry);
+
+    // Setup option parameters.
+    tokenU = weth;
+    tokenS = dai;
+    base = toWei("1");
+    price = toWei("300");
+    expiry = "1593129600"; // June 26, 2020, 0:00:00 UTC
+
+    // Call the deployOption function.
+    Primitive = await newPrimitive(
+        registry,
         tokenU,
         tokenS,
         base,
         price,
-        expiry,
-    });
+        expiry
+    );
 
-    const prime = await PrimeOption.new(tokenU, tokenS, base, price, expiry);
+    // Setup option contract instances.
+    prime = Primitive.prime;
+    redeem = Primitive.redeem;
 
-    const redeem = await PrimeRedeem.new(factory, prime.address, tokenS);
+    // Setup extension contracts.
+    trader = await PrimeTrader.new(weth.address);
+    oracle = await PrimeOracle.new(ORACLE, weth.address);
+    router = await UniRouter.new(dai.address, weth.address, oracle.address);
 
-    await prime.initTokenR(redeem.address);
+    // Seed router with liquidity.
+    await dai.mint(router.address, MILLION_ETHER);
+    await weth.mint(router.address, MILLION_ETHER);
+
+    // Deploy a pool contract.
+    pool = await PrimeAMM.new(
+        weth.address,
+        prime.address,
+        oracle.address,
+        registry.address,
+        router.address
+    );
+
     console.log("[prime]", prime.address);
     console.log("[redeem]", redeem.address);
     console.log("[trader]", trader.address);
+    console.log("[pool]", pool.address);
+    console.log("[oracle]", oracle.address);
+    console.log("[router]", router.address);
+    console.log("[registry]", registry.address);
+    console.log("[factory]", factoryOption.address);
+    console.log("[weth]", weth.address);
+    console.log("[dai]", dai.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
