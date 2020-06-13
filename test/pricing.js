@@ -24,33 +24,42 @@ contract("Pricing Contract", (accounts) => {
 
     before(async () => {
         pricing = await Pricing.new();
-        s = 241;
-        k = 240;
-        o = 80;
-        t = 1;
+        s = toWei("235");
+        k = toWei("220");
+        o = 650;
+        t = 31449600; //one year
     });
 
     describe("Test ATM", () => {
         it("Tests the ATM function", async () => {
-            let atm = await pricing.calculateATM(s, k, o, t);
+            let atm = await pricing.calculateATM(s, o, t);
             console.log("ATM", atm.toString());
-        });
-        it("Tests the magic function", async () => {
-            let x = 760;
-            let magic = await pricing.magic(x);
-            console.log("M", magic.toString());
         });
 
         it("Tests the d1 function", async () => {
-            let d1 = await pricing.d1(s, k, o, t);
+            let d1 = await pricing.auxiliary(s, k, o, t);
             console.log("d1", d1.toString());
         });
 
+        it("Tests the d2 function", async () => {
+            let d2 = await pricing.auxiliary2(s, k, o, t);
+            console.log("d2", d2.toString());
+        });
+
+        it("Tests the normdist function", async () => {
+            let z = 873;
+            let normdist = await pricing.normdist(z);
+            console.log("normdist", normdist.toString());
+        });
+
+        it("Tests the bs function", async () => {
+            let bs = await pricing.bs(s, k, o, t);
+            console.log("bs", bs.toString());
+        });
+
         it("Tests the price function", async () => {
-            let x = 760;
-            let atm = await pricing.calculateATM(s, k, o, t);
-            let price = await pricing.price(x, atm);
-            console.log("PRICE", price.toString());
+            let extrinsic = await pricing.extrinsic(s, k, o, t);
+            console.log("PRICE", extrinsic.toString());
         });
     });
 
