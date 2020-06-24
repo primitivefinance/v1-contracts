@@ -54,7 +54,7 @@ Our development environment consists of the following:
 
 ```
 docker build -t primitive-contracts
-docker run -it --name primitive primitive
+docker run -it --rm --name primitive primitive
 
 npm run test
 npm run coverage
