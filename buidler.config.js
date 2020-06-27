@@ -7,7 +7,8 @@ usePlugin("@nomiclabs/buidler-web3");
 usePlugin("buidler-deploy");
 usePlugin("@nomiclabs/buidler-ethers");
 require("dotenv").config();
-require("./tasks/mint.js");
+require("./tasks/trader.js");
+require("./tasks/option.js");
 
 const ETHERSCAN_APY_KEY = process.env.ETHERSCAN_APY_KEY;
 const web3 = require("web3");

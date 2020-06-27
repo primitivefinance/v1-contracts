@@ -3,7 +3,7 @@ const { setupRinkeby, setupPrimitive, setupTest } = require("./setup");
 const { parseEther } = require("ethers/utils");
 const { checkAllowance } = require("./utils");
 
-task("mint", "Mints options")
+task("trader:mint", "Mints options")
     .addParam("amount", "The amount of options to buy")
     .setAction(async function(taskArgs) {
         const { Alice } = await setupRinkeby();
@@ -19,7 +19,7 @@ task("mint", "Mints options")
         console.log((await option.balanceOf(Alice.address)).toString());
     });
 
-task("exercise", "Mints options")
+task("trader:exercise", "Mints options")
     .addParam("amount", "The amount of options to buy")
     .setAction(async function(taskArgs) {
         const { Alice } = await setupRinkeby();
@@ -34,21 +34,26 @@ task("exercise", "Mints options")
         console.log((await option.balanceOf(Alice.address)).toString());
     });
 
-task("redeem", "Mints options")
+task("trader:redeem", "Mints options")
     .addParam("amount", "The amount of options to buy")
     .setAction(async function(taskArgs) {
         const { Alice } = await setupRinkeby();
         const { redeem, option, trader } = await setupPrimitive();
         const amount = parseEther(taskArgs.amount.toString());
         await checkAllowance(Alice, trader, redeem);
-        await trader.safeRedeem(option.address, amount, Alice.address, {
-            from: Alice.address,
-            gasLimit: 1000000,
-        });
+        try {
+            await trader.safeRedeem(option.address, amount, Alice.address, {
+                from: Alice.address,
+                gasLimit: 1000000,
+            });
+        } catch (err) {
+            console.log(err);
+        }
+
         console.log((await option.balanceOf(Alice.address)).toString());
     });
 
-task("close", "Mints options")
+task("trader:close", "Mints options")
     .addParam("amount", "The amount of options to buy")
     .setAction(async function(taskArgs) {
         const { Alice } = await setupRinkeby();
