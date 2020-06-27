@@ -4,7 +4,12 @@ usePlugin("buidler-gas-reporter");
 usePlugin("solidity-coverage");
 usePlugin("@nomiclabs/buidler-etherscan");
 usePlugin("@nomiclabs/buidler-web3");
+usePlugin("buidler-deploy");
+usePlugin("@nomiclabs/buidler-ethers");
 require("dotenv").config();
+require("./tasks/trader.js");
+require("./tasks/option.js");
+
 const ETHERSCAN_APY_KEY = process.env.ETHERSCAN_APY_KEY;
 const web3 = require("web3");
 const HDWalletProvider = require("@truffle/hdwallet-provider");
@@ -64,5 +69,16 @@ module.exports = {
     },
     solc: {
         version: "0.6.2",
+    },
+    namedAccounts: {
+        deployer: {
+            default: 0, // here this will by default take the first account as deployer
+            1: "0x619F9Fb924c7e5fd6D21680b9bAc146FffB2D5C3",
+            4: "0xE7D58d8554Eb0D5B5438848Af32Bf33EbdE477E7",
+        },
+    },
+    paths: {
+        deploy: "deploy",
+        deployments: "deployments",
     },
 };
