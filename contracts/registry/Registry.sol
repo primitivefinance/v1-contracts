@@ -17,13 +17,11 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
     using SafeMath for uint;
 
-    uint public constant WEEK_SECONDS = 604800;
-
-    address public feeReceiver;
     address public factory;
     address public factoryRedeem;
     address[] public activeOptions;
 
+    mapping(address => bool) public isSupported;
     mapping(bytes32 => address) public options;
 
     event Deploy(address indexed from, address indexed tokenP, bytes32 indexed id);
@@ -34,6 +32,10 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
         factoryRedeem = _factoryRedeem;
     }
 
+    function addSupported(address token) external override onlyOwner {
+        isSupported[token] = true;
+    }
+
     function deployOption(address tokenU, address tokenS, uint base, uint price, uint expiry)
         external
         override
@@ -41,11 +43,10 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
         whenNotPaused
         returns (address prime)
     {
-        // Do appropriate checks and calculate the expiry timestamp.
-        require(tokenU != tokenS && tokenU != address(0) && tokenS != address(0), "ERR_ADDRESS");
-        /* uint expiry = week == uint8(0) ? uint(-1) : now.add(uint(week).mul(WEEK_SECONDS)); */
+        // Checks
+        require(tokenU != tokenS && isSupported[tokenU] && isSupported[tokenS], "ERR_ADDRESS");
         bytes32 id = getId(tokenU, tokenS, base, price, expiry);
-        /* require(options[id] == address(0), "ERR_OPTION_DEPLOYED"); */
+        require(options[id] == address(0), "ERR_OPTION_DEPLOYED");
 
         // Deploy option and redeem.
         prime = IFactory(factory).deploy(tokenU, tokenS, base, price, expiry);
@@ -59,10 +60,6 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
 
     function kill(address prime) external override onlyOwner {
         IFactory(factory).kill(prime);
-    }
-
-    function setFeeReceiver(address _feeReceiver) external override onlyOwner {
-        feeReceiver = _feeReceiver;
     }
 
     function optionsLength() public view override returns (uint len) {

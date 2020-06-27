@@ -6,5 +6,5 @@ interface IRegistry {
     function kill(address prime) external;
     function initialize(address _factory, address _factoryRedeem) external;
     function optionsLength() external view returns (uint len);
-    function setFeeReceiver(address _feeReceiver) external;
+    function addSupported(address token) external;
 }
