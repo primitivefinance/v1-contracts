@@ -4,9 +4,10 @@ usePlugin("buidler-gas-reporter");
 usePlugin("solidity-coverage");
 usePlugin("@nomiclabs/buidler-etherscan");
 usePlugin("@nomiclabs/buidler-web3");
-require("dotenv").config();
 usePlugin("buidler-deploy");
 usePlugin("@nomiclabs/buidler-ethers");
+require("dotenv").config();
+require("./tasks/mint.js");
 
 const ETHERSCAN_APY_KEY = process.env.ETHERSCAN_APY_KEY;
 const web3 = require("web3");
