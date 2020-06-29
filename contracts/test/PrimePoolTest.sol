@@ -6,7 +6,7 @@ pragma solidity ^0.6.2;
  */
 
 
-import "../extensions/PrimePool.sol";
+import "../pool/extensions/PrimePool.sol";
 
 contract PrimePoolTest is PrimePool {
 

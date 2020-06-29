@@ -5,7 +5,7 @@ pragma solidity ^0.6.2;
  * @author  Primitive
  */
 
-import "../interfaces/IPrime.sol";
+import "../../option/interfaces/IPrime.sol";
 import "../interfaces/IPrimePool.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";

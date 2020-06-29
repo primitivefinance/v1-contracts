@@ -64,11 +64,13 @@ const newTestRedeem = async (factory, prime, underlying) => {
     return redeem;
 };
 
-const newPrime = async (factory, tokenU, tokenS, base, price, expiry) => {
-    await factory.deployOption(tokenU, tokenS, base, price, expiry);
+const newPrime = async (registry, tokenU, tokenS, base, price, expiry) => {
+    await registry.addSupported(tokenU);
+    await registry.addSupported(tokenS);
+    await registry.deployOption(tokenU, tokenS, base, price, expiry);
     let prime = await PrimeOption.at(
-        await factory.activeOptions(
-            ((await factory.optionsLength()) - 1).toString()
+        await registry.activeOptions(
+            ((await registry.optionsLength()) - 1).toString()
         )
     );
     return prime;

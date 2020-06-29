@@ -92,16 +92,6 @@ contract("Prime Option Contract", (accounts) => {
     });
 
     describe("Registry", () => {
-        it("should set the fee receiver", async () => {
-            await registry.setFeeReceiver(Alice);
-            assert.equal(
-                (await registry.feeReceiver()).toString(),
-                Alice,
-                "Incorrect fee receiver"
-            );
-            await registry.optionsLength();
-        });
-
         it("should get the option", async () => {
             let option = await registry.getOption(
                 tokenU.address,
@@ -341,6 +331,8 @@ contract("Prime Option Contract", (accounts) => {
 
         describe("mint", () => {
             beforeEach(async () => {
+                registry = await newRegistry();
+                factoryOption = await newOptionFactory(registry);
                 Primitive = await newPrimitive(
                     registry,
                     tokenU,
@@ -429,6 +421,8 @@ contract("Prime Option Contract", (accounts) => {
 
         describe("exercise", () => {
             beforeEach(async () => {
+                registry = await newRegistry();
+                factoryOption = await newOptionFactory(registry);
                 Primitive = await newPrimitive(
                     registry,
                     tokenU,
@@ -571,6 +565,8 @@ contract("Prime Option Contract", (accounts) => {
 
         describe("redeem", () => {
             beforeEach(async () => {
+                registry = await newRegistry();
+                factoryOption = await newOptionFactory(registry);
                 Primitive = await newPrimitive(
                     registry,
                     tokenU,
@@ -663,6 +659,8 @@ contract("Prime Option Contract", (accounts) => {
 
         describe("close", () => {
             beforeEach(async () => {
+                registry = await newRegistry();
+                factoryOption = await newOptionFactory(registry);
                 Primitive = await newPrimitive(
                     registry,
                     tokenU,
@@ -790,6 +788,8 @@ contract("Prime Option Contract", (accounts) => {
 
         describe("full test", () => {
             beforeEach(async () => {
+                registry = await newRegistry();
+                factoryOption = await newOptionFactory(registry);
                 Primitive = await newPrimitive(
                     registry,
                     tokenU,
@@ -828,6 +828,8 @@ contract("Prime Option Contract", (accounts) => {
 
         describe("update", () => {
             beforeEach(async () => {
+                registry = await newRegistry();
+                factoryOption = await newOptionFactory(registry);
                 Primitive = await newPrimitive(
                     registry,
                     tokenU,
@@ -881,6 +883,8 @@ contract("Prime Option Contract", (accounts) => {
 
         describe("take", () => {
             beforeEach(async () => {
+                registry = await newRegistry();
+                factoryOption = await newOptionFactory(registry);
                 Primitive = await newPrimitive(
                     registry,
                     tokenU,

@@ -106,6 +106,8 @@ contract("Perpetual", (accounts) => {
         };
 
         createProtocol = async () => {
+            registry = await newRegistry();
+            factoryOption = await newOptionFactory(registry);
             Primitive = await newPrimitive(
                 registry,
                 Tokens.usdc,

@@ -5,7 +5,7 @@ pragma solidity ^0.6.2;
  * @author  Primitive
  */
 
-import "../Primitives.sol";
+import "../../Primitives.sol";
 import "../interfaces/IPrime.sol";
 import "../interfaces/IPrimeRedeem.sol";
 import "../interfaces/IPrimeFlash.sol";

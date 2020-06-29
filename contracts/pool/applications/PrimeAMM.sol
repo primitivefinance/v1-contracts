@@ -6,8 +6,8 @@ pragma solidity ^0.6.2;
  */
 
 import "../extensions/PrimePool.sol";
+import "../../option/interfaces/IPrime.sol";
 import "../interfaces/IWETH.sol";
-import "../interfaces/IPrime.sol";
 import "../interfaces/IPrimePool.sol";
 import "../interfaces/IPrimeOracle.sol";
 import "../interfaces/IUniswapV2Factory.sol";

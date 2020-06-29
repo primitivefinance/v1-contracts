@@ -1,6 +1,6 @@
 pragma solidity ^0.6.2;
 
-import "../extensions/PrimeOracle.sol";
+import "../pool/extensions/PrimeOracle.sol";
 
 contract PrimeOracleTest is PrimeOracle {
     using SafeMath for uint;

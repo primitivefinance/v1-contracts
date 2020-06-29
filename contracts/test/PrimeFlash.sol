@@ -1,7 +1,7 @@
 pragma solidity ^0.6.2;
 
-import "../interfaces/IPrime.sol";
-import "../interfaces/IPrimeFlash.sol";
+import "../option/interfaces/IPrime.sol";
+import "../option/interfaces/IPrimeFlash.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 

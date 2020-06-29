@@ -6,7 +6,7 @@ pragma solidity ^0.6.2;
  */
 
 import "../extensions/PrimePool.sol";
-import "../interfaces/IPrime.sol";
+import "../../option/interfaces/IPrime.sol";
 import "../interfaces/ICToken.sol";
 import "../interfaces/IPrimePerpetual.sol";
 

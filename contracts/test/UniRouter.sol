@@ -1,6 +1,6 @@
 pragma solidity ^0.6.2;
 
-import "../interfaces/IPrimeOracle.sol";
+import "../pool/interfaces/IPrimeOracle.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
