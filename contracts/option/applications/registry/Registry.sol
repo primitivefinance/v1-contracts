@@ -5,10 +5,10 @@ pragma solidity ^0.6.2;
  * @author Primitive
  */
 
-import "../interfaces/IPrime.sol";
-import "../interfaces/IRegistry.sol";
-import "../interfaces/IFactory.sol";
-import "../interfaces/IFactoryRedeem.sol";
+import "../../interfaces/IPrime.sol";
+import "../../interfaces/IRegistry.sol";
+import "../../interfaces/IFactory.sol";
+import "../../interfaces/IFactoryRedeem.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";

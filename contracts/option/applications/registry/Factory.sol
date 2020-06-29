@@ -5,7 +5,7 @@ pragma solidity ^0.6.2;
  * @author Primitive
  */
 
-import "../primitives/PrimeOption.sol";
+import "../../primitives/PrimeOption.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Factory is Ownable {
