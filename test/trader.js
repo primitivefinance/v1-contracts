@@ -42,7 +42,7 @@ contract("Trader", (accounts) => {
 
     let trader, weth, dai, prime, redeem;
     let tokenU, tokenS;
-    let base, price, expiry;
+    let base, quote, expiry;
     let factory, Primitive, registry;
 
     before(async () => {
@@ -54,7 +54,7 @@ contract("Trader", (accounts) => {
         tokenU = dai;
         tokenS = weth;
         base = toWei("200");
-        price = toWei("1");
+        quote = toWei("1");
         expiry = "1690868800"; // May 30, 2020, 8PM UTC
 
         Primitive = await newPrimitive(
@@ -62,7 +62,7 @@ contract("Trader", (accounts) => {
             tokenU,
             tokenS,
             base,
-            price,
+            quote,
             expiry
         );
 
@@ -97,7 +97,7 @@ contract("Trader", (accounts) => {
 
             safeMint = async (inTokenU) => {
                 inTokenU = new BN(inTokenU);
-                let outTokenR = inTokenU.mul(new BN(price)).div(new BN(base));
+                let outTokenR = inTokenU.mul(new BN(quote)).div(new BN(base));
 
                 let balanceU = await getBalance(tokenU, Alice);
                 let balanceP = await getBalance(prime, Alice);
@@ -151,7 +151,7 @@ contract("Trader", (accounts) => {
 
         it("should emit the mint event", async () => {
             let inTokenU = new BN(ONE_ETHER);
-            let outTokenR = inTokenU.mul(new BN(price)).div(new BN(base));
+            let outTokenR = inTokenU.mul(new BN(quote)).div(new BN(base));
             let mint = await trader.safeMint(prime.address, inTokenU, Alice);
             await truffleAssert.eventEmitted(mint, "Mint", (ev) => {
                 return (
@@ -197,7 +197,7 @@ contract("Trader", (accounts) => {
             safeExercise = async (inTokenU) => {
                 inTokenU = new BN(inTokenU);
                 let inTokenP = inTokenU;
-                let inTokenS = inTokenU.mul(new BN(price)).div(new BN(base));
+                let inTokenS = inTokenU.mul(new BN(quote)).div(new BN(base));
 
                 let balanceU = await getBalance(tokenU, Alice);
                 let balanceP = await getBalance(prime, Alice);
@@ -367,7 +367,7 @@ contract("Trader", (accounts) => {
 
             safeClose = async (inTokenP) => {
                 inTokenP = new BN(inTokenP);
-                let inTokenR = inTokenP.mul(new BN(price)).div(new BN(base));
+                let inTokenR = inTokenP.mul(new BN(quote)).div(new BN(base));
                 let outTokenU = inTokenP;
 
                 let balanceU = await getBalance(tokenU, Alice);
@@ -502,7 +502,7 @@ contract("Trader", (accounts) => {
                 tokenU.address,
                 tokenS.address,
                 base,
-                price,
+                quote,
                 expiry
             );
             redeem = await newTestRedeem(Alice, prime.address, tokenU.address);
@@ -543,7 +543,7 @@ contract("Trader", (accounts) => {
 
             safeUnwind = async (inTokenP) => {
                 inTokenP = new BN(inTokenP);
-                let inTokenR = inTokenP.mul(new BN(price)).div(new BN(base));
+                let inTokenR = inTokenP.mul(new BN(quote)).div(new BN(base));
                 let outTokenU = inTokenP;
 
                 let balanceU = await getBalance(tokenU, Alice);
@@ -612,7 +612,7 @@ contract("Trader", (accounts) => {
                 tokenU.address,
                 tokenS.address,
                 base,
-                price,
+                quote,
                 expiry
             );
             redeem = await newTestRedeem(Alice, prime.address, tokenU.address);
@@ -640,7 +640,7 @@ contract("Trader", (accounts) => {
 
         it("should revert on redeem because transfer does not return a boolean", async () => {
             // no way to swap, because it reverts, so we need to send tokenS and call update()
-            let inTokenS = toWei("0.5"); // 100 ether (tokenU:base) / 200 (tokenS:price) = 0.5 tokenS
+            let inTokenS = toWei("0.5"); // 100 ether (tokenU:base) / 200 (tokenS:quote) = 0.5 tokenS
             await tokenS.transfer(prime.address, inTokenS);
             await prime.update();
             await truffleAssert.reverts(

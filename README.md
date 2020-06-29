@@ -6,17 +6,17 @@
 ![Twitter Follow](https://img.shields.io/twitter/follow/primitivefi?style=social)
 [![Discord](https://img.shields.io/discord/168831573876015105.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/rzRwJ4K)
 
-Primitive is a permissionless options protocol. Built on Ethereum.
+Primitive is an options market protocol. Built on Ethereum.
 
 ## Risk
 
-The protocol and software is in an alpha stage.
+The protocol and software is in an alpha stage. While security is our core focus in the development process, the complex interactions with the protocol, other protocols, and incentive models could lead to vulnerabilities.
 
 ## Overview
 
 We overview the contracts and their functions as well as how to test them.
 
--   Core Documentation: [Documentation](https://docs.primitive.finance)
+-   Documentation: [Documentation](https://docs.primitive.finance)
 -   Protocol Overview: [Overview](https://docs.google.com/document/d/19neM6bFmTCBdxLygQbDDJubwcLcuMIx8x2Fs-llt9sQ/edit?usp=sharing)
 
 ## Environment
@@ -27,11 +27,12 @@ Our development environment consists of the following:
 -   Solidity Visual Auditor - VS Code
 -   Slither - static analyzer
 -   Solium - linter
--   Web3/Truffle plugins for Buidler
+-   Web3/Truffle/Ethers plugins for Buidler
+-   Buidler-deploy plugin for getting deployed contract artifacts.
 -   Mocha - testing framework
--   Chai, chai-bn, and bn.js - unit testing
+-   Chai, chai-bn, and bn.js - unit testing and our choice of BN library
 -   Truffle assertions - unit testing
--   Open Zeppelin Contracts - contract dependency
+-   Open Zeppelin Contracts - external contracts dependency
 
 # Contracts
 

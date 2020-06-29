@@ -54,8 +54,8 @@ const newInterestBearing = async (underlying, name, symbol) => {
     return compound;
 };
 
-const newTestOption = async (tokenU, tokenS, base, price, expiry) => {
-    let prime = await PrimeOptionTest.new(tokenU, tokenS, base, price, expiry);
+const newTestOption = async (tokenU, tokenS, base, quote, expiry) => {
+    let prime = await PrimeOptionTest.new(tokenU, tokenS, base, quote, expiry);
     return prime;
 };
 
@@ -64,10 +64,10 @@ const newTestRedeem = async (factory, prime, underlying) => {
     return redeem;
 };
 
-const newPrime = async (registry, tokenU, tokenS, base, price, expiry) => {
+const newPrime = async (registry, tokenU, tokenS, base, quote, expiry) => {
     await registry.addSupported(tokenU);
     await registry.addSupported(tokenS);
-    await registry.deployOption(tokenU, tokenS, base, price, expiry);
+    await registry.deployOption(tokenU, tokenS, base, quote, expiry);
     let prime = await PrimeOption.at(
         await registry.activeOptions(
             ((await registry.optionsLength()) - 1).toString()
@@ -97,7 +97,7 @@ const newPrimitive = async (
     underlying,
     strike,
     base,
-    price,
+    quote,
     expiry
 ) => {
     let tokenU = underlying;
@@ -108,7 +108,7 @@ const newPrimitive = async (
         tokenU.address,
         tokenS.address,
         base,
-        price,
+        quote,
         expiry
     );
     let redeem = await newRedeem(prime);

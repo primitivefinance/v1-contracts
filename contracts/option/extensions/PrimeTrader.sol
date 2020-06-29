@@ -58,7 +58,7 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
     {
         require(amount > 0, "ERR_ZERO");
         require(IERC20(address(tokenP)).balanceOf(msg.sender) >= amount, "ERR_BAL_PRIME");
-        inTokenS = amount.add(amount.div(1000)).mul(tokenP.price()).div(tokenP.base());
+        inTokenS = amount.add(amount.div(1000)).mul(tokenP.quote()).div(tokenP.base());
         //uint fee = inTokenS.div(1000);
         require(IERC20(tokenP.tokenS()).balanceOf(msg.sender) >= inTokenS, "ERR_BAL_STRIKE");
         IERC20(tokenP.tokenS()).transferFrom(msg.sender, address(tokenP), inTokenS);
@@ -103,7 +103,7 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
     {
         require(amount > 0, "ERR_ZERO");
         require(IERC20(address(tokenP)).balanceOf(msg.sender) >= amount, "ERR_BAL_PRIME");
-        inTokenR = amount.mul(tokenP.price()).div(tokenP.base());
+        inTokenR = amount.mul(tokenP.quote()).div(tokenP.base());
         require(IERC20(tokenP.tokenR()).balanceOf(msg.sender) >= inTokenR, "ERR_BAL_REDEEM");
         IERC20(tokenP.tokenR()).transferFrom(msg.sender, address(tokenP), inTokenR);
         IERC20(address(tokenP)).transferFrom(msg.sender, address(tokenP), amount);
@@ -125,7 +125,7 @@ contract PrimeTrader is IPrimeTrader, ReentrancyGuard {
     {
         require(amount > 0, "ERR_ZERO");
         require(tokenP.expiry() < block.timestamp, "ERR_NOT_EXPIRED");
-        inTokenR = amount.mul(tokenP.price()).div(tokenP.base());
+        inTokenR = amount.mul(tokenP.quote()).div(tokenP.base());
         require(IERC20(tokenP.tokenR()).balanceOf(msg.sender) >= inTokenR, "ERR_BAL_REDEEM");
         IERC20(tokenP.tokenR()).transferFrom(msg.sender, address(tokenP), inTokenR);
         (inTokenR, inTokenP, outTokenU) = tokenP.close(receiver);

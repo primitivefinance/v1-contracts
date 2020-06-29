@@ -35,7 +35,7 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
         address tokenU,
         address tokenS,
         uint base,
-        uint price,
+        uint quote,
         uint expiry
     )
         public
@@ -46,7 +46,7 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
             tokenU,
             tokenS,
             base,
-            price,
+            quote,
             expiry
         );
     }
@@ -125,11 +125,11 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
         // Save on gas.
         uint balanceU = IERC20(option.tokenU).balanceOf(address(this));
         uint base = option.base;
-        uint price = option.price;
+        uint quote = option.quote;
 
         // Mint inTokenU equal to the difference between current and cached balance of tokenU.
         inTokenU = balanceU.sub(cacheU);
-        outTokenR = inTokenU.mul(price).div(base);
+        outTokenR = inTokenU.mul(quote).div(base);
         require(outTokenR > 0, "ERR_ZERO");
 
         // Mint the tokens.
@@ -186,7 +186,7 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
         uint remainder = inTokenU > outTokenU ? 0 : outTokenU.sub(inTokenU);
 
         // Calculate the expected payment of tokenS.
-        uint payment = remainder.add(feeToPay).mul(option.price).div(option.base);
+        uint payment = remainder.add(feeToPay).mul(option.quote).div(option.base);
 
         // Assumes the cached tokenP balance is 0.
         inTokenP = balanceOf(address(this));
@@ -262,12 +262,12 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
 
         // The quantity of tokenU to send out it still determined by the amount of inTokenR.
         // inTokenR is in units of strike tokens, which is converted to underlying tokens
-        // by multiplying inTokenR by the strike ratio: base / price.
+        // by multiplying inTokenR by the strike ratio: base / quote.
         // This outTokenU amount is checked against inTokenP.
         // inTokenP must be greater than or equal to outTokenU.
         // balanceP must be greater than or equal to outTokenU.
         // Neither inTokenR or inTokenP can be zero.
-        outTokenU = inTokenR.mul(option.base).div(option.price);
+        outTokenU = inTokenR.mul(option.base).div(option.quote);
 
         // Assumes the cached balance is 0 so inTokenP = balance of tokenP.
         // If option is expired, tokenP does not need to be sent in. Only tokenR.
@@ -316,7 +316,7 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
     function tokenS() public view override returns (address) { return option.tokenS; }
     function tokenU() public view override returns (address) { return option.tokenU;}
     function base() public view override returns (uint) { return option.base; }
-    function price() public view override returns (uint) { return option.price; }
+    function quote() public view override returns (uint) { return option.quote; }
     function expiry() public view override returns (uint) { return option.expiry; }
 
     function prime() public view override returns (
@@ -324,7 +324,7 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
             address _tokenS,
             address _tokenR,
             uint _base,
-            uint _price,
+            uint _quote,
             uint _expiry
         )
     {
@@ -333,7 +333,7 @@ contract PrimeOption is IPrime, ERC20, ReentrancyGuard, Pausable {
         _tokenS = _prime.tokenS;
         _tokenR = tokenR;
         _base = _prime.base;
-        _price = _prime.price;
+        _quote = _prime.quote;
         _expiry = _prime.expiry;
     }
 }

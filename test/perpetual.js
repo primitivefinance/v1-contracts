@@ -72,7 +72,7 @@ contract("Perpetual", (accounts) => {
         );
 
         let base = toWei("1");
-        let price = toWei("1");
+        let quote = toWei("1");
         let expiry = "7258118400";
 
         let Primitive = await newPrimitive(
@@ -80,7 +80,7 @@ contract("Perpetual", (accounts) => {
             usdc,
             dai,
             base,
-            price,
+            quote,
             expiry
         );
 
@@ -101,7 +101,7 @@ contract("Perpetual", (accounts) => {
 
         Parameters = {
             base: base,
-            price: price,
+            quote: quote,
             expiry: expiry,
         };
 
@@ -113,7 +113,7 @@ contract("Perpetual", (accounts) => {
                 Tokens.usdc,
                 Tokens.dai,
                 Parameters.base,
-                Parameters.price,
+                Parameters.quote,
                 Parameters.expiry
             );
             perpetual = await newPerpetual(
@@ -314,7 +314,7 @@ contract("Perpetual", (accounts) => {
 
                     let outTokenU = inTokenS
                         .mul(new BN(Parameters.base))
-                        .div(new BN(Parameters.price));
+                        .div(new BN(Parameters.quote));
                     let payment = inTokenS.add(
                         inTokenS.div(await perpetual.fee())
                     );
@@ -428,7 +428,7 @@ contract("Perpetual", (accounts) => {
                     let balance0TP = await getTotalPoolBalance(perpetual);
 
                     let outTokenS = inTokenP
-                        .mul(new BN(Parameters.price))
+                        .mul(new BN(Parameters.quote))
                         .div(new BN(Parameters.base));
 
                     let event = await perpetual.redeem(inTokenP, {
@@ -544,7 +544,7 @@ contract("Perpetual", (accounts) => {
                     let balance0TP = await getTotalPoolBalance(perpetual);
 
                     let outTokenS = inTokenP
-                        .mul(new BN(Parameters.price))
+                        .mul(new BN(Parameters.quote))
                         .div(new BN(Parameters.base));
 
                     let event = await perpetual.exercise(inTokenP, {

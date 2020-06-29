@@ -136,7 +136,7 @@ contract PrimeAMM is PrimePool {
             address tokenS, // Assume ETH.
              , // Assume tokenR and we don't need it in this function.
             uint base,
-            uint price,
+            uint quote,
             uint expiry
         ) = IPrime(_tokenP).prime();
 
@@ -152,7 +152,7 @@ contract PrimeAMM is PrimePool {
             tokenS,
             volatility,
             base,
-            price,
+            quote,
             expiry
         );
         
@@ -170,7 +170,7 @@ contract PrimeAMM is PrimePool {
 
     /**
      * @dev Sell options to the pool.
-     * @notice The pool buys options at a discounted rate based on the current premium price.
+     * @notice The pool buys options at a discounted rate based on the current premium quote.
      * @param inTokenP The amount of Prime option tokens that are being sold.
      */
     function sell(uint inTokenP) external nonReentrant returns (bool) {
@@ -181,7 +181,7 @@ contract PrimeAMM is PrimePool {
             address tokenS, // Assume ETH.
             address tokenR, // Assume tokenR.
             uint base,
-            uint price,
+            uint quote,
             uint expiry
         ) = IPrime(_tokenP).prime();
 
@@ -192,13 +192,13 @@ contract PrimeAMM is PrimePool {
             "ERR_BAL_PRIME"
         );
 
-        // Calculate the current premium price.
+        // Calculate the current premium quote.
         (uint premium) = IPrimeOracle(oracle).calculatePremium(
             tokenU,
             tokenS,
             volatility,
             base,
-            price,
+            quote,
             expiry
         );
 
@@ -206,7 +206,7 @@ contract PrimeAMM is PrimePool {
         premium = premium.sub(premium.div(DISCOUNT_RATE));
 
         // Calculate total premium.
-        // Units: tokenU * (tokenU / tokenS) / 10^18 units = total quantity tokenU price.
+        // Units: tokenU * (tokenU / tokenS) / 10^18 units = total quantity tokenU quote.
         premium = inTokenP.mul(premium).div(ONE_ETHER);
         if(tokenU == weth) { premium = MANTISSA.div(premium); }
 
@@ -214,7 +214,7 @@ contract PrimeAMM is PrimePool {
         require(IERC20(tokenU).balanceOf(address(this)) >= premium, "ERR_BAL_UNDERLYING");
         
         // Calculate amount of redeem needed to close position with inTokenU.
-        uint outTokenR = inTokenP.mul(price).div(base);
+        uint outTokenR = inTokenP.mul(quote).div(base);
         require(IERC20(tokenR).balanceOf(address(this)) >= outTokenR, "ERR_BAL_REDEEM");
 
         // Call the close function to close the option position and receive underlyings.
@@ -245,16 +245,16 @@ contract PrimeAMM is PrimePool {
      */
     function totalUtilized(address _tokenP) public view returns (uint utilized) {
         // Assume tokenR is proportional to tokenS (weth) at a 1:1 ratio.
-        // TokenR is always minted proportionally to the ratio between tokenU and tokenS (strike price).
+        // TokenR is always minted proportionally to the ratio between tokenU and tokenS (strike quote).
         // Assume a ratio of 200 DAI per 1 ETH.
         // If 200 tokenU is used to mint a Prime, it will return 1 tokenR.
-        // 1 tokenR * 200 (base) / 1 (price) = 200 tokenU utilized.
+        // 1 tokenR * 200 (base) / 1 (quote) = 200 tokenU utilized.
         // The returned value for `utilized` should always be greater than 1.
         // TokenR is redeemable to tokenS at a 1:1 ratio (1 tokenR can be redeemed for 1 weth).
         // The utilized amount of tokenU is therefore this calculation:
-        // (tokenR = tokenS = weth) * Quantity of tokenU (base) / Quantity of tokenS (price).
-        ( , , address tokenR, uint base, uint price, ) = IPrime(_tokenP).prime();
-        utilized = IERC20(tokenR).balanceOf(address(this)).mul(base).div(price);
+        // (tokenR = tokenS = weth) * Quantity of tokenU (base) / Quantity of tokenS (quote).
+        ( , , address tokenR, uint base, uint quote, ) = IPrime(_tokenP).prime();
+        utilized = IERC20(tokenR).balanceOf(address(this)).mul(base).div(quote);
     }
 
     /**

@@ -13,11 +13,11 @@ contract Factory is Ownable {
 
     constructor(address registry) public { transferOwnership(registry); }
 
-    function deploy(address tokenU, address tokenS, uint base, uint price, uint expiry)
+    function deploy(address tokenU, address tokenS, uint base, uint quote, uint expiry)
         external
         onlyOwner
         returns (address prime)
-    { prime = address(new PrimeOption(tokenU, tokenS, base, price, expiry)); }
+    { prime = address(new PrimeOption(tokenU, tokenS, base, quote, expiry)); }
 
     function kill(address prime) external onlyOwner { PrimeOption(prime).kill(); }
 

@@ -1,7 +1,7 @@
 pragma solidity ^0.6.2;
 
 interface IRegistry {
-    function deployOption(address tokenU, address tokenS, uint base, uint price, uint expiry)
+    function deployOption(address tokenU, address tokenS, uint base, uint quote, uint expiry)
         external returns (address);
     function kill(address prime) external;
     function initialize(address _factory, address _factoryRedeem) external;

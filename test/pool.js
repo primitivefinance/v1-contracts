@@ -61,7 +61,7 @@ contract("PAMM Test", (accounts) => {
     let tokenU,
         tokenS,
         base,
-        price,
+        quote,
         expiry,
         trader,
         prime,
@@ -94,7 +94,7 @@ contract("PAMM Test", (accounts) => {
         tokenU = weth;
         tokenS = dai;
         base = toWei("1");
-        price = toWei("300");
+        quote = toWei("300");
         expiry = "1690868800"; // June 26, 2020, 0:00:00 UTC
 
         // Call the deployOption function.
@@ -103,7 +103,7 @@ contract("PAMM Test", (accounts) => {
             tokenU,
             tokenS,
             base,
-            price,
+            quote,
             expiry
         );
 
@@ -195,7 +195,7 @@ contract("PAMM Test", (accounts) => {
                 tokenS.address,
                 await pool.volatility(),
                 await prime.base(),
-                await prime.price(),
+                await prime.quote(),
                 await prime.expiry()
             );
             premium = new BN(premium);
@@ -400,7 +400,7 @@ contract("PAMM Test", (accounts) => {
                 let balance0R = await getTokenBalance(redeem, pool.address);
                 let balance0RinU = balance0R
                     .mul(new BN(base))
-                    .div(new BN(price));
+                    .div(new BN(quote));
                 let balance0CS = await getBalance(tokenS, pool.address);
                 let balance0CU = await getBalance(tokenU, pool.address);
                 let balance0TS = await getTotalSupply();
@@ -460,7 +460,7 @@ contract("PAMM Test", (accounts) => {
                 let balance1R = await getTokenBalance(redeem, pool.address);
                 let balance1RinU = balance1R
                     .mul(new BN(base))
-                    .div(new BN(price));
+                    .div(new BN(quote));
                 let balance1CS = await getBalance(tokenS, pool.address);
                 let unutilized1 = await pool.totalUnutilized(prime.address);
                 let utilized1 = await pool.totalUtilized(prime.address);
@@ -761,7 +761,7 @@ contract("PAMM Test", (accounts) => {
                         : premium;
                 let expectedDeltaU = deltaR
                     .mul(new BN(base))
-                    .div(new BN(price));
+                    .div(new BN(quote));
                 expectedDeltaU.iadd(discountedPremium);
 
                 expect(deltaU).to.be.a.bignumber.that.is.at.most(
@@ -969,7 +969,7 @@ contract("PAMM Test", (accounts) => {
             tokenU = dai;
             tokenS = weth;
             base = toWei("300");
-            price = toWei("1");
+            quote = toWei("1");
             expiry = "1690868800"; // June 26, 2020, 0:00:00 UTC
 
             // Call the deployOption function.
@@ -978,7 +978,7 @@ contract("PAMM Test", (accounts) => {
                 tokenU,
                 tokenS,
                 base,
-                price,
+                quote,
                 expiry
             );
 

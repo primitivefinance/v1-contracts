@@ -54,7 +54,7 @@ contract("Pool - forked-mainnet", (accounts) => {
         redeemName,
         redeemSymbol,
         base,
-        price,
+        quote,
         expiry,
         trader,
         prime,
@@ -92,11 +92,11 @@ contract("Pool - forked-mainnet", (accounts) => {
         return outTokenU;
     };
 
-    const calculateBuy = (_inTokenS, _base, _price, _premium) => {
+    const calculateBuy = (_inTokenS, _base, _quote, _premium) => {
         let inTokenS = new BN(_inTokenS);
         let base = new BN(_base);
-        let price = new BN(_price);
-        let outTokenU = inTokenS.mul(base).div(price);
+        let quote = new BN(_quote);
+        let outTokenU = inTokenS.mul(base).div(quote);
         let premium = new BN(_premium);
         let deltaU = outTokenU.sub(premium).neg();
         return deltaU;
@@ -148,7 +148,7 @@ contract("Pool - forked-mainnet", (accounts) => {
         redeemName = "ETH Put Redeemable Token";
         redeemSymbol = "REDEEM";
         base = toWei("200");
-        price = toWei("1");
+        quote = toWei("1");
         expiry = "1590868800"; // May 30, 2020, 8PM UTC */
 
         // test for $300 ETH CALL EXPIRING
@@ -164,7 +164,7 @@ contract("Pool - forked-mainnet", (accounts) => {
         redeemName = "ETH Call Redeemable Token";
         redeemSymbol = "REDEEM";
         base = toWei("1");
-        price = toWei("300");
+        quote = toWei("300");
         expiry = "1593129600"; // June 26, 2020, 0:00:00 UTC
 
         trader = await PrimeTrader.new(MAINNET_WETH);
@@ -175,7 +175,7 @@ contract("Pool - forked-mainnet", (accounts) => {
             tokenU,
             tokenS,
             base,
-            price,
+            quote,
             expiry
         );
         tokenP = prime.address;
@@ -246,7 +246,7 @@ contract("Pool - forked-mainnet", (accounts) => {
                 tokenS,
                 await pool.volatility(),
                 await prime.base(),
-                await prime.price(),
+                await prime.quote(),
                 await prime.expiry()
             );
             premium = new BN(premium);
@@ -369,7 +369,7 @@ contract("Pool - forked-mainnet", (accounts) => {
                 let balance0R = await getTokenBalance(redeem, pool.address);
                 let balance0RinU = balance0R
                     .mul(new BN(base))
-                    .div(new BN(price));
+                    .div(new BN(quote));
                 let balance0CS = await getBalance(_tokenS, pool.address);
                 let balance0CU = await getBalance(_tokenU, pool.address);
                 let balance0TS = await getTotalSupply();
@@ -423,7 +423,7 @@ contract("Pool - forked-mainnet", (accounts) => {
                 let balance1R = await getTokenBalance(redeem, pool.address);
                 let balance1RinU = balance1R
                     .mul(new BN(base))
-                    .div(new BN(price));
+                    .div(new BN(quote));
                 let balance1CS = await getBalance(_tokenS, pool.address);
                 let unutilized1 = await pool.totalUnutilized(tokenP);
                 let utilized1 = await pool.totalUtilized(tokenP);
@@ -504,7 +504,7 @@ contract("Pool - forked-mainnet", (accounts) => {
                 let balance0TS = await getTotalSupply();
                 let balance0TP = await getTotalPoolBalance();
 
-                let outTokenU = inTokenS.mul(new BN(base)).div(new BN(price));
+                let outTokenU = inTokenS.mul(new BN(base)).div(new BN(quote));
                 let premium = await getPremium();
                 premium = premium.mul(inTokenS).div(new BN(toWei("1")));
 
@@ -658,7 +658,7 @@ contract("Pool - forked-mainnet", (accounts) => {
                 let discountedPremium = premium.sub(premium.div(new BN(5)));
                 let expectedDeltaU = deltaR
                     .mul(new BN(base))
-                    .div(new BN(price));
+                    .div(new BN(quote));
                 expectedDeltaU.iadd(discountedPremium);
 
                 expect(deltaU).to.be.a.bignumber.that.is.at.most(

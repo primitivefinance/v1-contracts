@@ -21,7 +21,7 @@ contract("Prime", (accounts) => {
     const Alice = accounts[0];
 
     let tokenU, tokenS, tokenP;
-    let base, price, expiry;
+    let base, quote, expiry;
     let factory, flash, prime, registry;
     let Primitive;
 
@@ -33,7 +33,7 @@ contract("Prime", (accounts) => {
         tokenU = await newERC20("Test DAI", "DAI", THOUSAND_ETHER);
         tokenS = await newWeth();
         base = toWei("200");
-        price = toWei("1");
+        quote = toWei("1");
         expiry = "1690868800"; // May 30, 2020, 8PM UTC
 
         Primitive = await newPrimitive(
@@ -41,7 +41,7 @@ contract("Prime", (accounts) => {
             tokenU,
             tokenS,
             base,
-            price,
+            quote,
             expiry
         );
 
@@ -55,7 +55,7 @@ contract("Prime", (accounts) => {
             let inTokenU = new BN(ONE_ETHER);
             let flashFee = inTokenU
                 .div(new BN(1000))
-                .mul(new BN(price))
+                .mul(new BN(quote))
                 .div(new BN(base));
             await tokenU.transfer(prime.address, inTokenU);
             await prime.mint(Alice);

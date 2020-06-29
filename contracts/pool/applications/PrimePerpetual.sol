@@ -63,11 +63,11 @@ contract PrimePerpetual is IPrimePerpetual, PrimePool {
     function mint(uint inTokenS) external override nonReentrant whenNotPaused returns (bool) {
         // Store in memory for gas savings.
         address _tokenP = tokenP;
-        (, address tokenS, , uint base, uint price,) = IPrime(_tokenP).prime();
+        (, address tokenS, , uint base, uint quote,) = IPrime(_tokenP).prime();
 
-        // outTokenU = inTokenS * Quantity of tokenU (base) / Quantity of tokenS (price).
+        // outTokenU = inTokenS * Quantity of tokenU (base) / Quantity of tokenS (quote).
         // Units = tokenS * tokenU / tokenS = tokenU.
-        uint outTokenU = inTokenS.mul(base).div(price);
+        uint outTokenU = inTokenS.mul(base).div(quote);
         uint _fee = inTokenS.div(fee);
         uint payment = inTokenS.add(_fee);
         require(IERC20(tokenS).balanceOf(msg.sender) >= payment, "ERR_BAL_STRIKE");
@@ -92,11 +92,11 @@ contract PrimePerpetual is IPrimePerpetual, PrimePool {
      */
     function redeem(uint inTokenP) external override nonReentrant returns (bool) {
         address _tokenP = tokenP;
-        (, address tokenS, , uint base, uint price,) = IPrime(_tokenP).prime();
+        (, address tokenS, , uint base, uint quote,) = IPrime(_tokenP).prime();
         require(IERC20(_tokenP).balanceOf(msg.sender) >= inTokenP, "ERR_BAL_PRIME");
 
         // Calculate amount of tokenS to push out.
-        uint outTokenS = inTokenP.mul(price).div(base); 
+        uint outTokenS = inTokenP.mul(quote).div(base); 
 
         // Swap from interest bearing to push to msg.sender.
         swapFromInterestBearing(cdai, outTokenS);
@@ -111,11 +111,11 @@ contract PrimePerpetual is IPrimePerpetual, PrimePool {
 
     function exercise(uint inTokenP) external override nonReentrant returns (bool) {
         address _tokenP = tokenP;
-        (, , , uint base, uint price,) = IPrime(_tokenP).prime();
+        (, , , uint base, uint quote,) = IPrime(_tokenP).prime();
         require(IERC20(_tokenP).balanceOf(msg.sender) >= inTokenP, "ERR_BAL_PRIME");
 
         // Calculate amount of tokenS to push out.
-        uint outTokenS = inTokenP.mul(price).div(base);
+        uint outTokenS = inTokenP.mul(quote).div(base);
         outTokenS = outTokenS.add(outTokenS.div(IPrime(_tokenP).FEE()));
 
         // Swap from interest bearing to push to msg.sender.
@@ -155,8 +155,8 @@ contract PrimePerpetual is IPrimePerpetual, PrimePool {
 
     function totalBalance() public override view returns (uint poolBalance) {
         (uint balanceU,) = interestBalances();
-        (, , address tokenR, uint base, uint price,) = IPrime(tokenP).prime();
-        poolBalance = balanceU.add(IERC20(tokenR).balanceOf(address(this)).mul(base).div(price));
+        (, , address tokenR, uint base, uint quote,) = IPrime(tokenP).prime();
+        poolBalance = balanceU.add(IERC20(tokenR).balanceOf(address(this)).mul(base).div(quote));
     }
 }
 

@@ -44,7 +44,7 @@ contract("Prime Option Contract", (accounts) => {
 
     let weth, dai, prime, redeem;
     let tokenU, tokenS;
-    let base, price, expiry;
+    let base, quote, expiry;
     let registry, factoryOption, Primitive;
 
     before(async () => {
@@ -56,7 +56,7 @@ contract("Prime Option Contract", (accounts) => {
         tokenU = dai;
         tokenS = weth;
         base = toWei("200");
-        price = toWei("1");
+        quote = toWei("1");
         expiry = "1690868800"; // May 30, 2020, 8PM UTC
 
         Primitive = await newPrimitive(
@@ -64,7 +64,7 @@ contract("Prime Option Contract", (accounts) => {
             tokenU,
             tokenS,
             base,
-            price,
+            quote,
             expiry
         );
 
@@ -97,7 +97,7 @@ contract("Prime Option Contract", (accounts) => {
                 tokenU.address,
                 tokenS.address,
                 base,
-                price,
+                quote,
                 expiry
             );
             assert.equal(option, prime.address, "Incorrect option address");
@@ -109,7 +109,7 @@ contract("Prime Option Contract", (accounts) => {
                     ZERO_ADDRESS,
                     tokenS.address,
                     base,
-                    price,
+                    quote,
                     expiry
                 ),
                 "ERR_ADDRESS"
@@ -179,11 +179,11 @@ contract("Prime Option Contract", (accounts) => {
             );
         });
 
-        it("should return the correct price", async () => {
+        it("should return the correct quote", async () => {
             assert.equal(
-                (await prime.price()).toString(),
-                price,
-                "Incorrect price"
+                (await prime.quote()).toString(),
+                quote,
+                "Incorrect quote"
             );
         });
 
@@ -213,7 +213,7 @@ contract("Prime Option Contract", (accounts) => {
                 "Incorrect expiry"
             );
             assert.equal(result._base.toString(), base, "Incorrect expiry");
-            assert.equal(result._price.toString(), price, "Incorrect expiry");
+            assert.equal(result._quote.toString(), quote, "Incorrect expiry");
             assert.equal(result._expiry.toString(), expiry, "Incorrect expiry");
         });
 
@@ -338,7 +338,7 @@ contract("Prime Option Contract", (accounts) => {
                     tokenU,
                     tokenS,
                     base,
-                    price,
+                    quote,
                     expiry
                 );
 
@@ -348,7 +348,7 @@ contract("Prime Option Contract", (accounts) => {
                 mint = async (inTokenU) => {
                     inTokenU = new BN(inTokenU);
                     let outTokenR = inTokenU
-                        .mul(new BN(price))
+                        .mul(new BN(quote))
                         .div(new BN(base));
 
                     let balanceU = await getBalance(tokenU, Alice);
@@ -428,7 +428,7 @@ contract("Prime Option Contract", (accounts) => {
                     tokenU,
                     tokenS,
                     base,
-                    price,
+                    quote,
                     expiry
                 );
 
@@ -438,11 +438,11 @@ contract("Prime Option Contract", (accounts) => {
                 exercise = async (inTokenP) => {
                     inTokenP = new BN(inTokenP);
                     let inTokenS = inTokenP
-                        .mul(new BN(price))
+                        .mul(new BN(quote))
                         .div(new BN(base));
                     let fee = inTokenP
                         .div(new BN(1000))
-                        .mul(new BN(price))
+                        .mul(new BN(quote))
                         .div(new BN(base));
                     let outTokenU = inTokenP;
 
@@ -523,10 +523,10 @@ contract("Prime Option Contract", (accounts) => {
             it("reverts if outTokenU > inTokenP, not enough tokenP was sent in", async () => {
                 await mint(toWei("0.01"));
                 await prime.transfer(prime.address, toWei("0.01"));
-                await tokenS.deposit({ from: Alice, value: price });
-                await tokenS.transfer(prime.address, price);
+                await tokenS.deposit({ from: Alice, value: quote });
+                await tokenS.transfer(prime.address, quote);
                 await truffleAssert.reverts(
-                    prime.exercise(Alice, price, [], { from: Alice }),
+                    prime.exercise(Alice, quote, [], { from: Alice }),
                     ERR_BAL_UNDERLYING
                 );
                 await prime.take();
@@ -542,7 +542,7 @@ contract("Prime Option Contract", (accounts) => {
 
             it("should revert because no tokenP were sent to contract", async () => {
                 await mint(FIVE_ETHER);
-                await tokenS.transfer(prime.address, price);
+                await tokenS.transfer(prime.address, quote);
                 await truffleAssert.reverts(
                     prime.exercise(Alice, ONE_ETHER, [], { from: Alice }),
                     "ERR_BAL_INPUT"
@@ -552,7 +552,7 @@ contract("Prime Option Contract", (accounts) => {
             it("exercises consecutively", async () => {
                 let inTokenP = ONE_ETHER;
                 await mint(inTokenP);
-                await tokenS.deposit({ from: Alice, value: price });
+                await tokenS.deposit({ from: Alice, value: quote });
                 await exercise(toWei("0.1"));
                 await exercise(toWei("0.34521"));
 
@@ -572,7 +572,7 @@ contract("Prime Option Contract", (accounts) => {
                     tokenU,
                     tokenS,
                     base,
-                    price,
+                    quote,
                     expiry
                 );
 
@@ -648,7 +648,7 @@ contract("Prime Option Contract", (accounts) => {
                 let inTokenR = ONE_ETHER;
                 let inTokenU = new BN(inTokenR)
                     .mul(new BN(base))
-                    .div(new BN(price));
+                    .div(new BN(quote));
                 await mint(inTokenU);
                 await exercise(inTokenU);
                 await callRedeem(toWei("0.1"));
@@ -666,7 +666,7 @@ contract("Prime Option Contract", (accounts) => {
                     tokenU,
                     tokenS,
                     base,
-                    price,
+                    quote,
                     expiry
                 );
 
@@ -676,7 +676,7 @@ contract("Prime Option Contract", (accounts) => {
                 close = async (inTokenP) => {
                     inTokenP = new BN(inTokenP);
                     let inTokenR = inTokenP
-                        .mul(new BN(price))
+                        .mul(new BN(quote))
                         .div(new BN(base));
                     let outTokenU = inTokenP;
 
@@ -744,7 +744,7 @@ contract("Prime Option Contract", (accounts) => {
                 let inTokenP = ONE_ETHER;
                 await mint(inTokenP);
                 let inTokenR = new BN(inTokenP)
-                    .mul(new BN(price))
+                    .mul(new BN(quote))
                     .div(new BN(base));
                 await redeem.transfer(prime.address, inTokenR, {
                     from: Alice,
@@ -760,7 +760,7 @@ contract("Prime Option Contract", (accounts) => {
                 let inTokenP = ONE_ETHER;
                 await mint(inTokenP);
                 let inTokenR = new BN(inTokenP)
-                    .mul(new BN(price))
+                    .mul(new BN(quote))
                     .div(new BN(base));
                 await redeem.transfer(prime.address, inTokenR, {
                     from: Alice,
@@ -795,7 +795,7 @@ contract("Prime Option Contract", (accounts) => {
                     tokenU,
                     tokenS,
                     base,
-                    price,
+                    quote,
                     expiry
                 );
 
@@ -835,7 +835,7 @@ contract("Prime Option Contract", (accounts) => {
                     tokenU,
                     tokenS,
                     base,
-                    price,
+                    quote,
                     expiry
                 );
 
@@ -847,7 +847,7 @@ contract("Prime Option Contract", (accounts) => {
                 await tokenU.mint(Alice, THOUSAND_ETHER);
                 let inTokenU = THOUSAND_ETHER;
                 let inTokenS = new BN(inTokenU)
-                    .mul(new BN(price))
+                    .mul(new BN(quote))
                     .div(new BN(base));
                 await tokenS.deposit({ from: Alice, value: inTokenS });
                 await mint(inTokenU);
@@ -890,7 +890,7 @@ contract("Prime Option Contract", (accounts) => {
                     tokenU,
                     tokenS,
                     base,
-                    price,
+                    quote,
                     expiry
                 );
 
@@ -903,7 +903,7 @@ contract("Prime Option Contract", (accounts) => {
                 await tokenU.mint(Alice, THOUSAND_ETHER);
                 let inTokenU = THOUSAND_ETHER;
                 let inTokenS = new BN(inTokenU)
-                    .mul(new BN(price))
+                    .mul(new BN(quote))
                     .div(new BN(base));
                 await tokenS.deposit({ from: Alice, value: inTokenS });
                 await mint(inTokenU);
@@ -935,7 +935,7 @@ contract("Prime Option Contract", (accounts) => {
                     tokenU.address,
                     tokenS.address,
                     base,
-                    price,
+                    quote,
                     expiry
                 );
                 redeem = await newTestRedeem(
@@ -1011,7 +1011,7 @@ contract("Prime Option Contract", (accounts) => {
                     tokenU.address,
                     tokenS.address,
                     base,
-                    price,
+                    quote,
                     expiry
                 );
                 redeem = await newTestRedeem(
@@ -1031,7 +1031,7 @@ contract("Prime Option Contract", (accounts) => {
 
             it("should revert on swap because transfer does not return a boolean", async () => {
                 let inTokenP = HUNDRED_ETHER;
-                let inTokenS = toWei("0.5"); // 100 ether (tokenU:base) / 200 (tokenS:price) = 0.5 tokenS
+                let inTokenS = toWei("0.5"); // 100 ether (tokenU:base) / 200 (tokenS:quote) = 0.5 tokenS
                 await tokenS.transfer(prime.address, inTokenS);
                 await prime.transfer(prime.address, inTokenP);
                 await truffleAssert.reverts(
@@ -1041,7 +1041,7 @@ contract("Prime Option Contract", (accounts) => {
 
             it("should revert on redeem because transfer does not return a boolean", async () => {
                 // no way to swap, because it reverts, so we need to send tokenS and call update()
-                let inTokenS = toWei("0.5"); // 100 ether (tokenU:base) / 200 (tokenS:price) = 0.5 tokenS
+                let inTokenS = toWei("0.5"); // 100 ether (tokenU:base) / 200 (tokenS:quote) = 0.5 tokenS
                 await tokenS.transfer(prime.address, inTokenS);
                 await prime.update();
                 await redeem.transfer(prime.address, inTokenS);
@@ -1051,7 +1051,7 @@ contract("Prime Option Contract", (accounts) => {
             it("should revert on close because transfer does not return a boolean", async () => {
                 // no way to swap, because it reverts, so we need to send tokenS and call update()
                 let inTokenP = HUNDRED_ETHER;
-                let inTokenR = toWei("0.5"); // 100 ether (tokenU:base) / 200 (tokenS:price) = 0.5 tokenS
+                let inTokenR = toWei("0.5"); // 100 ether (tokenU:base) / 200 (tokenS:quote) = 0.5 tokenS
                 await redeem.transfer(prime.address, inTokenR);
                 await prime.transfer(prime.address, inTokenP);
                 await truffleAssert.reverts(prime.close(Alice));

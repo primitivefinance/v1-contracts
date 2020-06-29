@@ -36,7 +36,7 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
         isSupported[token] = true;
     }
 
-    function deployOption(address tokenU, address tokenS, uint base, uint price, uint expiry)
+    function deployOption(address tokenU, address tokenS, uint base, uint quote, uint expiry)
         external
         override
         nonReentrant
@@ -45,11 +45,11 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
     {
         // Checks
         require(tokenU != tokenS && isSupported[tokenU] && isSupported[tokenS], "ERR_ADDRESS");
-        bytes32 id = getId(tokenU, tokenS, base, price, expiry);
+        bytes32 id = getId(tokenU, tokenS, base, quote, expiry);
         require(options[id] == address(0), "ERR_OPTION_DEPLOYED");
 
         // Deploy option and redeem.
-        prime = IFactory(factory).deploy(tokenU, tokenS, base, price, expiry);
+        prime = IFactory(factory).deploy(tokenU, tokenS, base, quote, expiry);
         options[id] = prime;
         activeOptions.push(prime);
         address redeem = IFactoryRedeem(factoryRedeem).deploy(prime, tokenS);
@@ -66,13 +66,13 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
         len = activeOptions.length;
     }
 
-    function getId(address tokenU, address tokenS, uint base, uint price, uint expiry)
+    function getId(address tokenU, address tokenS, uint base, uint quote, uint expiry)
         public pure returns (bytes32 id) {
-        id = keccak256(abi.encodePacked(tokenU, tokenS, base, price, expiry));
+        id = keccak256(abi.encodePacked(tokenU, tokenS, base, quote, expiry));
     }
 
-    function getOption(address tokenU, address tokenS, uint base, uint price, uint expiry)
+    function getOption(address tokenU, address tokenS, uint base, uint quote, uint expiry)
         public view returns (address option) {
-        option = options[getId(tokenU, tokenS, base, price, expiry)];
+        option = options[getId(tokenU, tokenS, base, quote, expiry)];
     }
 }

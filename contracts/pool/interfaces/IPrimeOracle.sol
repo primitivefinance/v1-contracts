@@ -5,14 +5,14 @@ interface IPrimeOracle {
         address tokenU,
         address tokenS,
         uint256 base,
-        uint256 price
+        uint256 quote
     ) external view returns (uint256 intrinsic);
     function calculateExtrinsic(
         address tokenU,
         address tokenS,
         uint256 volatility,
         uint256 base,
-        uint256 price,
+        uint256 quote,
         uint256 expiry
     ) external view returns (uint256 extrinsic);
     function calculatePremium(
@@ -20,7 +20,7 @@ interface IPrimeOracle {
         address tokenS,
         uint256 volatility,
         uint256 base,
-        uint256 price,
+        uint256 quote,
         uint256 expiry
     ) external view returns (uint256 premium);
 }

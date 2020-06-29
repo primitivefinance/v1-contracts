@@ -22,7 +22,7 @@ interface IPrime {
     function tokenS() external view returns (address);
     function tokenU() external view returns (address);
     function base() external view returns (uint);
-    function price() external view returns (uint);
+    function quote() external view returns (uint);
     function expiry() external view returns (uint);
     function cacheU() external view returns (uint);
     function cacheS() external view returns (uint);
@@ -34,7 +34,7 @@ interface IPrime {
             address _tokenU,
             address _tokenR,
             uint _base,
-            uint _price,
+            uint _quote,
             uint _expiry
     );
     function initTokenR(address _tokenR) external;

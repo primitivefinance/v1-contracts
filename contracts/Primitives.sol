@@ -12,7 +12,7 @@ library Primitives {
         address tokenU;
         address tokenS;
         uint256 base;
-        uint256 price;
+        uint256 quote;
         uint256 expiry;
     }
 }

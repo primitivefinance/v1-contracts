@@ -46,13 +46,13 @@ async function setupPrimitive() {
     usdcToken = new ethers.Contract(usdcToken.address, usdcToken.abi, Alice);
 
     const base = parseEther("1");
-    const price = parseEther("300");
+    const quote = parseEther("300");
     const expiry = "1790868800";
     let optionAddress = await registry.getOption(
         ethToken.address,
         usdcToken.address,
         base,
-        price,
+        quote,
         expiry
     );
 
@@ -61,7 +61,7 @@ async function setupPrimitive() {
             ethToken.address,
             usdcToken.address,
             base,
-            price,
+            quote,
             expiry,
             { from: Alice.address, gasLimit: 7000000 }
         );
@@ -70,7 +70,7 @@ async function setupPrimitive() {
             ethToken.address,
             usdcToken.address,
             base,
-            price,
+            quote,
             expiry
         );
         console.log(optionAddress);
