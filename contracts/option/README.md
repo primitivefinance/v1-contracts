@@ -9,6 +9,14 @@ The option module is a contract library that defines the option's attributes, me
 -   Applications/registry
 -   Interfaces/option+registry
 
+## External Dependencies - All Open Zeppelin
+
+-   ReentrancyGuard
+-   SafeMath
+-   ERC20
+-   Ownable
+-   Pausable
+
 ## Primitives
 
 The option is a standalone contract that inherits the ERC-20 token contract and some utility contracts, all from Open Zeppelin's contract library. The option is paired with a redeem token contract, which is a vanilla ERC-20 with a `mint` and `burn` function that is only callable by the option contract.
