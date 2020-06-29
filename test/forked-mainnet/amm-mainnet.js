@@ -5,14 +5,14 @@ const BN = require("bn.js");
 chai.use(require("chai-bn")(BN));
 const daiABI = require("../../contracts/test/abi/dai");
 const Weth = require("../../contracts/test/abi/WETH9.json");
-const PrimeOption = artifacts.require("PrimeOption");
-const PrimeAMM = artifacts.require("PrimeAMM");
-const PrimeTrader = artifacts.require("PrimeTrader");
-const PrimeRedeem = artifacts.require("PrimeRedeem");
-const PrimeOracle = artifacts.require("PrimeOracle");
-const utils = require("../utils");
-const setup = require("../setup");
-const constants = require("../constants");
+const Option = artifacts.require("Option");
+const AMM = artifacts.require("AMM");
+const Trader = artifacts.require("Trader");
+const Redeem = artifacts.require("Redeem");
+const Oracle = artifacts.require("Oracle");
+const utils = require("../lib/utils");
+const setup = require("../lib/setup");
+const constants = require("../lib/constants");
 const {
     toWei,
     fromWei,
@@ -21,7 +21,7 @@ const {
     calculateRemoveLiquidity,
     verifyOptionInvariants,
 } = utils;
-const { newERC20, newWeth, newOptionFactory, newPrime, newRedeem } = setup;
+const { newERC20, newWeth, newOptionFactory, newOption, newRedeem } = setup;
 const {
     TREASURER,
     MAINNET_DAI,
@@ -169,16 +169,14 @@ contract("AMM - forked-mainnet", (accounts) => {
         quote = toWei("300");
         expiry = "1593129600"; // June 26, 2020, 0:00:00 UTC
 
-        trader = await PrimeTrader.new(MAINNET_WETH);
+        trader = await Trader.new(MAINNET_WETH);
         factory = await newOptionFactory();
-        prime = await newPrime(
-            factory,
-            _tokenU._address,
-            _tokenS._address,
-            base,
-            quote,
-            expiry
-        );
+        prime = await new (factory,
+        _tokenU._address,
+        _tokenS._address,
+        base,
+        quote,
+        expiry)();
         redeem = await newRedeem(prime);
 
         Primitive = {
@@ -188,8 +186,8 @@ contract("AMM - forked-mainnet", (accounts) => {
             redeem: redeem,
         };
 
-        oracle = await PrimeOracle.new(MAINNET_ORACLE, MAINNET_WETH);
-        pool = await PrimeAMM.new(
+        oracle = await Oracle.new(MAINNET_ORACLE, MAINNET_WETH);
+        pool = await AMM.new(
             MAINNET_WETH,
             prime.address,
             oracle.address,
@@ -497,7 +495,7 @@ contract("AMM - forked-mainnet", (accounts) => {
                 inTokenS = new BN(inTokenS);
                 let balance0U = await getBalance(_tokenU, Alice);
                 let balance0P = await getTokenBalance(pool, Alice);
-                let balance0Prime = await getTokenBalance(prime, Alice);
+                let balance0 = await getTokenBalance(prime, Alice);
                 let balance0S = await getBalance(_tokenS, Alice);
                 let balance0CU = await getBalance(_tokenU, pool.address);
                 let balance0TS = await getTotalSupply();
@@ -533,7 +531,7 @@ contract("AMM - forked-mainnet", (accounts) => {
 
                 let balance1U = await getBalance(_tokenU, Alice);
                 let balance1P = await getTokenBalance(pool, Alice);
-                let balance1Prime = await getTokenBalance(prime, Alice);
+                let balance1 = await getTokenBalance(prime, Alice);
                 let balance1S = await getBalance(_tokenS, Alice);
                 let balance1CU = await getBalance(_tokenU, pool.address);
                 let balance1TS = await getTotalSupply();
@@ -542,14 +540,14 @@ contract("AMM - forked-mainnet", (accounts) => {
                 let deltaU = balance1U.sub(balance0U);
                 let deltaP = balance1P.sub(balance0P);
                 let deltaS = balance1S.sub(balance0S);
-                let deltaPrime = balance1Prime.sub(balance0Prime);
+                let delta = balance1.sub(balance0);
                 let deltaCU = balance1CU.sub(balance0CU);
                 let deltaTS = balance1TS.sub(balance0TS);
                 let deltaTP = balance1TP.sub(balance0TP);
 
                 assertBNEqual(deltaU, premium.neg());
                 assertBNEqual(deltaP, new BN(0));
-                assertBNEqual(deltaPrime, outTokenU);
+                assertBNEqual(delta, outTokenU);
                 assertBNEqual(deltaS, new BN(0));
                 assertBNEqual(deltaCU, outTokenU.neg().iadd(premium));
                 assertBNEqual(deltaTS, new BN(0));
@@ -586,7 +584,7 @@ contract("AMM - forked-mainnet", (accounts) => {
                 inTokenP = new BN(inTokenP);
                 let balance0U = await getBalance(_tokenU, Alice);
                 let balance0P = await getTokenBalance(pool, Alice);
-                let balance0Prime = await getTokenBalance(prime, Alice);
+                let balance0 = await getTokenBalance(prime, Alice);
                 let balance0S = await getBalance(_tokenS, Alice);
                 let balance0R = await getTokenBalance(redeem, pool.address);
                 let balance0CU = await getBalance(_tokenU, pool.address);
@@ -596,7 +594,7 @@ contract("AMM - forked-mainnet", (accounts) => {
                 let premium = await getPremium();
                 premium = premium.mul(inTokenP).div(new BN(toWei("1")));
 
-                if (balance0Prime.lt(inTokenP)) {
+                if (balance0.lt(inTokenP)) {
                     return;
                 }
 
@@ -629,7 +627,7 @@ contract("AMM - forked-mainnet", (accounts) => {
 
                 let balance1U = await getBalance(_tokenU, Alice);
                 let balance1P = await getTokenBalance(pool, Alice);
-                let balance1Prime = await getTokenBalance(prime, Alice);
+                let balance1 = await getTokenBalance(prime, Alice);
                 let balance1R = await getTokenBalance(redeem, pool.address);
                 let balance1S = await getBalance(_tokenS, Alice);
                 let balance1CU = await getBalance(_tokenU, pool.address);
@@ -640,7 +638,7 @@ contract("AMM - forked-mainnet", (accounts) => {
                 let deltaP = balance1P.sub(balance0P);
                 let deltaS = balance1S.sub(balance0S);
                 let deltaR = balance1R.sub(balance0R);
-                let deltaPrime = balance1Prime.sub(balance0Prime);
+                let delta = balance1.sub(balance0);
                 let deltaCU = balance1CU.sub(balance0CU);
                 let deltaTS = balance1TS.sub(balance0TS);
 
@@ -673,7 +671,7 @@ contract("AMM - forked-mainnet", (accounts) => {
                     expectedDeltaU.sub(new BN(10)).neg()
                 );
                 assertBNEqual(deltaP, new BN(0));
-                assertBNEqual(deltaPrime, inTokenP.neg());
+                assertBNEqual(delta, inTokenP.neg());
                 assertBNEqual(deltaS, new BN(0));
                 assertBNEqual(deltaTS, new BN(0));
             };

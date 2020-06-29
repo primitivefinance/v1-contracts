@@ -1,7 +1,7 @@
 const bre = require("@nomiclabs/buidler/config");
-const { setupRinkeby, setupPrimitive, setupTest } = require("./setup");
+const { setupRinkeby, setupPrimitive, setupTest } = require("./lib/setup");
 const { parseEther } = require("ethers/utils");
-const { checkAllowance } = require("./utils");
+const { checkAllowance } = require("./lib/utils");
 
 task("trader:mint", "Mints options")
     .addParam("amount", "The amount of options to buy")

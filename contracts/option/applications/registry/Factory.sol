@@ -5,7 +5,7 @@ pragma solidity ^0.6.2;
  * @author Primitive
  */
 
-import "../../primitives/PrimeOption.sol";
+import "../../primitives/Option.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Factory is Ownable {
@@ -16,12 +16,12 @@ contract Factory is Ownable {
     function deploy(address tokenU, address tokenS, uint base, uint quote, uint expiry)
         external
         onlyOwner
-        returns (address prime)
-    { prime = address(new PrimeOption(tokenU, tokenS, base, quote, expiry)); }
+        returns (address option)
+    { option = address(new Option(tokenU, tokenS, base, quote, expiry)); }
 
-    function kill(address prime) external onlyOwner { PrimeOption(prime).kill(); }
+    function kill(address option) external onlyOwner { Option(option).kill(); }
 
-    function initialize(address prime, address redeem) external onlyOwner {
-        PrimeOption(prime).initTokenR(redeem);
+    function initialize(address option, address redeem) external onlyOwner {
+        Option(option).initTokenR(redeem);
     }
 }

@@ -5,7 +5,7 @@ pragma solidity ^0.6.2;
  * @author Primitive
  */
 
-import "../../interfaces/IPrime.sol";
+import "../../interfaces/IOption.sol";
 import "../../interfaces/IRegistry.sol";
 import "../../interfaces/IFactory.sol";
 import "../../interfaces/IFactoryRedeem.sol";
@@ -41,7 +41,7 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
         override
         nonReentrant
         whenNotPaused
-        returns (address prime)
+        returns (address option)
     {
         // Checks
         require(tokenU != tokenS && isSupported[tokenU] && isSupported[tokenS], "ERR_ADDRESS");
@@ -49,17 +49,17 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
         require(options[id] == address(0), "ERR_OPTION_DEPLOYED");
 
         // Deploy option and redeem.
-        prime = IFactory(factory).deploy(tokenU, tokenS, base, quote, expiry);
-        options[id] = prime;
-        activeOptions.push(prime);
-        address redeem = IFactoryRedeem(factoryRedeem).deploy(prime, tokenS);
+        option = IFactory(factory).deploy(tokenU, tokenS, base, quote, expiry);
+        options[id] = option;
+        activeOptions.push(option);
+        address redeem = IFactoryRedeem(factoryRedeem).deploy(option, tokenS);
 
-        IFactory(factory).initialize(prime, redeem);
-        emit Deploy(msg.sender, prime, id);
+        IFactory(factory).initialize(option, redeem);
+        emit Deploy(msg.sender, option, id);
     }
 
-    function kill(address prime) external override onlyOwner {
-        IFactory(factory).kill(prime);
+    function kill(address option) external override onlyOwner {
+        IFactory(factory).kill(option);
     }
 
     function optionsLength() public view override returns (uint len) {

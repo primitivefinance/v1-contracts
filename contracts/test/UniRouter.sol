@@ -1,6 +1,6 @@
 pragma solidity ^0.6.2;
 
-import "../pool/interfaces/IPrimeOracle.sol";
+import "../pool/interfaces/IOracle.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -24,7 +24,7 @@ contract UniRouter {
         address to,
         uint deadline
     ) external returns (uint[] memory amounts) {
-        uint market = IPrimeOracle(oracle).marketPrice();
+        uint market = IOracle(oracle).marketPrice();
         uint amountOut = path[0] == address(weth) ? market : amountIn.mul(1 ether).div(market);
         require(amountOut >= amountOutMin, "INSUFFICIENT_AMOUNT_OUT");
         IERC20(path[0]).transferFrom(msg.sender, address(this), amountIn);
