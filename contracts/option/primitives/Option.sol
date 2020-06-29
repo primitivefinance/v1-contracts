@@ -39,7 +39,7 @@ contract Option is IOption, ERC20, ReentrancyGuard, Pausable {
         uint expiry
     )
         public
-        ERC20("Primitive V1 Vanilla Option", "PRIME")
+        ERC20("Primitive V1 Vanilla Option", "OPTION")
     {
         factory = msg.sender;
         option = Primitives.Option(

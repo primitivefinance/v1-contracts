@@ -1,7 +1,7 @@
 pragma solidity ^0.6.2;
 
 /**
- * @title   Vanilla Option Pool
+ * @title   Vanilla Option Pool Base
  * @author  Primitive
  */
 
