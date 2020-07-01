@@ -1,5 +1,7 @@
 # Testing
 
+The testing files match the module directory structure.
+
 ## Use Docker
 
 ```

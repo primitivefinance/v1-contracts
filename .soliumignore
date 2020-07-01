@@ -1,4 +1,6 @@
 node_modules
 
 contracts/test/
-contracts/tokens/
+contracts/test/tokens
+contracts/option/interfaces
+contracts/pool/interfaces

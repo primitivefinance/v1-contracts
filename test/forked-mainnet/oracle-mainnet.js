@@ -2,8 +2,8 @@ const { assert, expect } = require("chai");
 const chai = require("chai");
 const BN = require("bn.js");
 chai.use(require("chai-bn")(BN));
-const PrimeOracle = artifacts.require("PrimeOracle");
-const constants = require("../constants");
+const Oracle = artifacts.require("Oracle");
+const constants = require("../lib/constants");
 const { ONE_ETHER } = constants.VALUES;
 const { MAX_SLIPPAGE, MAX_ERROR_PTS } = constants.PARAMETERS;
 const {
@@ -13,7 +13,7 @@ const {
     MAINNET_WETH,
 } = constants.ADDRESSES;
 
-const utils = require("../utils");
+const utils = require("../lib/utils");
 const { toWei, fromWei, assertBNEqual, assertWithinError } = utils;
 
 const LOG_INTRINSIC = true;
@@ -24,7 +24,7 @@ contract("Oracle contract - mainnet", (accounts) => {
     let oracle, dai, id;
 
     before(async () => {
-        oracle = await PrimeOracle.new(MAINNET_ORACLE, MAINNET_WETH);
+        oracle = await Oracle.new(MAINNET_ORACLE, MAINNET_WETH);
         dai = MAINNET_DAI;
         id = await web3.eth.net.getId();
 
@@ -68,7 +68,7 @@ contract("Oracle contract - mainnet", (accounts) => {
                     base: toWei(
                         (ethPrice * getRandomArbitrary(0.9, 1.1)).toString()
                     ),
-                    price: toWei("1"),
+                    quote: toWei("1"),
                     expiry: randomDate(1594512000, 1609459200),
                 };
                 return option;
@@ -78,7 +78,7 @@ contract("Oracle contract - mainnet", (accounts) => {
                 let option = {
                     volatility: Math.floor(1000 * Math.random()),
                     base: toWei("1"),
-                    price: toWei(
+                    quote: toWei(
                         (ethPrice * getRandomArbitrary(0.9, 1.1)).toString()
                     ),
                     expiry: randomDate(1594512000, 1609459200),
@@ -90,7 +90,7 @@ contract("Oracle contract - mainnet", (accounts) => {
                 tokenS,
                 volatility,
                 base,
-                price,
+                quote,
                 expiry
             ) => {
                 let premium = await oracle.calculatePremium(
@@ -98,7 +98,7 @@ contract("Oracle contract - mainnet", (accounts) => {
                     tokenS,
                     volatility,
                     base,
-                    price,
+                    quote,
                     expiry
                 );
                 return premium;
@@ -111,14 +111,14 @@ contract("Oracle contract - mainnet", (accounts) => {
             let tokenS = MAINNET_WETH;
             let volatility = 880; // Deribit's IV is 88% as of today May 3, 2020.
             let base = toWei("200");
-            let price = toWei("1");
+            let quote = toWei("1");
             let expiry = "1590753540"; // May 29 at 11:59 PM.
             let premium = await oracle.calculatePremium(
                 tokenU,
                 tokenS,
                 volatility,
                 base,
-                price,
+                quote,
                 expiry
             );
             console.log("[PREMIUM IN WEI]", premium.toString());
@@ -133,14 +133,14 @@ contract("Oracle contract - mainnet", (accounts) => {
             let tokenS = MAINNET_DAI;
             let volatility = 1000;
             let base = toWei("1");
-            let price = toWei("300");
+            let quote = toWei("300");
             let expiry = "1593129600"; // June 26, 2020, 0:00:00 UTC
             let premium = await oracle.calculatePremium(
                 tokenU,
                 tokenS,
                 volatility,
                 base,
-                price,
+                quote,
                 expiry
             );
             console.log("ETH 300 CALL JUNE 26");
@@ -161,14 +161,14 @@ contract("Oracle contract - mainnet", (accounts) => {
                         tokenS,
                         option.volatility,
                         option.base,
-                        option.price,
+                        option.quote,
                         option.expiry
                     );
 
                     let calculation = {
                         volatility: option.volatility,
                         base: fromWei(option.base),
-                        price: fromWei(option.price),
+                        quote: fromWei(option.quote),
                         expiry: new Date(option.expiry * 1000).toDateString(),
                         premium: fromWei(premium),
                     };
@@ -191,14 +191,14 @@ contract("Oracle contract - mainnet", (accounts) => {
                         tokenS,
                         option.volatility,
                         option.base,
-                        option.price,
+                        option.quote,
                         option.expiry
                     );
 
                     let calculation = {
                         volatility: option.volatility,
                         base: fromWei(option.base),
-                        price: fromWei(option.price),
+                        quote: fromWei(option.quote),
                         expiry: new Date(option.expiry * 1000).toDateString(),
                         premium: fromWei(premium),
                     };
@@ -212,12 +212,12 @@ contract("Oracle contract - mainnet", (accounts) => {
 
     describe("Calculation Intrinsic", function() {
         before(async () => {
-            calculateIntrinsic = async (tokenU, tokenS, base, price) => {
+            calculateIntrinsic = async (tokenU, tokenS, base, quote) => {
                 let intrinsic = await oracle.calculateIntrinsic(
                     tokenU,
                     tokenS,
                     base,
-                    price
+                    quote
                 );
                 let daiPerEth = await getPriceInDai();
                 let ethPerDai = await getPriceInEth();
@@ -225,7 +225,7 @@ contract("Oracle contract - mainnet", (accounts) => {
                     tokenU == MAINNET_DAI
                         ? new BN(base).sub(daiPerEth)
                         : ethPerDai
-                              .mul(daiPerEth.sub(new BN(price)))
+                              .mul(daiPerEth.sub(new BN(quote)))
                               .div(new BN(ONE_ETHER));
                 let difference =
                     intrinsic >= expected
@@ -238,7 +238,7 @@ contract("Oracle contract - mainnet", (accounts) => {
                 let results = {
                     market: daiPerEth.toString(),
                     base: base,
-                    price: price,
+                    quote: quote,
                     intrinsic: intrinsic.toString(),
                     expected: expected.toString(),
                     difference: difference.toString(),
@@ -262,7 +262,7 @@ contract("Oracle contract - mainnet", (accounts) => {
                         tokenU,
                         tokenS,
                         option.base,
-                        option.price
+                        option.quote
                     );
                 }
             };
@@ -281,7 +281,7 @@ contract("Oracle contract - mainnet", (accounts) => {
                         tokenU,
                         tokenS,
                         option.base,
-                        option.price
+                        option.quote
                     );
                 }
             };
@@ -297,7 +297,7 @@ contract("Oracle contract - mainnet", (accounts) => {
                 tokenS,
                 volatility,
                 base,
-                price,
+                quote,
                 expiry
             ) => {
                 let extrinsic = await oracle.calculateExtrinsic(
@@ -305,7 +305,7 @@ contract("Oracle contract - mainnet", (accounts) => {
                     tokenS,
                     volatility,
                     base,
-                    price,
+                    quote,
                     expiry
                 );
                 return extrinsic;
@@ -323,14 +323,14 @@ contract("Oracle contract - mainnet", (accounts) => {
                         tokenS,
                         option.volatility,
                         option.base,
-                        option.price,
+                        option.quote,
                         option.expiry
                     );
 
                     let results = {
                         volatility: option.volatility,
                         base: fromWei(option.base),
-                        price: fromWei(option.price),
+                        quote: fromWei(option.quote),
                         expiry: new Date(option.expiry * 1000).toDateString(),
                         extrinsic: fromWei(extrinsic),
                     };
