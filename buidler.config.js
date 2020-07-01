@@ -5,13 +5,16 @@ usePlugin("solidity-coverage");
 usePlugin("@nomiclabs/buidler-etherscan");
 usePlugin("@nomiclabs/buidler-web3");
 require("dotenv").config();
-const ETHERSCAN_APY_KEY = process.env.ETHERSCAN_APY_KEY;
+const crypto = require('crypto');
+const ethers = require('ethers');
+const ETHERSCAN_APY_KEY = process.env.ETHERSCAN_APY_KEY || crypto.randomBytes(20).toString('base64');
 const web3 = require("web3");
 const HDWalletProvider = require("@truffle/hdwallet-provider");
-const rinkeby = process.env.RINKEBY;
-const mainnet = process.env.MAINNET;
-const mnemonic = process.env.TEST_MNEMONIC;
-const live = process.env.MNEMONIC;
+const bip39 = require('bip39');
+const rinkeby = process.env.RINKEBY || new ethers.providers.InfuraProvider('rinkeby').connection.url;
+const mainnet = process.env.MAINNET || new ethers.providers.InfuraProvider('mainnet').connection.url;
+const mnemonic = process.env.TEST_MNEMONIC || bip39.generateMnemonic();
+const live = process.env.MNEMONIC || mnemonic;
 
 task("accounts", "Prints the list of accounts", async () => {
     const accounts = await web3.eth.getAccounts();

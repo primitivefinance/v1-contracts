@@ -20,7 +20,7 @@ contract OracleLike is IOracleLike {
        return int(price);
    }
 
-    function getUnderlyingPrice(address token) external view override returns (uint256 _price) {
+    function getUnderlyingPrice(address /* token */) external view override returns (uint256 _price) {
         _price = price;
     }
 
