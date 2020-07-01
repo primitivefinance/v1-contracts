@@ -1,0 +1,10 @@
+{
+  "name": "@primitive/engine",
+  "version": "0.1.0",
+  "description": "primitive engine",
+  "main": "lib/engine.js",
+  "repository": "https://github.com/raymondpulver/primitive-contracts",
+  "author": "Raymond Pulver IV",
+  "license": "MIT",
+  "private": false
+}

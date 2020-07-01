@@ -1,5 +1,5 @@
 {
-    "name": "@primitivefi/contracts",
+    "name": "@primitive/contracts",
     "version": "0.2.5",
     "description": "Primitive options protocol contracts.",
     "files": [
