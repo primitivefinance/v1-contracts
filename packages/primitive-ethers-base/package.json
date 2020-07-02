@@ -8,6 +8,7 @@
   "license": "MIT",
   "private": false,
   "dependencies": {
+    "axios": "^0.19.2",
     "ethers": "^4.0.47",
     "lodash": "^4.17.15",
     "moment": "^2.26.0",

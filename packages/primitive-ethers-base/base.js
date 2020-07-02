@@ -57,11 +57,44 @@ const defer = () => {
   };
 };
 
+const toChainId = (network) => {
+  if (isNaN(network)) {
+    switch (network) {
+      case 'mainnet':
+        return '1';
+      case 'kovan':
+        return '42';
+      case 'rinkeby':
+        return '4';
+      default:
+        return '1337';
+     }
+   }
+   return network;
+};
+
+const tryToGetInfura = (network) => {
+  switch (network) {
+    case '1':
+      return new ethers.providers.InfuraProvider('mainnet');
+    case '42':
+      return new ethers.providers.InfuraProvider('kovan');
+    case '4':
+      return new ethers.providers.InfuraProvider('rinkeby');
+    default:
+      return new ethers.providers.JsonRpcProvider('http://localhost:8545');
+   }
+};
+
 const makeEthersBaseClass = (artifact) => {
   const abi = uniqBy(artifact.abi, 'name');
   const contract = new ethers.Contract(ZERO_ADDRESS, abi, new ethers.providers.InfuraProvider('kovan'));
   const EthersContract = Object.getPrototypeOf(contract);
   const baseClass = class PrimitiveEthersBaseClass extends EthersBaseClass {
+    static get(network) {
+      const chainId = toChainId(network);
+      return new this(((this.networks || {})[chainId] || {}).address || ethers.constants.AddressZero, tryToGetInfura(chainId));
+    }
     static async deploy(provider, ...args) {
       const factory = new ethers.ContractFactory(abi, artifact.bytecode, provider)
       return await factory.deploy(...args);
