@@ -30,17 +30,17 @@ contract Option is IOption, ERC20, ReentrancyGuard, Pausable {
     event Redeem(address indexed from, uint inTokenR);
     event Close(address indexed from, uint inTokenP);
     event Fund(uint cacheU, uint cacheS);
-
-    constructor (
+    constructor() ERC20("Primitive V1 Vanilla Option", "OPTION") public {}
+    function initialize (
         address tokenU,
         address tokenS,
         uint base,
         uint quote,
         uint expiry
     )
-        public
-        ERC20("Primitive V1 Vanilla Option", "OPTION")
+        public 
     {
+        require(factory == address(0x0), "already initialized");
         factory = msg.sender;
         option = Primitives.Option(
             tokenU,

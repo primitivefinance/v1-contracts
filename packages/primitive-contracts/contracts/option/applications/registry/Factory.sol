@@ -7,17 +7,30 @@ pragma solidity ^0.6.2;
 
 import "../../primitives/Option.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import { FactoryLib } from "@0confirmation/sol/contracts/FactoryLib.sol";
+import { NullCloneConstructor } from "@0confirmation/sol/contracts/NullCloneConstructor.sol";
+import { OptionImplementationLauncherLib } from "./OptionImplementationLauncherLib.sol";
 
-contract Factory is Ownable {
+contract Factory is Ownable, NullCloneConstructor {
     using SafeMath for uint;
 
+    address public optionImplementationAddress;
     constructor(address registry) public { transferOwnership(registry); }
+
+    function deployOptionImpementation() public {
+      optionImplementationAddress = OptionImplementationLauncherLib.deployImplementation();
+    }
 
     function deploy(address tokenU, address tokenS, uint base, uint quote, uint expiry)
         external
         onlyOwner
         returns (address option)
-    { option = address(new Option(tokenU, tokenS, base, quote, expiry)); }
+    {
+      require(optionImplementationAddress != address(0x0), "must deploy implementation contract for Option");
+      bytes32 salt = keccak256(abi.encodePacked(OptionImplementationLauncherLib.OPTION_SALT(), tokenU, tokenS, base, quote, expiry));
+      option = FactoryLib.create2Clone(optionImplementationAddress, uint256(salt));
+      Option(option).initialize(tokenU, tokenS, base, quote, expiry);
+    }
 
     function kill(address option) external onlyOwner { Option(option).kill(); }
 
