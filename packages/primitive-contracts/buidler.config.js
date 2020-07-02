@@ -1,3 +1,23 @@
+const path = require('path');
+
+function modifyEnvironmentIfMonorepo() {
+  const parsed = path.parse(path.parse(__dirname).dir);
+  if (parsed.base === 'packages' && require(path.join(parsed.dir, 'package.json')).name === 'primitive') {
+    const mode = require('@nomiclabs/buidler/internal/core/execution-mode');
+    const { getExecutionMode } = mode;
+    mode.getExecutionMode = () => mode.ExecutionMode.EXECUTION_MODE_LINKED;
+    const cwd = process.cwd();
+    process.chdir(path.join(__dirname, 'node_modules'));
+    console.log(process.cwd());
+    return () => {
+      process.chdir(cwd);
+      mode.getExecutionMode = getExecutionMode;
+    };
+  } else return () => {};
+}
+
+const unhook = modifyEnvironmentIfMonorepo();
+
 usePlugin("@nomiclabs/buidler-truffle5");
 usePlugin("@nomiclabs/buidler-solhint");
 usePlugin("buidler-gas-reporter");
@@ -6,6 +26,9 @@ usePlugin("@nomiclabs/buidler-etherscan");
 usePlugin("@nomiclabs/buidler-web3");
 usePlugin("buidler-deploy");
 usePlugin("@nomiclabs/buidler-ethers");
+
+unhook();
+
 require("dotenv").config();
 const crypto = require('crypto');
 const ethers = require('ethers');
