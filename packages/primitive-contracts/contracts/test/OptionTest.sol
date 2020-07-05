@@ -19,11 +19,11 @@ contract OptionTest is Option {
     )
         public
         Option(
-            tokenU,
+            /* tokenU,
             tokenS,
             base,
             price,
-            expiry
+            expiry */
         )
     { }
 

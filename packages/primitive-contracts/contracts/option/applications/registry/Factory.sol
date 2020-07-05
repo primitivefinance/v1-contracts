@@ -7,8 +7,8 @@ pragma solidity ^0.6.2;
 
 import "../../primitives/Option.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import { FactoryLib } from "@0confirmation/sol/contracts/FactoryLib.sol";
-import { NullCloneConstructor } from "@0confirmation/sol/contracts/NullCloneConstructor.sol";
+import { FactoryLib } from "./FactoryLib.sol";
+import { NullCloneConstructor } from "./NullCloneConstructor.sol";
 import { OptionImplementationLauncherLib } from "./OptionImplementationLauncherLib.sol";
 
 contract Factory is Ownable, NullCloneConstructor {
