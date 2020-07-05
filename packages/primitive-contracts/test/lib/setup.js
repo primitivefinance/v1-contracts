@@ -12,9 +12,18 @@ const Registry = artifacts.require("Registry");
 const Flash = artifacts.require("Flash");
 const Weth = artifacts.require("WETH9");
 const CTokenLike = artifacts.require("CTokenLike");
+const FactoryLib = artifacts.require("FactoryLib");
+const OptionImplementationLauncherLib = artifacts.require(
+    "OptionImplementationLauncherLib"
+);
+const RedeemImplementationLauncherLib = artifacts.require(
+    "RedeemImplementationLauncherLib"
+);
 chai.use(require("chai-bn")(BN));
 const constants = require("./constants");
 const { MILLION_ETHER } = constants.VALUES;
+const bre = require("@nomiclabs/buidler/config");
+const { TruffleEnvironmentArtifacts } = require("@nomiclabs/buidler-truffle5");
 
 const newERC20 = async (name, symbol, totalSupply) => {
     let erc20 = await TestERC20.new(name, symbol, totalSupply);
@@ -42,8 +51,19 @@ const newRegistry = async () => {
 };
 
 const newOptionFactory = async (registry) => {
+    if (!artifacts.contractWasLinked(Factory)) {
+        let oImpLib = await OptionImplementationLauncherLib.new();
+        console.log("linking");
+        await Factory.link(oImpLib);
+    }
+    if (!artifacts.contractWasLinked(FactoryRedeem)) {
+        let rImpLib = await RedeemImplementationLauncherLib.new();
+        await FactoryRedeem.link(rImpLib);
+    }
     let factory = await Factory.new(registry.address);
     let factoryRedeem = await FactoryRedeem.new(registry.address);
+    await factory.deployOptionImplementation();
+    await factoryRedeem.deployRedeemImplementation();
     await registry.initialize(factory.address, factoryRedeem.address);
     return factory;
 };
@@ -54,12 +74,12 @@ const newInterestBearing = async (underlying, name, symbol) => {
 };
 
 const newTestOption = async (tokenU, tokenS, base, quote, expiry) => {
-    let prime = await OptionTest.new(tokenU, tokenS, base, quote, expiry);
+    let prime = await OptionTest.new(/* tokenU, tokenS, base, quote, expiry */);
     return prime;
 };
 
 const newTestRedeem = async (factory, prime, underlying) => {
-    let redeem = await Redeem.new(factory, prime, underlying);
+    let redeem = await Redeem.new(/* factory, prime, underlying */);
     return redeem;
 };
 

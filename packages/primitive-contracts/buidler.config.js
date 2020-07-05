@@ -1,19 +1,22 @@
-const path = require('path');
+const path = require("path");
 
 function modifyEnvironmentIfMonorepo() {
-  const parsed = path.parse(path.parse(__dirname).dir);
-  if (parsed.base === 'packages' && require(path.join(parsed.dir, 'package.json')).name === 'primitive') {
-    const mode = require('@nomiclabs/buidler/internal/core/execution-mode');
-    const { getExecutionMode } = mode;
-    mode.getExecutionMode = () => mode.ExecutionMode.EXECUTION_MODE_LINKED;
-    const cwd = process.cwd();
-    process.chdir(path.join(__dirname, 'node_modules'));
-    console.log(process.cwd());
-    return () => {
-      process.chdir(cwd);
-      mode.getExecutionMode = getExecutionMode;
-    };
-  } else return () => {};
+    const parsed = path.parse(path.parse(__dirname).dir);
+    if (
+        parsed.base === "packages" &&
+        require(path.join(parsed.dir, "package.json")).name === "primitive"
+    ) {
+        const mode = require("@nomiclabs/buidler/internal/core/execution-mode");
+        const { getExecutionMode } = mode;
+        mode.getExecutionMode = () => mode.ExecutionMode.EXECUTION_MODE_LINKED;
+        const cwd = process.cwd();
+        process.chdir(path.join(__dirname, "node_modules"));
+        console.log(process.cwd());
+        return () => {
+            process.chdir(cwd);
+            mode.getExecutionMode = getExecutionMode;
+        };
+    } else return () => {};
 }
 
 const unhook = modifyEnvironmentIfMonorepo();
@@ -24,20 +27,25 @@ usePlugin("buidler-gas-reporter");
 usePlugin("solidity-coverage");
 usePlugin("@nomiclabs/buidler-etherscan");
 usePlugin("@nomiclabs/buidler-web3");
-usePlugin("buidler-deploy");
+/* usePlugin("buidler-deploy"); */
 usePlugin("@nomiclabs/buidler-ethers");
 
 unhook();
 
 require("dotenv").config();
-const crypto = require('crypto');
-const ethers = require('ethers');
-const ETHERSCAN_APY_KEY = process.env.ETHERSCAN_APY_KEY || crypto.randomBytes(20).toString('base64');
+const crypto = require("crypto");
+const ethers = require("ethers");
+const ETHERSCAN_APY_KEY =
+    process.env.ETHERSCAN_APY_KEY || crypto.randomBytes(20).toString("base64");
 const web3 = require("web3");
 const HDWalletProvider = require("@truffle/hdwallet-provider");
-const bip39 = require('bip39');
-const rinkeby = process.env.RINKEBY || new ethers.providers.InfuraProvider('rinkeby').connection.url;
-const mainnet = process.env.MAINNET || new ethers.providers.InfuraProvider('mainnet').connection.url;
+const bip39 = require("bip39");
+const rinkeby =
+    process.env.RINKEBY ||
+    new ethers.providers.InfuraProvider("rinkeby").connection.url;
+const mainnet =
+    process.env.MAINNET ||
+    new ethers.providers.InfuraProvider("mainnet").connection.url;
 const mnemonic = process.env.TEST_MNEMONIC || bip39.generateMnemonic();
 const live = process.env.MNEMONIC || mnemonic;
 

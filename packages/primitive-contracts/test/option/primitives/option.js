@@ -196,7 +196,7 @@ contract(" Option Contract", (accounts) => {
         });
 
         it("should return the correct prime", async () => {
-            let result = await prime.prime();
+            let result = await prime.getOption();
             assert.equal(
                 result._tokenU.toString(),
                 tokenU.address,

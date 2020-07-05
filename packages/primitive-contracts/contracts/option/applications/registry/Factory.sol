@@ -17,7 +17,7 @@ contract Factory is Ownable, NullCloneConstructor {
     address public optionImplementationAddress;
     constructor(address registry) public { transferOwnership(registry); }
 
-    function deployOptionImpementation() public {
+    function deployOptionImplementation() public {
       optionImplementationAddress = OptionImplementationLauncherLib.deployImplementation();
     }
 
