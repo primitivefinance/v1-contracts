@@ -11,11 +11,11 @@ import "../option/primitives/Option.sol";
 contract OptionTest is Option {
 
     constructor(
-        address tokenU,
+        /* address tokenU,
         address tokenS,
         uint256 base,
         uint256 price,
-        uint256 expiry
+        uint256 expiry */
     )
         public
         Option(

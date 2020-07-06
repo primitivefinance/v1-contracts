@@ -931,7 +931,7 @@ contract(" Option Contract", (accounts) => {
 
         describe("test expired", () => {
             beforeEach(async () => {
-                prime = await OptionTest.new(
+                prime = await newTestOption(
                     tokenU.address,
                     tokenS.address,
                     base,
@@ -1007,7 +1007,7 @@ contract(" Option Contract", (accounts) => {
                     "Bad ERC20 Doesnt Return Bools",
                     "BADS"
                 );
-                prime = await OptionTest.new(
+                prime = await newTestOption(
                     tokenU.address,
                     tokenS.address,
                     base,

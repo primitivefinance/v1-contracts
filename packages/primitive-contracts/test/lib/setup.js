@@ -75,11 +75,13 @@ const newInterestBearing = async (underlying, name, symbol) => {
 
 const newTestOption = async (tokenU, tokenS, base, quote, expiry) => {
     let prime = await OptionTest.new(/* tokenU, tokenS, base, quote, expiry */);
+    await prime.initialize(tokenU, tokenS, base, quote, expiry);
     return prime;
 };
 
 const newTestRedeem = async (factory, prime, underlying) => {
     let redeem = await Redeem.new(/* factory, prime, underlying */);
+    await redeem.initialize(factory, prime, underlying);
     return redeem;
 };
 

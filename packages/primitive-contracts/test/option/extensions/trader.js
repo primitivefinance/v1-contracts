@@ -12,6 +12,7 @@ const {
     newRegistry,
     newBadERC20,
     newTestRedeem,
+    newTestOption,
     newOptionFactory,
     newPrimitive,
 } = setup;
@@ -498,7 +499,7 @@ contract("Trader", (accounts) => {
     describe("safeUnwind", () => {
         beforeEach(async () => {
             trader = await Trader.new(weth.address);
-            prime = await OptionTest.new(
+            prime = await newTestOption(
                 tokenU.address,
                 tokenS.address,
                 base,
@@ -608,7 +609,7 @@ contract("Trader", (accounts) => {
         beforeEach(async () => {
             tokenU = await newBadERC20("Bad ERC20 Doesnt Return Bools", "BADU");
             tokenS = await newBadERC20("Bad ERC20 Doesnt Return Bools", "BADS");
-            prime = await OptionTest.new(
+            prime = await newTestOption(
                 tokenU.address,
                 tokenS.address,
                 base,

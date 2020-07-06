@@ -1,7 +1,7 @@
 pragma solidity ^0.6.2;
 
 /**
- * @title   Strike Redeem ERC-20 for  Vanilla Options
+ * @title   Redeem ERC-20 for Vanilla Options
  * @author  Primitive
  */
 

@@ -1,10 +1,10 @@
 {
-  "name": "@primitive/sdk",
-  "version": "0.1.0",
-  "description": "primitive finance sdk library",
-  "main": "sdk.js",
-  "repository": "https://github.com/raymondpulver/primitive-contracts",
-  "author": "Raymond Pulver IV",
-  "license": "MIT",
-  "private": false
+    "name": "@primitivefi/sdk",
+    "version": "0.1.0",
+    "description": "Primitive sdk library",
+    "main": "sdk.js",
+    "repository": "https://github.com/raymondpulver/primitive-contracts",
+    "author": "Primitive",
+    "license": "MIT",
+    "private": false
 }
