@@ -10,6 +10,9 @@ library RedeemImplementationLauncherLib {
         return _REDEEM_SALT;
     }
 
+    /**
+     * @dev Deploys a clone of the deployed Redeem.sol contract.
+     */
     function deployImplementation()
         external
         returns (address implementationAddress)

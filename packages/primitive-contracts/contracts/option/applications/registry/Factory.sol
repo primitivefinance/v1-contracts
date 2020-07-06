@@ -5,10 +5,10 @@ pragma solidity ^0.6.2;
  * @author Primitive
  */
 
-import { Option } from "../../primitives/Option.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { FactoryLib } from "./FactoryLib.sol";
-import { NullCloneConstructor } from "./NullCloneConstructor.sol";
+import {Option} from "../../primitives/Option.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {FactoryLib} from "./FactoryLib.sol";
+import {NullCloneConstructor} from "./NullCloneConstructor.sol";
 import {
     OptionImplementationLauncherLib
 } from "./OptionImplementationLauncherLib.sol";
@@ -36,7 +36,7 @@ contract Factory is Ownable, NullCloneConstructor {
     ) external onlyOwner returns (address option) {
         require(
             optionImplementationAddress != address(0x0),
-            "must deploy implementation contract for Option"
+            "ERR_NO_IMPLEMENTATION"
         );
         bytes32 salt = keccak256(
             abi.encodePacked(

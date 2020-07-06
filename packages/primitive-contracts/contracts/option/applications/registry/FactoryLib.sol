@@ -1,8 +1,17 @@
 pragma solidity ^0.6.0;
 
-import { Create2 } from "@openzeppelin/contracts/utils/Create2.sol";
+/**
+ * @title Create2 Clone Factory Library
+ * @author Alan Lu, Gnosis.
+ *         Raymond Pulver IV.
+ */
+
+import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
 library FactoryLib {
+    /**
+     * @dev Calls internal creation computation function.
+     */
     function computeCreationCode(address target)
         internal
         view
@@ -11,6 +20,9 @@ library FactoryLib {
         clone = computeCreationCode(address(this), target);
     }
 
+    /**
+     * @dev Computes the Clone's creation code.
+     */
     function computeCreationCode(address deployer, address target)
         internal
         pure
@@ -45,6 +57,9 @@ library FactoryLib {
         }
     }
 
+    /**
+     * @dev Calls Open Zeppelin's Create2.computeAddress() to get an address for the clone.
+     */
     function deriveInstanceAddress(address target, bytes32 salt)
         internal
         view
@@ -57,6 +72,9 @@ library FactoryLib {
             );
     }
 
+    /**
+     * @dev Calls Open Zeppelin's Create2.computeAddress() to get an address for the clone.
+     */
     function deriveInstanceAddress(
         address from,
         address target,
@@ -70,6 +88,9 @@ library FactoryLib {
             );
     }
 
+    /**
+     * @dev Computs creation code, and then instantiates it with create2.
+     */
     function create2Clone(address target, uint256 saltNonce)
         internal
         returns (address result)
@@ -83,6 +104,6 @@ library FactoryLib {
             result := create2(0, data, len, salt)
         }
 
-        require(result != address(0), "create2 failed");
+        require(result != address(0), "ERR_CREATE2_FAIL");
     }
 }

@@ -10,6 +10,9 @@ library OptionImplementationLauncherLib {
         return _OPTION_SALT;
     }
 
+    /**
+     * @dev Deploys a clone of the deployed Option.sol contract.
+     */
     function deployImplementation()
         external
         returns (address implementationAddress)
