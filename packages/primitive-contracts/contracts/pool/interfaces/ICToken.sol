@@ -1,8 +1,11 @@
 pragma solidity ^0.6.2;
 
 interface ICToken {
-    function mint(uint mintAmount) external returns (uint);
-    function redeemUnderlying(uint redeemAmount) external returns (uint);
-    function balanceOfUnderlying(address owner) external view returns (uint);
+    function mint(uint256 mintAmount) external returns (uint256);
+
+    function redeemUnderlying(uint256 redeemAmount) external returns (uint256);
+
+    function balanceOfUnderlying(address owner) external view returns (uint256);
+
     function underlying() external view returns (address);
 }

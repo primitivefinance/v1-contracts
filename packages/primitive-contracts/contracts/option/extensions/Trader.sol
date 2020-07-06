@@ -13,7 +13,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 contract Trader is ITrader, ReentrancyGuard {
-    using SafeMath for uint;
+    using SafeMath for uint256;
 
     address payable public weth;
 
@@ -22,7 +22,9 @@ contract Trader is ITrader, ReentrancyGuard {
     event Redeem(address indexed from, uint256 inTokenR);
     event Close(address indexed from, uint256 inTokenP);
 
-    constructor (address payable _weth) public { weth = _weth; }
+    constructor(address payable _weth) public {
+        weth = _weth;
+    }
 
     /**
      * @dev Mint s by depositing tokenU.
@@ -31,14 +33,22 @@ contract Trader is ITrader, ReentrancyGuard {
      * @param amount Quantity of  options to mint and tokenU to deposit.
      * @param receiver The newly minted tokens are sent to the receiver address.
      */
-    function safeMint(IOption tokenP, uint amount, address receiver)
+    function safeMint(
+        IOption tokenP,
+        uint256 amount,
+        address receiver
+    )
         external
         override
         nonReentrant
-        returns (uint inTokenU, uint outTokenR)
+        returns (uint256 inTokenU, uint256 outTokenR)
     {
         require(amount > 0, "ERR_ZERO");
-        IERC20(tokenP.tokenU()).transferFrom(msg.sender, address(tokenP), amount);
+        IERC20(tokenP.tokenU()).transferFrom(
+            msg.sender,
+            address(tokenP),
+            amount
+        );
         (inTokenU, outTokenR) = tokenP.mint(receiver);
         emit Mint(msg.sender, inTokenU, outTokenR);
     }
@@ -50,19 +60,39 @@ contract Trader is ITrader, ReentrancyGuard {
      * @param amount Quantity of  options to exercise.
      * @param receiver The underlying tokens are sent to the receiver address.
      */
-    function safeExercise(IOption tokenP, uint amount, address receiver)
+    function safeExercise(
+        IOption tokenP,
+        uint256 amount,
+        address receiver
+    )
         external
         override
         nonReentrant
-        returns (uint inTokenS, uint inTokenP)
+        returns (uint256 inTokenS, uint256 inTokenP)
     {
         require(amount > 0, "ERR_ZERO");
-        require(IERC20(address(tokenP)).balanceOf(msg.sender) >= amount, "ERR_BAL_PRIME");
-        inTokenS = amount.add(amount.div(1000)).mul(tokenP.quote()).div(tokenP.base());
+        require(
+            IERC20(address(tokenP)).balanceOf(msg.sender) >= amount,
+            "ERR_BAL_PRIME"
+        );
+        inTokenS = amount.add(amount.div(1000)).mul(tokenP.quote()).div(
+            tokenP.base()
+        );
         //uint fee = inTokenS.div(1000);
-        require(IERC20(tokenP.tokenS()).balanceOf(msg.sender) >= inTokenS, "ERR_BAL_STRIKE");
-        IERC20(tokenP.tokenS()).transferFrom(msg.sender, address(tokenP), inTokenS);
-        IERC20(address(tokenP)).transferFrom(msg.sender, address(tokenP), amount);
+        require(
+            IERC20(tokenP.tokenS()).balanceOf(msg.sender) >= inTokenS,
+            "ERR_BAL_STRIKE"
+        );
+        IERC20(tokenP.tokenS()).transferFrom(
+            msg.sender,
+            address(tokenP),
+            inTokenS
+        );
+        IERC20(address(tokenP)).transferFrom(
+            msg.sender,
+            address(tokenP),
+            amount
+        );
         (inTokenS, inTokenP) = tokenP.exercise(receiver, amount, new bytes(0));
     }
 
@@ -73,16 +103,22 @@ contract Trader is ITrader, ReentrancyGuard {
      * @param amount Quantity of Redeems to burn.
      * @param receiver The strike tokens are sent to the receiver address.
      */
-    function safeRedeem(IOption tokenP, uint amount, address receiver)
-        external
-        override
-        nonReentrant
-        returns (uint inTokenR)
-    {
+    function safeRedeem(
+        IOption tokenP,
+        uint256 amount,
+        address receiver
+    ) external override nonReentrant returns (uint256 inTokenR) {
         require(amount > 0, "ERR_ZERO");
-        require(IERC20(tokenP.tokenR()).balanceOf(msg.sender) >= amount, "ERR_BAL_REDEEM");
+        require(
+            IERC20(tokenP.tokenR()).balanceOf(msg.sender) >= amount,
+            "ERR_BAL_REDEEM"
+        );
         // There can be the case there is no available tokenS to redeem, causing a revert.
-        IERC20(tokenP.tokenR()).transferFrom(msg.sender, address(tokenP), amount);
+        IERC20(tokenP.tokenR()).transferFrom(
+            msg.sender,
+            address(tokenP),
+            amount
+        );
         (inTokenR) = tokenP.redeem(receiver);
         emit Redeem(msg.sender, inTokenR);
     }
@@ -95,18 +131,40 @@ contract Trader is ITrader, ReentrancyGuard {
      * @param amount Quantity of s to burn.
      * @param receiver The underlying tokens are sent to the receiver address.
      */
-    function safeClose(IOption tokenP, uint amount, address receiver)
+    function safeClose(
+        IOption tokenP,
+        uint256 amount,
+        address receiver
+    )
         external
         override
         nonReentrant
-        returns (uint inTokenR, uint inTokenP, uint outTokenU)
+        returns (
+            uint256 inTokenR,
+            uint256 inTokenP,
+            uint256 outTokenU
+        )
     {
         require(amount > 0, "ERR_ZERO");
-        require(IERC20(address(tokenP)).balanceOf(msg.sender) >= amount, "ERR_BAL_PRIME");
+        require(
+            IERC20(address(tokenP)).balanceOf(msg.sender) >= amount,
+            "ERR_BAL_PRIME"
+        );
         inTokenR = amount.mul(tokenP.quote()).div(tokenP.base());
-        require(IERC20(tokenP.tokenR()).balanceOf(msg.sender) >= inTokenR, "ERR_BAL_REDEEM");
-        IERC20(tokenP.tokenR()).transferFrom(msg.sender, address(tokenP), inTokenR);
-        IERC20(address(tokenP)).transferFrom(msg.sender, address(tokenP), amount);
+        require(
+            IERC20(tokenP.tokenR()).balanceOf(msg.sender) >= inTokenR,
+            "ERR_BAL_REDEEM"
+        );
+        IERC20(tokenP.tokenR()).transferFrom(
+            msg.sender,
+            address(tokenP),
+            inTokenR
+        );
+        IERC20(address(tokenP)).transferFrom(
+            msg.sender,
+            address(tokenP),
+            amount
+        );
         (inTokenR, inTokenP, outTokenU) = tokenP.close(receiver);
         emit Close(msg.sender, inTokenP);
     }
@@ -117,17 +175,32 @@ contract Trader is ITrader, ReentrancyGuard {
      * @param amount Quantity of Redeems to burn.
      * @param receiver The underlying tokens are sent to the receiver address.
      */
-    function safeUnwind(IOption tokenP, uint amount, address receiver)
+    function safeUnwind(
+        IOption tokenP,
+        uint256 amount,
+        address receiver
+    )
         external
         override
         nonReentrant
-        returns (uint inTokenR, uint inTokenP, uint outTokenU)
+        returns (
+            uint256 inTokenR,
+            uint256 inTokenP,
+            uint256 outTokenU
+        )
     {
         require(amount > 0, "ERR_ZERO");
         require(tokenP.expiry() < block.timestamp, "ERR_NOT_EXPIRED");
         inTokenR = amount.mul(tokenP.quote()).div(tokenP.base());
-        require(IERC20(tokenP.tokenR()).balanceOf(msg.sender) >= inTokenR, "ERR_BAL_REDEEM");
-        IERC20(tokenP.tokenR()).transferFrom(msg.sender, address(tokenP), inTokenR);
+        require(
+            IERC20(tokenP.tokenR()).balanceOf(msg.sender) >= inTokenR,
+            "ERR_BAL_REDEEM"
+        );
+        IERC20(tokenP.tokenR()).transferFrom(
+            msg.sender,
+            address(tokenP),
+            inTokenR
+        );
         (inTokenR, inTokenP, outTokenU) = tokenP.close(receiver);
         emit Close(msg.sender, inTokenP);
     }

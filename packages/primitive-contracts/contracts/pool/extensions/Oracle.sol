@@ -10,15 +10,15 @@ import "../interfaces/IOracle.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 contract Oracle is IOracle {
-    using SafeMath for uint;
+    using SafeMath for uint256;
 
     address public oracle;
     address public weth;
 
-    uint public constant MANTISSA = 10**36;
-    uint public constant ONE_ETHER = 1 ether;
-    uint public constant MIN_PREMIUM = 10**3;
-    uint public constant SECONDS_IN_DAY = 86400;
+    uint256 public constant MANTISSA = 10**36;
+    uint256 public constant ONE_ETHER = 1 ether;
+    uint256 public constant MIN_PREMIUM = 10**3;
+    uint256 public constant SECONDS_IN_DAY = 86400;
 
     constructor(address _oracle, address _weth) public {
         oracle = _oracle;
@@ -40,20 +40,22 @@ contract Oracle is IOracle {
     function calculatePremium(
         address tokenU,
         address tokenS,
-        uint volatility,
-        uint base,
-        uint quote,
-        uint expiry
-    )
-        public
-        view
-        override
-        returns (uint premium)
-    {
+        uint256 volatility,
+        uint256 base,
+        uint256 quote,
+        uint256 expiry
+    ) public override view returns (uint256 premium) {
         // Calculate the parts.
-        (uint intrinsic) = calculateIntrinsic(tokenU, tokenS, base, quote);
-        (uint extrinsic) = calculateExtrinsic(tokenU, tokenS, volatility, base, quote, expiry);
-        
+        uint256 intrinsic = calculateIntrinsic(tokenU, tokenS, base, quote);
+        uint256 extrinsic = calculateExtrinsic(
+            tokenU,
+            tokenS,
+            volatility,
+            base,
+            quote,
+            expiry
+        );
+
         // Sum the parts.
         premium = (extrinsic.add(intrinsic));
 
@@ -64,8 +66,8 @@ contract Oracle is IOracle {
     /**
      * @dev Gets the market quote Ether.
      */
-    function marketPrice() public view override returns (uint market) {
-        market = uint(IAggregator(oracle).latestAnswer());
+    function marketPrice() public override view returns (uint256 market) {
+        market = uint256(IAggregator(oracle).latestAnswer());
     }
 
     /**
@@ -77,20 +79,21 @@ contract Oracle is IOracle {
      * @return intrinsic The difference between the quote of tokenU denominated in S between the
      * strike quote (quote) and market quote (market).
      */
-    function calculateIntrinsic(address tokenU, address tokenS, uint base, uint quote)
-        public
-        view
-        override
-        returns (uint intrinsic)
-    {
+    function calculateIntrinsic(
+        address tokenU,
+        address tokenS,
+        uint256 base,
+        uint256 quote
+    ) public override view returns (uint256 intrinsic) {
         // Currently only supports WETH options with an assumed stablecoin strike.
         require(tokenU == weth || tokenS == weth, "ERR_ONLY_WETH_SUPPORT");
         // Get the oracle market quote of ether.
         // If the underlying is WETH, the option is a call. Intrinsic = (S - K).
         // Else if the strike is WETH, the option is a put. Intrinsic = (K - S).
-        (uint market) = marketPrice();
-        if(tokenU == weth) { intrinsic = market > quote ? market.sub(quote) : uint(0); }
-        else intrinsic = base > market ? base.sub(market) : uint(0);
+        uint256 market = marketPrice();
+        if (tokenU == weth) {
+            intrinsic = market > quote ? market.sub(quote) : uint256(0);
+        } else intrinsic = base > market ? base.sub(market) : uint256(0);
     }
 
     /**
@@ -107,49 +110,44 @@ contract Oracle is IOracle {
     function calculateExtrinsic(
         address tokenU,
         address tokenS,
-        uint volatility,
-        uint base,
-        uint quote,
-        uint expiry
-    )
-        public
-        view
-        override
-        returns (uint extrinsic)
-    {
+        uint256 volatility,
+        uint256 base,
+        uint256 quote,
+        uint256 expiry
+    ) public override view returns (uint256 extrinsic) {
         // Get the oracle market quote of ether.
-        (uint market) = marketPrice();
+        uint256 market = marketPrice();
         // Time left in seconds.
-        uint timeRemainder = (expiry.sub(block.timestamp));
+        uint256 timeRemainder = (expiry.sub(block.timestamp));
         // Strike quote is the quote of tokenU denominated in tokenS.
-        uint strike = tokenU == weth ? 
-            quote.mul(ONE_ETHER).div(base) :
-            base.mul(ONE_ETHER).div(quote);
+        uint256 strike = tokenU == weth
+            ? quote.mul(ONE_ETHER).div(base)
+            : base.mul(ONE_ETHER).div(quote);
         // Strike / Market scaled to 1e18. Denominated in ethers.
-        uint moneyness = market.mul(ONE_ETHER).div(strike);
+        uint256 moneyness = market.mul(ONE_ETHER).div(strike);
         // Extrinsic value denominted in tokenU.
         (extrinsic) = _extrinsic(moneyness, volatility, timeRemainder);
     }
 
-    function _extrinsic(uint moneyness, uint volatility, uint timeRemainder)
-        public
-        pure
-        returns (uint extrinsic)
-    {
+    function _extrinsic(
+        uint256 moneyness,
+        uint256 volatility,
+        uint256 timeRemainder
+    ) public pure returns (uint256 extrinsic) {
         extrinsic = moneyness
-                        .mul(ONE_ETHER)
-                        .mul(volatility)
-                        .mul(sqrt(timeRemainder))
-                        .div(ONE_ETHER)
-                        .div(SECONDS_IN_DAY);
+            .mul(ONE_ETHER)
+            .mul(volatility)
+            .mul(sqrt(timeRemainder))
+            .div(ONE_ETHER)
+            .div(SECONDS_IN_DAY);
     }
 
     /**
      * @dev Utility function to calculate the square root of an integer. Used in calculating premium.
      */
-    function sqrt(uint y) internal pure returns (uint z) {
+    function sqrt(uint256 y) internal pure returns (uint256 z) {
         if (y > 3) {
-            uint x = (y + 1) / 2;
+            uint256 x = (y + 1) / 2;
             z = y;
             while (x < z) {
                 z = x;

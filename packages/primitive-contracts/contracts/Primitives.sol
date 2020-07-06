@@ -5,7 +5,7 @@ pragma solidity ^0.6.2;
  * @author Primitive
  */
 library Primitives {
-    /* 
+    /*
      * @notice Vanilla Option.
      */
     struct Option {

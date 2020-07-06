@@ -1,42 +1,71 @@
 pragma solidity ^0.6.2;
 
 interface IOption {
-    function mint(address receiver) external returns (
-        uint inTokenU,
-        uint outTokenR
-    );
-    function exercise(address receiver, uint outTokenU, bytes calldata data) external returns (
-        uint inTokenS,
-        uint inTokenP
-    );
-    function redeem(address receiver) external returns (
-        uint inTokenR
-    );
-    function close(address receiver) external returns (
-        uint inTokenR,
-        uint inTokenP,
-        uint outTokenU
-    );
+    function mint(address receiver)
+        external
+        returns (uint256 inTokenU, uint256 outTokenR);
+
+    function exercise(
+        address receiver,
+        uint256 outTokenU,
+        bytes calldata data
+    ) external returns (uint256 inTokenS, uint256 inTokenP);
+
+    function redeem(address receiver) external returns (uint256 inTokenR);
+
+    function close(address receiver)
+        external
+        returns (
+            uint256 inTokenR,
+            uint256 inTokenP,
+            uint256 outTokenU
+        );
 
     function tokenR() external view returns (address);
+
     function tokenS() external view returns (address);
+
     function tokenU() external view returns (address);
-    function base() external view returns (uint);
-    function quote() external view returns (uint);
-    function expiry() external view returns (uint);
-    function cacheU() external view returns (uint);
-    function cacheS() external view returns (uint);
+
+    function base() external view returns (uint256);
+
+    function quote() external view returns (uint256);
+
+    function expiry() external view returns (uint256);
+
+    function cacheU() external view returns (uint256);
+
+    function cacheS() external view returns (uint256);
+
     function factory() external view returns (address);
-    function getCaches() external view returns (uint _cacheU, uint _cacheS);
-    function getTokens() external view returns (address _tokenU, address _tokenS, address _tokenR);
-    function getOption() external view returns (
+
+    function getCaches()
+        external
+        view
+        returns (uint256 _cacheU, uint256 _cacheS);
+
+    function getTokens()
+        external
+        view
+        returns (
+            address _tokenU,
+            address _tokenS,
+            address _tokenR
+        );
+
+    function getOption()
+        external
+        view
+        returns (
             address _tokenS,
             address _tokenU,
             address _tokenR,
-            uint _base,
-            uint _quote,
-            uint _expiry
-    );
+            uint256 _base,
+            uint256 _quote,
+            uint256 _expiry
+        );
+
     function initTokenR(address _tokenR) external;
-    function FEE() external view returns (uint);
+
+    function FEE() external view returns (uint256);
 }

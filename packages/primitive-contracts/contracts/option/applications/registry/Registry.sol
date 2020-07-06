@@ -15,7 +15,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
-    using SafeMath for uint;
+    using SafeMath for uint256;
 
     address public factory;
     address public factoryRedeem;
@@ -24,10 +24,21 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
     mapping(address => bool) public isSupported;
     mapping(bytes32 => address) public options;
 
-    event Deploy(address indexed from, address indexed tokenP, bytes32 indexed id);
-    constructor() public { transferOwnership(msg.sender); }
+    event Deploy(
+        address indexed from,
+        address indexed tokenP,
+        bytes32 indexed id
+    );
 
-    function initialize(address _factory, address _factoryRedeem) external override onlyOwner {
+    constructor() public {
+        transferOwnership(msg.sender);
+    }
+
+    function initialize(address _factory, address _factoryRedeem)
+        external
+        override
+        onlyOwner
+    {
         factory = _factory;
         factoryRedeem = _factoryRedeem;
     }
@@ -36,15 +47,18 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
         isSupported[token] = true;
     }
 
-    function deployOption(address tokenU, address tokenS, uint base, uint quote, uint expiry)
-        external
-        override
-        nonReentrant
-        whenNotPaused
-        returns (address option)
-    {
+    function deployOption(
+        address tokenU,
+        address tokenS,
+        uint256 base,
+        uint256 quote,
+        uint256 expiry
+    ) external override nonReentrant whenNotPaused returns (address option) {
         // Checks
-        require(tokenU != tokenS && isSupported[tokenU] && isSupported[tokenS], "ERR_ADDRESS");
+        require(
+            tokenU != tokenS && isSupported[tokenU] && isSupported[tokenS],
+            "ERR_ADDRESS"
+        );
         bytes32 id = getId(tokenU, tokenS, base, quote, expiry);
         require(options[id] == address(0), "ERR_OPTION_DEPLOYED");
 
@@ -62,17 +76,27 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
         IFactory(factory).kill(option);
     }
 
-    function optionsLength() public view override returns (uint len) {
+    function optionsLength() public override view returns (uint256 len) {
         len = activeOptions.length;
     }
 
-    function getId(address tokenU, address tokenS, uint base, uint quote, uint expiry)
-        public pure returns (bytes32 id) {
+    function getId(
+        address tokenU,
+        address tokenS,
+        uint256 base,
+        uint256 quote,
+        uint256 expiry
+    ) public pure returns (bytes32 id) {
         id = keccak256(abi.encodePacked(tokenU, tokenS, base, quote, expiry));
     }
 
-    function getOption(address tokenU, address tokenS, uint base, uint quote, uint expiry)
-        public view returns (address option) {
+    function getOption(
+        address tokenU,
+        address tokenS,
+        uint256 base,
+        uint256 quote,
+        uint256 expiry
+    ) public view returns (address option) {
         option = options[getId(tokenU, tokenS, base, quote, expiry)];
     }
 }

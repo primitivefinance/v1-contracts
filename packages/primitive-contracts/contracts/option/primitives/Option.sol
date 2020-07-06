@@ -15,40 +15,34 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 
 contract Option is IOption, ERC20, ReentrancyGuard, Pausable {
-    using SafeMath for uint;
+    using SafeMath for uint256;
 
     Primitives.Option public option;
 
-    uint public override constant FEE = 1000;
-    uint public override cacheU;
-    uint public override cacheS;
+    uint256 public constant override FEE = 1000;
+    uint256 public override cacheU;
+    uint256 public override cacheS;
     address public override tokenR;
     address public override factory;
 
-    event Mint(address indexed from, uint outTokenP, uint outTokenR);
-    event Exercise(address indexed from, uint outTokenU, uint inTokenS);
-    event Redeem(address indexed from, uint inTokenR);
-    event Close(address indexed from, uint inTokenP);
-    event Fund(uint cacheU, uint cacheS);
-    constructor() ERC20("Primitive V1 Vanilla Option", "OPTION") public {}
-    function initialize (
+    event Mint(address indexed from, uint256 outTokenP, uint256 outTokenR);
+    event Exercise(address indexed from, uint256 outTokenU, uint256 inTokenS);
+    event Redeem(address indexed from, uint256 inTokenR);
+    event Close(address indexed from, uint256 inTokenP);
+    event Fund(uint256 cacheU, uint256 cacheS);
+
+    constructor() public ERC20("Primitive V1 Vanilla Option", "OPTION") {}
+
+    function initialize(
         address tokenU,
         address tokenS,
-        uint base,
-        uint quote,
-        uint expiry
-    )
-        public 
-    {
+        uint256 base,
+        uint256 quote,
+        uint256 expiry
+    ) public {
         require(factory == address(0x0), "already initialized");
         factory = msg.sender;
-        option = Primitives.Option(
-            tokenU,
-            tokenS,
-            base,
-            quote,
-            expiry
-        );
+        option = Primitives.Option(tokenU, tokenS, base, quote, expiry);
     }
 
     modifier notExpired {
@@ -85,23 +79,27 @@ contract Option is IOption, ERC20, ReentrancyGuard, Pausable {
     function take() external nonReentrant {
         (address _tokenU, address _tokenS, address _tokenR) = getTokens();
         IERC20(_tokenU).transfer(
-            msg.sender, IERC20(_tokenU).balanceOf(address(this)).sub(cacheU)
+            msg.sender,
+            IERC20(_tokenU).balanceOf(address(this)).sub(cacheU)
         );
         IERC20(_tokenS).transfer(
-            msg.sender, IERC20(_tokenS).balanceOf(address(this)).sub(cacheS)
+            msg.sender,
+            IERC20(_tokenS).balanceOf(address(this)).sub(cacheS)
         );
         IERC20(_tokenR).transfer(
-            msg.sender, IERC20(_tokenR).balanceOf(address(this))
+            msg.sender,
+            IERC20(_tokenR).balanceOf(address(this))
         );
         IERC20(address(this)).transfer(
-            msg.sender, IERC20(address(this)).balanceOf(address(this))
+            msg.sender,
+            IERC20(address(this)).balanceOf(address(this))
         );
     }
 
     /**
      * @dev Sets the cache balances to new values.
      */
-    function _fund(uint balanceU, uint balanceS) private {
+    function _fund(uint256 balanceU, uint256 balanceS) private {
         cacheU = balanceU;
         cacheS = balanceS;
         emit Fund(balanceU, balanceS);
@@ -120,12 +118,12 @@ contract Option is IOption, ERC20, ReentrancyGuard, Pausable {
         nonReentrant
         notExpired
         whenNotPaused
-        returns (uint inTokenU, uint outTokenR)
+        returns (uint256 inTokenU, uint256 outTokenR)
     {
         // Save on gas.
-        uint balanceU = IERC20(option.tokenU).balanceOf(address(this));
-        uint base = option.base;
-        uint quote = option.quote;
+        uint256 balanceU = IERC20(option.tokenU).balanceOf(address(this));
+        uint256 base = option.base;
+        uint256 quote = option.quote;
 
         // Mint inTokenU equal to the difference between current and cached balance of tokenU.
         inTokenU = balanceU.sub(cacheU);
@@ -148,45 +146,55 @@ contract Option is IOption, ERC20, ReentrancyGuard, Pausable {
      * @param outTokenU Quantity of underlyings to transfer to receiver optimistically.
      * @param data Passing in any abritrary data will trigger the flash callback function.
      */
-    function exercise(address receiver, uint outTokenU, bytes calldata data)
+    function exercise(
+        address receiver,
+        uint256 outTokenU,
+        bytes calldata data
+    )
         external
         override
         nonReentrant
         notExpired
         whenNotPaused
-        returns (uint inTokenS, uint inTokenP)
+        returns (uint256 inTokenS, uint256 inTokenP)
     {
         // Store the cached balances and token addresses in memory.
         address _tokenU = option.tokenU;
-        (uint _cacheU, uint _cacheS) = getCaches();
+        (uint256 _cacheU, uint256 _cacheS) = getCaches();
 
         // Require outTokenU > 0, and cacheU > outTokenU.
         require(outTokenU > 0, "ERR_ZERO");
-        require(IERC20(_tokenU).balanceOf(address(this)) >= outTokenU, "ERR_BAL_UNDERLYING");
+        require(
+            IERC20(_tokenU).balanceOf(address(this)) >= outTokenU,
+            "ERR_BAL_UNDERLYING"
+        );
 
         // Optimistically transfer out tokenU.
         IERC20(_tokenU).transfer(receiver, outTokenU);
-        if (data.length > 0) IFlash(receiver).primitiveFlash(receiver, outTokenU, data);
+        if (data.length > 0)
+            IFlash(receiver).primitiveFlash(receiver, outTokenU, data);
 
         // Store in memory for gas savings.
-        uint balanceS = IERC20(option.tokenS).balanceOf(address(this));
-        uint balanceU = IERC20(_tokenU).balanceOf(address(this));
+        uint256 balanceS = IERC20(option.tokenS).balanceOf(address(this));
+        uint256 balanceU = IERC20(_tokenU).balanceOf(address(this));
 
         // Calculate the Differences.
         inTokenS = balanceS.sub(_cacheS);
-        uint inTokenU = balanceU.sub(_cacheU.sub(outTokenU)); // will be > 0 if tokenU returned.
+        uint256 inTokenU = balanceU.sub(_cacheU.sub(outTokenU)); // will be > 0 if tokenU returned.
         require(inTokenS > 0 || inTokenU > 0, "ERR_ZERO");
 
         // Add the fee to the total required payment.
         //outTokenU = outTokenU.add(outTokenU.div(FEE));
 
-        uint feeToPay = outTokenU.div(FEE);
+        uint256 feeToPay = outTokenU.div(FEE);
 
         // Calculate the remaining amount of tokenU that needs to be paid for.
-        uint remainder = inTokenU > outTokenU ? 0 : outTokenU.sub(inTokenU);
+        uint256 remainder = inTokenU > outTokenU ? 0 : outTokenU.sub(inTokenU);
 
         // Calculate the expected payment of tokenS.
-        uint payment = remainder.add(feeToPay).mul(option.quote).div(option.base);
+        uint256 payment = remainder.add(feeToPay).mul(option.quote).div(
+            option.base
+        );
 
         // Assumes the cached tokenP balance is 0.
         inTokenP = balanceOf(address(this));
@@ -211,12 +219,12 @@ contract Option is IOption, ERC20, ReentrancyGuard, Pausable {
         external
         override
         nonReentrant
-        returns (uint inTokenR)
+        returns (uint256 inTokenR)
     {
         address _tokenS = option.tokenS;
         address _tokenR = tokenR;
-        uint balanceS = IERC20(_tokenS).balanceOf(address(this));
-        uint balanceR = IERC20(_tokenR).balanceOf(address(this));
+        uint256 balanceS = IERC20(_tokenS).balanceOf(address(this));
+        uint256 balanceR = IERC20(_tokenR).balanceOf(address(this));
 
         // Difference between tokenR balance and cache.
         inTokenR = balanceR;
@@ -248,14 +256,18 @@ contract Option is IOption, ERC20, ReentrancyGuard, Pausable {
         external
         override
         nonReentrant
-        returns (uint inTokenR, uint inTokenP, uint outTokenU)
+        returns (
+            uint256 inTokenR,
+            uint256 inTokenP,
+            uint256 outTokenU
+        )
     {
         // Stores addresses and balances locally for gas savings.
         address _tokenU = option.tokenU;
         address _tokenR = tokenR;
-        uint balanceU = IERC20(_tokenU).balanceOf(address(this));
-        uint balanceR = IERC20(_tokenR).balanceOf(address(this));
-        uint balanceP = balanceOf(address(this));
+        uint256 balanceU = IERC20(_tokenU).balanceOf(address(this));
+        uint256 balanceR = IERC20(_tokenR).balanceOf(address(this));
+        uint256 balanceP = balanceOf(address(this));
 
         // Differences between current and cached balances.
         inTokenR = balanceR;
@@ -273,10 +285,13 @@ contract Option is IOption, ERC20, ReentrancyGuard, Pausable {
         // If option is expired, tokenP does not need to be sent in. Only tokenR.
         inTokenP = option.expiry > block.timestamp ? balanceP : outTokenU;
         require(inTokenR > 0 && inTokenP > 0, "ERR_ZERO");
-        require(inTokenP >= outTokenU && balanceU >= outTokenU, "ERR_BAL_UNDERLYING");
+        require(
+            inTokenP >= outTokenU && balanceU >= outTokenU,
+            "ERR_BAL_UNDERLYING"
+        );
 
         // Burn  tokens.  tokens are only sent into contract when not expired.
-        if(option.expiry > block.timestamp) {
+        if (option.expiry > block.timestamp) {
             _burn(address(this), inTokenP);
         }
 
@@ -298,34 +313,64 @@ contract Option is IOption, ERC20, ReentrancyGuard, Pausable {
         _fund(balanceU, cacheS);
         emit Close(receiver, outTokenU);
     }
-    
+
     /* === VIEW === */
-    function getCaches() public view override returns (uint _cacheU, uint _cacheS) {
+    function getCaches()
+        public
+        override
+        view
+        returns (uint256 _cacheU, uint256 _cacheS)
+    {
         _cacheU = cacheU;
         _cacheS = cacheS;
     }
 
-    function getTokens() public view override returns (
-        address _tokenU, address _tokenS, address _tokenR
-    ) {
+    function getTokens()
+        public
+        override
+        view
+        returns (
+            address _tokenU,
+            address _tokenS,
+            address _tokenR
+        )
+    {
         _tokenU = option.tokenU;
         _tokenS = option.tokenS;
         _tokenR = tokenR;
     }
 
-    function tokenS() public view override returns (address) { return option.tokenS; }
-    function tokenU() public view override returns (address) { return option.tokenU;}
-    function base() public view override returns (uint) { return option.base; }
-    function quote() public view override returns (uint) { return option.quote; }
-    function expiry() public view override returns (uint) { return option.expiry; }
+    function tokenS() public override view returns (address) {
+        return option.tokenS;
+    }
 
-    function getOption() public view override returns (
+    function tokenU() public override view returns (address) {
+        return option.tokenU;
+    }
+
+    function base() public override view returns (uint256) {
+        return option.base;
+    }
+
+    function quote() public override view returns (uint256) {
+        return option.quote;
+    }
+
+    function expiry() public override view returns (uint256) {
+        return option.expiry;
+    }
+
+    function getOption()
+        public
+        override
+        view
+        returns (
             address _tokenU,
             address _tokenS,
             address _tokenR,
-            uint _base,
-            uint _quote,
-            uint _expiry
+            uint256 _base,
+            uint256 _quote,
+            uint256 _expiry
         )
     {
         Primitives.Option memory _option = option;
