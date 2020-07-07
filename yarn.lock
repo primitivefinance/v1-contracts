@@ -5167,10 +5167,10 @@ buffer@^5.0.5, buffer@^5.2.1, buffer@^5.5.0, buffer@^5.6.0:
     base64-js "^1.0.2"
     ieee754 "^1.1.4"
 
-buidler-deploy@^0.4.10:
-  version "0.4.10"
-  resolved "https://registry.yarnpkg.com/buidler-deploy/-/buidler-deploy-0.4.10.tgz#1ff5ff4e9d20d702a80444c8d7a454a54aef3c0b"
-  integrity sha512-a8HVC6+DfflKb3QUA1dAtHhXj8s6/IXdjI7J+Lkf8pqU+iSor9x/h7IMhThI3X8vuEPpu1E7nLVdXIiuYLwWSQ==
+buidler-deploy@^0.4.11:
+  version "0.4.11"
+  resolved "https://registry.yarnpkg.com/buidler-deploy/-/buidler-deploy-0.4.11.tgz#7815e9baa5e0a7c9a61d2f7e93524a0e3c7f2279"
+  integrity sha512-4PI1ftBkH8YkLX8CqEVPE63H5S7rqv3m9tc5umBTcCzf/CcDCl/JUL7e7LFZL7k8HGQfcPvArdr7ypalX5TPTw==
   dependencies:
     "@ethersproject/abstract-signer" "^5.0.0-beta.144"
     "@ethersproject/address" "^5.0.0-beta.135"
@@ -8198,10 +8198,10 @@ ethers@^4.0.0-beta.1, ethers@^4.0.32, ethers@^4.0.40, ethers@^4.0.47:
     uuid "2.0.1"
     xmlhttprequest "1.8.0"
 
-ethers@^5.0.3:
-  version "5.0.3"
-  resolved "https://registry.yarnpkg.com/ethers/-/ethers-5.0.3.tgz#41587a09934fb4dd5960cfe1fbc67560a53df7d5"
-  integrity sha512-Y9ud5W9Gtuzibyc8tEEkFRd/+uQciUoy0j7PTHF0i8H9521i67NQPXYOIA0NS0fRD2TolNTFeRLNNEY7EA98qg==
+ethers@^5.0.4:
+  version "5.0.4"
+  resolved "https://registry.yarnpkg.com/ethers/-/ethers-5.0.4.tgz#6a427a2549d167f7fc640f7ec992e1b2b7984edc"
+  integrity sha512-/VzvmgsrBDOxGo+WIZD7kKXcEUFCrr53P40w5fk1EcGYidv+XVbtTWil5FMsijV6BVXTKqxwMv7hDvKLAObfNQ==
   dependencies:
     "@ethersproject/abi" "^5.0.0"
     "@ethersproject/abstract-provider" "^5.0.0"
