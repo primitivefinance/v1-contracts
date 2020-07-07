@@ -70,6 +70,7 @@
     "dependencies": {
         "@openzeppelin/contracts": "^3.0.1",
         "bip39": "^3.0.2",
+        "buidler-deploy": "^0.4.10",
         "canonical-weth": "^1.4.0",
         "cross-env": "^7.0.2",
         "ethers": "^5.0.3",

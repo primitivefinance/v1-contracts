@@ -27,7 +27,7 @@ usePlugin("buidler-gas-reporter");
 usePlugin("solidity-coverage");
 usePlugin("@nomiclabs/buidler-etherscan");
 usePlugin("@nomiclabs/buidler-web3");
-/* usePlugin("buidler-deploy"); */
+usePlugin("buidler-deploy");
 usePlugin("@nomiclabs/buidler-ethers");
 
 unhook();

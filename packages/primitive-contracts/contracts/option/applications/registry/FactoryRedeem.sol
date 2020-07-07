@@ -6,8 +6,8 @@ pragma solidity ^0.6.2;
  */
 
 import "../../primitives/Redeem.sol";
-import {NullCloneConstructor} from "./NullCloneConstructor.sol";
-import {FactoryLib} from "./FactoryLib.sol";
+import { NullCloneConstructor } from "./NullCloneConstructor.sol";
+import { FactoryLib } from "./FactoryLib.sol";
 import {
     RedeemImplementationLauncherLib
 } from "./RedeemImplementationLauncherLib.sol";

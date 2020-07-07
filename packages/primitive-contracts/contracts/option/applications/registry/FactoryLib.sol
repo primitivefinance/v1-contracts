@@ -6,7 +6,7 @@ pragma solidity ^0.6.0;
  *         Raymond Pulver IV.
  */
 
-import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
+import { Create2 } from "@openzeppelin/contracts/utils/Create2.sol";
 
 library FactoryLib {
     /**

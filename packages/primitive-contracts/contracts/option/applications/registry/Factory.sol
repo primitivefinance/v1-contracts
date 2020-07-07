@@ -5,10 +5,10 @@ pragma solidity ^0.6.2;
  * @author Primitive
  */
 
-import {Option} from "../../primitives/Option.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {FactoryLib} from "./FactoryLib.sol";
-import {NullCloneConstructor} from "./NullCloneConstructor.sol";
+import { Option, SafeMath } from "../../primitives/Option.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { FactoryLib } from "./FactoryLib.sol";
+import { NullCloneConstructor } from "./NullCloneConstructor.sol";
 import {
     OptionImplementationLauncherLib
 } from "./OptionImplementationLauncherLib.sol";

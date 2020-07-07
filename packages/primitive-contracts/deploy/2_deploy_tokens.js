@@ -6,7 +6,7 @@ const bre = require("@nomiclabs/buidler");
 const { parseEther } = require("ethers/lib/utils");
 
 module.exports = async ({ getNamedAccounts, deployments }) => {
-    /* const { log, deploy } = deployments;
+    const { log, deploy } = deployments;
     const { deployer } = await getNamedAccounts();
     const chain = await bre.getChainId();
     const ethToken = await deploy("ETH", {
@@ -27,5 +27,5 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
             log(
                 `Contract deployed at ${deployed[i].address} using ${deployed[i].receipt.gasUsed} gas on chain ${chain}`
             );
-    } */
+    }
 };
