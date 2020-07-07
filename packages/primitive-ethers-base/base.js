@@ -13,11 +13,7 @@ const axios = require("axios");
 
 const moment = require("moment");
 
-const ZERO_ADDRESS =
-    "0x" +
-    Array(40)
-        .fill("0")
-        .join("");
+const ZERO_ADDRESS = "0x" + Array(40).fill("0").join("");
 
 const EthersContract = Object.getPrototypeOf(
     new ethers.Contract(ZERO_ADDRESS, [], new ethers.getDefaultProvider())
@@ -201,7 +197,7 @@ const makeEthersBaseClass = (artifact) => {
     const managerSubclass = class extends baseClass {};
     const keyed = keyBy(abi, "name");
     Object.keys(contract.functions).forEach((v) => {
-        managerSubclass.prototype[v] = async function(...args) {
+        managerSubclass.prototype[v] = async function (...args) {
             const deferred = defer();
             deferred.resolve = once(deferred.resolve);
             deferred.reject = once(deferred.reject);
@@ -307,7 +303,7 @@ const copyStaticsFromArtifact = (target, artifact) => {
 
 const makeMainnetInstanceGetterFactory = (artifact) => {
     const baseClass = class extends makeEthersBaseClass(artifact) {};
-    baseClass.getMainnetInstance = function(provider) {
+    baseClass.getMainnetInstance = function (provider) {
         provider = provider || new ethers.providers.InfuraProvider("mainnet");
         if (!artifact.networks[1])
             throw Error(

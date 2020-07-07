@@ -3,8 +3,9 @@
     "version": "0.1.0",
     "description": "Primitive sdk library",
     "main": "sdk.js",
-    "repository": "https://github.com/raymondpulver/primitive-contracts",
+    "repository": "https://github.com/primitivefinance/primitive-protocol",
     "author": "Primitive",
     "license": "MIT",
-    "private": false
+    "private": false,
+    "dependencies": {}
 }

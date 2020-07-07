@@ -2,7 +2,7 @@
 
 const assembleCloneCode = require("./assemble-clone-code");
 const ethers = require("ethers");
-const Option = require("@primitive/contracts/artifacts/Option");
+const Option = require("@primitivefi/contracts/artifacts/Option");
 
 const OPTION_SALT = ethers.utils.solidityKeccak256(
     ["string"],

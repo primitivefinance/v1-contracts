@@ -1,9 +1,9 @@
 {
     "name": "@primitivefi/ethers-base",
-    "version": "0.1.4",
+    "version": "0.1.5",
     "description": "ethers.js base class abstraction",
     "main": "base.js",
-    "repository": "https://github.com/primitivefinance/primitive-contracts",
+    "repository": "https://github.com/primitivefinance/primitive-protocol",
     "author": "Primitive",
     "license": "MIT",
     "private": false,
@@ -13,5 +13,8 @@
         "lodash": "^4.17.15",
         "moment": "^2.26.0",
         "the-global-object": "^1.0.2"
+    },
+    "publishConfig": {
+        "access": "public"
     }
 }
