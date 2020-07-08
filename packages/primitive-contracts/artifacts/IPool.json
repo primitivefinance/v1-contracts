@@ -47,7 +47,7 @@
     },
     {
       "inputs": [],
-      "name": "tokenP",
+      "name": "optionToken",
       "outputs": [
         {
           "internalType": "address",

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.6.0;
 
 /**
@@ -8,7 +10,7 @@ pragma solidity ^0.6.0;
 
 import { Create2 } from "@openzeppelin/contracts/utils/Create2.sol";
 
-library FactoryLib {
+library CloneLib {
     /**
      * @dev Calls internal creation computation function.
      */

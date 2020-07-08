@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+
+
+
 pragma solidity ^0.6.2;
 
 interface IPool {
@@ -10,5 +14,5 @@ interface IPool {
 
     function factory() external view returns (address);
 
-    function tokenP() external view returns (address);
+    function optionToken() external view returns (address);
 }

@@ -23,12 +23,13 @@ const unhook = modifyEnvironmentIfMonorepo();
 
 usePlugin("@nomiclabs/buidler-truffle5");
 usePlugin("@nomiclabs/buidler-solhint");
-usePlugin("buidler-gas-reporter");
-usePlugin("solidity-coverage");
 usePlugin("@nomiclabs/buidler-etherscan");
 usePlugin("@nomiclabs/buidler-web3");
-usePlugin("buidler-deploy");
 usePlugin("@nomiclabs/buidler-ethers");
+usePlugin("buidler-gas-reporter");
+usePlugin("buidler-spdx-license-identifier");
+usePlugin("buidler-deploy");
+usePlugin("solidity-coverage");
 
 unhook();
 
@@ -111,5 +112,9 @@ module.exports = {
     paths: {
         deploy: "deploy",
         deployments: "deployments",
+    },
+    spdxLicenseIdentifier: {
+        overwrite: true,
+        runOnCompile: true,
     },
 };

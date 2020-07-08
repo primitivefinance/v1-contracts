@@ -5,12 +5,7 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "tokenU",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "tokenS",
+          "name": "underlyingToken",
           "type": "address"
         },
         {
@@ -49,12 +44,12 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "tokenU",
+          "name": "underlyingToken",
           "type": "address"
         },
         {
           "internalType": "address",
-          "name": "tokenS",
+          "name": "strikeToken",
           "type": "address"
         },
         {
@@ -83,12 +78,12 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "tokenU",
+          "name": "underlyingToken",
           "type": "address"
         },
         {
           "internalType": "address",
-          "name": "tokenS",
+          "name": "strikeToken",
           "type": "address"
         },
         {

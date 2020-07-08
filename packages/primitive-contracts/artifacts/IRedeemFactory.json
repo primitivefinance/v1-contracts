@@ -1,9 +1,20 @@
 {
-  "contractName": "IPrimitiveFactory",
+  "contractName": "IRedeemFactory",
   "abi": [
     {
-      "inputs": [],
-      "name": "feeReceiver",
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "optionToken",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "redeemableToken",
+          "type": "address"
+        }
+      ],
+      "name": "deploy",
       "outputs": [
         {
           "internalType": "address",
@@ -11,19 +22,6 @@
           "type": "address"
         }
       ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_feeReceiver",
-          "type": "address"
-        }
-      ],
-      "name": "setFeeReceiver",
-      "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
     }

@@ -52,7 +52,7 @@
     },
     {
       "inputs": [],
-      "name": "tokenP",
+      "name": "optionToken",
       "outputs": [
         {
           "internalType": "address",
@@ -65,7 +65,7 @@
     },
     {
       "inputs": [],
-      "name": "underlying",
+      "name": "redeemableToken",
       "outputs": [
         {
           "internalType": "address",

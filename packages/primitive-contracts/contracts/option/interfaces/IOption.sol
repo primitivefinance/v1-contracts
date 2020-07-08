@@ -1,31 +1,35 @@
+// SPDX-License-Identifier: MIT
+
+
+
 pragma solidity ^0.6.2;
 
 interface IOption {
     function mint(address receiver)
         external
-        returns (uint256 inTokenU, uint256 outTokenR);
+        returns (uint256 inUnderlyings, uint256 outRedeems);
 
     function exercise(
         address receiver,
-        uint256 outTokenU,
+        uint256 outUnderlyings,
         bytes calldata data
-    ) external returns (uint256 inTokenS, uint256 inTokenP);
+    ) external returns (uint256 inStrikes, uint256 inOptions);
 
-    function redeem(address receiver) external returns (uint256 inTokenR);
+    function redeem(address receiver) external returns (uint256 inRedeems);
 
     function close(address receiver)
         external
         returns (
-            uint256 inTokenR,
-            uint256 inTokenP,
-            uint256 outTokenU
+            uint256 inRedeems,
+            uint256 inOptions,
+            uint256 outUnderlyings
         );
 
-    function tokenR() external view returns (address);
+    function redeemToken() external view returns (address);
 
-    function tokenS() external view returns (address);
+    function strikeToken() external view returns (address);
 
-    function tokenU() external view returns (address);
+    function underlyingToken() external view returns (address);
 
     function base() external view returns (uint256);
 
@@ -33,39 +37,39 @@ interface IOption {
 
     function expiry() external view returns (uint256);
 
-    function cacheU() external view returns (uint256);
+    function underlyingCache() external view returns (uint256);
 
-    function cacheS() external view returns (uint256);
+    function strikeCache() external view returns (uint256);
 
     function factory() external view returns (address);
 
-    function getCaches()
+    function caches()
         external
         view
-        returns (uint256 _cacheU, uint256 _cacheS);
+        returns (uint256 _underlyingCache, uint256 _strikeCache);
 
-    function getTokens()
+    function tokens()
         external
         view
         returns (
-            address _tokenU,
-            address _tokenS,
-            address _tokenR
+            address _underlyingToken,
+            address _strikeToken,
+            address _redeemToken
         );
 
-    function getOption()
+    function getParameters()
         external
         view
         returns (
-            address _tokenS,
-            address _tokenU,
-            address _tokenR,
+            address _strikeToken,
+            address _underlyingToken,
+            address _redeemToken,
             uint256 _base,
             uint256 _quote,
             uint256 _expiry
         );
 
-    function initTokenR(address _tokenR) external;
+    function initRedeemToken(address _redeemToken) external;
 
-    function FEE() external view returns (uint256);
+    function EXERCISE_FEE() external view returns (uint256);
 }

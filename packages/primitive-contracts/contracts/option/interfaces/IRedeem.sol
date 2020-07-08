@@ -1,11 +1,15 @@
+// SPDX-License-Identifier: MIT
+
+
+
 pragma solidity ^0.6.2;
 
 interface IRedeem {
-    function tokenP() external view returns (address);
+    function optionToken() external view returns (address);
+
+    function redeemableToken() external view returns (address);
 
     function factory() external view returns (address);
-
-    function underlying() external view returns (address);
 
     function mint(address user, uint256 amount) external;
 

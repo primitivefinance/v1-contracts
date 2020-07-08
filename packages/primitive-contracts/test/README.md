@@ -1,6 +1,6 @@
 # Testing
 
-The testing files match the module directory structure.
+The testing files are in the appropriate contract modules they cover.
 
 ## Use Docker
 
