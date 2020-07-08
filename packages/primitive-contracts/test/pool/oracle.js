@@ -9,6 +9,7 @@ const OracleLike = require("@primitivefi/contracts/artifacts/OracleLike");
 const utils = require("../lib/utils");
 const setup = require("../lib/setup");
 const constants = require("../lib/constants");
+const { ethers } = require("ethers");
 const { toWei, fromWei, assertWithinError } = utils;
 const { newERC20, newWeth, newWallets } = setup;
 const { ONE_ETHER, MILLION_ETHER } = constants.VALUES;
@@ -28,7 +29,12 @@ describe("Oracle contract", () => {
     const Bob = User.address;
 
     before(async () => {
-        oracleLike = await OracleLike.new();
+        oracleLikeFac = new ethers.ContractFactory(
+            OracleLike.abi,
+            OracleLike.bytecode,
+            Admin
+        );
+        oracleLike = await oracleLikeFac.deploy();
         await oracleLike.setUnderlyingPrice((2.4e20).toString());
         dai = await newERC20("TEST DAI", "DAI", MILLION_ETHER);
         weth = await newWeth();

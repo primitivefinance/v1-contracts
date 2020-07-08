@@ -65,9 +65,9 @@ const withdraw = async (
     from,
     inTokenPULP,
     tokenU,
-    tokenS,
+    strikeToken,
     pool,
-    prime,
+    optionToken,
     redeem
 ) => {
     inTokenPULP = inTokenPULP;
@@ -120,10 +120,18 @@ const withdraw = async (
     expect(deltaTP).to.be.a.bignumber.that.is.at.least(maxValue.neg());
     expect(deltaTP).to.be.a.bignumber.that.is.at.most(minValue.neg());
 
-    await verifyOptionInvariants(tokenU, tokenS, prime, redeem);
+    await verifyOptionInvariants(tokenU, strikeToken, optionToken, redeem);
 };
 
-const deposit = async (from, inTokenU, tokenU, tokenS, prime, redeem, pool) => {
+const deposit = async (
+    from,
+    inTokenU,
+    tokenU,
+    strikeToken,
+    optionToken,
+    redeem,
+    pool
+) => {
     inTokenU = inTokenU;
     let balance0U = await getBalance(tokenU, from);
     let balance0P = await getBalance(pool, from);
@@ -166,20 +174,25 @@ const deposit = async (from, inTokenU, tokenU, tokenS, prime, redeem, pool) => {
     assertBNEqual(deltaTP, inTokenU);
 };
 
-const verifyOptionInvariants = async (tokenU, tokenS, prime, redeem) => {
-    let balanceU = await tokenU.balanceOf(prime.address);
-    let cacheU = await prime.cacheU();
-    let cacheS = await prime.cacheS();
-    let balanceS = await tokenS.balanceOf(prime.address);
-    let balanceP = await prime.balanceOf(prime.address);
-    let balanceR = await redeem.balanceOf(prime.address);
-    let primeTotalSupply = await prime.totalSupply();
+const verifyOptionInvariants = async (
+    tokenU,
+    strikeToken,
+    optionToken,
+    redeem
+) => {
+    let underlyingBalance = await tokenU.balanceOf(optionToken.address);
+    let underlyingCache = await optionToken.underlyingCache();
+    let strikeCache = await optionToken.strikeCache();
+    let strikeBalance = await strikeToken.balanceOf(optionToken.address);
+    let optionBalance = await optionToken.balanceOf(optionToken.address);
+    let redeemBalance = await redeem.balanceOf(optionToken.address);
+    let optionTotalSupply = await optionToken.totalSupply();
 
-    assertBNEqual(balanceU, primeTotalSupply);
-    assertBNEqual(cacheU, primeTotalSupply);
-    assertBNEqual(balanceS, cacheS);
-    assertBNEqual(balanceP, 0);
-    assertBNEqual(balanceR, 0);
+    assertBNEqual(underlyingBalance, optionTotalSupply);
+    assertBNEqual(underlyingCache, optionTotalSupply);
+    assertBNEqual(strikeBalance, strikeCache);
+    assertBNEqual(optionBalance, 0);
+    assertBNEqual(redeemBalance, 0);
 };
 
 module.exports = {

@@ -129,7 +129,7 @@ const newTestOption = async (
     const optionToken = await deployContract(
         signer,
         OptionTest,
-        [tokenU, tokenS, base, price, expiry],
+        [underlyingToken, strikeToken, base, price, expiry],
         {
             gasLimit: 6000000,
         }

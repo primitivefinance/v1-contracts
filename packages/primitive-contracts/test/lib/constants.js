@@ -1,5 +1,6 @@
 const { ethers } = require("ethers");
-const { parseEther } = ethers.utils;
+const { parseEther, formatEther } = ethers.utils;
+const { BN } = require("bn.js");
 
 // ERROR CODES
 const ERR_CODES = {

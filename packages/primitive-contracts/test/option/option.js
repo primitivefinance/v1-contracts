@@ -59,8 +59,8 @@ describe("Option Contract", () => {
 
         underlyingToken = dai;
         strikeToken = weth;
-        base = parseEther("200");
-        quote = parseEther("1");
+        base = parseEther("200").toString();
+        quote = parseEther("1").toString();
         expiry = "1690868800"; // May 30, 2020, 8PM UTC
 
         Primitive = await newPrimitive(
@@ -79,17 +79,17 @@ describe("Option Contract", () => {
         await weth.deposit({ value: FIFTY_ETHER });
 
         getBalance = async (token, address) => {
-            let bal = new BN(await token.balanceOf(address));
+            let bal = await token.balanceOf(address);
             return bal;
         };
 
         getCache = async (cache) => {
             switch (cache) {
                 case "u":
-                    cache = new BN(await optionToken.underlyingCache());
+                    cache = await optionToken.underlyingCache();
                     break;
                 case "s":
-                    cache = new BN(await optionToken.strikeCache());
+                    cache = await optionToken.strikeCache();
                     break;
             }
             return cache;
@@ -105,24 +105,19 @@ describe("Option Contract", () => {
                 quote,
                 expiry
             );
-            assert.equal(
-                option,
-                optionToken.address,
-                "Incorrect option address"
-            );
+            expect(option).to.be.eq(optionToken.address);
         });
 
         it("reverts if one of the tokens in an option is address zero", async () => {
-            await truffleAssert.reverts(
+            await expect(
                 registry.deployOption(
                     ZERO_ADDRESS,
                     strikeToken.address,
                     base,
                     quote,
                     expiry
-                ),
-                "ERR_ADDRESS"
-            );
+                )
+            ).to.be.revertedWith("ERR_ADDRESS");
         });
     });
 
@@ -373,10 +368,8 @@ describe("Option Contract", () => {
                 redeemToken = Primitive.redeemToken;
 
                 mint = async (inTokenU) => {
-                    inTokenU = new BN(inTokenU);
-                    let outTokenR = inTokenU
-                        .mul(new BN(quote))
-                        .div(new BN(base));
+                    inTokenU = inTokenU;
+                    let outTokenR = inTokenU.mul(quote).div(base);
 
                     let balanceU = await getBalance(underlyingToken, Alice);
                     let balanceP = await getBalance(optionToken, Alice);
@@ -389,7 +382,14 @@ describe("Option Contract", () => {
                             from: Alice,
                         }
                     );
-                    let event = await optionToken.mint(Alice);
+                    /* let event = await optionToken.mint(Alice); */
+                    await expect(optionToken.mint(Alice))
+                        .to.emit(optionToken, "Mint")
+                        .withArgs(
+                            Alice,
+                            inTokenU.toString(),
+                            outTokenR.toString()
+                        );
 
                     let deltaU = (await getBalance(underlyingToken, Alice)).sub(
                         balanceU
@@ -401,11 +401,11 @@ describe("Option Contract", () => {
                         balanceR
                     );
 
-                    assertBNEqual(deltaU, inTokenU.neg());
+                    assertBNEqual(deltaU, inTokenU.mul(-1));
                     assertBNEqual(deltaP, inTokenU);
                     assertBNEqual(deltaR, outTokenR);
 
-                    await truffleAssert.eventEmitted(event, "Mint", (ev) => {
+                    /* await truffleAssert.eventEmitted(event, "Mint", (ev) => {
                         return (
                             expect(ev.from).to.be.eq(Alice) &&
                             expect(ev.outTokenP.toString()).to.be.eq(
@@ -415,12 +415,12 @@ describe("Option Contract", () => {
                                 outTokenR.toString()
                             )
                         );
-                    });
+                    }); */
 
                     let underlyingCache = await getCache("u");
                     let strikeCache = await getCache("s");
 
-                    await truffleAssert.eventEmitted(event, "Fund", (ev) => {
+                    /* await truffleAssert.eventEmitted(event, "Fund", (ev) => {
                         return (
                             expect(ev.underlyingCache.toString()).to.be.eq(
                                 underlyingCache.toString()
@@ -429,7 +429,7 @@ describe("Option Contract", () => {
                                 strikeCache.toString()
                             )
                         );
-                    });
+                    }); */
                     await verifyOptionInvariants(
                         underlyingToken,
                         strikeToken,
@@ -475,14 +475,9 @@ describe("Option Contract", () => {
                 redeemToken = Primitive.redeemToken;
 
                 exercise = async (inTokenP) => {
-                    inTokenP = new BN(inTokenP);
-                    let inTokenS = inTokenP
-                        .mul(new BN(quote))
-                        .div(new BN(base));
-                    let fee = inTokenP
-                        .div(new BN(1000))
-                        .mul(new BN(quote))
-                        .div(new BN(base));
+                    inTokenP = inTokenP;
+                    let inTokenS = inTokenP.mul(quote).div(base);
+                    let fee = inTokenP.div(1000).mul(quote).div(base);
                     let outTokenU = inTokenP;
 
                     let balanceU = await getBalance(underlyingToken, Alice);
@@ -515,8 +510,8 @@ describe("Option Contract", () => {
 
                     // 1000 = fee
                     assertBNEqual(deltaU, outTokenU);
-                    assertBNEqual(deltaP, inTokenP.neg());
-                    assertBNEqual(deltaS, inTokenS.add(fee).neg());
+                    assertBNEqual(deltaP, inTokenP.mul(-1));
+                    assertBNEqual(deltaS, inTokenS.add(fee).mul(-1));
 
                     await truffleAssert.eventEmitted(
                         event,
@@ -634,7 +629,7 @@ describe("Option Contract", () => {
                 redeemToken = Primitive.redeemToken;
 
                 callRedeem = async (inTokenR) => {
-                    inTokenR = new BN(inTokenR);
+                    inTokenR = inTokenR;
                     let outTokenS = inTokenR;
 
                     let balanceS = await getBalance(strikeToken, Alice);
@@ -653,7 +648,7 @@ describe("Option Contract", () => {
                     );
 
                     assertBNEqual(deltaS, outTokenS);
-                    assertBNEqual(deltaR, inTokenR.neg());
+                    assertBNEqual(deltaR, inTokenR.mul(-1));
 
                     await truffleAssert.eventEmitted(event, "Redeem", (ev) => {
                         return (
@@ -711,9 +706,7 @@ describe("Option Contract", () => {
 
             it("redeemTokens consecutively", async () => {
                 let inTokenR = ONE_ETHER;
-                let inTokenU = new BN(inTokenR)
-                    .mul(new BN(base))
-                    .div(new BN(quote));
+                let inTokenU = inTokenR.mul(base).div(quote);
                 await mint(inTokenU);
                 await exercise(inTokenU);
                 await callRedeem(parseEther("0.1"));
@@ -740,10 +733,8 @@ describe("Option Contract", () => {
                 redeemToken = Primitive.redeemToken;
 
                 close = async (inTokenP) => {
-                    inTokenP = new BN(inTokenP);
-                    let inTokenR = inTokenP
-                        .mul(new BN(quote))
-                        .div(new BN(base));
+                    inTokenP = inTokenP;
+                    let inTokenR = inTokenP.mul(quote).div(base);
                     let outTokenU = inTokenP;
 
                     let balanceR = await getBalance(redeemToken, Alice);
@@ -769,8 +760,8 @@ describe("Option Contract", () => {
                     );
 
                     assertBNEqual(deltaU, outTokenU);
-                    assertBNEqual(deltaP, inTokenP.neg());
-                    assertBNEqual(deltaR, inTokenR.neg());
+                    assertBNEqual(deltaP, inTokenP.mul(-1));
+                    assertBNEqual(deltaR, inTokenR.mul(-1));
 
                     await truffleAssert.eventEmitted(event, "Close", (ev) => {
                         return (
@@ -818,9 +809,7 @@ describe("Option Contract", () => {
             it("revert if 0 optionToken were sent to contract", async () => {
                 let inTokenP = ONE_ETHER;
                 await mint(inTokenP);
-                let inTokenR = new BN(inTokenP)
-                    .mul(new BN(quote))
-                    .div(new BN(base));
+                let inTokenR = inTokenP.mul(quote).div(base);
                 await redeemToken.transfer(optionToken.address, inTokenR, {
                     from: Alice,
                 });
@@ -834,9 +823,7 @@ describe("Option Contract", () => {
             it("revert if not enough optionToken was sent into contract", async () => {
                 let inTokenP = ONE_ETHER;
                 await mint(inTokenP);
-                let inTokenR = new BN(inTokenP)
-                    .mul(new BN(quote))
-                    .div(new BN(base));
+                let inTokenR = inTokenP.mul(quote).div(base);
                 await redeemToken.transfer(optionToken.address, inTokenR, {
                     from: Alice,
                 });
@@ -927,9 +914,7 @@ describe("Option Contract", () => {
             it("should update the cached balances with the current balances", async () => {
                 await underlyingToken.mint(Alice, THOUSAND_ETHER);
                 let inTokenU = THOUSAND_ETHER;
-                let inTokenS = new BN(inTokenU)
-                    .mul(new BN(quote))
-                    .div(new BN(base));
+                let inTokenS = inTokenU.mul(quote).div(base);
                 await strikeToken.deposit({ from: Alice, value: inTokenS });
                 await mint(inTokenU);
                 await underlyingToken.transfer(optionToken.address, inTokenU, {
@@ -992,9 +977,7 @@ describe("Option Contract", () => {
                 await underlyingToken.mint(Alice, THOUSAND_ETHER);
                 await underlyingToken.mint(Alice, THOUSAND_ETHER);
                 let inTokenU = THOUSAND_ETHER;
-                let inTokenS = new BN(inTokenU)
-                    .mul(new BN(quote))
-                    .div(new BN(base));
+                let inTokenS = inTokenU.mul(quote).div(base);
                 await strikeToken.deposit({ from: Alice, value: inTokenS });
                 await mint(inTokenU);
                 await underlyingToken.transfer(optionToken.address, inTokenU, {
@@ -1094,9 +1077,9 @@ describe("Option Contract", () => {
                 let deltaCU = balance1CU.sub(balance0CU);
                 let deltaS = balance1S.sub(balance0S);
 
-                assertBNEqual(deltaR, inTokenR.neg());
+                assertBNEqual(deltaR, inTokenR.mul(-1));
                 assertBNEqual(deltaU, cache0U);
-                assertBNEqual(deltaCU, cache0U.neg());
+                assertBNEqual(deltaCU, cache0U.mul(-1));
                 assertBNEqual(deltaS, cache0S);
             });
 
