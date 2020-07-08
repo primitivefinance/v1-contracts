@@ -18,12 +18,12 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "tokenU",
+          "name": "underlyingToken",
           "type": "address"
         },
         {
           "internalType": "address",
-          "name": "tokenS",
+          "name": "strikeToken",
           "type": "address"
         },
         {

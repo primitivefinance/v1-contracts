@@ -3,7 +3,7 @@
   "abi": [
     {
       "inputs": [],
-      "name": "FEE",
+      "name": "EXERCISE_FEE",
       "outputs": [
         {
           "internalType": "uint256",
@@ -29,24 +29,16 @@
     },
     {
       "inputs": [],
-      "name": "cacheS",
+      "name": "caches",
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "_underlyingCache",
           "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "cacheU",
-      "outputs": [
+        },
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "_strikeCache",
           "type": "uint256"
         }
       ],
@@ -65,17 +57,17 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "inTokenR",
+          "name": "inRedeems",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "inTokenP",
+          "name": "inOptions",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "outTokenU",
+          "name": "outUnderlyings",
           "type": "uint256"
         }
       ],
@@ -91,7 +83,7 @@
         },
         {
           "internalType": "uint256",
-          "name": "outTokenU",
+          "name": "outUnderlyings",
           "type": "uint256"
         },
         {
@@ -104,12 +96,12 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "inTokenS",
+          "name": "inStrikes",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "inTokenP",
+          "name": "inOptions",
           "type": "uint256"
         }
       ],
@@ -144,39 +136,21 @@
     },
     {
       "inputs": [],
-      "name": "getCaches",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "_cacheU",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_cacheS",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "getOption",
+      "name": "getParameters",
       "outputs": [
         {
           "internalType": "address",
-          "name": "_tokenS",
+          "name": "_strikeToken",
           "type": "address"
         },
         {
           "internalType": "address",
-          "name": "_tokenU",
+          "name": "_underlyingToken",
           "type": "address"
         },
         {
           "internalType": "address",
-          "name": "_tokenR",
+          "name": "_redeemToken",
           "type": "address"
         },
         {
@@ -199,37 +173,14 @@
       "type": "function"
     },
     {
-      "inputs": [],
-      "name": "getTokens",
-      "outputs": [
-        {
-          "internalType": "address",
-          "name": "_tokenU",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "_tokenS",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "_tokenR",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
       "inputs": [
         {
           "internalType": "address",
-          "name": "_tokenR",
+          "name": "_redeemToken",
           "type": "address"
         }
       ],
-      "name": "initTokenR",
+      "name": "initRedeemToken",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -246,12 +197,12 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "inTokenU",
+          "name": "inUnderlyings",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "outTokenR",
+          "name": "outRedeems",
           "type": "uint256"
         }
       ],
@@ -283,7 +234,7 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "inTokenR",
+          "name": "inRedeems",
           "type": "uint256"
         }
       ],
@@ -292,7 +243,7 @@
     },
     {
       "inputs": [],
-      "name": "tokenR",
+      "name": "redeemToken",
       "outputs": [
         {
           "internalType": "address",
@@ -305,7 +256,20 @@
     },
     {
       "inputs": [],
-      "name": "tokenS",
+      "name": "strikeCache",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "strikeToken",
       "outputs": [
         {
           "internalType": "address",
@@ -318,7 +282,43 @@
     },
     {
       "inputs": [],
-      "name": "tokenU",
+      "name": "tokens",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "_underlyingToken",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_strikeToken",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_redeemToken",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "underlyingCache",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "underlyingToken",
       "outputs": [
         {
           "internalType": "address",

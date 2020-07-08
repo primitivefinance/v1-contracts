@@ -10,7 +10,7 @@
         },
         {
           "internalType": "uint256",
-          "name": "outTokenU",
+          "name": "outUnderlyings",
           "type": "uint256"
         },
         {

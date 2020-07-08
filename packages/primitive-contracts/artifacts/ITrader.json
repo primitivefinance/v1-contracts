@@ -5,12 +5,12 @@
       "inputs": [
         {
           "internalType": "contract IOption",
-          "name": "tokenP",
+          "name": "optionToken",
           "type": "address"
         },
         {
           "internalType": "uint256",
-          "name": "amount",
+          "name": "closeQuantity",
           "type": "uint256"
         },
         {
@@ -23,17 +23,17 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "inTokenR",
+          "name": "inRedeems",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "inTokenP",
+          "name": "inOptions",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "outTokenU",
+          "name": "outUnderlyings",
           "type": "uint256"
         }
       ],
@@ -44,12 +44,12 @@
       "inputs": [
         {
           "internalType": "contract IOption",
-          "name": "tokenP",
+          "name": "optionToken",
           "type": "address"
         },
         {
           "internalType": "uint256",
-          "name": "amount",
+          "name": "exerciseQuantity",
           "type": "uint256"
         },
         {
@@ -67,7 +67,7 @@
         },
         {
           "internalType": "uint256",
-          "name": "inTokenP",
+          "name": "inOptions",
           "type": "uint256"
         }
       ],
@@ -78,12 +78,12 @@
       "inputs": [
         {
           "internalType": "contract IOption",
-          "name": "tokenP",
+          "name": "optionToken",
           "type": "address"
         },
         {
           "internalType": "uint256",
-          "name": "amount",
+          "name": "mintQuantity",
           "type": "uint256"
         },
         {
@@ -112,12 +112,12 @@
       "inputs": [
         {
           "internalType": "contract IOption",
-          "name": "tokenP",
+          "name": "optionToken",
           "type": "address"
         },
         {
           "internalType": "uint256",
-          "name": "amount",
+          "name": "redeemQuantity",
           "type": "uint256"
         },
         {
@@ -130,7 +130,7 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "inTokenR",
+          "name": "inRedeems",
           "type": "uint256"
         }
       ],
@@ -141,12 +141,12 @@
       "inputs": [
         {
           "internalType": "contract IOption",
-          "name": "tokenP",
+          "name": "optionToken",
           "type": "address"
         },
         {
           "internalType": "uint256",
-          "name": "amount",
+          "name": "unwindQuantity",
           "type": "uint256"
         },
         {
@@ -159,17 +159,17 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "inTokenR",
+          "name": "inRedeems",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "inTokenP",
+          "name": "inOptions",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "outTokenU",
+          "name": "outUnderlyings",
           "type": "uint256"
         }
       ],

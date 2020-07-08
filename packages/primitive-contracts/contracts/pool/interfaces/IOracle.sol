@@ -1,18 +1,21 @@
+// SPDX-License-Identifier: MIT
+
+
+
 pragma solidity ^0.6.2;
 
 interface IOracle {
     function marketPrice() external view returns (uint256 market);
 
     function calculateIntrinsic(
-        address tokenU,
-        address tokenS,
+        address underlyingToken,
+        address strikeToken,
         uint256 base,
         uint256 quote
     ) external view returns (uint256 intrinsic);
 
     function calculateExtrinsic(
-        address tokenU,
-        address tokenS,
+        address underlyingToken,
         uint256 volatility,
         uint256 base,
         uint256 quote,
@@ -20,8 +23,8 @@ interface IOracle {
     ) external view returns (uint256 extrinsic);
 
     function calculatePremium(
-        address tokenU,
-        address tokenS,
+        address underlyingToken,
+        address strikeToken,
         uint256 volatility,
         uint256 base,
         uint256 quote,

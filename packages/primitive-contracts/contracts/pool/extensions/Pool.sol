@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+
+
+
 pragma solidity ^0.6.2;
 
 /**
@@ -5,13 +9,15 @@ pragma solidity ^0.6.2;
  * @author  Primitive
  */
 
-import "../../option/interfaces/IOption.sol";
-import "../interfaces/IPool.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Pausable.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import { IOption } from "../../option/interfaces/IOption.sol";
+import { IPool } from "../interfaces/IPool.sol";
+import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
+import { ERC20, IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {
+    ReentrancyGuard
+} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 contract Pool is IPool, Ownable, Pausable, ReentrancyGuard, ERC20 {
     using SafeMath for uint256;
@@ -19,20 +25,24 @@ contract Pool is IPool, Ownable, Pausable, ReentrancyGuard, ERC20 {
     uint256 public constant MIN_LIQUIDITY = 10**4;
 
     address public override factory;
-    address public override tokenP;
+    address public override optionToken;
 
-    event Deposit(address indexed from, uint256 inTokenU, uint256 outTokenPULP);
+    event Deposit(
+        address indexed from,
+        uint256 inUnderlyings,
+        uint256 outTokenPULP
+    );
     event Withdraw(
         address indexed from,
-        uint256 inTokenPULP,
-        uint256 outTokenU
+        uint256 inLiquidityToken,
+        uint256 outUnderlyings
     );
 
-    constructor(address _tokenP, address _factory)
+    constructor(address _optionToken, address _factory)
         public
         ERC20("Primitive V1 Pool", "PULP")
     {
-        tokenP = _tokenP;
+        optionToken = _optionToken;
         factory = _factory;
     }
 
@@ -41,11 +51,11 @@ contract Pool is IPool, Ownable, Pausable, ReentrancyGuard, ERC20 {
     }
 
     /**
-     * @dev Private function to mint tokenPULP to depositor.
+     * @dev Private function to mint optionTokenULP to depositor.
      */
     function _addLiquidity(
         address to,
-        uint256 inTokenU,
+        uint256 inUnderlyings,
         uint256 poolBalance
     ) internal returns (uint256 outTokenPULP) {
         // Mint LP tokens proportional to the Total LP Supply and Total Pool Balance.
@@ -53,9 +63,9 @@ contract Pool is IPool, Ownable, Pausable, ReentrancyGuard, ERC20 {
 
         // If liquidity is not intiialized, mint the initial liquidity.
         if (_totalSupply == 0) {
-            outTokenPULP = inTokenU;
+            outTokenPULP = inUnderlyings;
         } else {
-            outTokenPULP = inTokenU.mul(_totalSupply).div(poolBalance);
+            outTokenPULP = inUnderlyings.mul(_totalSupply).div(poolBalance);
         }
 
         require(
@@ -63,58 +73,64 @@ contract Pool is IPool, Ownable, Pausable, ReentrancyGuard, ERC20 {
             "ERR_ZERO_LIQUIDITY"
         );
         _mint(to, outTokenPULP);
-        emit Deposit(to, inTokenU, outTokenPULP);
+        emit Deposit(to, inUnderlyings, outTokenPULP);
     }
 
     function _removeLiquidity(
         address to,
-        uint256 inTokenPULP,
+        uint256 inLiquidityToken,
         uint256 poolBalance
-    ) internal returns (uint256 outTokenU) {
+    ) internal returns (uint256 outUnderlyings) {
         require(
-            balanceOf(to) >= inTokenPULP && inTokenPULP > 0,
+            balanceOf(to) >= inLiquidityToken && inLiquidityToken > 0,
             "ERR_BAL_PULP"
         );
         uint256 _totalSupply = totalSupply();
 
         // Calculate output amounts.
-        outTokenU = inTokenPULP.mul(poolBalance).div(_totalSupply);
-        require(outTokenU > uint256(0), "ERR_ZERO");
-        // Burn tokenPULP.
-        _burn(to, inTokenPULP);
-        emit Withdraw(to, inTokenPULP, outTokenU);
+        outUnderlyings = inLiquidityToken.mul(poolBalance).div(_totalSupply);
+        require(outUnderlyings > uint256(0), "ERR_ZERO");
+        // Burn optionTokenULP.
+        _burn(to, inLiquidityToken);
+        emit Withdraw(to, inLiquidityToken, outUnderlyings);
     }
 
-    function _write(uint256 outTokenU) internal returns (uint256 outTokenP) {
-        address _tokenP = tokenP;
-        address tokenU = IOption(_tokenP).tokenU();
+    function _write(uint256 outUnderlyings)
+        internal
+        returns (uint256 outTokenP)
+    {
+        address _optionToken = optionToken;
+        address underlyingToken = IOption(_optionToken).underlyingToken();
         require(
-            IERC20(tokenU).balanceOf(address(this)) >= outTokenU,
+            IERC20(underlyingToken).balanceOf(address(this)) >= outUnderlyings,
             "ERR_BAL_UNDERLYING"
         );
         // Transfer underlying tokens to option contract.
-        IERC20(tokenU).transfer(_tokenP, outTokenU);
+        IERC20(underlyingToken).transfer(_optionToken, outUnderlyings);
 
         // Mint  and  Redeem to the receiver.
-        (outTokenP, ) = IOption(_tokenP).mint(address(this));
+        (outTokenP, ) = IOption(_optionToken).mint(address(this));
     }
 
     function _exercise(
         address receiver,
-        uint256 outTokenS,
-        uint256 inTokenP
-    ) internal returns (uint256 outTokenU) {
-        address _tokenP = tokenP;
+        uint256 outStrikes,
+        uint256 inOptions
+    ) internal returns (uint256 outUnderlyings) {
+        address _optionToken = optionToken;
         // Transfer strike token to option contract.
-        IERC20(IOption(_tokenP).tokenS()).transfer(_tokenP, outTokenS);
+        IERC20(IOption(_optionToken).strikeToken()).transfer(
+            _optionToken,
+            outStrikes
+        );
 
         // Transfer option token to option contract.
-        IERC20(_tokenP).transferFrom(msg.sender, _tokenP, inTokenP);
+        IERC20(_optionToken).transferFrom(msg.sender, _optionToken, inOptions);
 
         // Call the exercise function to receive underlying tokens.
-        (, outTokenU) = IOption(_tokenP).exercise(
+        (, outUnderlyings) = IOption(_optionToken).exercise(
             receiver,
-            inTokenP,
+            inOptions,
             new bytes(0)
         );
     }
@@ -123,26 +139,32 @@ contract Pool is IPool, Ownable, Pausable, ReentrancyGuard, ERC20 {
         internal
         returns (uint256 inTokenS)
     {
-        address _tokenP = tokenP;
-        // Push tokenR to _tokenP so we can call redeem() and pull tokenS.
-        IERC20(IOption(_tokenP).tokenR()).transfer(_tokenP, outTokenR);
-        // Call redeem function to pull tokenS.
-        inTokenS = IOption(_tokenP).redeem(receiver);
+        address _optionToken = optionToken;
+        // Push redeemToken to _optionToken so we can call redeem() and pull strikeToken.
+        IERC20(IOption(_optionToken).redeemToken()).transfer(
+            _optionToken,
+            outTokenR
+        );
+        // Call redeem function to pull strikeToken.
+        inTokenS = IOption(_optionToken).redeem(receiver);
     }
 
-    function _close(uint256 outTokenR, uint256 inTokenP)
+    function _close(uint256 outTokenR, uint256 inOptions)
         internal
-        returns (uint256 outTokenU)
+        returns (uint256 outUnderlyings)
     {
-        address _tokenP = tokenP;
+        address _optionToken = optionToken;
         // Transfer redeem to the option contract.
-        IERC20(IOption(_tokenP).tokenR()).transfer(_tokenP, outTokenR);
+        IERC20(IOption(_optionToken).redeemToken()).transfer(
+            _optionToken,
+            outTokenR
+        );
 
         // Transfer option token to option contract.
-        IERC20(_tokenP).transferFrom(msg.sender, _tokenP, inTokenP);
+        IERC20(_optionToken).transferFrom(msg.sender, _optionToken, inOptions);
 
         // Call the close function to have the receive underlying tokens.
-        (, , outTokenU) = IOption(_tokenP).close(address(this));
+        (, , outUnderlyings) = IOption(_optionToken).close(address(this));
     }
 
     function balances()
@@ -151,8 +173,9 @@ contract Pool is IPool, Ownable, Pausable, ReentrancyGuard, ERC20 {
         view
         returns (uint256 balanceU, uint256 balanceR)
     {
-        (address tokenU, , address tokenR) = IOption(tokenP).getTokens();
-        balanceU = IERC20(tokenU).balanceOf(address(this));
-        balanceR = IERC20(tokenR).balanceOf(address(this));
+        (address underlyingToken, , address redeemToken) = IOption(optionToken)
+            .tokens();
+        balanceU = IERC20(underlyingToken).balanceOf(address(this));
+        balanceR = IERC20(redeemToken).balanceOf(address(this));
     }
 }
