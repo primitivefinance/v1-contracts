@@ -10,9 +10,9 @@ const Trader = artifacts.require("Trader");
 const Oracle = artifacts.require("Oracle");
 const OracleLike = artifacts.require("OracleLike");
 
-const utils = require("../../lib/utils");
-const setup = require("../../lib/setup");
-const constants = require("../../lib/constants");
+const utils = require("../lib/utils");
+const setup = require("../lib/setup");
+const constants = require("../lib/constants");
 const {
     toWei,
     assertBNEqual,
@@ -277,7 +277,7 @@ contract("PAMM Test", (accounts) => {
     });
 
     describe("deposit", () => {
-        beforeEach(async function() {
+        beforeEach(async function () {
             pool = await AMM.new(
                 weth.address,
                 prime.address,
@@ -376,7 +376,7 @@ contract("PAMM Test", (accounts) => {
     });
 
     describe("withdraw", () => {
-        beforeEach(async function() {
+        beforeEach(async function () {
             pool = await AMM.new(
                 weth.address,
                 prime.address,
@@ -558,7 +558,7 @@ contract("PAMM Test", (accounts) => {
     });
 
     describe("buy", () => {
-        beforeEach(async function() {
+        beforeEach(async function () {
             pool = await AMM.new(
                 weth.address,
                 prime.address,
@@ -663,7 +663,7 @@ contract("PAMM Test", (accounts) => {
     });
 
     describe("sell", () => {
-        beforeEach(async function() {
+        beforeEach(async function () {
             pool = await AMM.new(
                 weth.address,
                 prime.address,
@@ -823,7 +823,7 @@ contract("PAMM Test", (accounts) => {
     });
 
     describe("Withdraw redeemed strike tokens()", () => {
-        before(async function() {
+        before(async function () {
             pool = await AMM.new(
                 weth.address,
                 prime.address,
@@ -891,7 +891,7 @@ contract("PAMM Test", (accounts) => {
     });
 
     describe("Run Transactions", () => {
-        beforeEach(async function() {
+        beforeEach(async function () {
             pool = await AMM.new(
                 weth.address,
                 prime.address,
@@ -964,7 +964,7 @@ contract("PAMM Test", (accounts) => {
     });
 
     describe("Run Transactions with new option", () => {
-        beforeEach(async function() {
+        beforeEach(async function () {
             // Setup option parameters.
             tokenU = dai;
             tokenS = weth;

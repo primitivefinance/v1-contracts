@@ -1,10 +1,10 @@
-const { assert, expect } = require("chai");
 const chai = require("chai");
 const BN = require("bn.js");
+chai.use(require("chai-bn")(BN));
 const TestERC20 = artifacts.require("TestERC20");
 const BadERC20 = artifacts.require("BadERC20");
-const Factory = artifacts.require("Factory");
-const FactoryRedeem = artifacts.require("FactoryRedeem");
+const OptionFactory = artifacts.require("OptionFactory");
+const RedeemFactory = artifacts.require("RedeemFactory");
 const Option = artifacts.require("Option");
 const OptionTest = artifacts.require("OptionTest");
 const Redeem = artifacts.require("Redeem");
@@ -12,18 +12,10 @@ const Registry = artifacts.require("Registry");
 const Flash = artifacts.require("Flash");
 const Weth = artifacts.require("WETH9");
 const CTokenLike = artifacts.require("CTokenLike");
-const FactoryLib = artifacts.require("FactoryLib");
-const OptionImplementationLauncherLib = artifacts.require(
-    "OptionImplementationLauncherLib"
-);
-const RedeemImplementationLauncherLib = artifacts.require(
-    "RedeemImplementationLauncherLib"
-);
-chai.use(require("chai-bn")(BN));
+const OptionTemplateLib = artifacts.require("OptionTemplateLib");
+const RedeemTemplateLib = artifacts.require("RedeemTemplateLib");
 const constants = require("./constants");
 const { MILLION_ETHER } = constants.VALUES;
-const bre = require("@nomiclabs/buidler/config");
-const { TruffleEnvironmentArtifacts } = require("@nomiclabs/buidler-truffle5");
 
 const newERC20 = async (name, symbol, totalSupply) => {
     let erc20 = await TestERC20.new(name, symbol, totalSupply);
@@ -51,21 +43,23 @@ const newRegistry = async () => {
 };
 
 const newOptionFactory = async (registry) => {
-    if (!artifacts.contractWasLinked(Factory)) {
-        let oImpLib = await OptionImplementationLauncherLib.new();
-        console.log("linking");
-        await Factory.link(oImpLib);
+    if (!artifacts.contractWasLinked(OptionFactory)) {
+        let oImpLib = await OptionTemplateLib.new();
+        await OptionFactory.link(oImpLib);
     }
-    if (!artifacts.contractWasLinked(FactoryRedeem)) {
-        let rImpLib = await RedeemImplementationLauncherLib.new();
-        await FactoryRedeem.link(rImpLib);
+    if (!artifacts.contractWasLinked(RedeemFactory)) {
+        let rImpLib = await RedeemTemplateLib.new();
+        await RedeemFactory.link(rImpLib);
     }
-    let factory = await Factory.new(registry.address);
-    let factoryRedeem = await FactoryRedeem.new(registry.address);
-    await factory.deployOptionImplementation();
-    await factoryRedeem.deployRedeemImplementation();
-    await registry.initialize(factory.address, factoryRedeem.address);
-    return factory;
+    let optionFactory = await OptionFactory.new(registry.address);
+    let redeemTokenFactory = await RedeemFactory.new(registry.address);
+    await optionFactory.deployOptionImplementation();
+    await redeemTokenFactory.deployRedeemImplementation();
+    await registry.initialize(
+        optionFactory.address,
+        redeemTokenFactory.address
+    );
+    return optionFactory;
 };
 
 const newInterestBearing = async (underlying, name, symbol) => {
@@ -73,34 +67,59 @@ const newInterestBearing = async (underlying, name, symbol) => {
     return compound;
 };
 
-const newTestOption = async (tokenU, tokenS, base, quote, expiry) => {
-    let prime = await OptionTest.new(/* tokenU, tokenS, base, quote, expiry */);
-    await prime.initialize(tokenU, tokenS, base, quote, expiry);
-    return prime;
+const newTestOption = async (
+    underlyingToken,
+    strikeToken,
+    base,
+    quote,
+    expiry
+) => {
+    let optionToken = await OptionTest.new();
+    await optionToken.initialize(
+        underlyingToken,
+        strikeToken,
+        base,
+        quote,
+        expiry
+    );
+    return optionToken;
 };
 
-const newTestRedeem = async (factory, prime, underlying) => {
-    let redeem = await Redeem.new(/* factory, prime, underlying */);
-    await redeem.initialize(factory, prime, underlying);
-    return redeem;
+const newTestRedeem = async (factory, optionToken, underlying) => {
+    let redeemTokenToken = await Redeem.new();
+    await redeemTokenToken.initialize(factory, optionToken, underlying);
+    return redeemTokenToken;
 };
 
-const newOption = async (registry, tokenU, tokenS, base, quote, expiry) => {
-    await registry.addSupported(tokenU);
-    await registry.addSupported(tokenS);
-    await registry.deployOption(tokenU, tokenS, base, quote, expiry);
-    let prime = await Option.at(
+const newOption = async (
+    registry,
+    underlyingToken,
+    strikeToken,
+    base,
+    quote,
+    expiry
+) => {
+    await registry.addSupported(underlyingToken);
+    await registry.addSupported(strikeToken);
+    await registry.deployOption(
+        underlyingToken,
+        strikeToken,
+        base,
+        quote,
+        expiry
+    );
+    let optionToken = await Option.at(
         await registry.activeOptions(
             ((await registry.optionsLength()) - 1).toString()
         )
     );
-    return prime;
+    return optionToken;
 };
 
-const newRedeem = async (prime) => {
-    let tokenR = await prime.tokenR();
-    let redeem = await Redeem.at(tokenR);
-    return redeem;
+const newRedeem = async (optionToken) => {
+    let redeemTokenAddress = await optionToken.redeemToken();
+    let redeemToken = await Redeem.at(redeemTokenAddress);
+    return redeemToken;
 };
 
 const newPrimitive = async (
@@ -111,24 +130,24 @@ const newPrimitive = async (
     quote,
     expiry
 ) => {
-    let tokenU = underlying;
-    let tokenS = strike;
+    let underlyingToken = underlying;
+    let strikeToken = strike;
 
-    let prime = await newOption(
+    let optionToken = await newOption(
         registry,
-        tokenU.address,
-        tokenS.address,
+        underlyingToken.address,
+        strikeToken.address,
         base,
         quote,
         expiry
     );
-    let redeem = await newRedeem(prime);
+    let redeemToken = await newRedeem(optionToken);
 
     const Primitive = {
-        tokenU: tokenU,
-        tokenS: tokenS,
-        prime: prime,
-        redeem: redeem,
+        underlyingToken: underlyingToken,
+        strikeToken: strikeToken,
+        optionToken: optionToken,
+        redeemToken: redeemToken,
     };
     return Primitive;
 };

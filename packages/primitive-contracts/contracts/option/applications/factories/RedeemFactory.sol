@@ -13,7 +13,7 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { CloneLib } from "../CloneLib.sol";
 import { NullCloneConstructor } from "../NullCloneConstructor.sol";
 
-contract FactoryRedeem is Ownable, NullCloneConstructor {
+contract RedeemFactory is Ownable, NullCloneConstructor {
     using SafeMath for uint256;
     address public redeemTemplate;
 

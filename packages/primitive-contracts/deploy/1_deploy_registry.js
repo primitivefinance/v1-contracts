@@ -8,22 +8,16 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     const { log, deploy } = deployments;
     const { deployer } = await getNamedAccounts();
     const chain = await bre.getChainId();
-    const optionImplementationLauncherLib = await deploy(
-        "OptionImplementationLauncherLib",
-        {
-            from: deployer,
-            contractName: "OptionImplementationLauncherLib",
-            args: [],
-        }
-    );
-    const redeemImplementationLauncherLib = await deploy(
-        "RedeemImplementationLauncherLib",
-        {
-            from: deployer,
-            contractName: "RedeemImplementationLauncherLib",
-            args: [],
-        }
-    );
+    const optionTemplateLib = await deploy("OptionTemplateLib", {
+        from: deployer,
+        contractName: "OptionTemplateLib",
+        args: [],
+    });
+    const redeemTemplateLib = await deploy("RedeemTemplateLib", {
+        from: deployer,
+        contractName: "RedeemTemplateLib",
+        args: [],
+    });
 
     const registry = await deploy("Registry", {
         from: deployer,
@@ -31,26 +25,24 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         args: [],
     });
 
-    const factory = await deploy("Factory", {
+    const optionFactory = await deploy("OptionFactory", {
         from: deployer,
-        contractName: "Factory",
+        contractName: "OptionFactory",
         args: [registry.address],
         libraries: {
-            ["OptionImplementationLauncherLib"]:
-                optionImplementationLauncherLib.address,
+            ["OptionTemplateLib"]: optionTemplateLib.address,
         },
     });
 
-    const factoryRedeem = await deploy("FactoryRedeem", {
+    const redeemFactory = await deploy("RedeemFactory", {
         from: deployer,
-        contractName: "FactoryRedeem",
+        contractName: "RedeemFactory",
         args: [registry.address],
         libraries: {
-            ["RedeemImplementationLauncherLib"]:
-                redeemImplementationLauncherLib.address,
+            ["RedeemTemplateLib"]: redeemTemplateLib.address,
         },
     });
-    let deployed = [registry, factory, factoryRedeem];
+    let deployed = [registry, optionFactory, redeemFactory];
     for (let i = 0; i < deployed.length; i++) {
         if (deployed[i].newlyDeployed)
             log(
