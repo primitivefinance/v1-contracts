@@ -4,8 +4,10 @@ const BN = require("bn.js");
 const utils = require("../lib/utils");
 const setup = require("../lib/setup");
 const constants = require("../lib/constants");
-const { toWei, assertBNEqual, verifyOptionInvariants } = utils;
+const { parseEther } = require("ethers/lib/utils");
+const { assertBNEqual, verifyOptionInvariants } = utils;
 const {
+    newWallets,
     newERC20,
     newWeth,
     newRegistry,
@@ -36,10 +38,13 @@ const {
 
 const { ZERO_ADDRESS } = constants.ADDRESSES;
 
-contract("Option Contract", (accounts) => {
+describe("Option Contract", () => {
     // ACCOUNTS
-    const Alice = accounts[0];
-    const Bob = accounts[1];
+    const wallets = newWallets();
+    const Admin = wallets[0];
+    const User = wallets[1];
+    const Alice = Admin.address;
+    const Bob = User.address;
 
     let weth, dai, optionToken, redeemToken;
     let underlyingToken, strikeToken;
@@ -47,18 +52,19 @@ contract("Option Contract", (accounts) => {
     let registry, factoryOption, Primitive;
 
     before(async () => {
-        weth = await newWeth();
-        dai = await newERC20("TEST DAI", "DAI", MILLION_ETHER);
-        registry = await newRegistry();
-        factoryOption = await newOptionFactory(registry);
+        weth = await newWeth(Admin);
+        dai = await newERC20(Admin, "TEST DAI", "DAI", MILLION_ETHER);
+        registry = await newRegistry(Admin);
+        factoryOption = await newOptionFactory(Admin, registry);
 
         underlyingToken = dai;
         strikeToken = weth;
-        base = toWei("200");
-        quote = toWei("1");
+        base = parseEther("200");
+        quote = parseEther("1");
         expiry = "1690868800"; // May 30, 2020, 8PM UTC
 
         Primitive = await newPrimitive(
+            Admin,
             registry,
             underlyingToken,
             strikeToken,
@@ -172,11 +178,11 @@ contract("Option Contract", (accounts) => {
             );
         });
 
-        it("should return the correct tokenR", async () => {
+        it("should return the correct redeemToken", async () => {
             assert.equal(
-                (await optionToken.tokenR()).toString(),
+                (await optionToken.redeemToken()).toString(),
                 redeemToken.address,
-                "Incorrect tokenR"
+                "Incorrect redeemToken"
             );
         });
 
@@ -217,7 +223,7 @@ contract("Option Contract", (accounts) => {
                 "Incorrect strike"
             );
             assert.equal(
-                result._tokenR.toString(),
+                result._redeemToken.toString(),
                 redeemToken.address,
                 "Incorrect redeem"
             );
@@ -239,9 +245,9 @@ contract("Option Contract", (accounts) => {
                 "Incorrect strikeToken"
             );
             assert.equal(
-                result._tokenR.toString(),
+                result._redeemToken.toString(),
                 redeemToken.address,
-                "Incorrect tokenR"
+                "Incorrect redeemToken"
             );
         });
 
@@ -310,7 +316,7 @@ contract("Option Contract", (accounts) => {
         describe("kill", () => {
             it("revert if msg.sender is not owner", async () => {
                 await truffleAssert.reverts(
-                    optionToken.kill({ from: Bob }),
+                    optionToken.connect(Bob).kill(),
                     ERR_NOT_OWNER
                 );
             });
@@ -340,10 +346,10 @@ contract("Option Contract", (accounts) => {
             });
         });
 
-        describe("initTokenR", () => {
+        describe("initRedeemToken", () => {
             it("revert if msg.sender is not owner", async () => {
                 await truffleAssert.reverts(
-                    optionToken.initTokenR(Alice, { from: Bob }),
+                    optionToken.connect(Bob).initRedeemToken(Alice),
                     ERR_NOT_OWNER
                 );
             });
@@ -351,9 +357,10 @@ contract("Option Contract", (accounts) => {
 
         describe("mint", () => {
             beforeEach(async () => {
-                registry = await newRegistry();
-                factoryOption = await newOptionFactory(registry);
+                registry = await newRegistry(Admin);
+                factoryOption = await newOptionFactory(Admin, registry);
                 Primitive = await newPrimitive(
+                    Admin,
                     registry,
                     underlyingToken,
                     strikeToken,
@@ -436,7 +443,7 @@ contract("Option Contract", (accounts) => {
                 await truffleAssert.reverts(optionToken.mint(Alice), ERR_ZERO);
             });
 
-            it("mint optionToken and tokenR to Alice", async () => {
+            it("mint optionToken and redeemToken to Alice", async () => {
                 let inTokenU = ONE_ETHER;
                 await mint(inTokenU);
             });
@@ -452,9 +459,10 @@ contract("Option Contract", (accounts) => {
 
         describe("exercise", () => {
             beforeEach(async () => {
-                registry = await newRegistry();
-                factoryOption = await newOptionFactory(registry);
+                registry = await newRegistry(Admin);
+                factoryOption = await newOptionFactory(Admin, registry);
                 Primitive = await newPrimitive(
+                    Admin,
                     registry,
                     underlyingToken,
                     strikeToken,
@@ -563,8 +571,11 @@ contract("Option Contract", (accounts) => {
             });
 
             it("reverts if outTokenU > inTokenP, not enough optionToken was sent in", async () => {
-                await mint(toWei("0.01"));
-                await optionToken.transfer(optionToken.address, toWei("0.01"));
+                await mint(parseEther("0.01"));
+                await optionToken.transfer(
+                    optionToken.address,
+                    parseEther("0.01")
+                );
                 await strikeToken.deposit({ from: Alice, value: quote });
                 await strikeToken.transfer(optionToken.address, quote);
                 await truffleAssert.reverts(
@@ -595,8 +606,8 @@ contract("Option Contract", (accounts) => {
                 let inTokenP = ONE_ETHER;
                 await mint(inTokenP);
                 await strikeToken.deposit({ from: Alice, value: quote });
-                await exercise(toWei("0.1"));
-                await exercise(toWei("0.34521"));
+                await exercise(parseEther("0.1"));
+                await exercise(parseEther("0.34521"));
 
                 // Interesting, the two 0s at the end of this are necessary. If they are not 0s, the
                 // returned value will be unequal because the accuracy of the mint is only 10^16.
@@ -607,9 +618,10 @@ contract("Option Contract", (accounts) => {
 
         describe("redeemToken", () => {
             beforeEach(async () => {
-                registry = await newRegistry();
-                factoryOption = await newOptionFactory(registry);
+                registry = await newRegistry(Admin);
+                factoryOption = await newOptionFactory(Admin, registry);
                 Primitive = await newPrimitive(
+                    Admin,
                     registry,
                     underlyingToken,
                     strikeToken,
@@ -677,7 +689,7 @@ contract("Option Contract", (accounts) => {
                 };
             });
 
-            it("revert if 0 tokenR were sent to contract", async () => {
+            it("revert if 0 redeemToken were sent to contract", async () => {
                 await truffleAssert.reverts(
                     optionToken.redeemToken(Alice),
                     ERR_ZERO
@@ -685,8 +697,11 @@ contract("Option Contract", (accounts) => {
             });
 
             it("reverts if not enough strikeToken in optionToken contract", async () => {
-                await mint(toWei("200"));
-                await redeemToken.transfer(optionToken.address, toWei("1"));
+                await mint(parseEther("200"));
+                await redeemToken.transfer(
+                    optionToken.address,
+                    parseEther("1")
+                );
                 await truffleAssert.reverts(
                     optionToken.redeemToken(Alice, { from: Alice }),
                     ERR_BAL_STRIKE
@@ -701,17 +716,18 @@ contract("Option Contract", (accounts) => {
                     .div(new BN(quote));
                 await mint(inTokenU);
                 await exercise(inTokenU);
-                await callRedeem(toWei("0.1"));
-                await callRedeem(toWei("0.34521"));
+                await callRedeem(parseEther("0.1"));
+                await callRedeem(parseEther("0.34521"));
                 await callRedeem("23232342352345");
             });
         });
 
         describe("close", () => {
             beforeEach(async () => {
-                registry = await newRegistry();
-                factoryOption = await newOptionFactory(registry);
+                registry = await newRegistry(Admin);
+                factoryOption = await newOptionFactory(Admin, registry);
                 Primitive = await newPrimitive(
+                    Admin,
                     registry,
                     underlyingToken,
                     strikeToken,
@@ -790,7 +806,7 @@ contract("Option Contract", (accounts) => {
                 };
             });
 
-            it("revert if 0 tokenR were sent to contract", async () => {
+            it("revert if 0 redeemToken were sent to contract", async () => {
                 let inTokenP = ONE_ETHER;
                 await mint(inTokenP);
                 await optionToken.transfer(optionToken.address, inTokenP, {
@@ -824,9 +840,13 @@ contract("Option Contract", (accounts) => {
                 await redeemToken.transfer(optionToken.address, inTokenR, {
                     from: Alice,
                 });
-                await optionToken.transfer(optionToken.address, toWei("0.5"), {
-                    from: Alice,
-                });
+                await optionToken.transfer(
+                    optionToken.address,
+                    parseEther("0.5"),
+                    {
+                        from: Alice,
+                    }
+                );
                 await truffleAssert.reverts(
                     optionToken.close(Alice),
                     ERR_BAL_UNDERLYING
@@ -837,19 +857,20 @@ contract("Option Contract", (accounts) => {
             // returned value will be unequal because the accuracy of the mint is only 10^16.
             // This should be verified further.
             it("closes consecutively", async () => {
-                let inTokenU = toWei("200");
+                let inTokenU = parseEther("200");
                 await mint(inTokenU);
-                await close(toWei("0.1"));
-                await close(toWei("0.34521"));
+                await close(parseEther("0.1"));
+                await close(parseEther("0.34521"));
                 await close("2323234235000");
             });
         });
 
         describe("full test", () => {
             beforeEach(async () => {
-                registry = await newRegistry();
-                factoryOption = await newOptionFactory(registry);
+                registry = await newRegistry(Admin);
+                factoryOption = await newOptionFactory(Admin, registry);
                 Primitive = await newPrimitive(
+                    Admin,
                     registry,
                     underlyingToken,
                     strikeToken,
@@ -868,17 +889,17 @@ contract("Option Contract", (accounts) => {
                 let inTokenU = THOUSAND_ETHER;
                 await mint(inTokenU);
                 await close(ONE_ETHER);
-                await exercise(toWei("200"));
-                await callRedeem(toWei("0.1"));
+                await exercise(parseEther("200"));
+                await callRedeem(parseEther("0.1"));
                 await close(ONE_ETHER);
                 await exercise(ONE_ETHER);
                 await exercise(ONE_ETHER);
                 await exercise(ONE_ETHER);
                 await exercise(ONE_ETHER);
-                await callRedeem(toWei("0.23"));
-                await callRedeem(toWei("0.1234"));
-                await callRedeem(toWei("0.15"));
-                await callRedeem(toWei("0.2543"));
+                await callRedeem(parseEther("0.23"));
+                await callRedeem(parseEther("0.1234"));
+                await callRedeem(parseEther("0.15"));
+                await callRedeem(parseEther("0.2543"));
                 await close(FIVE_ETHER);
                 await close(await optionToken.balanceOf(Alice));
                 await callRedeem(await redeemToken.balanceOf(Alice));
@@ -887,9 +908,10 @@ contract("Option Contract", (accounts) => {
 
         describe("update", () => {
             beforeEach(async () => {
-                registry = await newRegistry();
-                factoryOption = await newOptionFactory(registry);
+                registry = await newRegistry(Admin);
+                factoryOption = await newOptionFactory(Admin, registry);
                 Primitive = await newPrimitive(
+                    Admin,
                     registry,
                     underlyingToken,
                     strikeToken,
@@ -950,9 +972,10 @@ contract("Option Contract", (accounts) => {
 
         describe("take", () => {
             beforeEach(async () => {
-                registry = await newRegistry();
-                factoryOption = await newOptionFactory(registry);
+                registry = await newRegistry(Admin);
+                factoryOption = await newOptionFactory(Admin, registry);
                 Primitive = await newPrimitive(
+                    Admin,
                     registry,
                     underlyingToken,
                     strikeToken,
@@ -1010,6 +1033,7 @@ contract("Option Contract", (accounts) => {
         describe("test expired", () => {
             beforeEach(async () => {
                 optionToken = await newTestOption(
+                    Admin,
                     underlyingToken.address,
                     strikeToken.address,
                     base,
@@ -1017,6 +1041,7 @@ contract("Option Contract", (accounts) => {
                     expiry
                 );
                 redeemToken = await newTestRedeem(
+                    Admin,
                     Alice,
                     optionToken.address,
                     underlyingToken.address
@@ -1093,14 +1118,17 @@ contract("Option Contract", (accounts) => {
         describe("test bad ERC20", () => {
             beforeEach(async () => {
                 underlyingToken = await newBadERC20(
+                    Admin,
                     "Bad ERC20 Doesnt Return Bools",
                     "BADU"
                 );
                 strikeToken = await newBadERC20(
+                    Admin,
                     "Bad ERC20 Doesnt Return Bools",
                     "BADS"
                 );
                 optionToken = await newTestOption(
+                    Admin,
                     underlyingToken.address,
                     strikeToken.address,
                     base,
@@ -1108,13 +1136,14 @@ contract("Option Contract", (accounts) => {
                     expiry
                 );
                 redeemToken = await newTestRedeem(
+                    Admin,
                     Alice,
                     optionToken.address,
                     underlyingToken.address
                 );
                 await optionToken.setTokenR(redeemToken.address);
                 optionToken = optionToken.address;
-                tokenR = await optionToken.tokenR();
+                redeemToken = await optionToken.redeemToken();
                 let inTokenU = THOUSAND_ETHER;
                 await underlyingToken.mint(Alice, inTokenU);
                 await strikeToken.mint(Alice, inTokenU);
@@ -1124,7 +1153,7 @@ contract("Option Contract", (accounts) => {
 
             it("should revert on swap because transfer does not return a boolean", async () => {
                 let inTokenP = HUNDRED_ETHER;
-                let inTokenS = toWei("0.5"); // 100 ether (underlyingToken:base) / 200 (strikeToken:quote) = 0.5 strikeToken
+                let inTokenS = parseEther("0.5"); // 100 ether (underlyingToken:base) / 200 (strikeToken:quote) = 0.5 strikeToken
                 await strikeToken.transfer(optionToken.address, inTokenS);
                 await optionToken.transfer(optionToken.address, inTokenP);
                 await truffleAssert.reverts(
@@ -1134,7 +1163,7 @@ contract("Option Contract", (accounts) => {
 
             it("should revert on redeemToken because transfer does not return a boolean", async () => {
                 // no way to swap, because it reverts, so we need to send strikeToken and call update()
-                let inTokenS = toWei("0.5"); // 100 ether (underlyingToken:base) / 200 (strikeToken:quote) = 0.5 strikeToken
+                let inTokenS = parseEther("0.5"); // 100 ether (underlyingToken:base) / 200 (strikeToken:quote) = 0.5 strikeToken
                 await strikeToken.transfer(optionToken.address, inTokenS);
                 await optionToken.update();
                 await redeemToken.transfer(optionToken.address, inTokenS);
@@ -1144,7 +1173,7 @@ contract("Option Contract", (accounts) => {
             it("should revert on close because transfer does not return a boolean", async () => {
                 // no way to swap, because it reverts, so we need to send strikeToken and call update()
                 let inTokenP = HUNDRED_ETHER;
-                let inTokenR = toWei("0.5"); // 100 ether (underlyingToken:base) / 200 (strikeToken:quote) = 0.5 strikeToken
+                let inTokenR = parseEther("0.5"); // 100 ether (underlyingToken:base) / 200 (strikeToken:quote) = 0.5 strikeToken
                 await redeemToken.transfer(optionToken.address, inTokenR);
                 await optionToken.transfer(optionToken.address, inTokenP);
                 await truffleAssert.reverts(optionToken.close(Alice));

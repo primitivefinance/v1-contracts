@@ -3,14 +3,14 @@ const truffleAssert = require("truffle-assertions");
 const chai = require("chai");
 const BN = require("bn.js");
 chai.use(require("chai-bn")(BN));
-const Oracle = artifacts.require("Oracle");
-const OracleTest = artifacts.require("OracleTest");
-const OracleLike = artifacts.require("OracleLike");
+const Oracle = require("@primitivefi/contracts/artifacts/Oracle");
+const OracleTest = require("@primitivefi/contracts/artifacts/OracleTest");
+const OracleLike = require("@primitivefi/contracts/artifacts/OracleLike");
 const utils = require("../lib/utils");
 const setup = require("../lib/setup");
 const constants = require("../lib/constants");
 const { toWei, fromWei, assertWithinError } = utils;
-const { newERC20, newWeth } = setup;
+const { newERC20, newWeth, newWallets } = setup;
 const { ONE_ETHER, MILLION_ETHER } = constants.VALUES;
 
 const LOG_INTRINSIC = false;
@@ -18,10 +18,14 @@ const LOG_EXTRINSIC = false;
 const LOG_SPECIFIC = false;
 const LOG_VERBOSE = false;
 
-contract("Oracle contract", (accounts) => {
+describe("Oracle contract", () => {
     let oracle, dai, weth, oracleLike;
 
-    let Alice = accounts[0];
+    const wallets = newWallets();
+    const Admin = wallets[0];
+    const User = wallets[1];
+    const Alice = Admin.address;
+    const Bob = User.address;
 
     before(async () => {
         oracleLike = await OracleLike.new();

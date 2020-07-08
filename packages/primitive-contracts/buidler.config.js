@@ -21,11 +21,9 @@ function modifyEnvironmentIfMonorepo() {
 
 const unhook = modifyEnvironmentIfMonorepo();
 
-usePlugin("@nomiclabs/buidler-truffle5");
 usePlugin("@nomiclabs/buidler-solhint");
 usePlugin("@nomiclabs/buidler-etherscan");
-usePlugin("@nomiclabs/buidler-web3");
-usePlugin("@nomiclabs/buidler-ethers");
+usePlugin("@nomiclabs/buidler-waffle");
 usePlugin("buidler-gas-reporter");
 usePlugin("buidler-spdx-license-identifier");
 usePlugin("buidler-deploy");
@@ -112,6 +110,7 @@ module.exports = {
     paths: {
         deploy: "deploy",
         deployments: "deployments",
+        artifacts: "artifacts",
     },
     spdxLicenseIdentifier: {
         overwrite: true,

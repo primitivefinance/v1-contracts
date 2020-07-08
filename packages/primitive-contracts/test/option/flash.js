@@ -8,6 +8,7 @@ const { toWei } = utils;
 const { ONE_ETHER, THOUSAND_ETHER } = constants.VALUES;
 const { ERR_ZERO } = constants.ERR_CODES;
 const {
+    newWallets,
     newERC20,
     newWeth,
     newFlash,
@@ -16,9 +17,13 @@ const {
     newPrimitive,
 } = setup;
 
-contract("Flash loan on option", (accounts) => {
+describe("Flash loan on option", () => {
     // ACCOUNTS
-    const Alice = accounts[0];
+    const wallets = newWallets();
+    const Admin = wallets[0];
+    const User = wallets[1];
+    const Alice = Admin.address;
+    const Bob = User.address;
 
     let tokenU, tokenS, tokenP;
     let base, quote, expiry;

@@ -1,5 +1,5 @@
-const { toWei } = web3.utils;
-const BN = require("bn.js");
+const { ethers } = require("ethers");
+const { parseEther } = ethers.utils;
 
 // ERROR CODES
 const ERR_CODES = {
@@ -34,17 +34,17 @@ const PARAMETERS = {
 
 // COMMON VALUES
 const VALUES = {
-    ZERO: new BN(0),
-    HUNDRETH: toWei("0.01"),
-    TENTH: toWei("0.1"),
-    ONE_ETHER: toWei("1"),
-    TWO_ETHER: toWei("2"),
-    FIVE_ETHER: toWei("5"),
-    TEN_ETHER: toWei("10"),
-    FIFTY_ETHER: toWei("50"),
-    HUNDRED_ETHER: toWei("100"),
-    THOUSAND_ETHER: toWei("1000"),
-    MILLION_ETHER: toWei("1000000"),
+    ZERO: parseEther("0"),
+    HUNDRETH: parseEther("0.01"),
+    TENTH: parseEther("0.1"),
+    ONE_ETHER: parseEther("1"),
+    TWO_ETHER: parseEther("2"),
+    FIVE_ETHER: parseEther("5"),
+    TEN_ETHER: parseEther("10"),
+    FIFTY_ETHER: parseEther("50"),
+    HUNDRED_ETHER: parseEther("100"),
+    THOUSAND_ETHER: parseEther("1000"),
+    MILLION_ETHER: parseEther("1000000"),
 };
 
 // COMMON ADDRESSES
@@ -60,9 +60,17 @@ const ADDRESSES = {
     MAINNET_UNI_ROUTER01: "0xf164fC0Ec4E93095b804a4795bBe1e041497b92a",
 };
 
+const LIBRARIES = {
+    OPTION_TEMPLATE_LIB:
+        "contracts/option/applications/factories/OptionTemplateLib.sol:OptionTemplateLib",
+    REDEEM_TEMPLATE_LIB:
+        "contracts/option/applications/factories/RedeemTemplateLib.sol:RedeemTemplateLib",
+};
+
 module.exports = {
     ERR_CODES,
     PARAMETERS,
     VALUES,
     ADDRESSES,
+    LIBRARIES,
 };

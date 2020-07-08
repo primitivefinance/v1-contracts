@@ -4,11 +4,11 @@ const chai = require("chai");
 const BN = require("bn.js");
 chai.use(require("chai-bn")(BN));
 
-const UniRouter = artifacts.require("UniRouter");
-const AMM = artifacts.require("AMM");
-const Trader = artifacts.require("Trader");
-const Oracle = artifacts.require("Oracle");
-const OracleLike = artifacts.require("OracleLike");
+const UniRouter = require("@primitivefi/contracts/artifacts/UniRouter");
+const AMM = require("@primitivefi/contracts/artifacts/AMM");
+const Trader = require("@primitivefi/contracts/artifacts/Trader");
+const Oracle = require("@primitivefi/contracts/artifacts/Oracle");
+const OracleLike = require("@primitivefi/contracts/artifacts/OracleLike");
 
 const utils = require("../lib/utils");
 const setup = require("../lib/setup");
@@ -21,6 +21,7 @@ const {
     verifyOptionInvariants,
 } = utils;
 const {
+    newWallets,
     newERC20,
     newWeth,
     newRegistry,
@@ -53,10 +54,13 @@ const { MAX_SLIPPAGE, MANTISSA } = constants.PARAMETERS;
 const LOG_VERBOSE = false;
 const LOG_VOL = false;
 
-contract("PAMM Test", (accounts) => {
+describe("PAMM Test", () => {
     // ACCOUNTS
-    const Alice = accounts[0];
-    const Bob = accounts[1];
+    const wallets = newWallets();
+    const Admin = wallets[0];
+    const User = wallets[1];
+    const Alice = Admin.address;
+    const Bob = User.address;
 
     let tokenU,
         tokenS,

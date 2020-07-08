@@ -1,12 +1,13 @@
 const { assert, expect } = require("chai");
 const truffleAssert = require("truffle-assertions");
 const BN = require("bn.js");
-const Trader = artifacts.require("Trader");
+const Trader = require("@primitivefi/contracts/artifacts/Trader");
 const utils = require("../lib/utils");
 const setup = require("../lib/setup");
 const constants = require("../lib/constants");
 const { toWei, assertBNEqual, verifyOptionInvariants } = utils;
 const {
+    newWallets,
     newERC20,
     newWeth,
     newRegistry,
@@ -34,10 +35,13 @@ const {
     ERR_NOT_EXPIRED,
 } = constants.ERR_CODES;
 
-contract("Trader", (accounts) => {
+describe("Trader", () => {
     // ACCOUNTS
-    const Alice = accounts[0];
-    const Bob = accounts[1];
+    const wallets = newWallets();
+    const Admin = wallets[0];
+    const User = wallets[1];
+    const Alice = Admin.address;
+    const Bob = User.address;
 
     let trader, weth, dai, optionToken, redeemToken;
     let underlyingToken, strikeToken;

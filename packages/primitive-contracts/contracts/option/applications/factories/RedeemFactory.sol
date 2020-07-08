@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+
+
 pragma solidity ^0.6.2;
 
 /**
@@ -21,7 +23,7 @@ contract RedeemFactory is Ownable, NullCloneConstructor {
         transferOwnership(registry);
     }
 
-    function deployRedeemImplementation() public {
+    function deployRedeemTemplate() public {
         redeemTemplate = RedeemTemplateLib.deployTemplate();
     }
 

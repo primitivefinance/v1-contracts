@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+
+
 pragma solidity ^0.6.2;
 
 /**
@@ -22,7 +24,7 @@ contract OptionFactory is Ownable, NullCloneConstructor {
         transferOwnership(registry);
     }
 
-    function deployOptionImplementation() public {
+    function deployOptionTemplate() public {
         optionTemplate = OptionTemplateLib.deployTemplate();
     }
 
