@@ -9,8 +9,8 @@ library Primitives {
      * @notice Vanilla Option.
      */
     struct Option {
-        address tokenU;
-        address tokenS;
+        address underlyingToken;
+        address strikeToken;
         uint256 base;
         uint256 quote;
         uint256 expiry;
