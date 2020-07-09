@@ -24,8 +24,6 @@
         "bevm": "buidler node",
         "test": "cross-env buidler test ./test/option/trader.js ./test/option/option.js ./test/pool/pool.js ./test/pool/oracle.js",
         "test:local": "cross-env buidler test --network local ./test/option/trader.js ./test/option/option.js ./test/pool/pool.js ./test/pool/oracle.js",
-        "ganache:f-mainnet": "ganache-cli -f http://localhost:8545 -i 999 --unlock 0x9eb7f2591ed42dee9315b6e2aaf21ba85ea69f8c",
-        "test:f-mainnet": "cross-env buidler test --network local ./test/forked-mainnet/pool-mainnet.js ./test/forked-mainnet/oracle-mainnet.js",
         "deploy:mainnet": "cross-env buidler run --network live scripts/deploy.js",
         "deploy:local": "cross-env buidler run --network local scripts/deploy.js"
     },

@@ -637,7 +637,6 @@ describe("Option Contract", () => {
         describe("close", () => {
             beforeEach(async () => {
                 registry = await newRegistry(Admin);
-                console.log("hoooook");
                 factoryOption = await newOptionFactory(Admin, registry);
                 Primitive = await newPrimitive(
                     Admin,
@@ -738,15 +737,9 @@ describe("Option Contract", () => {
             // This should be verified further.
             it("closes consecutively", async () => {
                 let inUnderlyings = parseEther("200");
-                console.log(
-                    "Underlying balance",
-                    (await underlyingToken.balanceOf(Alice)).toString()
-                );
                 await mint(inUnderlyings);
-
                 await close(parseEther("0.1"));
                 await close(parseEther("0.34521"));
-                console.log("right before weird number");
                 await close(parseUnits("234235000", "wei"));
             });
         });

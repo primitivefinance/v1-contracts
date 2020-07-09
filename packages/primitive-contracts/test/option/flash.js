@@ -1,8 +1,7 @@
 const { expect } = require("chai");
 const setup = require("../lib/setup");
 const constants = require("../lib/constants");
-const utils = require("../lib/utils");
-const { toWei } = utils;
+const { parseEther } = require("ethers/utils");
 const { ONE_ETHER, THOUSAND_ETHER } = constants.VALUES;
 const { ERR_ZERO } = constants.ERR_CODES;
 const {
@@ -38,8 +37,8 @@ describe("Flash loan on option", () => {
             THOUSAND_ETHER
         );
         strikeToken = await newWeth(Admin);
-        base = toWei("200");
-        quote = toWei("1");
+        base = parseEther("200");
+        quote = parseEther("1");
         expiry = "1690868800"; // May 30, 2020, 8PM UTC
 
         Primitive = await newPrimitive(
