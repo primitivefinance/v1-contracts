@@ -36,10 +36,10 @@ const newERC20 = async (signer, name, symbol, totalSupply) => {
 };
 
 const newBadERC20 = async (signer, name, symbol) => {
-    const BadERC20 = await deployContract(signer, BadERC20, [name, symbol], {
+    const bad = await deployContract(signer, BadERC20, [name, symbol], {
         gasLimit: 6000000,
     });
-    return BadERC20;
+    return bad;
 };
 
 const newWeth = async (signer) => {
@@ -57,9 +57,11 @@ const newFlash = async (signer, optionToken) => {
 };
 
 const newRegistry = async (signer) => {
+    console.log("deploy registry");
     const registry = await deployContract(signer, Registry, [], {
-        gasLimit: 6000000,
+        gasLimit: 6500000,
     });
+    console.log("deployed registry");
     return registry;
 };
 
@@ -126,14 +128,9 @@ const newTestOption = async (
     quote,
     expiry
 ) => {
-    const optionToken = await deployContract(
-        signer,
-        OptionTest,
-        [underlyingToken, strikeToken, base, price, expiry],
-        {
-            gasLimit: 6000000,
-        }
-    );
+    const optionToken = await deployContract(signer, OptionTest, [], {
+        gasLimit: 6000000,
+    });
     await optionToken.initialize(
         underlyingToken,
         strikeToken,
@@ -145,14 +142,9 @@ const newTestOption = async (
 };
 
 const newTestRedeem = async (signer, factory, optionToken, underlying) => {
-    const redeemToken = await deployContract(
-        signer,
-        PrimeRedeem,
-        [factory, prime, underlying],
-        {
-            gasLimit: 6000000,
-        }
-    );
+    const redeemToken = await deployContract(signer, Redeem, [], {
+        gasLimit: 6000000,
+    });
     await redeemToken.initialize(factory, optionToken, underlying);
     return redeemToken;
 };
@@ -198,15 +190,12 @@ const newRedeem = async (signer, optionToken) => {
 const newPrimitive = async (
     signer,
     registry,
-    underlying,
-    strike,
+    underlyingToken,
+    strikeToken,
     base,
     quote,
     expiry
 ) => {
-    let underlyingToken = underlying;
-    let strikeToken = strike;
-
     let optionToken = await newOption(
         signer,
         registry,

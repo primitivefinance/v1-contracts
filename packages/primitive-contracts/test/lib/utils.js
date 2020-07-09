@@ -195,6 +195,24 @@ const verifyOptionInvariants = async (
     assertBNEqual(redeemBalance, 0);
 };
 
+const getTokenBalances = async (Primitive, address) => {
+    const underlyingBalance = await getTokenBalance(
+        Primitive.underlyingToken,
+        address
+    );
+    const strikeBalance = await getTokenBalance(Primitive.strikeToken, address);
+    const redeemBalance = await getTokenBalance(Primitive.redeemToken, address);
+    const optionBalance = await getTokenBalance(Primitive.optionToken, address);
+
+    const tokenBalances = {
+        underlyingBalance,
+        strikeBalance,
+        redeemBalance,
+        optionBalance,
+    };
+    return tokenBalances;
+};
+
 module.exports = {
     assertBNEqual,
     assertWithinError,
@@ -203,4 +221,5 @@ module.exports = {
     withdraw,
     deposit,
     verifyOptionInvariants,
+    getTokenBalances,
 };
