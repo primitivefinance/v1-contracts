@@ -16,7 +16,7 @@
         "task:clean": "buidler clean",
         "task:compile": "buidler compile",
         "compile": "npm-run-all task:clean task:compile",
-        "coverage": "buidler coverage",
+        "coverage": "buidler coverage --network coverage --temp artifacts",
         "lint": "cross-env buidler check",
         "lint:fix": "solium -d contracts --fix",
         "venv": "virtualenv .venv",

@@ -82,6 +82,9 @@ module.exports = {
             },
             chainId: 4,
         },
+        coverage: {
+            url: "http://127.0.0.1:8555", // Coverage launches its own ganache-cli client
+        },
     },
     mocha: {
         timeout: 100000000,
