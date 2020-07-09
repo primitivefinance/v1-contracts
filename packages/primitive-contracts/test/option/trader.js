@@ -36,9 +36,7 @@ const {
 
 describe("Trader", () => {
     // ACCOUNTS
-    const wallets = newWallets();
-    const Admin = wallets[0];
-    const User = wallets[1];
+    const { Admin, User } = newWallets();
     const Alice = Admin.address;
     const Bob = User.address;
 

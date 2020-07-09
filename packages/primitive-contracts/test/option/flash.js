@@ -16,8 +16,7 @@ const {
 
 describe("Flash loan on option", () => {
     // ACCOUNTS
-    const wallets = newWallets();
-    const Admin = wallets[0];
+    const { Admin, User } = newWallets();
     const Alice = Admin.address;
 
     let underlyingToken, strikeToken;

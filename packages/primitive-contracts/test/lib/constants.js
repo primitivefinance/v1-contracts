@@ -67,10 +67,15 @@ const LIBRARIES = {
         "contracts/option/applications/factories/RedeemTemplateLib.sol:RedeemTemplateLib",
 };
 
+const CONTRACT_NAMES = {
+    REGISTRY: "contracts/option/applications/Registry.sol:Registry",
+};
+
 module.exports = {
     ERR_CODES,
     PARAMETERS,
     VALUES,
     ADDRESSES,
     LIBRARIES,
+    CONTRACT_NAMES,
 };

@@ -16,11 +16,13 @@ const constants = require("./constants");
 const { MILLION_ETHER } = constants.VALUES;
 const { OPTION_TEMPLATE_LIB, REDEEM_TEMPLATE_LIB } = constants.LIBRARIES;
 const { MockProvider, deployContract, link } = require("ethereum-waffle");
-const { parseEther } = require("ethers/lib/utils");
-const { ethers } = require("ethers");
+const { waffle, ethers } = require("@nomiclabs/buidler");
 
 const newWallets = () => {
-    const wallets = new MockProvider().getWallets();
+    const provider = new MockProvider();
+    const Admin = provider.getWallets()[0];
+    const User = provider.getWallets()[1];
+    const wallets = { Admin, User };
     return wallets;
 };
 
