@@ -222,4 +222,5 @@ module.exports = {
     deposit,
     verifyOptionInvariants,
     getTokenBalances,
+    getTokenBalance,
 };

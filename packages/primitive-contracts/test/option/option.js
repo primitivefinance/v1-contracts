@@ -1,6 +1,4 @@
 const { assert, expect } = require("chai");
-const truffleAssert = require("truffle-assertions");
-const BN = require("bn.js");
 const utils = require("../lib/utils");
 const setup = require("../lib/setup");
 const constants = require("../lib/constants");

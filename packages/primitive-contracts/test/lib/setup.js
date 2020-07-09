@@ -8,6 +8,7 @@ const Redeem = require("@primitivefi/contracts/artifacts/Redeem");
 const Registry = require("@primitivefi/contracts/artifacts/Registry");
 const Flash = require("@primitivefi/contracts/artifacts/Flash");
 const Weth = require("@primitivefi/contracts/artifacts/WETH9");
+const Trader = require("@primitivefi/contracts/artifacts/Trader");
 const CTokenLike = require("@primitivefi/contracts/artifacts/CTokenLike");
 const OptionTemplateLib = require("@primitivefi/contracts/artifacts/OptionTemplateLib");
 const RedeemTemplateLib = require("@primitivefi/contracts/artifacts/RedeemTemplateLib");
@@ -50,18 +51,16 @@ const newWeth = async (signer) => {
 };
 
 const newFlash = async (signer, optionToken) => {
-    const flash = await deployContract(signer, PrimeFlash, [optionToken], {
+    const flash = await deployContract(signer, Flash, [optionToken], {
         gasLimit: 6000000,
     });
     return flash;
 };
 
 const newRegistry = async (signer) => {
-    console.log("deploy registry");
     const registry = await deployContract(signer, Registry, [], {
         gasLimit: 6500000,
     });
-    console.log("deployed registry");
     return registry;
 };
 
@@ -147,6 +146,13 @@ const newTestRedeem = async (signer, factory, optionToken, underlying) => {
     });
     await redeemToken.initialize(factory, optionToken, underlying);
     return redeemToken;
+};
+
+const newTrader = async (signer, weth) => {
+    const trader = await deployContract(signer, Trader, [weth], {
+        gasLimit: 6000000,
+    });
+    return trader;
 };
 
 const newOption = async (
@@ -235,4 +241,5 @@ module.exports = {
     newInterestBearing,
     newPrimitive,
     approveToken,
+    newTrader,
 };
