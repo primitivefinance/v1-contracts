@@ -32,7 +32,7 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
 
     event Deploy(
         address indexed from,
-        address indexed tokenP,
+        address indexed option,
         bytes32 indexed id
     );
 

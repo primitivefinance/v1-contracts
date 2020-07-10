@@ -1,4 +1,7 @@
 const path = require("path");
+const { InfuraProvider } = require("@ethersproject/providers");
+const url = require("url");
+const bip39 = require("bip39");
 
 function modifyEnvironmentIfMonorepo() {
     const parsed = path.parse(path.parse(__dirname).dir);
@@ -36,7 +39,6 @@ const crypto = require("crypto");
 const ethers = require("ethers");
 const ETHERSCAN_APY_KEY =
     process.env.ETHERSCAN_APY_KEY || crypto.randomBytes(20).toString("base64");
-const bip39 = require("bip39");
 const rinkeby =
     process.env.RINKEBY ||
     new ethers.providers.InfuraProvider("rinkeby").connection.url;
@@ -46,10 +48,7 @@ const mainnet =
 const mnemonic = process.env.TEST_MNEMONIC || bip39.generateMnemonic();
 const live = process.env.MNEMONIC || mnemonic;
 
-module.exports = {
-    paths: {
-        artifacts: "./artifacts",
-    },
+Object.assign(module.exports, {
     networks: {
         local: {
             url: "http://127.0.0.1:8545",
@@ -101,12 +100,15 @@ module.exports = {
         },
     },
     paths: {
-        deploy: "deploy",
-        deployments: "deployments",
-        artifacts: "artifacts",
+        sources: path.join(__dirname, "contracts"),
+        tests: path.join(__dirname, "test"),
+        cache: path.join(__dirname, "cache"),
+        artifacts: path.join(__dirname, "artifacts"),
+        deploy: path.join(__dirname, "deploy"),
+        deployments: path.join(__dirname, "deployments"),
     },
     spdxLicenseIdentifier: {
         overwrite: true,
         runOnCompile: true,
     },
-};
+});
