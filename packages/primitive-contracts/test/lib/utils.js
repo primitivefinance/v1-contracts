@@ -1,34 +1,29 @@
 const { assert, expect } = require("chai");
-const chai = require("chai");
-const BN = require("bn.js");
 const constants = require("./constants");
-const truffleAssert = require("truffle-assertions");
-chai.use(require("chai-bn")(BN));
-
-const { toWei } = web3.utils;
-const { fromWei } = web3.utils;
+const { ethers } = require("ethers");
+const { solidity } = require("ethereum-waffle");
 
 const assertBNEqual = (actualBN, expectedBN, message) => {
     assert.equal(actualBN.toString(), expectedBN.toString(), message);
 };
 
 const assertWithinError = (actualBN, expectedBN, error, message) => {
-    error = new BN(error);
+    error = error;
     let max = expectedBN.add(expectedBN.div(error));
     let min = expectedBN.sub(expectedBN.div(error));
-    if (actualBN.gt(new BN(0))) {
+    if (actualBN.gt(0)) {
         expect(actualBN).to.be.a.bignumber.that.is.at.most(max);
         expect(actualBN).to.be.a.bignumber.that.is.at.least(min);
     } else {
-        expect(actualBN).to.be.a.bignumber.that.is.at.most(new BN(0));
+        expect(actualBN).to.be.a.bignumber.that.is.at.most(0);
     }
 };
 
 const calculateAddLiquidity = (_inTokenU, _totalSupply, _totalBalance) => {
-    let inTokenU = new BN(_inTokenU);
-    let totalSupply = new BN(_totalSupply);
-    let totalBalance = new BN(_totalBalance);
-    if (totalBalance.eq(new BN(0))) {
+    let inTokenU = _inTokenU;
+    let totalSupply = _totalSupply;
+    let totalBalance = _totalBalance;
+    if (totalBalance.eq(0)) {
         return inTokenU;
     }
     let liquidity = inTokenU.mul(totalSupply).div(totalBalance);
@@ -40,10 +35,10 @@ const calculateRemoveLiquidity = (
     _totalSupply,
     _totalBalance
 ) => {
-    let inTokenPULP = new BN(_inTokenPULP);
-    let totalSupply = new BN(_totalSupply);
-    let totalBalance = new BN(_totalBalance);
-    let zero = new BN(0);
+    let inTokenPULP = _inTokenPULP;
+    let totalSupply = _totalSupply;
+    let totalBalance = _totalBalance;
+    let zero = 0;
     if (totalBalance.isZero() || totalSupply.isZero()) {
         return zero;
     }
@@ -52,17 +47,17 @@ const calculateRemoveLiquidity = (
 };
 
 const getTokenBalance = async (token, address) => {
-    let bal = new BN(await token.balanceOf(address));
+    let bal = await token.balanceOf(address);
     return bal;
 };
 
 const getTotalSupply = async (instance) => {
-    let bal = new BN(await instance.totalSupply());
+    let bal = await instance.totalSupply();
     return bal;
 };
 
 const getTotalBalance = async (instance) => {
-    let bal = new BN(await instance.totalBalance());
+    let bal = await instance.totalBalance();
     return bal;
 };
 
@@ -70,12 +65,12 @@ const withdraw = async (
     from,
     inTokenPULP,
     tokenU,
-    tokenS,
+    strikeToken,
     pool,
-    prime,
+    optionToken,
     redeem
 ) => {
-    inTokenPULP = new BN(inTokenPULP);
+    inTokenPULP = inTokenPULP;
     let balance0U = await getTokenBalance(tokenU, from);
     let balance0P = await getTokenBalance(pool, from);
     let balance0CU = await getTokenBalance(tokenU, pool.address);
@@ -115,7 +110,7 @@ const withdraw = async (
     let deltaTS = balance1TS.sub(balance0TS);
     let deltaTP = balance1TP.sub(balance0TP);
 
-    let slippage = new BN(constants.PARAMETERS.MAX_SLIPPAGE);
+    let slippage = constants.PARAMETERS.MAX_SLIPPAGE;
     let maxValue = liquidity.add(liquidity.div(slippage));
     let minValue = liquidity.sub(liquidity.div(slippage));
     expect(deltaU).to.be.a.bignumber.that.is.at.most(maxValue);
@@ -125,11 +120,19 @@ const withdraw = async (
     expect(deltaTP).to.be.a.bignumber.that.is.at.least(maxValue.neg());
     expect(deltaTP).to.be.a.bignumber.that.is.at.most(minValue.neg());
 
-    await verifyOptionInvariants(tokenU, tokenS, prime, redeem);
+    await verifyOptionInvariants(tokenU, strikeToken, optionToken, redeem);
 };
 
-const deposit = async (from, inTokenU, tokenU, tokenS, prime, redeem, pool) => {
-    inTokenU = new BN(inTokenU);
+const deposit = async (
+    from,
+    inTokenU,
+    tokenU,
+    strikeToken,
+    optionToken,
+    redeem,
+    pool
+) => {
+    inTokenU = inTokenU;
     let balance0U = await getBalance(tokenU, from);
     let balance0P = await getBalance(pool, from);
     let balance0CU = await getBalance(tokenU, pool.address);
@@ -171,25 +174,46 @@ const deposit = async (from, inTokenU, tokenU, tokenS, prime, redeem, pool) => {
     assertBNEqual(deltaTP, inTokenU);
 };
 
-const verifyOptionInvariants = async (tokenU, tokenS, prime, redeem) => {
-    let balanceU = await tokenU.balanceOf(prime.address);
-    let cacheU = await prime.cacheU();
-    let cacheS = await prime.cacheS();
-    let balanceS = await tokenS.balanceOf(prime.address);
-    let balanceP = await prime.balanceOf(prime.address);
-    let balanceR = await redeem.balanceOf(prime.address);
-    let primeTotalSupply = await prime.totalSupply();
+const verifyOptionInvariants = async (
+    tokenU,
+    strikeToken,
+    optionToken,
+    redeem
+) => {
+    let underlyingBalance = await tokenU.balanceOf(optionToken.address);
+    let underlyingCache = await optionToken.underlyingCache();
+    let strikeCache = await optionToken.strikeCache();
+    let strikeBalance = await strikeToken.balanceOf(optionToken.address);
+    let optionBalance = await optionToken.balanceOf(optionToken.address);
+    let redeemBalance = await redeem.balanceOf(optionToken.address);
+    let optionTotalSupply = await optionToken.totalSupply();
 
-    assertBNEqual(balanceU, primeTotalSupply);
-    assertBNEqual(cacheU, primeTotalSupply);
-    assertBNEqual(balanceS, cacheS);
-    assertBNEqual(balanceP, new BN(0));
-    assertBNEqual(balanceR, new BN(0));
+    assertBNEqual(underlyingBalance, optionTotalSupply);
+    assertBNEqual(underlyingCache, optionTotalSupply);
+    assertBNEqual(strikeBalance, strikeCache);
+    assertBNEqual(optionBalance, 0);
+    assertBNEqual(redeemBalance, 0);
+};
+
+const getTokenBalances = async (Primitive, address) => {
+    const underlyingBalance = await getTokenBalance(
+        Primitive.underlyingToken,
+        address
+    );
+    const strikeBalance = await getTokenBalance(Primitive.strikeToken, address);
+    const redeemBalance = await getTokenBalance(Primitive.redeemToken, address);
+    const optionBalance = await getTokenBalance(Primitive.optionToken, address);
+
+    const tokenBalances = {
+        underlyingBalance,
+        strikeBalance,
+        redeemBalance,
+        optionBalance,
+    };
+    return tokenBalances;
 };
 
 module.exports = {
-    toWei,
-    fromWei,
     assertBNEqual,
     assertWithinError,
     calculateAddLiquidity,
@@ -197,4 +221,6 @@ module.exports = {
     withdraw,
     deposit,
     verifyOptionInvariants,
+    getTokenBalances,
+    getTokenBalance,
 };

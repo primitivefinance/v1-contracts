@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+
+
 pragma solidity ^0.6.2;
 
 /**
@@ -30,7 +32,7 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
 
     event Deploy(
         address indexed from,
-        address indexed tokenP,
+        address indexed option,
         bytes32 indexed id
     );
 

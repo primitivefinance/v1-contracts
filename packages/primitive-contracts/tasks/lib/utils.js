@@ -11,10 +11,10 @@ async function checkAllowance(owner, spender, token) {
     }
 }
 
-async function checkInitialization(registry, factory, factoryRedeem) {
-    const fac = await registry.factory();
+async function checkInitialization(registry, optionFactory, redeemFactory) {
+    const fac = await registry.optionFactory();
     if (fac == AddressZero)
-        await registry.initialize(factory.address, factoryRedeem.address);
+        await registry.initialize(optionFactory.address, redeemFactory.address);
 }
 
 module.exports = {

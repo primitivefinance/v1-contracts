@@ -1,4 +1,7 @@
 const path = require("path");
+const { InfuraProvider } = require("@ethersproject/providers");
+const url = require("url");
+const bip39 = require("bip39");
 
 function modifyEnvironmentIfMonorepo() {
     const parsed = path.parse(path.parse(__dirname).dir);
@@ -21,11 +24,9 @@ function modifyEnvironmentIfMonorepo() {
 
 const unhook = modifyEnvironmentIfMonorepo();
 
-usePlugin("@nomiclabs/buidler-truffle5");
 usePlugin("@nomiclabs/buidler-solhint");
 usePlugin("@nomiclabs/buidler-etherscan");
-usePlugin("@nomiclabs/buidler-web3");
-usePlugin("@nomiclabs/buidler-ethers");
+usePlugin("@nomiclabs/buidler-waffle");
 usePlugin("buidler-gas-reporter");
 usePlugin("buidler-spdx-license-identifier");
 usePlugin("buidler-deploy");
@@ -38,9 +39,6 @@ const crypto = require("crypto");
 const ethers = require("ethers");
 const ETHERSCAN_APY_KEY =
     process.env.ETHERSCAN_APY_KEY || crypto.randomBytes(20).toString("base64");
-const web3 = require("web3");
-const HDWalletProvider = require("@truffle/hdwallet-provider");
-const bip39 = require("bip39");
 const rinkeby =
     process.env.RINKEBY ||
     new ethers.providers.InfuraProvider("rinkeby").connection.url;
@@ -50,18 +48,7 @@ const mainnet =
 const mnemonic = process.env.TEST_MNEMONIC || bip39.generateMnemonic();
 const live = process.env.MNEMONIC || mnemonic;
 
-task("accounts", "Prints the list of accounts", async () => {
-    const accounts = await web3.eth.getAccounts();
-
-    for (const account of accounts) {
-        console.log(await account.getAddress());
-    }
-});
-
-module.exports = {
-    paths: {
-        artifacts: "./artifacts",
-    },
+Object.assign(module.exports, {
     networks: {
         local: {
             url: "http://127.0.0.1:8545",
@@ -83,6 +70,9 @@ module.exports = {
                 mnemonic: mnemonic,
             },
             chainId: 4,
+        },
+        coverage: {
+            url: "http://127.0.0.1:8555", // Coverage launches its own ganache-cli client
         },
     },
     mocha: {
@@ -110,11 +100,15 @@ module.exports = {
         },
     },
     paths: {
-        deploy: "deploy",
-        deployments: "deployments",
+        sources: path.join(__dirname, "contracts"),
+        tests: path.join(__dirname, "test"),
+        cache: path.join(__dirname, "cache"),
+        artifacts: path.join(__dirname, "artifacts"),
+        deploy: path.join(__dirname, "deploy"),
+        deployments: path.join(__dirname, "deployments"),
     },
     spdxLicenseIdentifier: {
         overwrite: true,
         runOnCompile: true,
     },
-};
+});

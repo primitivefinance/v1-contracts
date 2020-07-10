@@ -1,12 +1,11 @@
 const { assert, expect } = require("chai");
-const truffleAssert = require("truffle-assertions");
-const BN = require("bn.js");
-const Trader = artifacts.require("Trader");
 const utils = require("../lib/utils");
 const setup = require("../lib/setup");
 const constants = require("../lib/constants");
-const { toWei, assertBNEqual, verifyOptionInvariants } = utils;
+const { parseEther } = require("ethers/lib/utils");
+const { assertBNEqual, verifyOptionInvariants, getTokenBalance } = utils;
 const {
+    newWallets,
     newERC20,
     newWeth,
     newRegistry,
@@ -15,6 +14,7 @@ const {
     newTestOption,
     newOptionFactory,
     newPrimitive,
+    newTrader,
 } = setup;
 const {
     ONE_ETHER,
@@ -29,35 +29,37 @@ const {
     ERR_BAL_UNDERLYING,
     ERR_ZERO,
     ERR_BAL_STRIKE,
-    ERR_BAL_PRIME,
+    ERR_BAL_OPTIONS,
     ERR_BAL_REDEEM,
     ERR_NOT_EXPIRED,
 } = constants.ERR_CODES;
 
-contract("Trader", (accounts) => {
+describe("Trader", () => {
     // ACCOUNTS
-    const Alice = accounts[0];
-    const Bob = accounts[1];
+    const { Admin, User } = newWallets();
+    const Alice = Admin.address;
+    const Bob = User.address;
 
     let trader, weth, dai, optionToken, redeemToken;
     let underlyingToken, strikeToken;
     let base, quote, expiry;
-    let factory, Primitive, registry;
+    let Primitive, registry;
 
     before(async () => {
-        weth = await newWeth();
-        dai = await newERC20("TEST DAI", "DAI", THOUSAND_ETHER);
-        factory = await newRegistry();
-        factoryOption = await newOptionFactory(factory);
+        weth = await newWeth(Admin);
+        dai = await newERC20(Admin, "TEST DAI", "DAI", MILLION_ETHER);
+        registry = await newRegistry(Admin);
+        factoryOption = await newOptionFactory(Admin, registry);
 
         underlyingToken = dai;
         strikeToken = weth;
-        base = toWei("200");
-        quote = toWei("1");
+        base = parseEther("200").toString();
+        quote = parseEther("1").toString();
         expiry = "1690868800"; // May 30, 2020, 8PM UTC
 
         Primitive = await newPrimitive(
-            factory,
+            Admin,
+            registry,
             underlyingToken,
             strikeToken,
             base,
@@ -67,15 +69,7 @@ contract("Trader", (accounts) => {
 
         optionToken = Primitive.optionToken;
         redeemToken = Primitive.redeemToken;
-        trader = await Trader.new(weth.address);
-
-        underlyingToken = dai;
-        strikeToken = weth;
-
-        getBalance = async (token, address) => {
-            let bal = new BN(await token.balanceOf(address));
-            return bal;
-        };
+        trader = await newTrader(Admin, weth.address);
     });
 
     describe("Constructor", () => {
@@ -86,93 +80,77 @@ contract("Trader", (accounts) => {
 
     describe("safeMint", () => {
         beforeEach(async () => {
-            trader = await Trader.new(weth.address);
-            await underlyingToken.approve(trader.address, MILLION_ETHER, {
-                from: Alice,
-            });
-            await strikeToken.approve(trader.address, MILLION_ETHER, {
-                from: Alice,
-            });
+            trader = await newTrader(Admin, weth.address);
+            await underlyingToken
+                .connect(Admin)
+                .approve(trader.address, MILLION_ETHER);
+            await strikeToken
+                .connect(Admin)
+                .approve(trader.address, MILLION_ETHER);
 
             safeMint = async (inTokenU) => {
-                inTokenU = new BN(inTokenU);
-                let outTokenR = inTokenU.mul(new BN(quote)).div(new BN(base));
+                let outTokenR = inTokenU.mul(quote).div(base);
 
-                let balanceU = await getBalance(underlyingToken, Alice);
-                let balanceP = await getBalance(optionToken, Alice);
-                let balanceR = await getBalance(redeemToken, Alice);
+                let balanceU = await getTokenBalance(underlyingToken, Alice);
+                let balanceP = await getTokenBalance(optionToken, Alice);
+                let balanceR = await getTokenBalance(redeemToken, Alice);
 
-                let mint = await trader.safeMint(
-                    optionToken.address,
-                    inTokenU,
-                    Alice
-                );
+                await expect(
+                    trader.safeMint(optionToken.address, inTokenU, Alice)
+                )
+                    .to.emit(trader, "TraderMint")
+                    .withArgs(
+                        Alice,
+                        optionToken.address,
+                        inTokenU.toString(),
+                        outTokenR.toString()
+                    );
 
-                let deltaU = (await getBalance(underlyingToken, Alice)).sub(
-                    balanceU
-                );
-                let deltaP = (await getBalance(optionToken, Alice)).sub(
+                let deltaU = (
+                    await getTokenBalance(underlyingToken, Alice)
+                ).sub(balanceU);
+                let deltaP = (await getTokenBalance(optionToken, Alice)).sub(
                     balanceP
                 );
-                let deltaR = (await getBalance(redeemToken, Alice)).sub(
+                let deltaR = (await getTokenBalance(redeemToken, Alice)).sub(
                     balanceR
                 );
 
-                assertBNEqual(deltaU, inTokenU.neg());
+                assertBNEqual(deltaU, inTokenU.mul(-1));
                 assertBNEqual(deltaP, inTokenU);
                 assertBNEqual(deltaR, outTokenR);
-
-                await truffleAssert.eventEmitted(mint, "TraderMint", (ev) => {
-                    return (
-                        expect(ev.from).to.be.eq(Alice) &&
-                        expect(ev.outTokenP.toString()).to.be.eq(
-                            inTokenU.toString()
-                        ) &&
-                        expect(ev.outTokenR.toString()).to.be.eq(
-                            outTokenR.toString()
-                        )
-                    );
-                });
             };
         });
 
         it("should revert if amount is 0", async () => {
-            await truffleAssert.reverts(
-                trader.safeMint(optionToken.address, 0, Alice),
-                ERR_ZERO
-            );
+            await expect(
+                trader.safeMint(optionToken.address, 0, Alice)
+            ).to.be.revertedWith(ERR_ZERO);
         });
 
-        it("should revert if optionToken.address is not a ", async () => {
-            await truffleAssert.reverts(trader.safeMint(Alice, 10, Alice));
+        it("should revert if optionToken.address is not an option ", async () => {
+            await expect(trader.safeMint(Alice, 10, Alice)).to.be.reverted;
         });
 
         it("should revert if msg.sender does not have enough underlyingToken for tx", async () => {
-            await truffleAssert.reverts(
-                trader.safeMint(optionToken.address, MILLION_ETHER, Alice),
-                ERR_BAL_UNDERLYING
-            );
+            await expect(
+                trader
+                    .connect(User)
+                    .safeMint(optionToken.address, MILLION_ETHER, Alice)
+            ).to.be.revertedWith(ERR_BAL_UNDERLYING);
         });
 
         it("should emit the mint event", async () => {
-            let inTokenU = new BN(ONE_ETHER);
-            let outTokenR = inTokenU.mul(new BN(quote)).div(new BN(base));
-            let mint = await trader.safeMint(
-                optionToken.address,
-                inTokenU,
-                Alice
-            );
-            await truffleAssert.eventEmitted(mint, "TraderMint", (ev) => {
-                return (
-                    expect(ev.from).to.be.eq(Alice) &&
-                    expect(ev.outTokenP.toString()).to.be.eq(
-                        inTokenU.toString()
-                    ) &&
-                    expect(ev.outTokenR.toString()).to.be.eq(
-                        outTokenR.toString()
-                    )
+            let inTokenU = ONE_ETHER;
+            let outTokenR = inTokenU.mul(quote).div(base);
+            await expect(trader.safeMint(optionToken.address, inTokenU, Alice))
+                .to.emit(trader, "TraderMint")
+                .withArgs(
+                    Alice,
+                    optionToken.address,
+                    inTokenU.toString(),
+                    outTokenR.toString()
                 );
-            });
         });
 
         it("should mint optionTokens and redeemTokens in correct amounts", async () => {
@@ -183,75 +161,54 @@ contract("Trader", (accounts) => {
             await safeMint(ONE_ETHER);
             await safeMint(TEN_ETHER);
             await safeMint(FIVE_ETHER);
-            await safeMint(toWei("0.5123542351"));
-            await safeMint(toWei("1.23526231124324"));
-            await safeMint(toWei("2.234345"));
+            await safeMint(parseEther("0.5123542351"));
+            await safeMint(parseEther("1.23526231124324"));
+            await safeMint(parseEther("2.234345"));
         });
     });
 
     describe("safeExercise", () => {
         beforeEach(async () => {
-            trader = await Trader.new(weth.address);
-            await underlyingToken.approve(trader.address, MILLION_ETHER, {
-                from: Alice,
-            });
-            await strikeToken.approve(trader.address, MILLION_ETHER, {
-                from: Alice,
-            });
-            await optionToken.approve(trader.address, MILLION_ETHER, {
-                from: Alice,
-            });
+            trader = await newTrader(Admin, weth.address);
+            await underlyingToken.approve(trader.address, MILLION_ETHER);
+            await strikeToken.approve(trader.address, MILLION_ETHER);
+            await optionToken.approve(trader.address, MILLION_ETHER);
             await safeMint(TEN_ETHER);
 
             safeExercise = async (inTokenU) => {
-                inTokenU = new BN(inTokenU);
+                inTokenU = inTokenU;
                 let inTokenP = inTokenU;
-                let inTokenS = inTokenU.mul(new BN(quote)).div(new BN(base));
+                let inTokenS = inTokenU.mul(quote).div(base);
 
-                let balanceU = await getBalance(underlyingToken, Alice);
-                let balanceP = await getBalance(optionToken, Alice);
-                let balanceS = await getBalance(strikeToken, Alice);
+                let balanceU = await getTokenBalance(underlyingToken, Alice);
+                let balanceP = await getTokenBalance(optionToken, Alice);
+                let balanceS = await getTokenBalance(strikeToken, Alice);
 
-                let exercise = await trader.safeExercise(
-                    optionToken.address,
-                    inTokenU,
-                    Alice
-                );
+                await expect(
+                    trader.safeExercise(optionToken.address, inTokenU, Alice)
+                )
+                    .to.emit(trader, "TraderExercise")
+                    .withArgs(
+                        Alice,
+                        optionToken.address,
+                        inTokenU.toString(),
+                        inTokenS.add(inTokenS.div(1000)).toString()
+                    );
 
-                let deltaU = (await getBalance(underlyingToken, Alice)).sub(
-                    balanceU
-                );
-                let deltaP = (await getBalance(optionToken, Alice)).sub(
+                let deltaU = (
+                    await getTokenBalance(underlyingToken, Alice)
+                ).sub(balanceU);
+                let deltaP = (await getTokenBalance(optionToken, Alice)).sub(
                     balanceP
                 );
-                let deltaS = (await getBalance(strikeToken, Alice)).sub(
+                let deltaS = (await getTokenBalance(strikeToken, Alice)).sub(
                     balanceS
                 );
 
                 assertBNEqual(deltaU, inTokenU);
-                assertBNEqual(deltaP, inTokenP.neg());
-                assertBNEqual(
-                    deltaS,
-                    inTokenS.add(inTokenS.div(new BN(1000))).neg()
-                );
+                assertBNEqual(deltaP, inTokenP.mul(-1));
+                assertBNEqual(deltaS, inTokenS.add(inTokenS.div(1000)).mul(-1));
 
-                await truffleAssert.eventEmitted(
-                    exercise,
-                    "TraderExercise",
-                    (ev) => {
-                        return (
-                            expect(ev.from).to.be.eq(Alice) &&
-                            expect(ev.outTokenU.toString()).to.be.eq(
-                                inTokenU.toString()
-                            ) &&
-                            expect(ev.inTokenS.toString()).to.be.eq(
-                                inTokenS
-                                    .add(inTokenS.div(new BN(1000)))
-                                    .toString()
-                            )
-                        );
-                    }
-                );
                 await verifyOptionInvariants(
                     underlyingToken,
                     strikeToken,
@@ -262,33 +219,27 @@ contract("Trader", (accounts) => {
         });
 
         it("should revert if amount is 0", async () => {
-            await truffleAssert.reverts(
-                trader.safeExercise(optionToken.address, 0, Alice),
-                ERR_ZERO
-            );
+            await expect(
+                trader.safeExercise(optionToken.address, 0, Alice)
+            ).to.be.revertedWith(ERR_ZERO);
         });
 
         it("should revert if user does not have enough optionToken tokens", async () => {
-            await truffleAssert.reverts(
+            await expect(
                 trader.safeExercise(optionToken.address, MILLION_ETHER, Alice)
-            );
+            ).to.be.revertedWith(ERR_BAL_OPTIONS);
         });
 
         it("should revert if user does not have enough strike tokens", async () => {
             await trader.safeMint(optionToken.address, ONE_ETHER, Bob);
-            await strikeToken.transfer(
-                Alice,
-                await strikeToken.balanceOf(Bob),
-                {
-                    from: Bob,
-                }
-            );
-            await truffleAssert.reverts(
-                trader.safeExercise(optionToken.address, ONE_ETHER, Bob, {
-                    from: Bob,
-                }),
-                ERR_BAL_STRIKE
-            );
+            await strikeToken
+                .connect(User)
+                .transfer(Alice, await strikeToken.balanceOf(Bob));
+            await expect(
+                trader
+                    .connect(User)
+                    .safeExercise(optionToken.address, ONE_ETHER, Bob)
+            ).to.be.revertedWith(ERR_BAL_STRIKE);
         });
 
         it("should exercise consecutively", async () => {
@@ -296,67 +247,43 @@ contract("Trader", (accounts) => {
                 from: Alice,
                 value: TEN_ETHER,
             });
-            await safeExercise(toWei("0.1"));
-            await safeExercise(toWei("0.32525"));
+            await safeExercise(parseEther("0.1"));
+            await safeExercise(parseEther("0.32525"));
             await safeExercise(ONE_ETHER);
         });
     });
 
     describe("safeRedeem", () => {
         beforeEach(async () => {
-            trader = await Trader.new(weth.address);
-            await underlyingToken.approve(trader.address, MILLION_ETHER, {
-                from: Alice,
-            });
-            await strikeToken.approve(trader.address, MILLION_ETHER, {
-                from: Alice,
-            });
-            await optionToken.approve(trader.address, MILLION_ETHER, {
-                from: Alice,
-            });
-            await redeemToken.approve(trader.address, MILLION_ETHER, {
-                from: Alice,
-            });
-            await safeMint(toWei("200"));
+            trader = await newTrader(Admin, weth.address);
+            await underlyingToken.approve(trader.address, MILLION_ETHER);
+            await strikeToken.approve(trader.address, MILLION_ETHER);
+            await optionToken.approve(trader.address, MILLION_ETHER);
+            await redeemToken.approve(trader.address, MILLION_ETHER);
+            await safeMint(parseEther("200"));
 
             safeRedeem = async (inTokenR) => {
-                inTokenR = new BN(inTokenR);
                 let outTokenS = inTokenR;
 
-                let balanceR = await getBalance(redeemToken, Alice);
-                let balanceS = await getBalance(strikeToken, Alice);
+                let balanceR = await getTokenBalance(redeemToken, Alice);
+                let balanceS = await getTokenBalance(strikeToken, Alice);
 
-                let event = await trader.safeRedeem(
-                    optionToken.address,
-                    inTokenR,
-                    Alice
-                );
+                await expect(
+                    trader.safeRedeem(optionToken.address, inTokenR, Alice)
+                )
+                    .to.emit(trader, "TraderRedeem")
+                    .withArgs(Alice, optionToken.address, inTokenR.toString());
 
-                let deltaR = (await getBalance(redeemToken, Alice)).sub(
+                let deltaR = (await getTokenBalance(redeemToken, Alice)).sub(
                     balanceR
                 );
-                let deltaS = (await getBalance(strikeToken, Alice)).sub(
+                let deltaS = (await getTokenBalance(strikeToken, Alice)).sub(
                     balanceS
                 );
 
-                assertBNEqual(deltaR, inTokenR.neg());
+                assertBNEqual(deltaR, inTokenR.mul(-1));
                 assertBNEqual(deltaS, outTokenS);
 
-                await truffleAssert.eventEmitted(
-                    event,
-                    "TraderRedeem",
-                    (ev) => {
-                        return (
-                            expect(ev.from).to.be.eq(Alice) &&
-                            expect(ev.inTokenR.toString()).to.be.eq(
-                                inTokenR.toString()
-                            ) &&
-                            expect(ev.inTokenR.toString()).to.be.eq(
-                                outTokenS.toString()
-                            )
-                        );
-                    }
-                );
                 await verifyOptionInvariants(
                     underlyingToken,
                     strikeToken,
@@ -367,91 +294,68 @@ contract("Trader", (accounts) => {
         });
 
         it("should revert if amount is 0", async () => {
-            await truffleAssert.reverts(
-                trader.safeRedeem(optionToken.address, 0, Alice),
-                ERR_ZERO
-            );
+            await expect(
+                trader.safeRedeem(optionToken.address, 0, Alice)
+            ).to.be.revertedWith(ERR_ZERO);
         });
 
         it("should revert if user does not have enough redeemToken tokens", async () => {
-            await truffleAssert.reverts(
-                trader.safeRedeem(optionToken.address, MILLION_ETHER, Alice),
-                ERR_BAL_REDEEM
-            );
+            await expect(
+                trader.safeRedeem(optionToken.address, MILLION_ETHER, Alice)
+            ).to.be.revertedWith(ERR_BAL_REDEEM);
         });
 
         it("should revert if  contract does not have enough strike tokens", async () => {
-            await truffleAssert.reverts(
-                trader.safeRedeem(optionToken.address, ONE_ETHER, Alice),
-                ERR_BAL_STRIKE
-            );
+            await expect(
+                trader.safeRedeem(optionToken.address, ONE_ETHER, Alice)
+            ).to.be.revertedWith(ERR_BAL_STRIKE);
         });
 
         it("should redeemToken consecutively", async () => {
-            await safeExercise(toWei("200"));
-            await safeRedeem(toWei("0.1"));
-            await safeRedeem(toWei("0.32525"));
-            await safeRedeem(toWei("0.5"));
+            await safeExercise(parseEther("200"));
+            await safeRedeem(parseEther("0.1"));
+            await safeRedeem(parseEther("0.32525"));
+            await safeRedeem(parseEther("0.5"));
         });
     });
 
     describe("safeClose", () => {
         beforeEach(async () => {
-            trader = await Trader.new(weth.address);
-            await underlyingToken.approve(trader.address, MILLION_ETHER, {
-                from: Alice,
-            });
-            await strikeToken.approve(trader.address, MILLION_ETHER, {
-                from: Alice,
-            });
-            await optionToken.approve(trader.address, MILLION_ETHER, {
-                from: Alice,
-            });
-            await redeemToken.approve(trader.address, MILLION_ETHER, {
-                from: Alice,
-            });
-            await safeMint(toWei("1"));
+            trader = await newTrader(Admin, weth.address);
+            await underlyingToken.approve(trader.address, MILLION_ETHER);
+            await strikeToken.approve(trader.address, MILLION_ETHER);
+            await optionToken.approve(trader.address, MILLION_ETHER);
+            await redeemToken.approve(trader.address, MILLION_ETHER);
+            await safeMint(parseEther("1"));
 
             safeClose = async (inTokenP) => {
-                inTokenP = new BN(inTokenP);
-                let inTokenR = inTokenP.mul(new BN(quote)).div(new BN(base));
+                let inTokenR = inTokenP.mul(quote).div(base);
                 let outTokenU = inTokenP;
 
-                let balanceU = await getBalance(underlyingToken, Alice);
-                let balanceP = await getBalance(optionToken, Alice);
-                let balanceR = await getBalance(redeemToken, Alice);
+                let balanceU = await getTokenBalance(underlyingToken, Alice);
+                let balanceP = await getTokenBalance(optionToken, Alice);
+                let balanceR = await getTokenBalance(redeemToken, Alice);
 
-                let event = await trader.safeClose(
-                    optionToken.address,
-                    inTokenP,
-                    Alice
-                );
+                await expect(
+                    trader.safeClose(optionToken.address, inTokenP, Alice)
+                )
+                    .to.emit(trader, "TraderClose")
+                    .withArgs(Alice, optionToken.address, inTokenP.toString());
 
-                let deltaU = (await getBalance(underlyingToken, Alice)).sub(
-                    balanceU
-                );
-                let deltaP = (await getBalance(optionToken, Alice)).sub(
+                let deltaU = (
+                    await getTokenBalance(underlyingToken, Alice)
+                ).sub(balanceU);
+                let deltaP = (await getTokenBalance(optionToken, Alice)).sub(
                     balanceP
                 );
-                let deltaR = (await getBalance(redeemToken, Alice)).sub(
+                let deltaR = (await getTokenBalance(redeemToken, Alice)).sub(
                     balanceR
                 );
 
                 assertBNEqual(deltaU, outTokenU);
-                assertBNEqual(deltaP, inTokenP.neg());
-                assertBNEqual(deltaR, inTokenR.neg());
+                assertBNEqual(deltaP, inTokenP.mul(-1));
+                assertBNEqual(deltaR, inTokenR.mul(-1));
 
-                await truffleAssert.eventEmitted(event, "TraderClose", (ev) => {
-                    return (
-                        expect(ev.from).to.be.eq(Alice) &&
-                        expect(ev.inTokenP.toString()).to.be.eq(
-                            inTokenP.toString()
-                        ) &&
-                        expect(ev.inTokenP.toString()).to.be.eq(
-                            outTokenU.toString()
-                        )
-                    );
-                });
                 await verifyOptionInvariants(
                     underlyingToken,
                     strikeToken,
@@ -462,78 +366,56 @@ contract("Trader", (accounts) => {
         });
 
         it("should revert if amount is 0", async () => {
-            await truffleAssert.reverts(
-                trader.safeClose(optionToken.address, 0, Alice),
-                ERR_ZERO
-            );
+            await expect(
+                trader.safeClose(optionToken.address, 0, Alice)
+            ).to.be.revertedWith(ERR_ZERO);
         });
 
         it("should revert if user does not have enough redeemToken tokens", async () => {
             await trader.safeMint(optionToken.address, ONE_ETHER, Bob);
-            await redeemToken.transfer(
-                Alice,
-                await redeemToken.balanceOf(Bob),
-                {
-                    from: Bob,
-                }
-            );
-            await truffleAssert.reverts(
-                trader.safeClose(optionToken.address, ONE_ETHER, Bob, {
-                    from: Bob,
-                }),
-                ERR_BAL_REDEEM
-            );
+            await redeemToken
+                .connect(User)
+                .transfer(Alice, await redeemToken.balanceOf(Bob));
+            await expect(
+                trader
+                    .connect(User)
+                    .safeClose(optionToken.address, ONE_ETHER, Bob)
+            ).to.be.revertedWith(ERR_BAL_REDEEM);
         });
 
         it("should revert if user does not have enough optionToken tokens", async () => {
             await trader.safeMint(optionToken.address, ONE_ETHER, Bob);
-            await optionToken.transfer(
-                Alice,
-                await optionToken.balanceOf(Bob),
-                {
-                    from: Bob,
-                }
-            );
-            await truffleAssert.reverts(
-                trader.safeClose(optionToken.address, ONE_ETHER, Bob, {
-                    from: Bob,
-                }),
-                ERR_BAL_PRIME
-            );
+            await optionToken
+                .connect(User)
+                .transfer(Alice, await optionToken.balanceOf(Bob));
+            await expect(
+                trader
+                    .connect(User)
+                    .safeClose(optionToken.address, ONE_ETHER, Bob)
+            ).to.be.revertedWith(ERR_BAL_OPTIONS);
         });
 
         it("should revert if calling unwind and not expired", async () => {
-            await truffleAssert.reverts(
-                trader.safeUnwind(optionToken.address, ONE_ETHER, Alice, {
-                    from: Alice,
-                }),
-                ERR_NOT_EXPIRED
-            );
+            await expect(
+                trader.safeUnwind(optionToken.address, ONE_ETHER, Alice)
+            ).to.be.revertedWith(ERR_NOT_EXPIRED);
         });
 
         it("should close consecutively", async () => {
             await safeMint(TEN_ETHER);
             await safeClose(ONE_ETHER);
             await safeClose(FIVE_ETHER);
-            await safeClose(toWei("2.5433451"));
+            await safeClose(parseEther("2.5433451"));
         });
     });
 
     describe("full test", () => {
         beforeEach(async () => {
-            trader = await Trader.new(weth.address);
-            await underlyingToken.approve(trader.address, MILLION_ETHER, {
-                from: Alice,
-            });
-            await strikeToken.approve(trader.address, MILLION_ETHER, {
-                from: Alice,
-            });
-            await optionToken.approve(trader.address, MILLION_ETHER, {
-                from: Alice,
-            });
-            await redeemToken.approve(trader.address, MILLION_ETHER, {
-                from: Alice,
-            });
+            trader = await newTrader(Admin, weth.address);
+            await underlyingToken.approve(trader.address, MILLION_ETHER);
+            await strikeToken.approve(trader.address, MILLION_ETHER);
+            await optionToken.approve(trader.address, MILLION_ETHER);
+            await redeemToken.approve(trader.address, MILLION_ETHER);
         });
 
         it("should handle multiple transactions", async () => {
@@ -542,23 +424,23 @@ contract("Trader", (accounts) => {
             await safeMint(THOUSAND_ETHER);
 
             await safeClose(ONE_ETHER);
-            await safeExercise(toWei("200"));
-            await safeRedeem(toWei("0.1"));
+            await safeExercise(parseEther("200"));
+            await safeRedeem(parseEther("0.1"));
             await safeClose(ONE_ETHER);
             await safeExercise(ONE_ETHER);
             await safeExercise(ONE_ETHER);
             await safeExercise(ONE_ETHER);
             await safeExercise(ONE_ETHER);
-            await safeRedeem(toWei("0.23"));
-            await safeRedeem(toWei("0.1234"));
-            await safeRedeem(toWei("0.15"));
-            await safeRedeem(toWei("0.2543"));
+            await safeRedeem(parseEther("0.23"));
+            await safeRedeem(parseEther("0.1234"));
+            await safeRedeem(parseEther("0.15"));
+            await safeRedeem(parseEther("0.2543"));
             await safeClose(FIVE_ETHER);
             await safeClose(await optionToken.balanceOf(Alice));
             await safeRedeem(await redeemToken.balanceOf(Alice));
 
-            let balanceP = new BN(await optionToken.balanceOf(Alice));
-            let balanceR = new BN(await redeemToken.balanceOf(Alice));
+            let balanceP = await optionToken.balanceOf(Alice);
+            let balanceR = await redeemToken.balanceOf(Alice);
 
             assertBNEqual(balanceP, 0);
             assertBNEqual(balanceR, 0);
@@ -567,8 +449,9 @@ contract("Trader", (accounts) => {
 
     describe("safeUnwind", () => {
         beforeEach(async () => {
-            trader = await Trader.new(weth.address);
+            trader = await newTrader(Admin, weth.address);
             optionToken = await newTestOption(
+                Admin,
                 underlyingToken.address,
                 strikeToken.address,
                 base,
@@ -576,103 +459,78 @@ contract("Trader", (accounts) => {
                 expiry
             );
             redeemToken = await newTestRedeem(
+                Admin,
                 Alice,
                 optionToken.address,
                 underlyingToken.address
             );
-            await optionToken.setTokenR(redeemToken.address);
+            await optionToken.setRedeemToken(redeemToken.address);
             redeemTokenTokenAddress = redeemToken.address;
 
-            await underlyingToken.approve(trader.address, MILLION_ETHER, {
-                from: Alice,
-            });
-            await strikeToken.approve(trader.address, MILLION_ETHER, {
-                from: Alice,
-            });
-            await optionToken.approve(trader.address, MILLION_ETHER, {
-                from: Alice,
-            });
-            await redeemToken.approve(trader.address, MILLION_ETHER, {
-                from: Alice,
-            });
+            await underlyingToken.approve(trader.address, MILLION_ETHER);
+            await strikeToken.approve(trader.address, MILLION_ETHER);
+            await optionToken.approve(trader.address, MILLION_ETHER);
+            await redeemToken.approve(trader.address, MILLION_ETHER);
 
-            await underlyingToken.approve(trader.address, MILLION_ETHER, {
-                from: Bob,
-            });
-            await strikeToken.approve(trader.address, MILLION_ETHER, {
-                from: Bob,
-            });
-            await optionToken.approve(trader.address, MILLION_ETHER, {
-                from: Bob,
-            });
-            await redeemToken.approve(trader.address, MILLION_ETHER, {
-                from: Bob,
-            });
+            await underlyingToken
+                .connect(User)
+                .approve(trader.address, MILLION_ETHER);
+            await strikeToken
+                .connect(User)
+                .approve(trader.address, MILLION_ETHER);
+            await optionToken
+                .connect(User)
+                .approve(trader.address, MILLION_ETHER);
+            await redeemToken
+                .connect(User)
+                .approve(trader.address, MILLION_ETHER);
 
             let inTokenU = THOUSAND_ETHER;
             await underlyingToken.mint(Alice, inTokenU);
             await trader.safeMint(optionToken.address, inTokenU, Alice);
             await underlyingToken.mint(Bob, ONE_ETHER);
-            await trader.safeMint(optionToken.address, ONE_ETHER, Bob, {
-                from: Bob,
-            });
+            await trader
+                .connect(User)
+                .safeMint(optionToken.address, ONE_ETHER, Bob);
 
             let expired = "1589386232";
             await optionToken.setExpiry(expired);
             assert.equal(await optionToken.expiry(), expired);
 
             safeUnwind = async (inTokenP) => {
-                inTokenP = new BN(inTokenP);
-                let inTokenR = inTokenP.mul(new BN(quote)).div(new BN(base));
+                let inTokenR = inTokenP.mul(quote).div(base);
                 let outTokenU = inTokenP;
 
-                let balanceU = await getBalance(underlyingToken, Alice);
-                let balanceP = await getBalance(optionToken, Alice);
-                let balanceR = await getBalance(redeemToken, Alice);
+                let balanceU = await getTokenBalance(underlyingToken, Alice);
+                let balanceP = await getTokenBalance(optionToken, Alice);
+                let balanceR = await getTokenBalance(redeemToken, Alice);
 
-                let event = await trader.safeUnwind(
-                    optionToken.address,
-                    inTokenP,
-                    Alice
-                );
+                await expect(
+                    trader.safeUnwind(optionToken.address, inTokenP, Alice)
+                )
+                    .to.emit(trader, "TraderUnwind")
+                    .withArgs(Alice, optionToken.address, inTokenP.toString());
 
-                let deltaU = (await getBalance(underlyingToken, Alice)).sub(
-                    balanceU
-                );
-                let deltaP = (await getBalance(optionToken, Alice)).sub(
+                let deltaU = (
+                    await getTokenBalance(underlyingToken, Alice)
+                ).sub(balanceU);
+                let deltaP = (await getTokenBalance(optionToken, Alice)).sub(
                     balanceP
                 );
-                let deltaR = (await getBalance(redeemToken, Alice)).sub(
+                let deltaR = (await getTokenBalance(redeemToken, Alice)).sub(
                     balanceR
                 );
 
                 assertBNEqual(deltaU, outTokenU);
-                assertBNEqual(deltaP, new BN(0));
-                assertBNEqual(deltaR, inTokenR.neg());
-
-                await truffleAssert.eventEmitted(
-                    event,
-                    "TraderUnwind",
-                    (ev) => {
-                        return (
-                            expect(ev.from).to.be.eq(Alice) &&
-                            expect(ev.inTokenP.toString()).to.be.eq(
-                                inTokenP.toString()
-                            ) &&
-                            expect(ev.inTokenP.toString()).to.be.eq(
-                                outTokenU.toString()
-                            )
-                        );
-                    }
-                );
+                assertBNEqual(deltaP, 0);
+                assertBNEqual(deltaR, inTokenR.mul(-1));
             };
         });
 
         it("should revert if amount is 0", async () => {
-            await truffleAssert.reverts(
-                trader.safeUnwind(optionToken.address, 0, Alice),
-                ERR_ZERO
-            );
+            await expect(
+                trader.safeUnwind(optionToken.address, 0, Alice)
+            ).to.be.revertedWith(ERR_ZERO);
         });
 
         it("should revert if user does not have enough redeemToken tokens", async () => {
@@ -683,32 +541,34 @@ contract("Trader", (accounts) => {
                     from: Alice,
                 }
             );
-            await truffleAssert.reverts(
+            await expect(
                 trader.safeUnwind(optionToken.address, ONE_ETHER, Alice, {
                     from: Alice,
-                }),
-                ERR_BAL_REDEEM
-            );
+                })
+            ).to.be.revertedWith(ERR_BAL_REDEEM);
         });
 
         it("should unwind consecutively", async () => {
-            await safeUnwind(toWei("0.4351"));
+            await safeUnwind(parseEther("0.4351"));
             await safeUnwind(ONE_ETHER);
-            await safeUnwind(toWei("2.5433451"));
+            await safeUnwind(parseEther("2.5433451"));
         });
     });
 
     describe("test bad ERC20", () => {
         beforeEach(async () => {
             underlyingToken = await newBadERC20(
+                Admin,
                 "Bad ERC20 Doesnt Return Bools",
                 "BADU"
             );
             strikeToken = await newBadERC20(
+                Admin,
                 "Bad ERC20 Doesnt Return Bools",
                 "BADS"
             );
             optionToken = await newTestOption(
+                Admin,
                 underlyingToken.address,
                 strikeToken.address,
                 base,
@@ -716,11 +576,12 @@ contract("Trader", (accounts) => {
                 expiry
             );
             redeemToken = await newTestRedeem(
+                Admin,
                 Alice,
                 optionToken.address,
                 underlyingToken.address
             );
-            await optionToken.setTokenR(redeemToken.address);
+            await optionToken.setRedeemToken(redeemToken.address);
             let inTokenU = THOUSAND_ETHER;
             await underlyingToken.mint(Alice, inTokenU);
             await strikeToken.mint(Alice, inTokenU);
@@ -730,40 +591,38 @@ contract("Trader", (accounts) => {
 
         it("should revert on mint because transfer does not return a boolean", async () => {
             let inTokenP = HUNDRED_ETHER;
-            await truffleAssert.reverts(
-                trader.safeMint(optionToken.address, inTokenP, Alice)
-            );
+            await expect(trader.safeMint(optionToken.address, inTokenP, Alice))
+                .to.be.reverted;
         });
 
         it("should revert on swap because transfer does not return a boolean", async () => {
             let inTokenP = HUNDRED_ETHER;
-            await truffleAssert.reverts(
+            await expect(
                 trader.safeExercise(optionToken.address, inTokenP, Alice)
-            );
+            ).to.be.reverted;
         });
 
         it("should revert on redeemToken because transfer does not return a boolean", async () => {
             // no way to swap, because it reverts, so we need to send strikeToken and call update()
-            let inTokenS = toWei("0.5"); // 100 ether (underlyingToken:base) / 200 (strikeToken:quote) = 0.5 strikeToken
+            let inTokenS = parseEther("0.5"); // 100 ether (underlyingToken:base) / 200 (strikeToken:quote) = 0.5 strikeToken
             await strikeToken.transfer(optionToken.address, inTokenS);
             await optionToken.update();
-            await truffleAssert.reverts(
+            await expect(
                 trader.safeRedeem(optionToken.address, inTokenS, Alice)
-            );
+            ).to.be.reverted;
         });
 
         it("should revert on close because transfer does not return a boolean", async () => {
             let inTokenP = HUNDRED_ETHER;
-            await truffleAssert.reverts(
-                trader.safeClose(optionToken.address, inTokenP, Alice)
-            );
+            await expect(trader.safeClose(optionToken.address, inTokenP, Alice))
+                .to.be.reverted;
         });
 
         it("should revert on unwind because its not expired yet", async () => {
             let inTokenP = HUNDRED_ETHER;
-            await truffleAssert.reverts(
+            await expect(
                 trader.safeUnwind(optionToken.address, inTokenP, Alice)
-            );
+            ).to.be.reverted;
         });
     });
 });

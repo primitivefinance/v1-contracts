@@ -3,6 +3,8 @@
 // When running the script with `buidler run <script>` you'll find the Buidler
 // Runtime Environment's members available in the global scope.
 const bre = require("@nomiclabs/buidler");
+const { LIBRARIES } = require("@primitivefi/contracts/test/lib/constants");
+const { OPTION_TEMPLATE_LIB, REDEEM_TEMPLATE_LIB } = LIBRARIES;
 
 module.exports = async ({ getNamedAccounts, deployments }) => {
     const { log, deploy } = deployments;
@@ -25,7 +27,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         args: [],
     });
 
-    const optionFactory = await deploy("OptionFactory", {
+    let optionFactory = await deploy("OptionFactory", {
         from: deployer,
         contractName: "OptionFactory",
         args: [registry.address],
@@ -34,7 +36,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         },
     });
 
-    const redeemFactory = await deploy("RedeemFactory", {
+    let redeemFactory = await deploy("RedeemFactory", {
         from: deployer,
         contractName: "RedeemFactory",
         args: [registry.address],
@@ -42,6 +44,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
             ["RedeemTemplateLib"]: redeemTemplateLib.address,
         },
     });
+
     let deployed = [registry, optionFactory, redeemFactory];
     for (let i = 0; i < deployed.length; i++) {
         if (deployed[i].newlyDeployed)

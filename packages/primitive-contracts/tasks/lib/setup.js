@@ -5,12 +5,12 @@ const { AddressZero } = ethers.constants;
 const { parseEther } = ethers.utils;
 const { InfuraProvider } = ethers.providers;
 const { checkInitialization } = require("./utils");
-const Registry = require("../../artifacts/Registry.json");
-const Factory = require("../../artifacts/Factory.json");
-const FactoryRedeem = require("../../artifacts/FactoryRedeem.json");
-const TestERC20 = require("../../artifacts/TestERC20.json");
-const Option = require("../../artifacts/Option.json");
-const Redeem = require("../../artifacts/Redeem.json");
+const Registry = require("@primitivefi/contracts/artifacts/Registry.json");
+const OptionFactory = require("@primitivefi/contracts/artifacts/OptionFactory.json");
+const RedeemFactory = require("@primitivefi/contracts/artifacts/RedeemFactory.json");
+const TestERC20 = require("@primitivefi/contracts/artifacts/TestERC20.json");
+const Option = require("@primitivefi/contracts/artifacts/Option.json");
+const Redeem = require("@primitivefi/contracts/artifacts/Redeem.json");
 
 async function setupRinkeby() {
     // get provider
@@ -23,21 +23,60 @@ async function setupRinkeby() {
     return { provider, Alice };
 }
 
+async function setupRegistry() {
+    const { Alice } = await setupRinkeby();
+    let registry = await deployments.get("Registry");
+    registry = new ethers.Contract(registry.address, registry.abi, Alice);
+    let optionFactory = await deployments.get("OptionFactory");
+    optionFactory = new ethers.Contract(
+        optionFactory.address,
+        optionFactory.abi,
+        Alice
+    );
+    let redeemFactory = await deployments.get("RedeemFactory");
+    redeemFactory = new ethers.Contract(
+        redeemFactory.address,
+        redeemFactory.abi,
+        Alice
+    );
+    await checkInitialization(registry, optionFactory, redeemFactory);
+    if ((await optionFactory.optionTemplate()) == ethers.AddressZero) {
+        await optionFactory.deployOptionTemplate();
+    }
+    if ((await redeemFactory.redeemTemplate()) == ethers.AddressZero) {
+        await redeemFactory.deployRedeemTemplate();
+    }
+    return { registry, optionFactory, redeemFactory };
+}
+
+async function setupTokens() {
+    const { Alice } = await setupRinkeby();
+    let ethToken = await deployments.get("ETH");
+    ethToken = new ethers.Contract(ethToken.address, ethToken.abi, Alice);
+    let usdcToken = await deployments.get("USDC");
+    usdcToken = new ethers.Contract(usdcToken.address, usdcToken.abi, Alice);
+    return { ethToken, usdcToken };
+}
+
 async function setupPrimitive() {
     const { Alice } = await setupRinkeby();
     const { deployIfDifferent, log, deploy } = deployments;
     const { deployer } = await getNamedAccounts();
     let registry = await deployments.get("Registry");
     registry = new ethers.Contract(registry.address, registry.abi, Alice);
-    let factory = await deployments.get("Factory");
-    factory = new ethers.Contract(factory.address, factory.abi, Alice);
-    let factoryRedeem = await deployments.get("FactoryRedeem");
-    factoryRedeem = new ethers.Contract(
-        factoryRedeem.address,
-        factoryRedeem.abi,
+    let optionFactory = await deployments.get("OptionFactory");
+    optionFactory = new ethers.Contract(
+        optionFactory.address,
+        optionFactory.abi,
         Alice
     );
-    await checkInitialization(registry, factory, factoryRedeem);
+    let redeemFactory = await deployments.get("RedeemFactory");
+    redeemFactory = new ethers.Contract(
+        redeemFactory.address,
+        redeemFactory.abi,
+        Alice
+    );
+    await checkInitialization(registry, optionFactory, redeemFactory);
     let trader = await deployments.get("Trader");
     trader = new ethers.Contract(trader.address, trader.abi, Alice);
     let ethToken = await deployments.get("ETH");
@@ -77,7 +116,7 @@ async function setupPrimitive() {
     }
     const option = new ethers.Contract(optionAddress, Option.abi, Alice);
     const redeem = new ethers.Contract(
-        await option.tokenR(),
+        await option.redeemToken(),
         Redeem.abi,
         Alice
     );
@@ -91,8 +130,24 @@ async function setupTest(signer) {
     console.log(Token);
 }
 
+async function checkSupported(registry, underlyingToken, strikeToken) {
+    const isUnderlyingSupported = await registry.isSupported(
+        underlyingToken.address
+    );
+    const isStrikeSupported = await registry.isSupported(strikeToken.address);
+    if (!isUnderlyingSupported) {
+        await registry.addSupported(underlyingToken.address);
+    }
+    if (!isStrikeSupported) {
+        await registry.addSupported(strikeToken.address);
+    }
+}
+
 module.exports = {
     setupRinkeby,
     setupPrimitive,
     setupTest,
+    setupTokens,
+    setupRegistry,
+    checkSupported,
 };
