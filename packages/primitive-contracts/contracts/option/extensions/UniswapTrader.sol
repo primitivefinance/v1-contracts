@@ -14,6 +14,7 @@ import { IOption } from "../interfaces/IOption.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import { TraderLib } from "../libraries/TraderLib.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract UniswapTrader is Ownable {
@@ -22,12 +23,6 @@ contract UniswapTrader is Ownable {
 
     address public router;
     address public quoteToken;
-
-    event UniswapTraderMint(
-        address indexed from,
-        address indexed option,
-        uint256 mintQuantity
-    );
 
     event UniswapTraderSell(
         address indexed from,
@@ -59,49 +54,26 @@ contract UniswapTrader is Ownable {
         IOption option,
         uint256 sellQuantity,
         uint256 minQuote
-    ) external {
+    ) external returns (bool) {
         // sends underlyings to option contract and mint options
-        mintOptions(msg.sender, option, sellQuantity);
+        (uint256 outputOptions, uint256 outputRedeems) = TraderLib.safeMint(
+            option,
+            sellQuantity,
+            address(this)
+        );
 
         // market sells options on uniswap
-        marketSell(
+        (, bool success) = marketSell(
             msg.sender,
             msg.sender,
             address(option),
-            sellQuantity,
+            outputOptions,
             minQuote
         );
 
         // send redeem to user
-        address redeemToken = option.redeemToken();
-        IERC20(redeemToken).safeTransfer(
-            msg.sender,
-            IERC20(redeemToken).balanceOf(address(this))
-        );
-    }
-
-    /**
-     * @dev Internal function to safeTransferFrom underlying tokens,
-     * from an address, send them to the option, and call mint() on the
-     * option contract.
-     */
-    function mintOptions(
-        address minter,
-        IOption option,
-        uint256 mintQuantity
-    )
-        internal
-        returns (uint256 outputOptionTokens, uint256 outputRedeemTokens)
-    {
-        IERC20(option.underlyingToken()).safeTransferFrom(
-            minter,
-            address(option),
-            mintQuantity
-        );
-
-        // mints options
-        (outputOptionTokens, outputRedeemTokens) = option.mint(address(this));
-        emit UniswapTraderMint(minter, address(option), mintQuantity);
+        IERC20(option.redeemToken()).safeTransfer(msg.sender, outputRedeems);
+        return success;
     }
 
     /**
@@ -113,7 +85,7 @@ contract UniswapTrader is Ownable {
         address option,
         uint256 sellQuantity,
         uint256 minQuote
-    ) internal returns (uint256[] memory amounts) {
+    ) internal returns (uint256[] memory amounts, bool success) {
         address[] memory path = new address[](2);
         path[0] = option;
         path[1] = quoteToken;
@@ -126,6 +98,7 @@ contract UniswapTrader is Ownable {
             getMaxDeadline()
         );
         emit UniswapTraderSell(from, to, option, sellQuantity);
+        success = true;
     }
 
     /**

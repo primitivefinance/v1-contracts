@@ -64,14 +64,16 @@ const ADDRESSES = {
 
 const LIBRARIES = {
     OPTION_TEMPLATE_LIB:
-        "contracts/option/applications/factories/OptionTemplateLib.sol:OptionTemplateLib",
+        "contracts/option/libraries/OptionTemplateLib.sol:OptionTemplateLib",
     REDEEM_TEMPLATE_LIB:
-        "contracts/option/applications/factories/RedeemTemplateLib.sol:RedeemTemplateLib",
+        "contracts/option/libraries/RedeemTemplateLib.sol:RedeemTemplateLib",
+    TRADER_LIB: "contracts/option/libraries/TraderLib.sol:TraderLib",
 };
 
 const CONTRACT_NAMES = {
     REGISTRY: "contracts/option/applications/Registry.sol:Registry",
     TRADER: "contracts/option/extensions/Trader.sol:Trader",
+
     OPTION_FACTORY:
         "contracts/option/applications/factories/OptionFactory.sol:OptionFactory",
     REDEEM_FACTORY:
