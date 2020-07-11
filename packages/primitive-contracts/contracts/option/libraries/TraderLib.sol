@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: MIT
 
-
-
 pragma solidity ^0.6.2;
 
 /**
@@ -178,6 +176,7 @@ library TraderLib {
     {
         // Checks
         require(unwindQuantity > 0, "ERR_ZERO");
+        // solhint-disable-next-line not-rely-on-time
         require(optionToken.expiry() < block.timestamp, "ERR_NOT_EXPIRED");
 
         // Calculate amount of redeems required

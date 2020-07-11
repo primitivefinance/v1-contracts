@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: MIT
 
-
-
 pragma solidity ^0.6.2;
 
 import {
@@ -31,6 +29,7 @@ contract UniswapTrader is Ownable {
         uint256 sellQuantity
     );
 
+    // solhint-disable-next-line no-empty-blocks
     constructor() public {}
 
     /**
@@ -105,6 +104,7 @@ contract UniswapTrader is Ownable {
      * @dev The maxmium deadline available for each trade.
      */
     function getMaxDeadline() public view returns (uint256 deadline) {
+        // solhint-disable-next-line not-rely-on-time
         deadline = now + 15 minutes;
     }
 }

@@ -8,8 +8,7 @@ const { OPTION_TEMPLATE_LIB, REDEEM_TEMPLATE_LIB } = LIBRARIES;
 const { ethers } = require("@nomiclabs/buidler");
 
 module.exports = async ({ getNamedAccounts, deployments }) => {
-    const rinkeby = new ethers.providers.InfuraProvider("rinkeby").connection
-        .url;
+    const [signer] = await ethers.getSigners();
     const { log, deploy } = deployments;
     const { deployer } = await getNamedAccounts();
     const chain = await bre.getChainId();
@@ -51,12 +50,12 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     const opFacInstance = new ethers.Contract(
         optionFactory.address,
         optionFactory.abi,
-        rinkeby
+        signer
     );
     const reFacInstance = new ethers.Contract(
         redeemFactory.address,
         redeemFactory.abi,
-        rinkeby
+        signer
     );
 
     await opFacInstance.deployOptionTemplate();
