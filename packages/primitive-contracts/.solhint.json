@@ -3,6 +3,6 @@
     "rules": {
         "mark-callable-contracts": "off",
         "max-line-length": ["warn", 120],
-        "compiler-version": ["error", "^0.6.2"]
+        "compiler-version": ["warn", "^0.6.2"]
     }
 }

@@ -24,16 +24,15 @@ const Redeem = require("@primitivefi/contracts/artifacts/Redeem");
 const Weth = require("canonical-weth");
 const { ethers } = require("@nomiclabs/buidler");
 
-async function main() {
-    const rinkeby = new ethers.providers.InfuraProvider("rinkeby").connection
-        .url;
-    // verify registry, factories, trader, and implementations
+const verifyRegistry = async () => {
     try {
         await verifyContract(REGISTRY, Registry.address, Registry.args, {});
     } catch (err) {
-        console.log("continuing");
+        console.error(err);
     }
+};
 
+const verifyFactories = async () => {
     try {
         await verifyContract(
             OPTION_FACTORY,
@@ -42,30 +41,62 @@ async function main() {
             { OPTION_TEMPLATE_LIB: OptionTemplateLib.address }
         );
     } catch (err) {
-        console.log("continuing");
+        console.error(err);
     }
 
-    await verifyContract(
-        REDEEM_FACTORY,
-        RedeemFactory.address,
-        RedeemFactory.args,
-        { REDEEM_TEMPLATE_LIB: RedeemTemplateLib.address }
-    );
-    await verifyContract(TRADER, Trader.address, Trader.args, {});
+    try {
+        await verifyContract(
+            REDEEM_FACTORY,
+            RedeemFactory.address,
+            RedeemFactory.args,
+            { REDEEM_TEMPLATE_LIB: RedeemTemplateLib.address }
+        );
+    } catch (err) {
+        console.error(err);
+    }
+};
+
+const verifyTraders = async () => {
+    try {
+        await verifyContract(TRADER, Trader.address, Trader.args, {});
+    } catch (err) {
+        console.error(err);
+    }
+};
+
+const verifyTemplates = async () => {
+    let [signer] = await ethers.getSigners();
+
     const optionFactory = new ethers.Contract(
         OptionFactory.address,
         OptionFactory.abi,
-        rinkeby
+        signer
     );
     const optionTemplate = await optionFactory.optionTemplate();
     const redeemFactory = new ethers.Contract(
         RedeemFactory.address,
         RedeemFactory.abi,
-        rinkeby
+        signer
     );
     const redeemTemplate = await redeemFactory.redeemTemplate();
-    await verifyContract(OPTION, optionTemplate, [], {});
-    await verifyContract(REDEEM, redeemTemplate, [], {});
+    try {
+        await verifyContract(OPTION, optionTemplate, [], {});
+    } catch (err) {
+        console.error(err);
+    }
+    try {
+        await verifyContract(REDEEM, redeemTemplate, [], {});
+    } catch (err) {
+        console.error(err);
+    }
+};
+
+async function main() {
+    // Verify registry, factories, traders, and templates.
+    await verifyRegistry();
+    await verifyFactories();
+    await verifyTraders();
+    await verifyTemplates();
 }
 
 main()
