@@ -5,12 +5,12 @@ const { AddressZero } = ethers.constants;
 const { parseEther } = ethers.utils;
 const { InfuraProvider } = ethers.providers;
 const { checkInitialization } = require("./utils");
-const Registry = require("@primitivefi/contracts/artifacts/Registry.json");
-const OptionFactory = require("@primitivefi/contracts/artifacts/OptionFactory.json");
-const RedeemFactory = require("@primitivefi/contracts/artifacts/RedeemFactory.json");
-const TestERC20 = require("@primitivefi/contracts/artifacts/TestERC20.json");
-const Option = require("@primitivefi/contracts/artifacts/Option.json");
-const Redeem = require("@primitivefi/contracts/artifacts/Redeem.json");
+const Registry = require("@primitivefi/contracts/artifacts/Registry");
+const OptionFactory = require("@primitivefi/contracts/artifacts/OptionFactory");
+const RedeemFactory = require("@primitivefi/contracts/artifacts/RedeemFactory");
+const TestERC20 = require("@primitivefi/contracts/artifacts/TestERC20");
+const Option = require("@primitivefi/contracts/artifacts/Option");
+const Redeem = require("@primitivefi/contracts/artifacts/Redeem");
 
 async function setupRinkeby() {
     // get provider
