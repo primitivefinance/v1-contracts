@@ -59,11 +59,15 @@ async function setupTokens() {
 }
 
 async function setupPrimitive() {
-    const { Alice } = await setupRinkeby();
+    const { Alice, provider } = await setupRinkeby();
     const { deployIfDifferent, log, deploy } = deployments;
     const { deployer } = await getNamedAccounts();
     let registry = await deployments.get("Registry");
-    registry = new ethers.Contract(registry.address, registry.abi, Alice);
+    registry = new ethers.Contract(
+        registry.address,
+        registry.abi,
+        provider
+    ).connect(Alice);
     let optionFactory = await deployments.get("OptionFactory");
     optionFactory = new ethers.Contract(
         optionFactory.address,
@@ -76,6 +80,7 @@ async function setupPrimitive() {
         redeemFactory.abi,
         Alice
     );
+    console.log(await registry.redeemFactory());
     await checkInitialization(registry, optionFactory, redeemFactory);
     let trader = await deployments.get("Trader");
     trader = new ethers.Contract(trader.address, trader.abi, Alice);
