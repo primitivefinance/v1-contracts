@@ -24,8 +24,11 @@
         "bevm": "buidler node",
         "test": "cross-env buidler test ./test/option/trader.js ./test/option/option.js",
         "test:local": "cross-env buidler test --network local ./test/option/trader.js ./test/option/option.js",
-        "deploy:mainnet": "cross-env buidler run --network live scripts/deploy.js",
-        "deploy:local": "cross-env buidler run --network local scripts/deploy.js"
+        "deploy:local": "cross-env buidler deploy --network local",
+        "deploy:rinkeby": "cross-env buidler deploy --network rinkeby",
+        "deploy:mainnet": "cross-env buidler deploy --network live",
+        "verify:rinkeby": "cross-env buidler run ./scripts/verify-rinkeby.js",
+        "verify:mainnet": "cross-env buidler run ./scripts/verify-mainnet.js"
     },
     "repository": {
         "type": "git",

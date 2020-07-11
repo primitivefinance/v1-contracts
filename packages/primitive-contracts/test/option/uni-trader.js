@@ -133,10 +133,14 @@ describe("UniTrader", () => {
             let balanceBefore = await dai.balanceOf(Alice);
             let optionBalanceBefore = await optionToken.balanceOf(pair);
             await expect(
-                uniswapTrader.mintAndMarketSell(optionToken.address, ONE_ETHER)
+                uniswapTrader.mintAndMarketSell(
+                    optionToken.address,
+                    ONE_ETHER,
+                    1
+                )
             )
-                .to.emit(uniswapTrader, "Sell")
-                .withArgs(Alice, optionToken.address, ONE_ETHER);
+                .to.emit(uniswapTrader, "UniswapTraderSell")
+                .withArgs(Alice, Alice, optionToken.address, ONE_ETHER);
             let balanceAfter = await dai.balanceOf(Alice);
             let optionBalanceAfter = await optionToken.balanceOf(pair);
             let balanceDelta = balanceAfter.sub(balanceBefore).toString();
