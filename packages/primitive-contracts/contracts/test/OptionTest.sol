@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: MIT
 
-
-
 pragma solidity ^0.6.2;
 
 /**
@@ -12,6 +10,7 @@ pragma solidity ^0.6.2;
 import "../option/primitives/Option.sol";
 
 contract OptionTest is Option {
+    // solhint-disable-next-line no-empty-blocks
     constructor() public Option() {}
 
     function setExpiry(uint256 expiry) public {

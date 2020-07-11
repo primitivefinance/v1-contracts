@@ -16,23 +16,23 @@ The protocol and software is in an alpha stage. While security is our core focus
 
 We overview the contracts and their functions as well as how to test them.
 
--   Documentation: [Documentation](https://docs.primitive.finance)
--   Protocol Overview: [Overview](https://docs.google.com/document/d/19neM6bFmTCBdxLygQbDDJubwcLcuMIx8x2Fs-llt9sQ/edit?usp=sharing)
+- Documentation: [Documentation](https://docs.primitive.finance)
+- Protocol Overview: [Overview](https://docs.google.com/document/d/19neM6bFmTCBdxLygQbDDJubwcLcuMIx8x2Fs-llt9sQ/edit?usp=sharing)
 
 # Environment
 
 Our development environment consists of the following:
 
--   Buidler - Development Framework
--   Web3/Truffle/Ethers plugins for Buidler
--   Buidler-deploy plugin for getting deployed contract artifacts.
--   Mocha - testing framework
--   Chai, chai-bn, and bn.js - unit testing and our choice of BN library
--   Truffle assertions - unit testing
--   Solidity Visual Auditor - VS Code
--   Slither - static analyzer
--   Solium - linter
--   Open Zeppelin Contracts - external contracts dependency
+- Buidler - Development Framework
+- buidler-waffle buidler-ethers plugins for buidler
+- buidler-deploy plugin for getting deployed contract artifacts.
+- buidler-solhint - linter plugin
+- buidler-etherscan - verification plugin
+- Mocha - testing framework
+- Chai, chai-bn, and bn.js - unit testing and our choice of BN library. Ether's BigNumber wraps BN.
+- Solidity Visual Auditor - VS Code
+- Slither - static analyzer
+- Open Zeppelin Contracts - external contracts dependency
 
 # Contracts
 
@@ -51,75 +51,26 @@ Our development environment consists of the following:
 
 # Testing
 
-## Use Docker
-
 ```
-docker build -t primitive-contracts
-docker run -it --rm --name primitive primitive
-
-npm run test
-npm run coverage
+cd packages/primitive-contracts
+yarn bevm
+yarn test
 ```
 
-## Or...
+# Tooling
 
-#### Steps to testing using the buidler EVM
+Coverage is currently bugged with the latest version of waffle, it will show 0 coverage.
 
-Step 1 - Install Dependencies
+```
+yarn coverage
+```
 
-    npm run clean-install
+Linter
 
-Step 2 - Compile Contracts
-
-    npm run compile
-
-Step 3 - Start Buidler EVM Node
-
-    npm run bevm
-
-Step 4 - Run the tests
-
-    npm run test
-
-#### Steps to testing using the ganache-cli on forked mainnet
-
-Step 1
-
-    npm i
-
-Step 2
-
-    npm compile
-
-Step 3 - A forked mainnet node with network ID 999 is required.
-
-    npm start:f-mainnet
-
-Step 4
-
-    npm test:f-mainnet
-
-#### Coverage
-
-For coverage, we use buidler's plugin for solidity-coverage.
-
-    npm run coverage
-
-#### Linting
-
-For linting you can run this command which uses the solium linter:
-
-    npm run lint
-
-Solium can also fix some linting errors which can be checked with this command:
-
-    npm run lint:fix
-
-#### Static analysis
-
-For static analysis you can run the contracts through slither with this command:
-
-    npm slither
+```
+yarn lint
+yarn lint:fix
+```
 
 # Contributing and Discussion
 

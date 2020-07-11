@@ -5,12 +5,12 @@ const { AddressZero } = ethers.constants;
 const { parseEther } = ethers.utils;
 const { InfuraProvider } = ethers.providers;
 const { checkInitialization } = require("./utils");
-const Registry = require("@primitivefi/contracts/artifacts/Registry.json");
-const OptionFactory = require("@primitivefi/contracts/artifacts/OptionFactory.json");
-const RedeemFactory = require("@primitivefi/contracts/artifacts/RedeemFactory.json");
-const TestERC20 = require("@primitivefi/contracts/artifacts/TestERC20.json");
-const Option = require("@primitivefi/contracts/artifacts/Option.json");
-const Redeem = require("@primitivefi/contracts/artifacts/Redeem.json");
+const Registry = require("@primitivefi/contracts/artifacts/Registry");
+const OptionFactory = require("@primitivefi/contracts/artifacts/OptionFactory");
+const RedeemFactory = require("@primitivefi/contracts/artifacts/RedeemFactory");
+const TestERC20 = require("@primitivefi/contracts/artifacts/TestERC20");
+const Option = require("@primitivefi/contracts/artifacts/Option");
+const Redeem = require("@primitivefi/contracts/artifacts/Redeem");
 
 async function setupRinkeby() {
     // get provider
@@ -59,11 +59,15 @@ async function setupTokens() {
 }
 
 async function setupPrimitive() {
-    const { Alice } = await setupRinkeby();
+    const { Alice, provider } = await setupRinkeby();
     const { deployIfDifferent, log, deploy } = deployments;
     const { deployer } = await getNamedAccounts();
     let registry = await deployments.get("Registry");
-    registry = new ethers.Contract(registry.address, registry.abi, Alice);
+    registry = new ethers.Contract(
+        registry.address,
+        registry.abi,
+        provider
+    ).connect(Alice);
     let optionFactory = await deployments.get("OptionFactory");
     optionFactory = new ethers.Contract(
         optionFactory.address,
@@ -76,6 +80,7 @@ async function setupPrimitive() {
         redeemFactory.abi,
         Alice
     );
+    console.log(await registry.redeemFactory());
     await checkInitialization(registry, optionFactory, redeemFactory);
     let trader = await deployments.get("Trader");
     trader = new ethers.Contract(trader.address, trader.abi, Alice);

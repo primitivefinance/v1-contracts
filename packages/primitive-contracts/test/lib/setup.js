@@ -10,6 +10,7 @@ const Flash = require("@primitivefi/contracts/artifacts/Flash");
 const Weth = require("@primitivefi/contracts/artifacts/WETH9");
 const Trader = require("@primitivefi/contracts/artifacts/Trader");
 const CTokenLike = require("@primitivefi/contracts/artifacts/CTokenLike");
+const UniswapTrader = require("@primitivefi/contracts/artifacts/UniswapTrader");
 const OptionTemplateLib = require("@primitivefi/contracts/artifacts/OptionTemplateLib");
 const RedeemTemplateLib = require("@primitivefi/contracts/artifacts/RedeemTemplateLib");
 const constants = require("./constants");
@@ -17,6 +18,10 @@ const { MILLION_ETHER } = constants.VALUES;
 const { OPTION_TEMPLATE_LIB, REDEEM_TEMPLATE_LIB } = constants.LIBRARIES;
 const { MockProvider, deployContract, link } = require("ethereum-waffle");
 const { waffle, ethers } = require("@nomiclabs/buidler");
+const UniswapV2Router02 = require("@uniswap/v2-periphery/build/UniswapV2Router02.json");
+const UniswapV2Factory = require("@uniswap/v2-core/build/UniswapV2Factory.json");
+const { Wallet } = require("ethers");
+const { RINKEBY_UNI_ROUTER02, RINKEBY_UNI_FACTORY } = constants.ADDRESSES;
 
 const newWallets = () => {
     const provider = new MockProvider();
@@ -228,7 +233,53 @@ const approveToken = async (token, signer, spender) => {
     await token.approve(spender, MILLION_ETHER, { from: signer });
 };
 
-module.exports = {
+const newUniswapTrader = async (signer, quoteToken, router) => {
+    const uniTrader = await deployContract(signer, UniswapTrader, [], {
+        gasLimit: 6000000,
+    });
+    await uniTrader.setQuoteToken(quoteToken.address);
+    await uniTrader.setRouter(router.address);
+    return uniTrader;
+};
+
+const newUniswap = async (signer, feeToSetter, WETH) => {
+    const uniswapFactory = await deployContract(
+        signer,
+        UniswapV2Factory,
+        [feeToSetter],
+        {
+            gasLimit: 6000000,
+        }
+    );
+    const uniswapRouter = await deployContract(
+        signer,
+        UniswapV2Router02,
+        [uniswapFactory.address, WETH.address],
+        {
+            gasLimit: 6000000,
+        }
+    );
+    return { uniswapRouter, uniswapFactory };
+};
+
+const newUniswapRinkeby = async (signer) => {
+    const uniswapRouter = new ethers.Contract(
+        RINKEBY_UNI_ROUTER02,
+        UniswapV2Router02.abi,
+        signer
+    );
+    const uniswapFactory = new ethers.Contract(
+        RINKEBY_UNI_FACTORY,
+        UniswapV2Factory.abi,
+        signer
+    );
+    return { uniswapRouter, uniswapFactory };
+};
+
+Object.assign(module.exports, {
+    newUniswapTrader,
+    newUniswap,
+    newUniswapRinkeby,
     newWallets,
     newERC20,
     newBadERC20,
@@ -244,4 +295,4 @@ module.exports = {
     newPrimitive,
     approveToken,
     newTrader,
-};
+});

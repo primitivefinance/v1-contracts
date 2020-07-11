@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: MIT
 
-
-
 pragma solidity ^0.6.0;
 
 /**
@@ -37,6 +35,7 @@ library CloneLib {
             new bytes(0)
         );
         clone = new bytes(99 + consData.length);
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             mstore(
                 add(clone, 0x20),
@@ -102,6 +101,7 @@ library CloneLib {
         bytes memory clone = computeCreationCode(target);
         bytes32 salt = bytes32(saltNonce);
 
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             let len := mload(clone)
             let data := add(clone, 0x20)

@@ -2,8 +2,6 @@
 
 
 
-
-
 pragma solidity ^0.6.2;
 
 /**
@@ -22,6 +20,7 @@ contract Redeem is IRedeem, ERC20 {
     address public override optionToken;
     address public override redeemableToken;
 
+    // solhint-disable-next-line no-empty-blocks
     constructor() public ERC20("Primitive Strike Redeem", "REDEEM") {}
 
     function initialize(

@@ -20,8 +20,12 @@ task("option:underlying", "Gets the option caches").setAction(async function (
 ) {
     const { Alice } = await setupRinkeby();
     const { option } = await setupPrimitive();
-    const tokenU = await option.tokenU();
-    const underlying = new ethers.Contract(tokenU, TestERC20.abi, Alice);
+    const underlyingToken = await option.underlyingToken();
+    const underlying = new ethers.Contract(
+        underlyingToken,
+        TestERC20.abi,
+        Alice
+    );
     console.log("[Underlying]: ", await underlying.name());
 });
 
@@ -30,8 +34,8 @@ task("option:strike", "Gets the option caches").setAction(async function (
 ) {
     const { Alice } = await setupRinkeby();
     const { option } = await setupPrimitive();
-    const tokenS = await option.tokenS();
-    const strike = new ethers.Contract(tokenS, TestERC20.abi, Alice);
+    const strikeToken = await option.strikeToken();
+    const strike = new ethers.Contract(strikeToken, TestERC20.abi, Alice);
     console.log("[Strike]: ", await strike.name());
 });
 

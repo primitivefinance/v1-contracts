@@ -2,6 +2,10 @@
 
 
 
+
+
+
+
 pragma solidity ^0.6.2;
 
 /**
@@ -11,9 +15,9 @@ pragma solidity ^0.6.2;
 
 import { Option, SafeMath } from "../../primitives/Option.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { OptionTemplateLib } from "./OptionTemplateLib.sol";
+import { OptionTemplateLib } from "../../libraries/OptionTemplateLib.sol";
 import { NullCloneConstructor } from "../NullCloneConstructor.sol";
-import { CloneLib } from "../CloneLib.sol";
+import { CloneLib } from "../../libraries/CloneLib.sol";
 
 contract OptionFactory is Ownable, NullCloneConstructor {
     using SafeMath for uint256;

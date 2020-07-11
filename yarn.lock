@@ -2964,25 +2964,6 @@
   resolved "https://registry.yarnpkg.com/@testing-library/user-event/-/user-event-7.2.1.tgz#2ad4e844175a3738cb9e7064be5ea070b8863a1c"
   integrity sha512-oZ0Ib5I4Z2pUEcoo95cT1cr6slco9WY7yiPpG+RGNkj8YcYgJnM7pXmYmorNOReh8MIGcKSqXyeGjxnr8YiZbA==
 
-"@truffle/blockchain-utils@^0.0.11":
-  version "0.0.11"
-  resolved "https://registry.yarnpkg.com/@truffle/blockchain-utils/-/blockchain-utils-0.0.11.tgz#9886f4cb7a9f20deded4451ac78f8567ae5c0d75"
-  integrity sha512-9MyQ/20M96clhIcC7fVFIckGSB8qMsmcdU6iYt98HXJ9GOLNKsCaJFz1OVsJncVreYwTUhoEXTrVBc8zrmPDJQ==
-
-"@truffle/contract-schema@^3.0.14":
-  version "3.2.0"
-  resolved "https://registry.yarnpkg.com/@truffle/contract-schema/-/contract-schema-3.2.0.tgz#4ddd43cf3eda11ec82bb2661725a19c2f4326e96"
-  integrity sha512-yeb4UoK9cbrT5/Nuz0I0p2XKbf0K1wEmyyBQmo3Q4JOrLidxf59LtDupo9Uq74RtlTAxZC0cy9DnsfWeWVma4A==
-  dependencies:
-    ajv "^6.10.0"
-    crypto-js "^3.1.9-1"
-    debug "^4.1.0"
-
-"@truffle/error@^0.0.6":
-  version "0.0.6"
-  resolved "https://registry.yarnpkg.com/@truffle/error/-/error-0.0.6.tgz#75d499845b4b3a40537889e7d04c663afcaee85d"
-  integrity sha512-QUM9ZWiwlXGixFGpV18g5I6vua6/r+ZV9W/5DQA5go9A3eZUNPHPaTKMIQPJLYn6+ZV5jg5H28zCHq56LHF3yA==
-
 "@truffle/error@^0.0.7":
   version "0.0.7"
   resolved "https://registry.yarnpkg.com/@truffle/error/-/error-0.0.7.tgz#e9db39885575647ef08bf624b0c13fe46d41a209"
@@ -4921,11 +4902,6 @@ bignumber.js@*, bignumber.js@^9.0.0:
   resolved "https://registry.yarnpkg.com/bignumber.js/-/bignumber.js-9.0.0.tgz#805880f84a329b5eac6e7cb6f8274b6d82bdf075"
   integrity sha512-t/OYhhJ2SD+YGBQcjY8GzzDHEk9f3nerxjtfa6tlMXfe7frs/WozhvCNoGvpM0P3bNf3Gq5ZRMlGr5f3r4/N8A==
 
-bignumber.js@^7.2.1:
-  version "7.2.1"
-  resolved "https://registry.yarnpkg.com/bignumber.js/-/bignumber.js-7.2.1.tgz#80c048759d826800807c4bfd521e50edbba57a5f"
-  integrity sha512-S4XzBk5sMB+Rcb/LNcpzXr57VRTxgAvaAEDAl1AwRx27j00hT84O6OkteE7u8UB3NuaaygCRrEpqox4uDOrbdQ==
-
 binary-extensions@^1.0.0:
   version "1.13.1"
   resolved "https://registry.yarnpkg.com/binary-extensions/-/binary-extensions-1.13.1.tgz#598afe54755b2868a5330d2aff9d4ebb53209b65"
@@ -6479,11 +6455,6 @@ crypto-browserify@3.12.0, crypto-browserify@^3.11.0:
     public-encrypt "^4.0.0"
     randombytes "^2.0.0"
     randomfill "^1.0.3"
-
-crypto-js@^3.1.9-1:
-  version "3.3.0"
-  resolved "https://registry.yarnpkg.com/crypto-js/-/crypto-js-3.3.0.tgz#846dd1cce2f68aacfa156c8578f926a609b7976b"
-  integrity sha512-DIT51nX0dCfKltpRiXV+/TVZq+Qq2NgF4644+K7Ttnla7zEzqc+kjJyiB96BHNyUTBxyjzRcZYpUdZa+QAqi6Q==
 
 css-blank-pseudo@^0.1.4:
   version "0.1.4"
@@ -8448,7 +8419,7 @@ ethers@4.0.0-beta.3:
     uuid "2.0.1"
     xmlhttprequest "1.8.0"
 
-ethers@^4.0.0-beta.1, ethers@^4.0.32, ethers@^4.0.40, ethers@^4.0.47:
+ethers@^4.0.32, ethers@^4.0.40, ethers@^4.0.47:
   version "4.0.47"
   resolved "https://registry.yarnpkg.com/ethers/-/ethers-4.0.47.tgz#91b9cd80473b1136dd547095ff9171bd1fc68c85"
   integrity sha512-hssRYhngV4hiDNeZmVU/k5/E8xmLG8UpcNUzg6mb7lqhgpFPH/t7nuv20RjRrEf0gblzvi2XwR5Te+V3ZFc9pQ==
@@ -12184,11 +12155,6 @@ lodash.get@^4.4.2:
   version "4.4.2"
   resolved "https://registry.yarnpkg.com/lodash.get/-/lodash.get-4.4.2.tgz#2d177f652fa31e939b4438d5341499dfa3825e99"
   integrity sha1-LRd/ZS+jHpObRDjVNBSZ36OCXpk=
-
-lodash.isequal@^4.5.0:
-  version "4.5.0"
-  resolved "https://registry.yarnpkg.com/lodash.isequal/-/lodash.isequal-4.5.0.tgz#415c4478f2bcc30120c22ce10ed3226f7d3e18e0"
-  integrity sha1-QVxEePK8wwEgwizhDtMib30+GOA=
 
 lodash.ismatch@^4.4.0:
   version "4.4.0"
@@ -17889,40 +17855,6 @@ trim-right@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/trim-right/-/trim-right-1.0.1.tgz#cb2e1203067e0c8de1f614094b9fe45704ea6003"
   integrity sha1-yy4SAwZ+DI3h9hQJS5/kVwTqYAM=
-
-truffle-assertions@^0.9.2:
-  version "0.9.2"
-  resolved "https://registry.yarnpkg.com/truffle-assertions/-/truffle-assertions-0.9.2.tgz#0f8360f53ad92b6d8fdb8ceb5dce54c1fc392e23"
-  integrity sha512-9g2RhaxU2F8DeWhqoGQvL/bV8QVoSnQ6PY+ZPvYRP5eF7+/8LExb4mjLx/FeliLTjc3Tv1SABG05Gu5qQ/ErmA==
-  dependencies:
-    assertion-error "^1.1.0"
-    lodash.isequal "^4.5.0"
-
-truffle-contract@^4.0.31:
-  version "4.0.31"
-  resolved "https://registry.yarnpkg.com/truffle-contract/-/truffle-contract-4.0.31.tgz#e43b7f648e2db352c857d1202d710029b107b68d"
-  integrity sha512-u3q+p1wiX5C2GpnluGx/d2iaJk7bcWshk2/TohiJyA2iQiTfkS7M4n9D9tY3JqpXR8PmD/TrA69RylO0RhITFA==
-  dependencies:
-    "@truffle/blockchain-utils" "^0.0.11"
-    "@truffle/contract-schema" "^3.0.14"
-    "@truffle/error" "^0.0.6"
-    bignumber.js "^7.2.1"
-    ethers "^4.0.0-beta.1"
-    truffle-interface-adapter "^0.2.5"
-    web3 "1.2.1"
-    web3-core-promievent "1.2.1"
-    web3-eth-abi "1.2.1"
-    web3-utils "1.2.1"
-
-truffle-interface-adapter@^0.2.5:
-  version "0.2.5"
-  resolved "https://registry.yarnpkg.com/truffle-interface-adapter/-/truffle-interface-adapter-0.2.5.tgz#aa0bee635517b4a8e06adcdc99eacb993e68c243"
-  integrity sha512-EL39OpP8FcZ99ne1Rno3jImfb92Nectd4iVsZzoEUCBfbwHe7sr0k+i45guoruSoP8nMUE81Mov2s8I5pi6d9Q==
-  dependencies:
-    bn.js "^4.11.8"
-    ethers "^4.0.32"
-    lodash "^4.17.13"
-    web3 "1.2.1"
 
 ts-essentials@^2.0.7:
   version "2.0.12"

@@ -5,8 +5,10 @@
 const bre = require("@nomiclabs/buidler");
 const { LIBRARIES } = require("@primitivefi/contracts/test/lib/constants");
 const { OPTION_TEMPLATE_LIB, REDEEM_TEMPLATE_LIB } = LIBRARIES;
+const { ethers } = require("@nomiclabs/buidler");
 
 module.exports = async ({ getNamedAccounts, deployments }) => {
+    const [signer] = await ethers.getSigners();
     const { log, deploy } = deployments;
     const { deployer } = await getNamedAccounts();
     const chain = await bre.getChainId();
@@ -44,6 +46,20 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
             ["RedeemTemplateLib"]: redeemTemplateLib.address,
         },
     });
+
+    const opFacInstance = new ethers.Contract(
+        optionFactory.address,
+        optionFactory.abi,
+        signer
+    );
+    const reFacInstance = new ethers.Contract(
+        redeemFactory.address,
+        redeemFactory.abi,
+        signer
+    );
+
+    await opFacInstance.deployOptionTemplate();
+    await reFacInstance.deployRedeemTemplate();
 
     let deployed = [registry, optionFactory, redeemFactory];
     for (let i = 0; i < deployed.length; i++) {

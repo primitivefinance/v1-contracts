@@ -58,17 +58,28 @@ const ADDRESSES = {
     MAINNET_WETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
     MAINNET_UNI_FACTORY: "0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95",
     MAINNET_UNI_ROUTER01: "0xf164fC0Ec4E93095b804a4795bBe1e041497b92a",
+    RINKEBY_UNI_FACTORY: "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
+    RINKEBY_UNI_ROUTER02: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
 };
 
 const LIBRARIES = {
     OPTION_TEMPLATE_LIB:
-        "contracts/option/applications/factories/OptionTemplateLib.sol:OptionTemplateLib",
+        "contracts/option/libraries/OptionTemplateLib.sol:OptionTemplateLib",
     REDEEM_TEMPLATE_LIB:
-        "contracts/option/applications/factories/RedeemTemplateLib.sol:RedeemTemplateLib",
+        "contracts/option/libraries/RedeemTemplateLib.sol:RedeemTemplateLib",
+    TRADER_LIB: "contracts/option/libraries/TraderLib.sol:TraderLib",
 };
 
 const CONTRACT_NAMES = {
     REGISTRY: "contracts/option/applications/Registry.sol:Registry",
+    TRADER: "contracts/option/extensions/Trader.sol:Trader",
+
+    OPTION_FACTORY:
+        "contracts/option/applications/factories/OptionFactory.sol:OptionFactory",
+    REDEEM_FACTORY:
+        "contracts/option/applications/factories/RedeemFactory.sol:RedeemFactory",
+    OPTION: "contracts/option/primitives/Option.sol:Option",
+    REDEEM: "contracts/option/primitives/Redeem.sol:Redeem",
 };
 
 module.exports = {

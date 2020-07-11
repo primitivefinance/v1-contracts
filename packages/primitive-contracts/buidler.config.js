@@ -2,6 +2,7 @@ const path = require("path");
 const { InfuraProvider } = require("@ethersproject/providers");
 const url = require("url");
 const bip39 = require("bip39");
+/* require("./tasks"); */
 
 function modifyEnvironmentIfMonorepo() {
     const parsed = path.parse(path.parse(__dirname).dir);

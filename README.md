@@ -12,6 +12,39 @@ Primitive is an options market protocol. Built on Ethereum.
 
 The protocol and software is in an alpha stage. While security is our core focus in the development process, the complex interactions with the protocol, other protocols, and incentive models could lead to vulnerabilities.
 
+# Getting Started
+
+After you git clone the monorepo.
+
+```
+yarn
+```
+
+This installs all the dependencies for the monorepo.
+
+# Testing
+
+```
+cd packages/primitive-contracts
+yarn bevm
+yarn test
+```
+
+# Tooling
+
+Coverage is currently bugged with the latest version of waffle, it will show 0 coverage.
+
+```
+yarn coverage
+```
+
+Linter
+
+```
+yarn lint
+yarn lint:fix
+```
+
 # Contributing and Discussion
 
 Join our community and protocol developers in the Primitive [Discord](https://discord.gg/rzRwJ4K).

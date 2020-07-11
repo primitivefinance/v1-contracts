@@ -2,6 +2,10 @@
 
 
 
+
+
+
+
 pragma solidity ^0.6.2;
 
 /**
@@ -10,9 +14,9 @@ pragma solidity ^0.6.2;
  */
 
 import { Redeem, SafeMath } from "../../primitives/Redeem.sol";
-import { RedeemTemplateLib } from "./RedeemTemplateLib.sol";
+import { RedeemTemplateLib } from "../../libraries/RedeemTemplateLib.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { CloneLib } from "../CloneLib.sol";
+import { CloneLib } from "../../libraries/CloneLib.sol";
 import { NullCloneConstructor } from "../NullCloneConstructor.sol";
 
 contract RedeemFactory is Ownable, NullCloneConstructor {

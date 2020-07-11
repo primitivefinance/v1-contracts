@@ -2,8 +2,6 @@
 
 
 
-
-
 pragma solidity ^0.6.2;
 
 /**
@@ -29,6 +27,7 @@ contract Option is IOption, ERC20, ReentrancyGuard, Pausable {
 
     Primitives.Option public parameters;
 
+    // solhint-disable-next-line const-name-snakecase
     uint256 public constant override EXERCISE_FEE = 1000;
     uint256 public override underlyingCache;
     uint256 public override strikeCache;
@@ -45,6 +44,7 @@ contract Option is IOption, ERC20, ReentrancyGuard, Pausable {
     event Close(address indexed from, uint256 inOptions);
     event Fund(uint256 underlyingCache, uint256 strikeCache);
 
+    // solhint-disable-next-line no-empty-blocks
     constructor() public ERC20("Primitive V1 Vanilla Option", "OPTION") {}
 
     function initialize(
@@ -66,6 +66,7 @@ contract Option is IOption, ERC20, ReentrancyGuard, Pausable {
     }
 
     modifier notExpired {
+        // solhint-disable-next-line not-rely-on-time
         require(parameters.expiry >= block.timestamp, "ERR_EXPIRED");
         _;
     }
@@ -318,6 +319,7 @@ contract Option is IOption, ERC20, ReentrancyGuard, Pausable {
 
         // Assumes the cached balance is 0 so inOptions = balance of optionToken.
         // If optionToken is expired, optionToken does not need to be sent in. Only redeemToken.
+        // solhint-disable-next-line not-rely-on-time
         inOptions = parameters.expiry > block.timestamp
             ? optionBalance
             : outUnderlyings;
@@ -328,6 +330,7 @@ contract Option is IOption, ERC20, ReentrancyGuard, Pausable {
         );
 
         // Burn optionTokens. optionTokens are only sent into contract when not expired.
+        // solhint-disable-next-line not-rely-on-time
         if (parameters.expiry > block.timestamp) {
             _burn(address(this), inOptions);
         }
