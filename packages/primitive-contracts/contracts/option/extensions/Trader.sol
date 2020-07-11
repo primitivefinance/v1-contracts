@@ -2,10 +2,6 @@
 
 
 
-
-
-
-
 pragma solidity ^0.6.2;
 
 /**
@@ -22,6 +18,7 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import {
     ReentrancyGuard
 } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import { TraderLib } from "../libraries/TraderLib.sol";
 
 contract Trader is ITrader, ReentrancyGuard {
     using SafeMath for uint256;
@@ -32,8 +29,8 @@ contract Trader is ITrader, ReentrancyGuard {
     event TraderMint(
         address indexed from,
         address indexed option,
-        uint256 outOptions,
-        uint256 outRedeems
+        uint256 outputOptions,
+        uint256 outputRedeems
     );
     event TraderExercise(
         address indexed from,
@@ -78,20 +75,18 @@ contract Trader is ITrader, ReentrancyGuard {
         external
         override
         nonReentrant
-        returns (uint256 outOptions, uint256 outRedeems)
+        returns (uint256 outputOptions, uint256 outputRedeems)
     {
-        require(mintQuantity > 0, "ERR_ZERO");
-        IERC20(optionToken.underlyingToken()).safeTransferFrom(
-            msg.sender,
-            address(optionToken),
-            mintQuantity
+        (outputOptions, outputRedeems) = TraderLib.safeMint(
+            optionToken,
+            mintQuantity,
+            receiver
         );
-        (outOptions, outRedeems) = optionToken.mint(receiver);
         emit TraderMint(
             msg.sender,
             address(optionToken),
-            outOptions,
-            outRedeems
+            outputOptions,
+            outputRedeems
         );
     }
 
@@ -112,37 +107,10 @@ contract Trader is ITrader, ReentrancyGuard {
         nonReentrant
         returns (uint256 inStrikes, uint256 inOptions)
     {
-        require(exerciseQuantity > 0, "ERR_ZERO");
-        require(
-            IERC20(address(optionToken)).balanceOf(msg.sender) >=
-                exerciseQuantity,
-            "ERR_BAL_OPTIONS"
-        );
-
-        // Calculate quantity of strikeTokens needed to exercise quantity of optionTokens.
-        inStrikes = exerciseQuantity
-            .add(exerciseQuantity.div(IOption(optionToken).EXERCISE_FEE()))
-            .mul(optionToken.quote())
-            .div(optionToken.base());
-        require(
-            IERC20(optionToken.strikeToken()).balanceOf(msg.sender) >=
-                inStrikes,
-            "ERR_BAL_STRIKE"
-        );
-        IERC20(optionToken.strikeToken()).safeTransferFrom(
-            msg.sender,
-            address(optionToken),
-            inStrikes
-        );
-        IERC20(address(optionToken)).safeTransferFrom(
-            msg.sender,
-            address(optionToken),
-            exerciseQuantity
-        );
-        (inStrikes, inOptions) = optionToken.exercise(
-            receiver,
+        (inStrikes, inOptions) = TraderLib.safeExercise(
+            optionToken,
             exerciseQuantity,
-            new bytes(0)
+            receiver
         );
         emit TraderExercise(
             msg.sender,
@@ -164,19 +132,11 @@ contract Trader is ITrader, ReentrancyGuard {
         uint256 redeemQuantity,
         address receiver
     ) external override nonReentrant returns (uint256 inRedeems) {
-        require(redeemQuantity > 0, "ERR_ZERO");
-        require(
-            IERC20(optionToken.redeemToken()).balanceOf(msg.sender) >=
-                redeemQuantity,
-            "ERR_BAL_REDEEM"
+        (inRedeems) = TraderLib.safeRedeem(
+            optionToken,
+            redeemQuantity,
+            receiver
         );
-        // There can be the case there is no available strikes to redeem, causing a revert.
-        IERC20(optionToken.redeemToken()).safeTransferFrom(
-            msg.sender,
-            address(optionToken),
-            redeemQuantity
-        );
-        (inRedeems) = optionToken.redeem(receiver);
         emit TraderRedeem(msg.sender, address(optionToken), inRedeems);
     }
 
@@ -203,32 +163,11 @@ contract Trader is ITrader, ReentrancyGuard {
             uint256 outUnderlyings
         )
     {
-        require(closeQuantity > 0, "ERR_ZERO");
-        require(
-            IERC20(address(optionToken)).balanceOf(msg.sender) >= closeQuantity,
-            "ERR_BAL_OPTIONS"
+        (inRedeems, inOptions, outUnderlyings) = TraderLib.safeClose(
+            optionToken,
+            closeQuantity,
+            receiver
         );
-
-        // Calculate the quantity of redeemTokens that need to be burned. (What we mean by Implicit).
-        inRedeems = closeQuantity.mul(optionToken.quote()).div(
-            optionToken.base()
-        );
-        require(
-            IERC20(optionToken.redeemToken()).balanceOf(msg.sender) >=
-                inRedeems,
-            "ERR_BAL_REDEEM"
-        );
-        IERC20(optionToken.redeemToken()).safeTransferFrom(
-            msg.sender,
-            address(optionToken),
-            inRedeems
-        );
-        IERC20(address(optionToken)).safeTransferFrom(
-            msg.sender,
-            address(optionToken),
-            closeQuantity
-        );
-        (inRedeems, inOptions, outUnderlyings) = optionToken.close(receiver);
         emit TraderClose(msg.sender, address(optionToken), inOptions);
     }
 
@@ -252,22 +191,11 @@ contract Trader is ITrader, ReentrancyGuard {
             uint256 outUnderlyings
         )
     {
-        require(unwindQuantity > 0, "ERR_ZERO");
-        require(optionToken.expiry() < block.timestamp, "ERR_NOT_EXPIRED");
-        inRedeems = unwindQuantity.mul(optionToken.quote()).div(
-            optionToken.base()
+        (inRedeems, inOptions, outUnderlyings) = TraderLib.safeUnwind(
+            optionToken,
+            unwindQuantity,
+            receiver
         );
-        require(
-            IERC20(optionToken.redeemToken()).balanceOf(msg.sender) >=
-                inRedeems,
-            "ERR_BAL_REDEEM"
-        );
-        IERC20(optionToken.redeemToken()).safeTransferFrom(
-            msg.sender,
-            address(optionToken),
-            inRedeems
-        );
-        (inRedeems, inOptions, outUnderlyings) = optionToken.close(receiver);
         emit TraderUnwind(msg.sender, address(optionToken), inOptions);
     }
 }
