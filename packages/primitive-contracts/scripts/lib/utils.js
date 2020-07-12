@@ -1,14 +1,10 @@
-const verifyContract = async (
-    fullName,
-    address,
-    constructorArgs,
-    libraries
-) => {
+const verifyContract = async (fullName, address, constructorArgs, library) => {
+    console.log(JSON.stringify(library));
     await run("verify-contract", {
-        contractName: fullName,
         address: address,
+        contractName: fullName,
+        libraries: JSON.stringify(library),
         constructorArguments: constructorArgs,
-        libraries: JSON.stringify(libraries),
     });
 };
 

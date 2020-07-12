@@ -1,10 +1,12 @@
 const bre = require("@nomiclabs/buidler");
-const { setupRegistry } = require("../tasks/lib/setup");
+const { setupRegistry, checkTemplates } = require("../tasks/lib/setup");
 
 async function main() {
     /* console.log(await bre.ethers.provider.listAccounts()); */
-    const { registry } = await setupRegistry();
+    const { registry, optionFactory, redeemFactory } = await setupRegistry();
     console.log(await registry.optionFactory());
+    await checkTemplates(optionFactory, redeemFactory);
+    console.log(await optionFactory.optionTemplate());
 }
 
 main()

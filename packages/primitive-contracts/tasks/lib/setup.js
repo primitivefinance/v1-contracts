@@ -37,13 +37,20 @@ async function setupRegistry() {
         redeemFactory.address
     );
     await checkInitialization(registry, optionFactory, redeemFactory);
-    if ((await optionFactory.optionTemplate()) == ethers.AddressZero) {
+    await checkTemplates(optionFactory, redeemFactory);
+    return { registry, optionFactory, redeemFactory };
+}
+
+async function checkTemplates(optionFactory, redeemFactory) {
+    const optionTemplate = await optionFactory.optionTemplate();
+    const redeemTemplate = await redeemFactory.redeemTemplate();
+    if (optionTemplate.toString() == ethers.constants.AddressZero.toString()) {
         await optionFactory.deployOptionTemplate();
     }
-    if ((await redeemFactory.redeemTemplate()) == ethers.AddressZero) {
+    if (redeemTemplate.toString() == ethers.constants.AddressZero.toString()) {
         await redeemFactory.deployRedeemTemplate();
     }
-    return { registry, optionFactory, redeemFactory };
+    return { optionTemplate, redeemTemplate };
 }
 
 async function setupTokens() {
@@ -125,6 +132,7 @@ async function checkSupported(registry, underlyingToken, strikeToken) {
 }
 
 module.exports = {
+    checkTemplates,
     setupRinkeby,
     setupPrimitive,
     setupOption,
