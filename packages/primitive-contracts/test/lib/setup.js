@@ -1,3 +1,4 @@
+const { ethers } = require("@nomiclabs/buidler");
 const TestERC20 = require("@primitivefi/contracts/artifacts/TestERC20");
 const BadERC20 = require("@primitivefi/contracts/artifacts/BadERC20");
 const OptionFactory = require("@primitivefi/contracts/artifacts/OptionFactory");
@@ -17,17 +18,12 @@ const constants = require("./constants");
 const { MILLION_ETHER } = constants.VALUES;
 const { OPTION_TEMPLATE_LIB, REDEEM_TEMPLATE_LIB } = constants.LIBRARIES;
 const { MockProvider, deployContract, link } = require("ethereum-waffle");
-const { waffle, ethers } = require("@nomiclabs/buidler");
 const UniswapV2Router02 = require("@uniswap/v2-periphery/build/UniswapV2Router02.json");
 const UniswapV2Factory = require("@uniswap/v2-core/build/UniswapV2Factory.json");
-const { Wallet } = require("ethers");
 const { RINKEBY_UNI_ROUTER02, RINKEBY_UNI_FACTORY } = constants.ADDRESSES;
 
-const newWallets = () => {
-    const provider = new MockProvider();
-    const Admin = provider.getWallets()[0];
-    const User = provider.getWallets()[1];
-    const wallets = { Admin, User };
+const newWallets = async () => {
+    const wallets = await ethers.getSigners();
     return wallets;
 };
 

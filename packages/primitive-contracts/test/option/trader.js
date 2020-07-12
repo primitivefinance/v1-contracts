@@ -1,4 +1,7 @@
 const { assert, expect } = require("chai");
+const chai = require("chai");
+const { solidity } = require("ethereum-waffle");
+chai.use(solidity);
 const utils = require("../lib/utils");
 const setup = require("../lib/setup");
 const constants = require("../lib/constants");
@@ -36,9 +39,7 @@ const {
 
 describe("Trader", () => {
     // ACCOUNTS
-    const { Admin, User } = newWallets();
-    const Alice = Admin.address;
-    const Bob = User.address;
+    let signers, Admin, User, Alice, Bob;
 
     let trader, weth, dai, optionToken, redeemToken;
     let underlyingToken, strikeToken;
@@ -46,6 +47,11 @@ describe("Trader", () => {
     let Primitive, registry;
 
     before(async () => {
+        signers = await newWallets();
+        Admin = signers[0];
+        User = signers[1];
+        Alice = Admin._address;
+        Bob = User._address;
         weth = await newWeth(Admin);
         dai = await newERC20(Admin, "TEST DAI", "DAI", MILLION_ETHER);
         registry = await newRegistry(Admin);

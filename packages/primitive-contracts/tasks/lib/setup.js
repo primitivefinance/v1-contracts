@@ -1,14 +1,11 @@
-const bre = require("@nomiclabs/buidler/config");
+const bre = require("@nomiclabs/buidler");
+const { getContractAt } = bre.ethers;
 const mnemonic = process.env.TEST_MNEMONIC;
 const { ethers } = require("ethers");
 const { AddressZero } = ethers.constants;
 const { parseEther } = ethers.utils;
 const { InfuraProvider } = ethers.providers;
 const { checkInitialization } = require("./utils");
-const Registry = require("@primitivefi/contracts/artifacts/Registry");
-const OptionFactory = require("@primitivefi/contracts/artifacts/OptionFactory");
-const RedeemFactory = require("@primitivefi/contracts/artifacts/RedeemFactory");
-const TestERC20 = require("@primitivefi/contracts/artifacts/TestERC20");
 const Option = require("@primitivefi/contracts/artifacts/Option");
 const Redeem = require("@primitivefi/contracts/artifacts/Redeem");
 
@@ -23,71 +20,63 @@ async function setupRinkeby() {
     return { provider, Alice };
 }
 
+/**
+ * @dev Returns the registry and factory ethersjs Contract objects using the context of the bre.
+ */
 async function setupRegistry() {
-    const { Alice } = await setupRinkeby();
     let registry = await deployments.get("Registry");
-    registry = new ethers.Contract(registry.address, registry.abi, Alice);
     let optionFactory = await deployments.get("OptionFactory");
-    optionFactory = new ethers.Contract(
-        optionFactory.address,
-        optionFactory.abi,
-        Alice
-    );
     let redeemFactory = await deployments.get("RedeemFactory");
-    redeemFactory = new ethers.Contract(
-        redeemFactory.address,
+    registry = await getContractAt(registry.abi, registry.address);
+    optionFactory = await getContractAt(
+        optionFactory.abi,
+        optionFactory.address
+    );
+    redeemFactory = await getContractAt(
         redeemFactory.abi,
-        Alice
+        redeemFactory.address
     );
     await checkInitialization(registry, optionFactory, redeemFactory);
-    if ((await optionFactory.optionTemplate()) == ethers.AddressZero) {
-        await optionFactory.deployOptionTemplate();
-    }
-    if ((await redeemFactory.redeemTemplate()) == ethers.AddressZero) {
-        await redeemFactory.deployRedeemTemplate();
-    }
+    await checkTemplates(optionFactory, redeemFactory);
     return { registry, optionFactory, redeemFactory };
 }
 
+async function checkTemplates(optionFactory, redeemFactory) {
+    const optionTemplate = await optionFactory.optionTemplate();
+    const redeemTemplate = await redeemFactory.redeemTemplate();
+    if (optionTemplate.toString() == ethers.constants.AddressZero.toString()) {
+        await optionFactory.deployOptionTemplate();
+    }
+    if (redeemTemplate.toString() == ethers.constants.AddressZero.toString()) {
+        await redeemFactory.deployRedeemTemplate();
+    }
+    return { optionTemplate, redeemTemplate };
+}
+
 async function setupTokens() {
-    const { Alice } = await setupRinkeby();
     let ethToken = await deployments.get("ETH");
-    ethToken = new ethers.Contract(ethToken.address, ethToken.abi, Alice);
     let usdcToken = await deployments.get("USDC");
-    usdcToken = new ethers.Contract(usdcToken.address, usdcToken.abi, Alice);
+    ethToken = await getContractAt(ethToken.abi, ethToken.address);
+    usdcToken = await getContractAt(usdcToken.abi, usdcToken.address);
     return { ethToken, usdcToken };
 }
 
-async function setupPrimitive() {
-    const { Alice, provider } = await setupRinkeby();
-    const { deployIfDifferent, log, deploy } = deployments;
-    const { deployer } = await getNamedAccounts();
-    let registry = await deployments.get("Registry");
-    registry = new ethers.Contract(
-        registry.address,
-        registry.abi,
-        provider
-    ).connect(Alice);
-    let optionFactory = await deployments.get("OptionFactory");
-    optionFactory = new ethers.Contract(
-        optionFactory.address,
-        optionFactory.abi,
-        Alice
-    );
-    let redeemFactory = await deployments.get("RedeemFactory");
-    redeemFactory = new ethers.Contract(
-        redeemFactory.address,
-        redeemFactory.abi,
-        Alice
-    );
-    console.log(await registry.redeemFactory());
-    await checkInitialization(registry, optionFactory, redeemFactory);
+async function setupTrader() {
     let trader = await deployments.get("Trader");
-    trader = new ethers.Contract(trader.address, trader.abi, Alice);
-    let ethToken = await deployments.get("ETH");
-    ethToken = new ethers.Contract(ethToken.address, ethToken.abi, Alice);
-    let usdcToken = await deployments.get("USDC");
-    usdcToken = new ethers.Contract(usdcToken.address, usdcToken.abi, Alice);
+    trader = await getContractAt(trader.abi, trader.address);
+    return { trader };
+}
+
+async function setupOption(optionAddress) {
+    const option = await getContractAt(Option.abi, optionAddress);
+    const redeem = await getContractAt(Redeem.abi, await option.redeemToken());
+    return { option, redeem };
+}
+
+async function setupPrimitive() {
+    const { trader } = await setupTrader();
+    const { registry, optionFactory, redeemFactory } = await setupRegistry();
+    const { ethToken, usdcToken } = await setupTokens();
 
     const base = parseEther("1");
     const quote = parseEther("300");
@@ -107,9 +96,8 @@ async function setupPrimitive() {
             base,
             quote,
             expiry,
-            { from: Alice.address, gasLimit: 7000000 }
+            { gasLimit: 7000000 }
         );
-        console.log(deployOption);
         optionAddress = await registry.getOption(
             ethToken.address,
             usdcToken.address,
@@ -117,14 +105,9 @@ async function setupPrimitive() {
             quote,
             expiry
         );
-        console.log(optionAddress);
     }
-    const option = new ethers.Contract(optionAddress, Option.abi, Alice);
-    const redeem = new ethers.Contract(
-        await option.redeemToken(),
-        Redeem.abi,
-        Alice
-    );
+
+    const { option, redeem } = await setupOption(optionAddress);
     return { ethToken, usdcToken, registry, option, redeem, trader };
 }
 
@@ -149,8 +132,11 @@ async function checkSupported(registry, underlyingToken, strikeToken) {
 }
 
 module.exports = {
+    checkTemplates,
     setupRinkeby,
     setupPrimitive,
+    setupOption,
+    setupTrader,
     setupTest,
     setupTokens,
     setupRegistry,

@@ -1,30 +1,17 @@
+// == Libraries ==
 const path = require("path");
-const { InfuraProvider } = require("@ethersproject/providers");
-const url = require("url");
 const bip39 = require("bip39");
-/* require("./tasks"); */
-
-function modifyEnvironmentIfMonorepo() {
-    const parsed = path.parse(path.parse(__dirname).dir);
-    if (
-        parsed.base === "packages" &&
-        require(path.join(parsed.dir, "package.json")).name === "primitive"
-    ) {
-        const mode = require("@nomiclabs/buidler/internal/core/execution-mode");
-        const { getExecutionMode } = mode;
-        mode.getExecutionMode = () => mode.ExecutionMode.EXECUTION_MODE_LINKED;
-        const cwd = process.cwd();
-        process.chdir(path.join(__dirname, "node_modules"));
-        console.log(process.cwd());
-        return () => {
-            process.chdir(cwd);
-            mode.getExecutionMode = getExecutionMode;
-        };
-    } else return () => {};
-}
-
+const crypto = require("crypto");
+const ethers = require("ethers");
+const modifyEnvironmentIfMonorepo = require("./internal/monorepo");
 const unhook = modifyEnvironmentIfMonorepo();
+require("dotenv").config();
 
+// == Tasks ==
+/* require("./tasks"); */
+require("./tasks/test-task");
+
+// == Plugins ==
 usePlugin("@nomiclabs/buidler-solhint");
 usePlugin("@nomiclabs/buidler-etherscan");
 usePlugin("@nomiclabs/buidler-waffle");
@@ -35,9 +22,7 @@ usePlugin("solidity-coverage");
 
 unhook();
 
-require("dotenv").config();
-const crypto = require("crypto");
-const ethers = require("ethers");
+// == Environment ==
 const ETHERSCAN_APY_KEY =
     process.env.ETHERSCAN_APY_KEY || crypto.randomBytes(20).toString("base64");
 const rinkeby =
@@ -49,6 +34,7 @@ const mainnet =
 const mnemonic = process.env.TEST_MNEMONIC || bip39.generateMnemonic();
 const live = process.env.MNEMONIC || mnemonic;
 
+// == Buidler Config ==
 Object.assign(module.exports, {
     networks: {
         local: {

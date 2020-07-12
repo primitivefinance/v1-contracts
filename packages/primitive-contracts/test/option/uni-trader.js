@@ -3,6 +3,9 @@ const utils = require("../lib/utils");
 const setup = require("../lib/setup");
 const constants = require("../lib/constants");
 const { parseEther } = require("ethers/lib/utils");
+const chai = require("chai");
+const { solidity } = require("ethereum-waffle");
+chai.use(solidity);
 const { assertBNEqual, verifyOptionInvariants, getTokenBalance } = utils;
 const {
     newUniswapTrader,
@@ -39,9 +42,7 @@ const {
 
 describe("UniTrader", () => {
     // ACCOUNTS
-    const { Admin, User } = newWallets();
-    const Alice = Admin.address;
-    const Bob = User.address;
+    let signers, Admin, User, Alice, Bob;
 
     let trader, weth, dai, optionToken, redeemToken;
     let underlyingToken, strikeToken;
@@ -51,6 +52,11 @@ describe("UniTrader", () => {
     let uniswapTrader;
 
     before(async () => {
+        signers = await newWallets();
+        Admin = signers[0];
+        User = signers[1];
+        Alice = Admin._address;
+        Bob = User._address;
         weth = await newWeth(Admin);
         dai = await newERC20(Admin, "TEST DAI", "DAI", MILLION_ETHER);
         registry = await newRegistry(Admin);

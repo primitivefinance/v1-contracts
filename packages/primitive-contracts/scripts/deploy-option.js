@@ -8,8 +8,7 @@ const {
 const { parseEther } = require("ethers/lib/utils");
 const { checkInitialization } = require("../tasks/lib/utils");
 
-async function main() {
-    const { Alice } = await setupRinkeby();
+const deployOption = async () => {
     const { registry, optionFactory, redeemFactory } = await setupRegistry();
     const { usdcToken, ethToken } = await setupTokens();
     const base = parseEther("1");
@@ -17,7 +16,7 @@ async function main() {
     const expiry = "1609286400";
     await checkSupported(registry, ethToken, usdcToken);
     await checkInitialization(registry, optionFactory, redeemFactory);
-    await registry.deployOption(
+    const tx = await registry.deployOption(
         ethToken.address,
         usdcToken.address,
         base,
@@ -32,7 +31,12 @@ async function main() {
         quote,
         expiry
     );
-    console.log(bre);
+
+    return { tx, deployedOption };
+};
+
+async function main() {
+    await deployOption();
 }
 
 main()
