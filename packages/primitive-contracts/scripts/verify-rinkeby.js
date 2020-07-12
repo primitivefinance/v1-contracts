@@ -19,14 +19,7 @@ const OptionFactory = require("@primitivefi/contracts/deployments/rinkeby/Option
 const RedeemFactory = require("@primitivefi/contracts/deployments/rinkeby/RedeemFactory");
 const OptionTemplateLib = require("@primitivefi/contracts/deployments/rinkeby/OptionTemplateLib");
 const RedeemTemplateLib = require("@primitivefi/contracts/deployments/rinkeby/RedeemTemplateLib");
-const Option = require("@primitivefi/contracts/artifacts/Option");
-const Redeem = require("@primitivefi/contracts/artifacts/Redeem");
-const Weth = require("canonical-weth");
-const { ethers } = require("@nomiclabs/buidler");
 const { getContractAt } = bre.ethers;
-const { InfuraProvider } = require("@ethersproject/providers");
-const { setupRegistry, checkTemplates } = require("../tasks/lib/setup");
-const { link } = require("ethereum-waffle");
 
 const verifyRegistry = async () => {
     try {

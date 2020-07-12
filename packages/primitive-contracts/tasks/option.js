@@ -1,18 +1,15 @@
-const bre = require("@nomiclabs/buidler/config");
-const { setupRinkeby, setupPrimitive, setupTest } = require("./lib/setup");
-const { parseEther } = require("ethers/utils");
-const { checkAllowance } = require("./lib/utils");
+require("@nomiclabs/buidler/config");
+const { setupRinkeby, setupPrimitive } = require("./lib/setup");
 const { ethers } = require("ethers");
 const TestERC20 = require("../artifacts/TestERC20.json");
 const { internalTask } = require("@nomiclabs/buidler/config");
 
 task("caches", "Gets the option caches").setAction(async function (taskArgs) {
-    const { Alice } = await setupRinkeby();
     const { option } = await setupPrimitive();
     const underlyingCache = await option.underlyingCache();
     const strikeCache = await option.strikeCache();
-    console.log("[CacheU]: ", underlyingCache.toString());
-    console.log("[CacheS]: ", strikeCache.toString());
+    console.log("[Underlying Cache]: ", underlyingCache.toString());
+    console.log("[Strike Cache]: ", strikeCache.toString());
 });
 
 task("option:underlying", "Gets the option caches").setAction(async function (
@@ -47,7 +44,6 @@ task("info", "Gets the options info").setAction(async function (taskArgs) {
 
 internalTask("totalSupply", "Gets total supply of an option").setAction(
     async function (taskArgs) {
-        const { Alice } = await setupRinkeby();
         const { option } = await setupPrimitive();
         const totalSupply = await option.totalSupply();
         console.log("[Total Supply]: ", totalSupply.toString());
@@ -56,7 +52,6 @@ internalTask("totalSupply", "Gets total supply of an option").setAction(
 
 internalTask("parameters", "Gets the parameters of an option").setAction(
     async function (taskArgs) {
-        const { Alice } = await setupRinkeby();
         const { option } = await setupPrimitive();
         const params = await option.getParameters();
         console.log("[Underlying]: ", params.underlyingToken.toString());

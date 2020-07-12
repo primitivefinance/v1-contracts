@@ -1,11 +1,11 @@
-const bre = require("@nomiclabs/buidler/config");
+const { task } = require("@nomiclabs/buidler/config");
 const { setupRinkeby, setupPrimitive, setupTest } = require("./lib/setup");
 const { parseEther } = require("ethers/utils");
 const { checkAllowance } = require("./lib/utils");
 
 task("trader:mint", "Mints options")
     .addParam("amount", "The amount of options to buy")
-    .setAction(async function(taskArgs) {
+    .setAction(async function (taskArgs) {
         const { Alice } = await setupRinkeby();
         const { ethToken, option, trader } = await setupPrimitive();
         const amount = parseEther(taskArgs.amount.toString());
@@ -21,7 +21,7 @@ task("trader:mint", "Mints options")
 
 task("trader:exercise", "Mints options")
     .addParam("amount", "The amount of options to buy")
-    .setAction(async function(taskArgs) {
+    .setAction(async function (taskArgs) {
         const { Alice } = await setupRinkeby();
         const { usdcToken, option, trader } = await setupPrimitive();
         const amount = parseEther(taskArgs.amount.toString());
@@ -36,7 +36,7 @@ task("trader:exercise", "Mints options")
 
 task("trader:redeem", "Mints options")
     .addParam("amount", "The amount of options to buy")
-    .setAction(async function(taskArgs) {
+    .setAction(async function (taskArgs) {
         const { Alice } = await setupRinkeby();
         const { redeem, option, trader } = await setupPrimitive();
         const amount = parseEther(taskArgs.amount.toString());
@@ -55,7 +55,7 @@ task("trader:redeem", "Mints options")
 
 task("trader:close", "Mints options")
     .addParam("amount", "The amount of options to buy")
-    .setAction(async function(taskArgs) {
+    .setAction(async function (taskArgs) {
         const { Alice } = await setupRinkeby();
         const { redeem, option, trader } = await setupPrimitive();
         const amount = parseEther(taskArgs.amount.toString());
@@ -68,7 +68,7 @@ task("trader:close", "Mints options")
         console.log((await option.balanceOf(Alice.address)).toString());
     });
 
-task("setTest", "Mints options", async function() {
+task("setTest", "Mints options", async function () {
     const ETH = await setupTest();
 });
 

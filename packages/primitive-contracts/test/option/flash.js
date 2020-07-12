@@ -1,4 +1,7 @@
 const { expect } = require("chai");
+const chai = require("chai");
+const { solidity } = require("ethereum-waffle");
+chai.use(solidity);
 const setup = require("../lib/setup");
 const constants = require("../lib/constants");
 const { parseEther } = require("ethers/utils");
@@ -16,8 +19,7 @@ const {
 
 describe("Flash loan on option", () => {
     // ACCOUNTS
-    const { Admin, User } = newWallets();
-    const Alice = Admin.address;
+    let signers, Admin, User, Alice, Bob;
 
     let underlyingToken, strikeToken;
     let base, quote, expiry;
@@ -25,6 +27,11 @@ describe("Flash loan on option", () => {
     let Primitive;
 
     before(async () => {
+        signers = await newWallets();
+        Admin = signers[0];
+        User = signers[1];
+        Alice = Admin._address;
+        Bob = User._address;
         registry = await newRegistry(Admin);
         factoryOption = await newOptionFactory(Admin, registry);
 

@@ -1,7 +1,5 @@
 const { assert, expect } = require("chai");
 const constants = require("./constants");
-const { ethers } = require("ethers");
-const { solidity } = require("ethereum-waffle");
 
 const assertBNEqual = (actualBN, expectedBN, message) => {
     assert.equal(actualBN.toString(), expectedBN.toString(), message);
