@@ -33,10 +33,17 @@
       "outputs": [
         {
           "internalType": "address",
-          "name": "",
+          "name": "option",
           "type": "address"
         }
       ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "deployOptionTemplate",
+      "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
     },
@@ -68,6 +75,19 @@
       ],
       "name": "kill",
       "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "optionTemplate",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
       "stateMutability": "nonpayable",
       "type": "function"
     }

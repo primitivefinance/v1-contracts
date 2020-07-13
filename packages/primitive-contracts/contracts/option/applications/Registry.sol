@@ -2,10 +2,6 @@
 
 
 
-
-
-
-
 pragma solidity ^0.6.2;
 
 /**
@@ -27,8 +23,8 @@ import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
     using SafeMath for uint256;
 
-    address public optionFactory;
-    address public redeemFactory;
+    address public override optionFactory;
+    address public override redeemFactory;
     address[] public activeOptions;
 
     mapping(address => bool) public isSupported;
@@ -119,7 +115,7 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
         uint256 base,
         uint256 quote,
         uint256 expiry
-    ) public view returns (address option) {
+    ) public override view returns (address option) {
         option = options[getId(
             underlyingToken,
             strikeToken,

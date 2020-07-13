@@ -2,12 +2,6 @@
 
 
 
-
-
-
-
-
-
 pragma solidity ^0.6.2;
 
 interface IOptionFactory {
@@ -17,9 +11,13 @@ interface IOptionFactory {
         uint256 base,
         uint256 quote,
         uint256 expiry
-    ) external returns (address);
+    ) external returns (address option);
 
     function kill(address option) external;
 
     function initialize(address option, address redeem) external;
+
+    function deployOptionTemplate() external;
+
+    function optionTemplate() external returns (address);
 }

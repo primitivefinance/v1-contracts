@@ -2,12 +2,6 @@
 
 
 
-
-
-
-
-
-
 pragma solidity ^0.6.2;
 
 /**
@@ -20,17 +14,18 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { OptionTemplateLib } from "../../libraries/OptionTemplateLib.sol";
 import { NullCloneConstructor } from "../NullCloneConstructor.sol";
 import { CloneLib } from "../../libraries/CloneLib.sol";
+import { IOptionFactory } from "../../interfaces/IOptionFactory.sol";
 
-contract OptionFactory is Ownable, NullCloneConstructor {
+contract OptionFactory is IOptionFactory, Ownable, NullCloneConstructor {
     using SafeMath for uint256;
 
-    address public optionTemplate;
+    address public override optionTemplate;
 
     constructor(address registry) public {
         transferOwnership(registry);
     }
 
-    function deployOptionTemplate() public {
+    function deployOptionTemplate() public override {
         optionTemplate = OptionTemplateLib.deployTemplate();
     }
 
@@ -40,7 +35,7 @@ contract OptionFactory is Ownable, NullCloneConstructor {
         uint256 base,
         uint256 quote,
         uint256 expiry
-    ) external onlyOwner returns (address option) {
+    ) external override onlyOwner returns (address option) {
         require(optionTemplate != address(0x0), "ERR_NO_DEPLOYED_TEMPLATE");
         bytes32 salt = keccak256(
             abi.encodePacked(
@@ -62,11 +57,15 @@ contract OptionFactory is Ownable, NullCloneConstructor {
         );
     }
 
-    function kill(address option) external onlyOwner {
+    function kill(address option) external override onlyOwner {
         Option(option).kill();
     }
 
-    function initialize(address option, address redeem) external onlyOwner {
+    function initialize(address option, address redeem)
+        external
+        override
+        onlyOwner
+    {
         Option(option).initRedeemToken(redeem);
     }
 }
