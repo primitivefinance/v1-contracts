@@ -4,6 +4,7 @@ import { Web3ReactProvider } from "@web3-react/core";
 import Web3 from "web3";
 import ethers from "ethers";
 import styled from "styled-components";
+import GlobalStyle from "./global-styles";
 
 // == Pages ==
 import { Trade } from "./pages/Trade";
@@ -23,44 +24,36 @@ export interface IConnected {
 }
 
 const Container = styled.div`
+    margin: 0 auto;
     display: flex;
+    min-height: 100%;
     flex-direction: column;
-    width: 100%;
 `;
 
 function App() {
     return (
-        <>
+        <Container className="App">
             <Web3ReactProvider getLibrary={getLibrary}>
                 <Router>
-                    <Container className="App">
-                        <Switch>
-                            <Route exact path="/">
-                                <Home />
-                            </Route>
-                        </Switch>
+                    <Switch>
+                        <Route exact path="/" component={Home} />
+                    </Switch>
 
-                        <Switch>
-                            <Route path="/trade">
-                                <Trade />
-                            </Route>
-                        </Switch>
+                    <Switch>
+                        <Route path="/trade" component={Trade} />
+                    </Switch>
 
-                        <Switch>
-                            <Route path="/test">
-                                <Typeform />
-                            </Route>
-                        </Switch>
+                    <Switch>
+                        <Route path="/test" component={Typeform} />
+                    </Switch>
 
-                        <Switch>
-                            <Route path="/otc">
-                                <Otc />
-                            </Route>
-                        </Switch>
-                    </Container>
+                    <Switch>
+                        <Route path="/otc" component={Otc} />
+                    </Switch>
                 </Router>
             </Web3ReactProvider>
-        </>
+            <GlobalStyle />
+        </Container>
     );
 }
 

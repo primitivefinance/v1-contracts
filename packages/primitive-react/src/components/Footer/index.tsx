@@ -1,15 +1,15 @@
 import React, { FunctionComponent } from "react";
-import { IConnected } from "../App";
+import { IConnected } from "../../App";
 import TwitterIcon from "@material-ui/icons/Twitter";
 import GitHubIcon from "@material-ui/icons/GitHub";
 import IconButton from "@material-ui/core/IconButton";
-import { ReactComponent as DiscordIcon } from "../icons/discord.svg";
-import { ReactComponent as Medium } from "../icons/medium_white.svg";
-import { ReactComponent as Built } from "../icons/builtoneth.svg";
+import { ReactComponent as DiscordIcon } from "../../icons/discord.svg";
+import { ReactComponent as Medium } from "../../icons/medium_white.svg";
+import { ReactComponent as Built } from "../../icons/builtoneth.svg";
 import styled from "styled-components";
 
 type FooterProps = {
-    title: string;
+    title?: string;
     connected?: IConnected;
     disconnect?: Function;
 };
@@ -74,58 +74,58 @@ const H1 = styled.h1`
     padding: 4px;
 `;
 
-export const Footer: FunctionComponent<FooterProps> = ({
+const Footer: FunctionComponent<FooterProps> = ({
     title,
     connected,
     disconnect,
 }) => {
     return (
-        <Foot id='footer'>
-            <Row id='footer:container'>
+        <Foot id="footer">
+            <Row id="footer:container">
                 <Column
-                    id='copyright'
+                    id="copyright"
                     style={{ alignContent: "flexStart", width: "100%" }}
                 >
                     {/* <PrimitiveBanner /> */}
                     <H1>Primitive</H1>
                 </Column>
-                <Column id='footer:pages' style={{}}>
+                <Column id="footer:pages" style={{}}>
                     <H1>Protocol Links</H1>
-                    <Link href='https://docs.primitive.finance/protocol-dashboard'>
+                    <Link href="https://docs.primitive.finance/protocol-dashboard">
                         Protocol Overview
                     </Link>
-                    <Link href='https://docs.primitive.finance/src/1_primitives'>
+                    <Link href="https://docs.primitive.finance/src/1_primitives">
                         Option Tokens
                     </Link>
-                    <Link href='https://docs.primitive.finance/'>
+                    <Link href="https://docs.primitive.finance/">
                         Developers
                     </Link>
                 </Column>
                 <Row
                     style={{ alignContent: "flex-end", width: "100%" }}
-                    id='footer:social'
+                    id="footer:social"
                 >
-                    <IconButton href='https://medium.com/@primitivefinance'>
+                    <IconButton href="https://medium.com/@primitivefinance">
                         <Medium
                             width={60}
                             height={60}
                             style={{ color: "#fff", alignSelf: "center" }}
                         />
                     </IconButton>
-                    <IconButton href='https://twitter.com/PrimitiveFi'>
+                    <IconButton href="https://twitter.com/PrimitiveFi">
                         <TwitterIcon
                             style={{ color: "#fff", alignSelf: "center" }}
                         />
                     </IconButton>
-                    <IconButton href='https://github.com/primitivefinance/'>
+                    <IconButton href="https://github.com/primitivefinance/">
                         <GitHubIcon
                             style={{ color: "#fff", alignSelf: "center" }}
                         />
                     </IconButton>
-                    <IconButton href='https://discord.gg/rzRwJ4K'>
+                    <IconButton href="https://discord.gg/rzRwJ4K">
                         <DiscordIcon width={30} height={30} />
                     </IconButton>
-                    <IconButton href='https://ethereum.org'>
+                    <IconButton href="https://ethereum.org">
                         <Built width={100} height={100} />
                     </IconButton>
                 </Row>
@@ -133,3 +133,5 @@ export const Footer: FunctionComponent<FooterProps> = ({
         </Foot>
     );
 };
+
+export default Footer;

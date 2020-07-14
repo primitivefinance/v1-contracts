@@ -1,6 +1,5 @@
 import React, { FunctionComponent } from "react";
-import { Page } from "../components/Page";
-import { ReactComponent as PrimitiveLogo } from "../icons/primitivelogo.svg";
+import Page from "../components/Page";
 import styled from "styled-components";
 
 type HomeProps = {
@@ -130,7 +129,7 @@ export const Home: FunctionComponent<HomeProps> = ({ title, web3 }) => {
                     </Row>
                     <Row>
                         <Button
-                            href='/test'
+                            href="/test"
                             style={{
                                 backgroundColor: "#f9f9f9",
                                 color: "#000000",
@@ -138,12 +137,11 @@ export const Home: FunctionComponent<HomeProps> = ({ title, web3 }) => {
                         >
                             App
                         </Button>
-                        <Button href='https://docs.primitive.finance'>
+                        <Button href="https://docs.primitive.finance">
                             Docs
                         </Button>
-                        <Button href='/otc'>
-                            Otc
-                        </Button>
+                        <Button href="/otc">Otc</Button>
+                        <Button href="/trade">Testnet</Button>
                     </Row>
                 </Column>
 
@@ -160,7 +158,7 @@ export const Home: FunctionComponent<HomeProps> = ({ title, web3 }) => {
                     <H1 style={{ color: "#000000" }}>Join our community.</H1>
                     <Row>
                         <Button
-                            href='https://discord.gg/rzRwJ4K'
+                            href="https://discord.gg/rzRwJ4K"
                             style={{
                                 borderColor: "#000000",
                                 color: "#f9f9f9",

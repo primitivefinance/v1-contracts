@@ -1,11 +1,12 @@
 import React, { FunctionComponent /* useEffect, useState */ } from "react";
-import { Page } from "../components/Page";
-import { H1, Button } from "./Home";
+import Page from "../components/Page";
+import { Button } from "./Home";
+import H1 from "../components/H1";
 import styled from "styled-components";
-/* import ethers from "ethers"; */
-/* const { AddressZero } = ethers.constants; */
+import { useWeb3React } from "@web3-react/core";
+import { InjectedConnector } from "@web3-react/injected-connector";
+import ethers from "ethers";
 type TradeProps = {
-    title?: string;
     web3?: any;
 };
 
@@ -22,7 +23,11 @@ export const Column = styled.div`
     height: 50vmin;
 `;
 
-export const Trade: FunctionComponent<TradeProps> = ({ title, web3 }) => {
+export const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
+    const injected = new InjectedConnector({
+        supportedChainIds: [1, 3, 4, 5, 42],
+    });
+    const web3React = useWeb3React();
     /* const [provider, setProvider] = useState<ethers.providers.Web3Provider>(
         new ethers.providers.Web3Provider(window.ethereum)
     );
@@ -77,27 +82,10 @@ export const Trade: FunctionComponent<TradeProps> = ({ title, web3 }) => {
     }, [account]); */
 
     return (
-        <Page /* provider={provider} signer={signer} disconnect={disconnect} */>
-            <div id='trade:page'>
-                <Column id='trade:upper-body' style={{ height: "100vh" }}>
-                    {/* <H1>Trade options permissionlessly. Account: {account}</H1> */}
-                    {/* <H1>Trade options permissionlessly. Account: {account}</H1>
-                    <button
-                        onClick={async () => exercise()}
-                        style={{ width: "25%", justifyContent: "center" }}
-                    >
-                        exericse
-                    </button> */}
+        <Page web3React={web3React} injected={injected}>
+            <div id="trade:page">
+                <Column id="trade:upper-body" style={{ height: "100vh" }}>
                     <H1>Sign up for our beta.</H1>
-                    <Button
-                        href='/test'
-                        style={{
-                            backgroundColor: "#f9f9f9",
-                            color: "#000000",
-                        }}
-                    >
-                        Beta
-                    </Button>
                 </Column>
             </div>
         </Page>

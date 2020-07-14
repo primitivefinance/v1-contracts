@@ -1,5 +1,5 @@
 import React, { FunctionComponent, useEffect, useState } from "react";
-import { Page } from "../components/Page";
+import Page from "../components/Page";
 import { Card } from "../components/Card";
 import { H1, Row } from "./Home";
 import styled from "styled-components";
@@ -7,9 +7,11 @@ import ethers from "ethers";
 import { useWeb3React } from "@web3-react/core";
 import { InjectedConnector } from "@web3-react/injected-connector";
 import { buy } from "../lib/otc";
+import { connect, disconnect } from "../lib/web3";
+import Button from "../components/Button";
 const { AddressZero } = ethers.constants;
 
-export const Button = styled.button`
+/* export const Button = styled.button`
     border-style: solid;
     border-width: medium;
     border-color: #f9f9f9;
@@ -39,6 +41,15 @@ export const Button = styled.button`
     align-self: center;
     padding: 8px;
     cursor: pointer;
+`; */
+
+const HomeButton = styled(Button)`
+    @media (max-width: 375px) {
+        font-size: 0.85em;
+    }
+    background-color: #f9f9f9;
+    color: #000000;
+    width: 25%;
 `;
 
 export const Form = styled.form`
@@ -190,25 +201,9 @@ export const Otc: FunctionComponent<OtcProps> = ({ title, web3 }) => {
     const [signer, setSigner] = useState<ethers.Signer>(provider.getSigner());
 
     const [account, setAccount] = useState<string>(AddressZero);
-    const connect = async () => {
-        try {
-            await web3React.activate(injected);
-        } catch (err) {
-            console.log(err);
-        }
-        console.log(web3React);
-    };
-
-    const disconnect = async () => {
-        try {
-            await web3React.deactivate();
-        } catch (err) {
-            console.log(err);
-        }
-    };
 
     const getAccount = async () => {
-        let address = (await injected.getAccount()) || AddressZero;
+        let address = web3React.account || AddressZero;
         setAccount(address);
     };
 
@@ -236,13 +231,7 @@ export const Otc: FunctionComponent<OtcProps> = ({ title, web3 }) => {
     }, [account]);
 
     return (
-        <Page
-            provider={provider}
-            signer={signer}
-            disconnect={disconnect}
-            web3React={web3React}
-            connect={connect}
-        >
+        <Page web3React={web3React} injected={injected}>
             <div id="otc:page">
                 {web3React.active ? (
                     isReady ? (
@@ -263,17 +252,19 @@ export const Otc: FunctionComponent<OtcProps> = ({ title, web3 }) => {
                                 <Details>Expiry: {size}</Details>
                             </DetailsRow>
 
-                            <Button
+                            <HomeButton
                                 onClick={async () => {
                                     agree();
                                 }}
                                 style={{
                                     backgroundColor: "#f9f9f9",
                                     color: "#000000",
+                                    width: "25%",
+                                    fontSize: "1.25em",
                                 }}
                             >
                                 Agree
-                            </Button>
+                            </HomeButton>
                         </Column>
                     ) : (
                         <Column id="otc:card" style={{ height: "100vh" }}>
@@ -339,24 +330,28 @@ export const Otc: FunctionComponent<OtcProps> = ({ title, web3 }) => {
                         {" "}
                         <Column id="otc:upper-body" style={{ height: "100vh" }}>
                             <H1>Connect to the App</H1>
-                            <Button
-                                onClick={async () => connect()}
+                            <HomeButton
+                                onClick={async () =>
+                                    connect(web3React, injected)
+                                }
                                 style={{
                                     backgroundColor: "#f9f9f9",
                                     color: "#000000",
+                                    width: "25%",
                                 }}
                             >
                                 Connect
-                            </Button>
-                            <Button
-                                onClick={async () => disconnect()}
+                            </HomeButton>
+                            <HomeButton
+                                onClick={async () => disconnect(web3React)}
                                 style={{
                                     backgroundColor: "#f9f9f9",
                                     color: "#000000",
+                                    width: "25%",
                                 }}
                             >
                                 Disconnect
-                            </Button>
+                            </HomeButton>
                         </Column>
                     </>
                 )}

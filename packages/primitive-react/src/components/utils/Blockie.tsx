@@ -10,11 +10,13 @@ export const Blockie: FunctionComponent<BlockieProps> = ({
     address,
 }) => {
     return (
-        <img
-            alt={"Your addresses generated blockie."}
-            width="36rem"
-            height="36rem"
-            src={makeBlockie(address)}
-        />
+        <div style={{ display: "flex" }}>
+            <img
+                alt={"Your addresses generated blockie."}
+                width="36rem"
+                height="36rem"
+                src={makeBlockie(address)}
+            />
+        </div>
     );
 };
