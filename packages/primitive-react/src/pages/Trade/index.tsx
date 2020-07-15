@@ -13,6 +13,7 @@ import Dropdown from "./Dropdown";
 import Cart from "./Cart";
 import { safeMint, estimateGas, estimateMintGas } from "../../lib/option";
 import ethers from "ethers";
+import Header from "./Header";
 
 type TradeProps = {
     web3?: any;
@@ -43,11 +44,11 @@ const Column = styled.div`
     flex-direction: column;
 `;
 
-const Header = styled.div`
+/* const Header = styled.div`
     display: flex;
     flex-direction: row;
     width: calc(1248px + 16px * 2);
-`;
+`; */
 
 const Table = styled.div`
     display: flex;
@@ -86,13 +87,16 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
         cart.map((v) => console.log(v));
         const provider: ethers.providers.Web3Provider = web3React.library;
         try {
-            const gas = await estimateMintGas(
+            let gas = await estimateMintGas(
                 provider,
                 "0x6AFAC69a1402b810bDB5733430122264b7980b6b",
                 1
             );
-
             setGasSpend(gas.toString());
+        } catch (err) {
+            console.log(err);
+        }
+        try {
             await safeMint(
                 provider,
                 "0x6AFAC69a1402b810bDB5733430122264b7980b6b",
@@ -141,13 +145,17 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
             );
     }, []);
 
+    const DataContext = React.createContext({ ethereum, isLoaded, error });
+
     return (
         <Page web3React={web3React} injected={injected}>
             <Row>
+                <DataContext.Provider value={ethereum} />
                 <Column style={{ width: "80%" }}>
                     <View id="trade:page">
                         <Section id="trade:header">
-                            <Header>
+                            <Header context={DataContext} />
+                            {/* <Header>
                                 <Column style={{ width: "25%" }}>
                                     <H2>Ether</H2>
                                     <H2>
@@ -166,7 +174,7 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
                                         <H3 color="grey">Today</H3>
                                     </Row>
                                 </Column>
-                            </Header>
+                            </Header> */}
                         </Section>
                         <Section id="trade:body">
                             <Body id="trade:body/container">

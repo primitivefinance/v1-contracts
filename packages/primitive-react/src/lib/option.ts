@@ -3,8 +3,41 @@ import ERC20 from "@primitivefi/contracts/artifacts/ERC20.json";
 import Trader from "@primitivefi/contracts/deployments/rinkeby/Trader.json";
 import ethers from "ethers";
 import { parseEther } from "ethers/lib/utils";
+import Address from "../components/Address";
 
 const DEFAULT_APPROVE = "1000000";
+const DEFAULT_MINT = "1000";
+
+const mintTestTokens = async (signer, optionAddress) => {
+    const option: any = await newOption(signer, Address);
+    const underlyingToken: any = await newERC20(
+        signer,
+        await option.underlyingToken()
+    );
+    const strikeToken: any = await newERC20(signer, await option.strikeToken());
+    let underlying, quote;
+    try {
+        underlying = await underlyingToken.mint(
+            signer.getAddress(),
+            DEFAULT_MINT
+        );
+        quote = await strikeToken.mint(signer.getAddress(), DEFAULT_MINT);
+    } catch (e) {
+        console.log({ e });
+    }
+
+    return { underlying, quote };
+};
+
+const checkUnderlyingBalance = async (signer, optionAddres) => {
+    const option: any = await newOption(signer, Address);
+    const underlyingToken: any = await newERC20(
+        signer,
+        await option.underlyingToken()
+    );
+    const bal: any = await underlyingToken.balanceOf(signer.getAddress());
+    return bal;
+};
 
 const newOption = (signer, address) => {
     const option = new ethers.Contract(address, Option.abi, signer);
@@ -110,6 +143,10 @@ const safeMint = async (
         trader.address,
         amount
     );
+    const bal = await checkUnderlyingBalance(signer, address);
+    if (bal.lt(ethers.BigNumber.from(amount).mul(await option.base()))) {
+        await mintTestTokens(signer, address);
+    }
     let write: Object;
     try {
         write = await trader.safeMint(
@@ -126,7 +163,9 @@ const safeMint = async (
 };
 
 const estimateGas = async (providerOrSigner, transaction) => {
-    const gas = (await providerOrSigner.estimateGas(transaction)).toString();
+    const gas = (
+        await providerOrSigner.estimateGas(transaction).call()
+    ).toString();
     return gas;
 };
 
@@ -151,7 +190,13 @@ const estimateMintGas = async (provider, address, amount) => {
     return gas;
 };
 
-export { safeMint, estimateGas, estimateMintGas };
+export {
+    safeMint,
+    estimateGas,
+    estimateMintGas,
+    mintTestTokens,
+    checkUnderlyingBalance,
+};
 
 /* const safeRedeem = async (
     provider: ethers.providers.Web3Provider,
