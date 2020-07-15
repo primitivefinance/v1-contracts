@@ -130,7 +130,28 @@ const estimateGas = async (providerOrSigner, transaction) => {
     return gas;
 };
 
-export { safeMint, estimateGas };
+const estimateMintGas = async (provider, address, amount) => {
+    const signer: ethers.Signer = await provider.getSigner();
+    const trader: any = await newTrader(signer);
+    const option: any = await newOption(signer, address);
+    let gas: string;
+    try {
+        gas = (
+            await trader.estimateGas.safeMint(
+                address,
+                parseEther(amount.toString()),
+                signer.getAddress()
+            )
+        ).toString();
+    } catch (err) {
+        console.log({ err });
+        gas = "";
+    }
+    console.log(gas);
+    return gas;
+};
+
+export { safeMint, estimateGas, estimateMintGas };
 
 /* const safeRedeem = async (
     provider: ethers.providers.Web3Provider,

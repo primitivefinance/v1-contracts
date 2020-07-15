@@ -11,7 +11,7 @@ import { InjectedConnector } from "@web3-react/injected-connector";
 import Section from "./Section";
 import Dropdown from "./Dropdown";
 import Cart from "./Cart";
-import { safeMint, estimateGas } from "../../lib/option";
+import { safeMint, estimateGas, estimateMintGas } from "../../lib/option";
 import ethers from "ethers";
 
 type TradeProps = {
@@ -86,13 +86,10 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
         cart.map((v) => console.log(v));
         const provider: ethers.providers.Web3Provider = web3React.library;
         try {
-            const gas = await estimateGas(
+            const gas = await estimateMintGas(
                 provider,
-                safeMint(
-                    provider,
-                    "0x6AFAC69a1402b810bDB5733430122264b7980b6b",
-                    1
-                )
+                "0x6AFAC69a1402b810bDB5733430122264b7980b6b",
+                1
             );
 
             setGasSpend(gas.toString());
