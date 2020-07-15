@@ -11,38 +11,6 @@ import { connect, disconnect } from "../lib/web3";
 import Button from "../components/Button";
 const { AddressZero } = ethers.constants;
 
-/* export const Button = styled.button`
-    border-style: solid;
-    border-width: medium;
-    border-color: #f9f9f9;
-    border-radius: 12px;
-    justify-content: center;
-    text-decoration: none !important;
-    @media (max-width: 375px) {
-        width: 24vmin;
-    }
-    :hover {
-        background-color: #f9f9f9;
-        color: #000000;
-    }
-    :disabled {
-        background-color: #acacac;
-        color: #444444;
-    }
-    width: 25%;
-    margin: 4px;
-    font-family: "Nunito Sans";
-    font-size: 18px;
-    font-weight: 600;
-    text-decoration: none;
-    text-transform: uppercase;
-    color: #d9d9d9;
-    text-align: center;
-    align-self: center;
-    padding: 8px;
-    cursor: pointer;
-`; */
-
 const HomeButton = styled(Button)`
     @media (max-width: 375px) {
         font-size: 0.85em;

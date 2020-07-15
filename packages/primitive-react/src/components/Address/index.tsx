@@ -14,6 +14,7 @@ const ellipseAddress = (address: string): string => {
 const AddressText = styled.div`
     font-size: inherit;
     text-transform: none;
+    align-self: center;
 `;
 
 interface AddressProps {

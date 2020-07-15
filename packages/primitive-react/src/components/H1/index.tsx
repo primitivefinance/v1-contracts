@@ -12,6 +12,7 @@ const H1 = styled.h1`
     @media (max-width: 375px) {
         font-size: 1.5em;
     }
+    margin: auto;
 `;
 
 export default H1;

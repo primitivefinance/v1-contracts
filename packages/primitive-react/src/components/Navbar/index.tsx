@@ -59,6 +59,7 @@ const Navbar: FunctionComponent<NavbarProps> = ({
                 <NavRow>
                     <Wrapper>
                         <Button
+                            style={{ minHeight: "5vmin" }}
                             disabled={false}
                             onClick={
                                 disconnect
@@ -76,13 +77,6 @@ const Navbar: FunctionComponent<NavbarProps> = ({
                             }
                         >
                             <Address account={account} />
-                        </Button>
-                        <Button
-                            onClick={() => {
-                                console.log("Navbar: ", { web3React });
-                            }}
-                        >
-                            Test
                         </Button>
                     </Wrapper>
                 </NavRow>

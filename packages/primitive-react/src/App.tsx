@@ -7,7 +7,7 @@ import styled from "styled-components";
 import GlobalStyle from "./global-styles";
 
 // == Pages ==
-import { Trade } from "./pages/Trade";
+import Trade from "./pages/Trade";
 import { Home } from "./pages/Home";
 import { Otc } from "./pages/Otc";
 import { Typeform } from "./pages/Typeform";
