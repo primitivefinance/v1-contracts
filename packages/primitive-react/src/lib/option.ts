@@ -102,10 +102,7 @@ const safeMint = async (
     const trader: any = await newTrader(signer);
     const option: any = await newOption(signer, address);
     const underlyingAddress: any = await option.underlyingToken();
-    const underlyingToken: any = await newERC20(
-        signer,
-        await option.underlyingToken()
-    );
+    const underlyingToken: any = await newERC20(signer, underlyingAddress);
     await checkAllowance(
         provider,
         underlyingToken,

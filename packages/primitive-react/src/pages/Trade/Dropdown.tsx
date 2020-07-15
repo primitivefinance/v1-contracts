@@ -1,5 +1,7 @@
 import React, { FunctionComponent /* useEffect, useState */ } from "react";
 import styled from "styled-components";
+import { useState } from "react";
+import { useEffect } from "react";
 
 const Wrapper = styled.div`
     display: flex;
@@ -28,10 +30,24 @@ const Option = styled.option`
     cursor: pointer;
 `;
 
-const Dropdown: FunctionComponent<any> = () => {
+interface DropdownProps {
+    setExpiry?: Function;
+}
+
+const Dropdown: FunctionComponent<DropdownProps> = ({ setExpiry }) => {
+    const [value, setValue] = useState<any>();
+    useEffect(() => {}, [value]);
     return (
         <Wrapper>
-            <Select id="dropdown" name="expirations">
+            <Select
+                id="dropdown"
+                name="expirations"
+                value={value}
+                onChange={(e) => {
+                    setValue(e.target.value);
+                    if (setExpiry) setExpiry(e.target.value);
+                }}
+            >
                 <Option value="july">July</Option>
                 <Option value="august">August</Option>
                 <Option value="september">September</Option>

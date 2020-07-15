@@ -62,31 +62,19 @@ const Body = styled.div`
     width: calc(1248px + 16px * 2);
 `;
 
+const ethPriceApi =
+    "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd&include_24hr_change=true";
+
 const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
     const [cart, setCart] = useState<string[]>(["Tester"]);
+    const [isBuy, setIsBuy] = useState<boolean>(true);
+    const [isCall, setIsCall] = useState<boolean>(true);
+    const [expiry, setExpiry] = useState<any>();
 
     const injected = new InjectedConnector({
         supportedChainIds: [1, 3, 4, 5, 42],
     });
     const web3React = useWeb3React();
-    /* const [provider, setProvider] = useState<ethers.providers.Web3Provider>(
-        new ethers.providers.Web3Provider(window.ethereum)
-    );
-    const [signer, setSigner] = useState<ethers.Signer>(provider.getSigner());
-
-    const [account, setAccount] = useState<string>(AddressZero);
-    
-
-    const getAccount = async () => {
-        setAccount(await signer.getAddress());
-    }; */
-
-    /* const exercise = async () => {
-        const trader: any = new Trader(provider, signer);
-        const option: string = "0xf0481628ec335e0Cc0c0383866CfE88eE4a55c9D";
-        const result = await trader.safeExercise(option, 1);
-        console.log(result);
-    }; */
 
     const addToCart = (option) => {
         setCart(cart.concat(option.toString()));
@@ -108,7 +96,7 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
     };
 
     const tableHeaders = [
-        "Price",
+        "Strike",
         "Breakeven",
         "Open Interest",
         "Volume 24hr",
@@ -117,6 +105,33 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
     ];
 
     const options = ["0x6AFAC69a1402b810bDB5733430122264b7980b6b"];
+
+    const [error, setError] = useState(null);
+    const [isLoaded, setIsLoaded] = useState(false);
+    const [ethereum, setEthereum] = useState<any>();
+
+    // Note: the empty deps array [] means
+    // this useEffect will run once
+    // similar to componentDidMount()
+    useEffect(() => {
+        fetch(ethPriceApi)
+            .then((res) => res.json())
+            .then(
+                (result) => {
+                    setIsLoaded(true);
+                    setEthereum(result.ethereum);
+                    console.log(result);
+                },
+                // Note: it's important to handle errors here
+                // instead of a catch() block so that we don't swallow
+                // exceptions from actual bugs in components.
+                (error) => {
+                    setIsLoaded(true);
+                    setError(error);
+                    console.log(isLoaded);
+                }
+            );
+    }, []);
 
     return (
         <Page web3React={web3React} injected={injected}>
@@ -127,9 +142,19 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
                             <Header>
                                 <Column style={{ width: "25%" }}>
                                     <H2>Ether</H2>
-                                    <H2>$ {`240.50`}</H2>
+                                    <H2>
+                                        $ {ethereum ? ethereum?.usd : "..."}
+                                    </H2>
                                     <Row>
-                                        <H3 color="lightgreen">+ {`4.53`}%</H3>
+                                        <H3 color="lightgreen">
+                                            {" "}
+                                            {ethereum
+                                                ? (ethereum?.usd_24h_change)
+                                                      .toString()
+                                                      .substr(0, 6)
+                                                : "..."}
+                                            %
+                                        </H3>
                                         <H3 color="grey">Today</H3>
                                     </Row>
                                 </Column>
@@ -138,15 +163,35 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
                         <Section id="trade:body">
                             <Body id="trade:body/container">
                                 <Row style={{ width: "25%" }}>
-                                    <Button selected>Buy</Button>
-                                    <Button>Sell</Button>
+                                    <Button
+                                        selected={isBuy}
+                                        onClick={() => setIsBuy(true)}
+                                    >
+                                        Buy
+                                    </Button>
+                                    <Button
+                                        selected={!isBuy}
+                                        onClick={() => setIsBuy(false)}
+                                    >
+                                        Sell
+                                    </Button>
                                 </Row>
                                 <Row style={{ width: "25%" }}>
-                                    <Button selected>Calls</Button>
-                                    <Button>Puts</Button>
+                                    <Button
+                                        selected={isCall}
+                                        onClick={() => setIsCall(true)}
+                                    >
+                                        Calls
+                                    </Button>
+                                    <Button
+                                        selected={!isCall}
+                                        onClick={() => setIsCall(false)}
+                                    >
+                                        Puts
+                                    </Button>
                                 </Row>
                                 <Row style={{ width: "50%" }}>
-                                    <Dropdown />
+                                    <Dropdown setExpiry={setExpiry} />
                                 </Row>
                             </Body>
                         </Section>
