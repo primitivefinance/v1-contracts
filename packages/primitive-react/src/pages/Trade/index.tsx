@@ -11,6 +11,8 @@ import { InjectedConnector } from "@web3-react/injected-connector";
 import Section from "./Section";
 import Dropdown from "./Dropdown";
 import Cart from "./Cart";
+import { safeMint } from "../../lib/option";
+import ethers from "ethers";
 
 type TradeProps = {
     web3?: any;
@@ -90,6 +92,21 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
         setCart(cart.concat(option.toString()));
     };
 
+    const submitOrder = async () => {
+        console.log("Submitting order for: ");
+        cart.map((v) => console.log(v));
+        const provider: ethers.providers.Web3Provider = web3React.library;
+        try {
+            await safeMint(
+                provider,
+                "0x6AFAC69a1402b810bDB5733430122264b7980b6b",
+                1
+            );
+        } catch (err) {
+            console.log(err);
+        }
+    };
+
     const tableHeaders = [
         "Price",
         "Breakeven",
@@ -166,7 +183,7 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
                 <Column style={{ paddingTop: "125px" }}>
                     <Row>
                         <Section>
-                            <Cart cart={cart} />
+                            <Cart cart={cart} submitOrder={submitOrder} />
                         </Section>
                     </Row>
                 </Column>

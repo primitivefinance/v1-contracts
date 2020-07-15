@@ -57,9 +57,10 @@ const Right = styled(H3)`
 
 interface CartProps {
     cart: string[];
+    submitOrder: Function;
 }
 
-const Cart: FunctionComponent<CartProps> = ({ cart }) => {
+const Cart: FunctionComponent<CartProps> = ({ cart, submitOrder }) => {
     useEffect(() => {
         console.log(cart);
     }, [cart]);
@@ -108,6 +109,7 @@ const Cart: FunctionComponent<CartProps> = ({ cart }) => {
                                     color: "black",
                                     borderColor: "lightgreen",
                                 }}
+                                onClick={() => submitOrder()}
                             >
                                 Submit
                             </Button>
