@@ -58,11 +58,66 @@ const Right = styled(H3)`
 interface CartProps {
     cart: string[];
     submitOrder: Function;
+    gasSpend?: string;
+    ethPrice?: string;
 }
 
-const Cart: FunctionComponent<CartProps> = ({ cart, submitOrder }) => {
+const gasPriceApi = `https://ethgasstation.info/api/ethgasAPI.json`;
+
+const Cart: FunctionComponent<CartProps> = ({
+    cart,
+    submitOrder,
+    gasSpend,
+    ethPrice,
+}) => {
+    const [error, setError] = useState(null);
+    const [isLoaded, setIsLoaded] = useState(false);
+    const [gas, setGas] = useState<any>();
+    const [totalGasCost, setTotalGasCost] = useState<any>();
+
+    const calculateGasCost = async () => {
+        let cost;
+        if (gas) {
+            cost = gas / 10 ** 9;
+            if (gasSpend) {
+                cost = cost * +gasSpend;
+                if (ethPrice) {
+                    cost = cost * +ethPrice;
+                    console.log(cost);
+                }
+            } else {
+                cost = cost * 100000 * 250;
+            }
+        }
+        return cost;
+    };
+
     useEffect(() => {
-        console.log(cart);
+        async function calcGas() {
+            const total = await calculateGasCost();
+            setTotalGasCost(total);
+        }
+        calcGas();
+    });
+
+    useEffect(() => {
+        fetch(gasPriceApi)
+            .then((res) => res.json())
+            .then(
+                (result) => {
+                    setIsLoaded(true);
+                    setGas(result.fast / 10);
+                    console.log(result);
+                },
+                // Note: it's important to handle errors here
+                // instead of a catch() block so that we don't swallow
+                // exceptions from actual bugs in components.
+                (error) => {
+                    setIsLoaded(true);
+                    setError(error);
+                    console.log(isLoaded);
+                }
+            );
     }, [cart]);
     return (
         <Wrapper>
@@ -96,7 +151,12 @@ const Cart: FunctionComponent<CartProps> = ({ cart, submitOrder }) => {
                             </Row>
                             <Row style={{ width: "100%" }}>
                                 <Left>Gas</Left>
-                                <Right>$2.00</Right>
+                                <Right>
+                                    ${" "}
+                                    {totalGasCost
+                                        ? totalGasCost.toString().substr(0, 4)
+                                        : "..."}{" "}
+                                </Right>
                             </Row>
                             <Row style={{ width: "100%" }}>
                                 <Left>Protocol</Left>

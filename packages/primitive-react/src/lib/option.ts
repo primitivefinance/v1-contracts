@@ -125,7 +125,12 @@ const safeMint = async (
     return write;
 };
 
-export { safeMint };
+const estimateGas = async (providerOrSigner, transaction) => {
+    const gas = (await providerOrSigner.estimateGas(transaction)).toString();
+    return gas;
+};
+
+export { safeMint, estimateGas };
 
 /* const safeRedeem = async (
     provider: ethers.providers.Web3Provider,
