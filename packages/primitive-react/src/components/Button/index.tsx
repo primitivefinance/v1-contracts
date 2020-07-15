@@ -2,7 +2,7 @@ import styled from "styled-components";
 
 const Button = styled.a`
     border-style: solid;
-    border-width: medium;
+    border-width: thin;
     border-color: #f9f9f9;
     border-radius: 12px;
     text-decoration: none !important;
@@ -33,6 +33,7 @@ const Button = styled.a`
     margin: 4px;
     padding: 4px;
     cursor: pointer;
+    min-width: 7.5em;
 `;
 
 export default Button;
