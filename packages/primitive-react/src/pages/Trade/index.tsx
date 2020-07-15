@@ -1,4 +1,4 @@
-import React, { FunctionComponent /* useEffect, useState */ } from "react";
+import React, { FunctionComponent, useEffect, useState } from "react";
 import Page from "../../components/Page";
 import Button from "../../components/Button";
 import H1 from "../../components/H1";
@@ -61,6 +61,8 @@ const Body = styled.div`
 `;
 
 const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
+    const [cart, setCart] = useState<string[]>(["Tester"]);
+
     const injected = new InjectedConnector({
         supportedChainIds: [1, 3, 4, 5, 42],
     });
@@ -71,36 +73,7 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
     const [signer, setSigner] = useState<ethers.Signer>(provider.getSigner());
 
     const [account, setAccount] = useState<string>(AddressZero);
-    const connect = () => {
-        const newProvider: ethers.providers.Web3Provider = new ethers.providers.Web3Provider(
-            window.ethereum
-        );
-        const newSigner: ethers.Signer = newProvider.getSigner();
-        try {
-            setProvider(newProvider);
-            setSigner(newSigner);
-        } catch (err) {
-            console.log(err);
-        }
-    };
-
-    const disconnect = async () => {
-        const newProvider: ethers.providers.Web3Provider = new ethers.providers.Web3Provider(
-            window.ethereum
-        );
-        const newSigner: ethers.Signer = new ethers.VoidSigner(
-            AddressZero,
-            newProvider
-        );
-        try {
-            setProvider(newProvider);
-            setSigner(newSigner);
-        } catch (err) {
-            console.log(err);
-        }
-
-        console.log("disconnecting");
-    };
+    
 
     const getAccount = async () => {
         setAccount(await signer.getAddress());
@@ -113,10 +86,9 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
         console.log(result);
     }; */
 
-    /* useEffect(() => {
-        connect();
-        getAccount();
-    }, [account]); */
+    const addToCart = (option) => {
+        setCart(cart.concat(option.toString()));
+    };
 
     const tableHeaders = [
         "Price",
@@ -126,6 +98,8 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
         "% Change 24hr",
         "Price",
     ];
+
+    const options = ["0x6AFAC69a1402b810bDB5733430122264b7980b6b"];
 
     return (
         <Page web3React={web3React} injected={injected}>
@@ -147,11 +121,11 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
                         <Section id="trade:body">
                             <Body id="trade:body/container">
                                 <Row style={{ width: "25%" }}>
-                                    <Button>Buy</Button>
+                                    <Button selected>Buy</Button>
                                     <Button>Sell</Button>
                                 </Row>
                                 <Row style={{ width: "25%" }}>
-                                    <Button>Calls</Button>
+                                    <Button selected>Calls</Button>
                                     <Button>Puts</Button>
                                 </Row>
                                 <Row style={{ width: "50%" }}>
@@ -177,7 +151,10 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
                     <View style={{ paddingTop: "0px", height: "75vmin" }}>
                         <Section id="trade:table">
                             <Table>
-                                <TableRow />
+                                <TableRow
+                                    option={options[0]}
+                                    addToCart={addToCart}
+                                />
                                 <TableRow />
                                 <TableRow />
                                 <TableRow />
@@ -189,7 +166,7 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
                 <Column style={{ paddingTop: "125px" }}>
                     <Row>
                         <Section>
-                            <Cart />
+                            <Cart cart={cart} />
                         </Section>
                     </Row>
                 </Column>

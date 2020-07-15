@@ -1,4 +1,4 @@
-import React, { FunctionComponent /* useEffect, useState */ } from "react";
+import React, { FunctionComponent, useEffect, useState } from "react";
 import styled from "styled-components";
 import H1 from "../../components/H1";
 import H2 from "../../components/H2";
@@ -55,7 +55,14 @@ const Right = styled(H3)`
     width: 50%;
 `;
 
-const Cart: FunctionComponent<any> = () => {
+interface CartProps {
+    cart: string[];
+}
+
+const Cart: FunctionComponent<CartProps> = ({ cart }) => {
+    useEffect(() => {
+        console.log(cart);
+    }, [cart]);
     return (
         <Wrapper>
             <Card>
@@ -68,18 +75,14 @@ const Cart: FunctionComponent<any> = () => {
                 <div id="card-body">
                     <H3 color="grey">Details</H3>
                     <Column>
-                        <Row style={{ width: "100%" }}>
-                            <Left>100 ETH Call 8/7</Left>
-                            <Right>$4.00</Right>
-                        </Row>
-                        <Row style={{ width: "100%" }}>
-                            <Left>100 ETH Call 8/7</Left>
-                            <Right>$4.00</Right>
-                        </Row>
-                        <Row style={{ width: "100%" }}>
-                            <Left>100 ETH Call 8/7</Left>
-                            <Right>$4.00</Right>
-                        </Row>
+                        {cart.map((v, index) => (
+                            <Row style={{ width: "100%" }}>
+                                <Left>
+                                    {cart[index].substr(0, 6).concat("..")}
+                                </Left>
+                                <Right>${1}</Right>
+                            </Row>
+                        ))}
                     </Column>
                 </div>
                 <div id="card-summary">

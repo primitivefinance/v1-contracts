@@ -1,5 +1,7 @@
 import styled from "styled-components";
 
+const white = "#d9d9d9";
+
 const Button = styled.a`
     border-style: solid;
     border-width: thin;
@@ -25,7 +27,8 @@ const Button = styled.a`
     font-weight: 600;
     text-decoration: none;
     text-transform: uppercase;
-    color: #d9d9d9;
+    color: ${(props) => (props.selected ? "black" : white)};
+    background-color: ${(props) => (props.selected ? white : "black")};
     display: flex;
     text-align: center;
     align-self: center;

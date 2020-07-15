@@ -29,7 +29,7 @@ const Cost = styled(Button)`
     padding: 8px;
 `;
 
-const TableRow: FunctionComponent<any> = () => {
+const TableRow: FunctionComponent<any> = ({ option, addToCart }) => {
     const tableItems = ["$400.00", "$250.00", "$1,000,00", "$230,000", "2.56%"];
     return (
         <div
@@ -67,8 +67,8 @@ const TableRow: FunctionComponent<any> = () => {
                         alignItems: "center",
                     }}
                 >
-                    <Cost>$3.00</Cost>
-                    <Add>+</Add>
+                    <Cost onClick={() => addToCart(option)}>$3.00</Cost>
+                    <Add onClick={() => addToCart(option)}>+</Add>
                 </Row>
             </Row>
         </div>
