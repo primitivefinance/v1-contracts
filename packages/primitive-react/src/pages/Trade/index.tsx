@@ -14,6 +14,9 @@ import Cart from "./Cart";
 import { safeMint, estimateGas, estimateMintGas } from "../../lib/option";
 import ethers from "ethers";
 import Header from "./Header";
+import Row from "../../components/Row";
+import Column from "../../components/Column";
+import Body from "./Body";
 
 type TradeProps = {
     web3?: any;
@@ -34,29 +37,13 @@ export const View = styled.div`
     margin-right: 0;
 `;
 
-const Row = styled.div`
-    display: flex;
-    flex-direction: row;
-`;
-
-const Column = styled.div`
-    display: flex;
-    flex-direction: column;
-`;
-
-/* const Header = styled.div`
-    display: flex;
-    flex-direction: row;
-    width: calc(1248px + 16px * 2);
-`; */
-
 const Table = styled.div`
     display: flex;
     flex-direction: column;
     width: calc(1248px + 16px * 2);
 `;
 
-const Body = styled.div`
+const TableHeader = styled.div`
     display: flex;
     flex-direction: row;
     height: 100%;
@@ -80,6 +67,11 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
 
     const addToCart = (option) => {
         setCart(cart.concat(option.toString()));
+    };
+
+    const update = (isBuy, isCall) => {
+        setIsCall(isCall);
+        setIsBuy(isBuy);
     };
 
     const submitOrder = async () => {
@@ -155,73 +147,21 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
                     <View id="trade:page">
                         <Section id="trade:header">
                             <Header context={DataContext} />
-                            {/* <Header>
-                                <Column style={{ width: "25%" }}>
-                                    <H2>Ether</H2>
-                                    <H2>
-                                        $ {ethereum ? ethereum?.usd : "..."}
-                                    </H2>
-                                    <Row>
-                                        <H3 color="lightgreen">
-                                            {" "}
-                                            {ethereum
-                                                ? (ethereum?.usd_24h_change)
-                                                      .toString()
-                                                      .substr(0, 6)
-                                                : "..."}
-                                            %
-                                        </H3>
-                                        <H3 color="grey">Today</H3>
-                                    </Row>
-                                </Column>
-                            </Header> */}
                         </Section>
                         <Section id="trade:body">
-                            <Body id="trade:body/container">
-                                <Row style={{ width: "25%" }}>
-                                    <Button
-                                        selected={isBuy}
-                                        onClick={() => setIsBuy(true)}
-                                    >
-                                        Buy
-                                    </Button>
-                                    <Button
-                                        selected={!isBuy}
-                                        onClick={() => setIsBuy(false)}
-                                    >
-                                        Sell
-                                    </Button>
-                                </Row>
-                                <Row style={{ width: "25%" }}>
-                                    <Button
-                                        selected={isCall}
-                                        onClick={() => setIsCall(true)}
-                                    >
-                                        Calls
-                                    </Button>
-                                    <Button
-                                        selected={!isCall}
-                                        onClick={() => setIsCall(false)}
-                                    >
-                                        Puts
-                                    </Button>
-                                </Row>
-                                <Row style={{ width: "50%" }}>
-                                    <Dropdown setExpiry={setExpiry} />
-                                </Row>
-                            </Body>
+                            <Body update={update} />
                         </Section>
                         <Section
                             id="trade:table-header"
                             style={{ marginBottom: "0" }}
                         >
-                            <Body id="table-header">
+                            <TableHeader id="table-header">
                                 <Row style={{ width: "80%" }}>
                                     {tableHeaders.map((v) => (
                                         <H3 style={{ width: "20%" }}>{v}</H3>
                                     ))}
                                 </Row>
-                            </Body>
+                            </TableHeader>
                         </Section>
                     </View>
 
@@ -229,14 +169,12 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
                     <View style={{ paddingTop: "0px", height: "75vmin" }}>
                         <Section id="trade:table">
                             <Table>
-                                <TableRow
-                                    option={options[0]}
-                                    addToCart={addToCart}
-                                />
-                                <TableRow />
-                                <TableRow />
-                                <TableRow />
-                                <TableRow />
+                                {options.map((v, index) => (
+                                    <TableRow
+                                        option={options[index]}
+                                        addToCart={addToCart}
+                                    />
+                                ))}
                             </Table>
                         </Section>
                     </View>

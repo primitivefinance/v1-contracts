@@ -1,9 +1,4 @@
-import React, {
-    FunctionComponent,
-    useEffect,
-    useState,
-    useContext,
-} from "react";
+import React, { FunctionComponent, useContext } from "react";
 import styled from "styled-components";
 import Column from "../../components/Column";
 import Row from "../../components/Row";
@@ -16,9 +11,6 @@ const HeaderContainer = styled.div`
     flex-direction: row;
     width: calc(1248px + 16px * 2);
 `;
-
-const ethPriceApi =
-    "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd&include_24hr_change=true";
 
 const Header: FunctionComponent<any> = ({ context }) => {
     const { ethereum, isLoaded } = useContext(context);
