@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: MIT
 
-
-
 pragma solidity ^0.6.2;
 
 /**
@@ -17,7 +15,7 @@ import { NullCloneConstructor } from "../NullCloneConstructor.sol";
 import { IRedeemFactory } from "../../interfaces/IRedeemFactory.sol";
 
 contract RedeemFactory is IRedeemFactory, Ownable, NullCloneConstructor {
-    using SafeMath for uint256;
+    using SafeMath for uint;
 
     address public override redeemTemplate;
 
@@ -29,21 +27,9 @@ contract RedeemFactory is IRedeemFactory, Ownable, NullCloneConstructor {
         redeemTemplate = RedeemTemplateLib.deployTemplate();
     }
 
-    function deploy(address optionToken, address redeemableToken)
-        external
-        override
-        onlyOwner
-        returns (address redeem)
-    {
-        bytes32 salt = keccak256(
-            abi.encodePacked(
-                RedeemTemplateLib.REDEEM_SALT(),
-                owner(),
-                optionToken,
-                redeemableToken
-            )
-        );
-        redeem = CloneLib.create2Clone(redeemTemplate, uint256(salt));
+    function deploy(address optionToken, address redeemableToken) external override onlyOwner returns (address redeem) {
+        bytes32 salt = keccak256(abi.encodePacked(RedeemTemplateLib.REDEEM_SALT(), owner(), optionToken, redeemableToken));
+        redeem = CloneLib.create2Clone(redeemTemplate, uint(salt));
         Redeem(redeem).initialize(owner(), optionToken, redeemableToken);
     }
 }
