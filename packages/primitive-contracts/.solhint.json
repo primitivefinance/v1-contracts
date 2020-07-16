@@ -2,7 +2,7 @@
     "extends": "solhint:recommended",
     "rules": {
         "mark-callable-contracts": "off",
-        "max-line-length": ["warn", 120],
+        "max-line-length": ["warn", 125],
         "compiler-version": ["warn", "^0.6.2"]
     }
 }
