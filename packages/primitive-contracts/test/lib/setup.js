@@ -126,7 +126,7 @@ const newOption = async (signer, registry, underlyingToken, strikeToken, base, q
     await registry.addSupported(strikeToken);
     await registry.deployOption(underlyingToken, strikeToken, base, quote, expiry);
     let optionToken = new ethers.Contract(
-        await registry.activeOptions(((await registry.optionsLength()) - 1).toString()),
+        await registry.getOption(underlyingToken, strikeToken, base, quote, expiry),
         Option.abi,
         signer
     );

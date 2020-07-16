@@ -21,12 +21,10 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
 
     address public override optionFactory;
     address public override redeemFactory;
-    address[] public activeOptions;
 
     mapping(address => bool) public isSupported;
-    mapping(bytes32 => address) public options;
 
-    event Deploy(address indexed from, address indexed option, bytes32 indexed id);
+    event Deploy(address indexed from, address indexed option, address indexed redeem);
 
     constructor() public {
         transferOwnership(msg.sender);
@@ -50,35 +48,17 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
     ) external override nonReentrant whenNotPaused returns (address option) {
         // Checks
         require(underlyingToken != strikeToken && isSupported[underlyingToken] && isSupported[strikeToken], "ERR_ADDRESS");
-        bytes32 id = getId(underlyingToken, strikeToken, base, quote, expiry);
-        require(options[id] == address(0), "ERR_OPTION_DEPLOYED");
 
         // Deploy option and redeem.
         option = IOptionFactory(optionFactory).deploy(underlyingToken, strikeToken, base, quote, expiry);
-        options[id] = option;
-        activeOptions.push(option);
         address redeem = IRedeemFactory(redeemFactory).deploy(option, strikeToken);
 
         IOptionFactory(optionFactory).initialize(option, redeem);
-        emit Deploy(msg.sender, option, id);
+        emit Deploy(msg.sender, option, redeem);
     }
 
     function kill(address option) external override onlyOwner {
         IOptionFactory(optionFactory).kill(option);
-    }
-
-    function optionsLength() public override view returns (uint len) {
-        len = activeOptions.length;
-    }
-
-    function getId(
-        address underlyingToken,
-        address strikeToken,
-        uint base,
-        uint quote,
-        uint expiry
-    ) public pure returns (bytes32 id) {
-        id = keccak256(abi.encodePacked(underlyingToken, strikeToken, base, quote, expiry));
     }
 
     function getOption(
@@ -87,7 +67,7 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
         uint base,
         uint quote,
         uint expiry
-    ) public override view returns (address option) {
-        option = options[getId(underlyingToken, strikeToken, base, quote, expiry)];
+    ) public view returns (address option) {
+        option = IOptionFactory(optionFactory).getOption(underlyingToken, strikeToken, base, quote, expiry);
     }
 }

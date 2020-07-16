@@ -49,4 +49,17 @@ contract OptionFactory is IOptionFactory, Ownable, NullCloneConstructor {
     function initialize(address option, address redeem) external override onlyOwner {
         Option(option).initRedeemToken(redeem);
     }
+
+    function getOption(
+        address underlyingToken,
+        address strikeToken,
+        uint base,
+        uint quote,
+        uint expiry
+    ) external override view returns (address option) {
+        bytes32 salt = keccak256(
+            abi.encodePacked(OptionTemplateLib.OPTION_SALT(), underlyingToken, strikeToken, base, quote, expiry)
+        );
+        option = CloneLib.deriveInstanceAddress(optionTemplate, salt);
+    }
 }

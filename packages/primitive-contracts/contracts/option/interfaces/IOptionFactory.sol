@@ -18,4 +18,12 @@ interface IOptionFactory {
     function deployOptionTemplate() external;
 
     function optionTemplate() external returns (address);
+
+    function getOption(
+        address underlyingToken,
+        address strikeToken,
+        uint base,
+        uint quote,
+        uint expiry
+    ) external view returns (address option);
 }
