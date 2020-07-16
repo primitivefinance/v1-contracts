@@ -190,12 +190,28 @@ const estimateMintGas = async (provider, address, amount) => {
     return gas;
 };
 
+const getOptionParameters = async (provider, optionAddress) => {
+    const signer: ethers.Signer = await provider.getSigner();
+    const option: any = await newOption(signer, optionAddress);
+    const parameters = await option.getParameters();
+    return parameters;
+};
+
+const getRowsData = async (provider, optionAddressArray) => {
+    const signer = await provider.getSigner();
+    optionAddressArray.map(async (v, index) => {
+        let option: any = await newOption(signer, v);
+        let params: any = await getOptionParameters(provider, v);
+    });
+};
+
 export {
     safeMint,
     estimateGas,
     estimateMintGas,
     mintTestTokens,
     checkUnderlyingBalance,
+    getOptionParameters,
 };
 
 /* const safeRedeem = async (

@@ -5,6 +5,7 @@ import Row from "../../components/Row";
 import H3 from "../../components/H3";
 import H2 from "../../components/H2";
 import Loading from "../../components/Loading";
+import PriceContext from "./context/PriceContext";
 
 const HeaderContainer = styled.div`
     display: flex;
@@ -12,8 +13,8 @@ const HeaderContainer = styled.div`
     width: calc(1248px + 16px * 2);
 `;
 
-const Header: FunctionComponent<any> = ({ context }) => {
-    const { ethereum, isLoaded } = useContext(context);
+const Header: FunctionComponent<any> = () => {
+    const { ethereum, isLoaded } = useContext(PriceContext);
 
     return (
         <HeaderContainer>

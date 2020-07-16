@@ -1,7 +1,13 @@
-import React, { FunctionComponent /* useEffect, useState */ } from "react";
+import React, {
+    FunctionComponent /* useEffect, useState */,
+    useContext,
+} from "react";
 import styled from "styled-components";
 import H3 from "../../components/H3";
 import Button from "../../components/Button";
+import ethers from "ethers";
+import { parseEther, formatEther } from "ethers/utils";
+import PriceContext from "./context/PriceContext";
 
 const Row = styled.div`
     display: flex;
@@ -29,27 +35,27 @@ const Cost = styled(Button)`
     padding: 8px;
 `;
 
-const TableRow: FunctionComponent<any> = ({ option, addToCart }) => {
-    const tableItems = ["$400.00", "$250.00", "$1,000,00", "$230,000", "2.56%"];
+const Item = styled.div`
+    width: 100%;
+    height: 10vmin;
+    display: flex;
+    align-items: center;
+`;
+
+const TableRow: FunctionComponent<any> = ({ option, addToCart, data }) => {
+    const { ethereum } = useContext(PriceContext);
+    const tableItems = [
+        "$400.00",
+        `$ ${ethereum ? ethereum?.usd : ""}`,
+        "$1,000,00",
+        "$230,000",
+        "2.56%",
+    ];
     return (
-        <div
-            id="table-row"
-            style={{
-                width: "100%",
-                display: "flex",
-                flexDirection: "row",
-            }}
-        >
+        <Row id="table-row">
             <Row style={{ width: "80%", borderBottom: "solid 0.1em darkgrey" }}>
-                {tableItems.map((v) => (
-                    <div
-                        style={{
-                            width: "100%",
-                            height: "10vmin",
-                            display: "flex",
-                            alignItems: "center",
-                        }}
-                    >
+                {tableItems.map((v, index) => (
+                    <Item id={index}>
                         <H3
                             style={{
                                 width: "20%",
@@ -57,21 +63,14 @@ const TableRow: FunctionComponent<any> = ({ option, addToCart }) => {
                         >
                             {v}
                         </H3>
-                    </div>
+                    </Item>
                 ))}
-                <Row
-                    style={{
-                        width: "100%",
-                        height: "10vmin",
-                        display: "flex",
-                        alignItems: "center",
-                    }}
-                >
+                <Item>
                     <Cost onClick={() => addToCart(option)}>$3.00</Cost>
                     <Add onClick={() => addToCart(option)}>+</Add>
-                </Row>
+                </Item>
             </Row>
-        </div>
+        </Row>
     );
 };
 

@@ -11,12 +11,18 @@ import { InjectedConnector } from "@web3-react/injected-connector";
 import Section from "./Section";
 import Dropdown from "./Dropdown";
 import Cart from "./Cart";
-import { safeMint, estimateGas, estimateMintGas } from "../../lib/option";
+import {
+    safeMint,
+    estimateGas,
+    estimateMintGas,
+    getOptionParameters,
+} from "../../lib/option";
 import ethers from "ethers";
 import Header from "./Header";
 import Row from "../../components/Row";
 import Column from "../../components/Column";
 import Body from "./Body";
+import PriceContext from "./context/PriceContext";
 
 type TradeProps = {
     web3?: any;
@@ -59,6 +65,7 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
     const [isCall, setIsCall] = useState<boolean>(true);
     const [expiry, setExpiry] = useState<any>();
     const [gasSpend, setGasSpend] = useState<any>();
+    const [parameters, setParameters] = useState<any>();
 
     const injected = new InjectedConnector({
         supportedChainIds: [1, 3, 4, 5, 42],
@@ -73,6 +80,22 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
         setIsCall(isCall);
         setIsBuy(isBuy);
     };
+
+    useEffect(() => {
+        async function updateParams() {
+            if (web3React.library) {
+                const provider: ethers.providers.Web3Provider =
+                    web3React.library;
+                let params = await getOptionParameters(
+                    provider,
+                    "0x6AFAC69a1402b810bDB5733430122264b7980b6b"
+                );
+                setParameters(params);
+                console.log(parameters);
+            }
+        }
+        updateParams();
+    }, [web3React.library]);
 
     const submitOrder = async () => {
         console.log("Submitting order for: ");
@@ -137,16 +160,29 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
             );
     }, []);
 
-    const DataContext = React.createContext({ ethereum, isLoaded, error });
+    const DataContext = React.createContext({
+        ethereum,
+        isLoaded,
+        error,
+    });
+
+    const tableItems = [
+        "Strike",
+        "Breakeven",
+        "Open Interest",
+        "Volume 24hr",
+        "% Change 24hr",
+        "Price",
+    ];
 
     return (
         <Page web3React={web3React} injected={injected}>
             <Row>
-                <DataContext.Provider value={ethereum} />
+                <PriceContext.Provider value={{ ethereum, isLoaded, error }} />
                 <Column style={{ width: "80%" }}>
                     <View id="trade:page">
                         <Section id="trade:header">
-                            <Header context={DataContext} />
+                            <Header />
                         </Section>
                         <Section id="trade:body">
                             <Body update={update} />
