@@ -23,6 +23,8 @@ import Row from "../../components/Row";
 import Column from "../../components/Column";
 import Body from "./Body";
 import PriceContext from "./context/PriceContext";
+import { Trader, Option } from "@primitivefi/sdk";
+import TraderDeployed from "@primitivefi/contracts/deployments/rinkeby/Trader.json";
 
 type TradeProps = {
     web3?: any;
@@ -160,24 +162,25 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
             );
     }, []);
 
-    const DataContext = React.createContext({
-        ethereum,
-        isLoaded,
-        error,
-    });
-
-    const tableItems = [
-        "Strike",
-        "Breakeven",
-        "Open Interest",
-        "Volume 24hr",
-        "% Change 24hr",
-        "Price",
-    ];
+    const testFunc = async () => {
+        if (web3React.library) {
+            const trader = new Trader(
+                TraderDeployed.address,
+                await web3React.library.getSigner()
+            );
+            console.log(trader, await trader.weth());
+            const option = new Option(
+                "0x6AFAC69a1402b810bDB5733430122264b7980b6b",
+                await web3React.library.getSigner()
+            );
+            console.log(option, await option.underlyingToken());
+        }
+    };
 
     return (
         <Page web3React={web3React} injected={injected}>
             <Row>
+                <Button onClick={() => testFunc()} />
                 <PriceContext.Provider value={{ ethereum, isLoaded, error }} />
                 <Column style={{ width: "80%" }}>
                     <View id="trade:page">
