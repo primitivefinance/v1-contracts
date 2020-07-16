@@ -23,8 +23,10 @@ import Row from "../../components/Row";
 import Column from "../../components/Column";
 import Body from "./Body";
 import PriceContext from "./context/PriceContext";
-import { Trader, Option } from "@primitivefi/sdk";
+import { Trader, Option, UniswapFactory } from "@primitivefi/sdk";
 import TraderDeployed from "@primitivefi/contracts/deployments/rinkeby/Trader.json";
+import Stablecoin from "@primitivefi/contracts/deployments/rinkeby/USDC.json";
+import Ether from "@primitivefi/contracts/deployments/rinkeby/ETH.json";
 
 type TradeProps = {
     web3?: any;
@@ -174,6 +176,20 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
                 await web3React.library.getSigner()
             );
             console.log(option, await option.underlyingToken());
+            const uniFac = new UniswapFactory(
+                "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
+                await web3React.library.getSigner()
+            );
+            console.log(
+                await uniFac.getPair(
+                    "0x6AFAC69a1402b810bDB5733430122264b7980b6b",
+                    Stablecoin.address
+                )
+            );
+            await uniFac.createPair(
+                "0x6AFAC69a1402b810bDB5733430122264b7980b6b",
+                Stablecoin.address
+            );
         }
     };
 
