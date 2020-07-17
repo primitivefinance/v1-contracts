@@ -1,16 +1,15 @@
 'use strict';
 
-const { uniqBy, keyBy, mapValues, once } = require('lodash');
-const ethers = require('ethers');
-const { Web3Provider } = ethers.providers;
-const { BigNumber, bigNumberify, formatUnits, getAddress } = require('ethers/utils');
+const { uniqBy, keyBy, once } = require('lodash');
+const { ContractFactory, Contract } = require('@ethersproject/contracts');
+const { Interface } = require('@ethersproject/abi');
+const { hexlify } = require('@ethersproject/bytes');
+const { getDefaultProvider, JsonRpcProvider, InfuraProvider } = require('@ethersproject/providers');
+const { AddressZero } = require('@ethersproject/constants');
+const { parseUnits } = require('@ethersproject/units');
 const axios = require('axios');
 
-const moment = require('moment');
-
-const ZERO_ADDRESS = '0x' + Array(40).fill('0').join('');
-
-const EthersContract = Object.getPrototypeOf(new ethers.Contract(ZERO_ADDRESS, [], new ethers.getDefaultProvider()));
+const EthersContract = Object.getPrototypeOf(new Contract(AddressZero, [], new getDefaultProvider()));
 
 const wrapLog = (log, contract) => Object.assign(log, {
   getBlock: async () => await contract.provider.getBlock(log.blockHash),
@@ -18,25 +17,43 @@ const wrapLog = (log, contract) => Object.assign(log, {
   getTransactionReceipt: async () => await contract.provider.getTransactionReceipt(log.transactionHash)
 });
 
-class EthersBaseClass {
+class EthersBase {
   constructor() {}
   async getEvents(filterOpts = {}) {
     const iface = this.constructor.interface;
-    filterOpts.fromBlock = filterOpts.fromBlock || '0x0';
+    if (!filterOpts.fromBlock && this.getGenesis) filterOpts.fromBlock = hexlify(await this.getGenesis());
+    else filterOpts.fromBlock = filterOpts.fromBlock || '0x0';
     const address = this.contract.address.length === 66 ? '0x' + this.contract.address.substr(26) : this.contract.address;
     let filter = Object.assign({
       toBlock: 'latest'
     }, filterOpts);
+    if (filterOpts.address === null) filter = {
+      topics: filter.topics,
+      fromBlock: filter.fromBlock,
+      toBlock: filter.toBlock
+    };
+    else if (filterOpts.address === undefined) filter.address = address;
+    else filter.address = filterOpts.address;
     const logs = (await this.contract.provider.getLogs(filter)).map((v) => wrapLog(Object.assign(v, {
       parsed: iface.parseLog(v)
     }), this.contract));
+    for (const log of logs) {
+      // we only need to do this part for markets being made to get the calldata for the details
+      if (log.parsed && log.parsed.name === 'FixedProductMarketMakerCreation') {
+        log.transaction = await log.getTransaction();
+        log.decodedTransaction = iface.parseTransaction(log.transaction);
+      } else {
+        log.transaction = {};
+        log.decodedTransaction = { args: [] };
+      }
+    }
     return logs;
   }
 }
 
-Object.setPrototypeOf(EthersBaseClass.prototype, EthersContract);
+Object.setPrototypeOf(EthersBase.prototype, EthersContract);
 
-const toSigner = (providerOrSigner) => {
+const coerceToSigner = (providerOrSigner) => {
   try {
     return providerOrSigner.getSigner();
   } catch (e) {
@@ -76,33 +93,38 @@ const toChainId = (network) => {
 const tryToGetInfura = (network) => {
   switch (network) {
     case '1':
-      return new ethers.providers.InfuraProvider('mainnet');
+      return new InfuraProvider('mainnet');
     case '42':
-      return new ethers.providers.InfuraProvider('kovan');
+      return new InfuraProvider('kovan');
     case '4':
-      return new ethers.providers.InfuraProvider('rinkeby');
+      return new InfuraProvider('rinkeby');
     default:
-      return new ethers.providers.JsonRpcProvider('http://localhost:8545');
+      return new JsonRpcProvider('http://localhost:8545');
    }
 };
 
 const makeEthersBaseClass = (artifact) => {
   const abi = uniqBy(artifact.abi, 'name');
-  const contract = new ethers.Contract(ZERO_ADDRESS, abi, new ethers.providers.InfuraProvider('kovan'));
+  const contract = new Contract(AddressZero, abi, new InfuraProvider('kovan'));
+  const interfaceObject = new Interface(artifact.abi);
   const EthersContract = Object.getPrototypeOf(contract);
-  const baseClass = class PrimitiveEthersBaseClass extends EthersBaseClass {
+  const managerClass = class DerivedEthersBase extends EthersBase {
+    static get interface() { return interfaceObject; }
+    static get abi() { return abi; }
+    static get functions() { return interfaceObject.functions; }
+    static get networks() { return (artifact.networks = artifact.networks || {}); }
     static get(network) {
       const chainId = toChainId(network);
-      return new this(((this.networks || {})[chainId] || {}).address || ethers.constants.AddressZero, tryToGetInfura(chainId));
+      return new this(((this.networks || {})[chainId] || {}).address || AddressZero, tryToGetInfura(chainId));
     }
     static async deploy(provider, ...args) {
-      const factory = new ethers.ContractFactory(abi, artifact.bytecode, provider)
+      const factory = new ContractFactory(abi, artifact.bytecode, provider)
       return await factory.deploy(...args);
     }
     constructor(address, providerOrSigner) {
       super();
       address = address.length === 66 ? '0x' + address.substr(26) : address;
-      this.contract = contract.attach(address).connect(toSigner(providerOrSigner));
+      this.contract = contract.attach(address).connect(coerceToSigner(providerOrSigner));
       this.address = address;
       this.provider = this.contract.provider;
     }
@@ -119,13 +141,13 @@ const makeEthersBaseClass = (artifact) => {
           method: 'GET',
           url: 'https://ethgasstation.info/json/ethgasAPI.json'
         })).data.fast;
-        return ethers.utils.hexlify(ethers.utils.parseUnits(String(Math.floor((Number(result)*Number(multiplier)))), 8));
+        return hexlify(parseUnits(String(Math.floor((Number(result)*Number(multiplier)))), 8));
       } catch (e) {
         console.error(e);
         return null;
       }
     }
-    async addGasPrice(args) {
+    async decorateArgsWithGasPrice(args) {
       const gasPrice = await this.getGasPrice({
         multiplier: 1.25
       });
@@ -136,7 +158,7 @@ const makeEthersBaseClass = (artifact) => {
       return args;
     }
   };
-  const managerSubclass = class extends baseClass {};
+  const managerSubclass = class EthersBaseClass extends managerClass {};
   const keyed = keyBy(abi, 'name');
   Object.keys(contract.functions).forEach((v) => {
     managerSubclass.prototype[v] = async function (...args) {
@@ -144,8 +166,8 @@ const makeEthersBaseClass = (artifact) => {
       deferred.resolve = once(deferred.resolve);
       deferred.reject = once(deferred.reject);
       const isCall = keyed[v].constant || ['view', 'pure'].includes(keyed[v].stateMutability);
-      const mappedArgs = isCall ? args : await this.addGasPrice(args);
-      const innerContract = isCall ? contract.attach(this.address).connect(this.contract.provider.asEthers ? this.contract.provider.asEthers() : this.provider) : contract.attach(this.address).connect(toSigner(this.contract.provider));
+      const mappedArgs = isCall ? args : await this.decorateArgsWithGasPrice(args);
+      const innerContract = isCall ? contract.attach(this.address).connect(this.contract.provider.asEthers ? this.contract.provider.asEthers() : this.provider) : contract.attach(this.address).connect(coerceToSigner(this.contract.provider));
       const tx = await innerContract[v](...mappedArgs);
       if (isCall) return tx;
       const provider = this.provider;
@@ -154,9 +176,9 @@ const makeEthersBaseClass = (artifact) => {
         while (true) {
           block = await provider.send('eth_getBlockByNumber', [ '0x' + Number(block).toString(16), true ]);
           if (block) break;
-          await new Promise((resolve, reject) => setTimeout(resolve, 2000));
+          await new Promise((resolve) => setTimeout(resolve, 2000));
         }
-        const actualTx = block.transactions.find((v) => v.from === tx.from && nonce === tx.nonce);
+        const actualTx = block.transactions.find((v) => v.from === tx.from && v.nonce === tx.nonce);
         if (actualTx) {
           const receipt = await provider.send('eth_getTransactionReceipt', [ actualTx.hash ])
           receipt.logs = receipt.logs.map((v) => {
@@ -179,42 +201,9 @@ const makeEthersBaseClass = (artifact) => {
     };
   });
   managerSubclass.prototype._events = contract._events;
-  return copyStatics(managerSubclass, Object.assign({}, contract, {
-    abi: abi,
-    networks: artifact.networks
-  }));
+  return managerSubclass;
 };
-
-const copyStatics = (target, from) => {
-  target.interface = from.interface;
-  target.functions = from.functions;
-  target.networks = from.networks;
-  target.abi = from.abi;
-  return target;
-};
-
-const copyStaticsFromArtifact = (target, artifact) => {
-  const interfaceObject = new ethers.utils.Interface(uniqBy(artifact.abi, 'name'));
-  const functions = interfaceObject.functions;
-  return Object.assign(target, {
-    functions,
-    interface: interfaceObject,
-    networks: artifact.networks,
-    abi: artifact.abi
-  });
-};
-
-const makeMainnetInstanceGetterFactory = (artifact) => {
-  const baseClass = class extends makeEthersBaseClass(artifact) {};
-  baseClass.getMainnetInstance = function (provider) {
-    provider = provider || new ethers.providers.InfuraProvider('mainnet');
-    if (!artifact.networks[1]) throw Error('no mainnet address associated with factory for ' + artifact.contractName);
-    return new this(artifact.networks[1].address, provider);
-  }
-  return baseClass;
-}
 
 Object.assign(module.exports, {
-  makeEthersBaseClass,
-  makeMainnetInstanceGetterFactory
+  makeEthersBaseClass
 });
