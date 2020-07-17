@@ -1,5 +1,7 @@
 import React, {
-    FunctionComponent /* useEffect, useState */,
+    FunctionComponent,
+    useEffect,
+    useState,
     useContext,
 } from "react";
 import styled from "styled-components";
@@ -8,6 +10,7 @@ import Button from "../../components/Button";
 import ethers from "ethers";
 import { parseEther, formatEther } from "ethers/utils";
 import PriceContext from "./context/PriceContext";
+import Loading from "../../components/Loading";
 
 const Row = styled.div`
     display: flex;
@@ -44,27 +47,42 @@ const Item = styled.div`
 
 const TableRow: FunctionComponent<any> = ({ option, addToCart, data }) => {
     const { ethereum } = useContext(PriceContext);
-    const tableItems = [
-        "$400.00",
-        `$ ${ethereum ? ethereum?.usd : ""}`,
-        "$1,000,00",
-        "$230,000",
-        "2.56%",
-    ];
+    const [tableItems, setTableItems] = useState<any>();
+
+    useEffect(() => {
+        let table = ["", "", "", "", "", ""];
+        if (data) {
+            table = [
+                `$ ${
+                    data
+                        ? data.params
+                            ? formatEther(data?.params?._quote)
+                            : "..."
+                        : "..."
+                }`,
+                `$ ${data ? data?.price : ".."}`,
+                `${data ? formatEther(data?.pair?.openInterest) : ".."}`,
+                "$230,000",
+                "2.56%",
+            ];
+            console.log(data);
+        }
+        setTableItems(table);
+    }, [data]);
+
+    console.log(data ? data : "loding data");
     return (
         <Row id="table-row">
             <Row style={{ width: "80%", borderBottom: "solid 0.1em darkgrey" }}>
-                {tableItems.map((v, index) => (
-                    <Item id={index}>
-                        <H3
-                            style={{
-                                width: "20%",
-                            }}
-                        >
-                            {v}
-                        </H3>
-                    </Item>
-                ))}
+                {tableItems ? (
+                    tableItems.map((v, index) => (
+                        <Item id={index}>
+                            <H3>{v}</H3>
+                        </Item>
+                    ))
+                ) : (
+                    <Loading />
+                )}
                 <Item>
                     <Cost onClick={() => addToCart(option)}>$3.00</Cost>
                     <Add onClick={() => addToCart(option)}>+</Add>

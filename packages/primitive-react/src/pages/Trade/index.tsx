@@ -11,6 +11,7 @@ import { InjectedConnector } from "@web3-react/injected-connector";
 import Section from "./Section";
 import Dropdown from "./Dropdown";
 import Cart from "./Cart";
+import Loading from "../../components/Loading";
 import {
     safeMint,
     estimateGas,
@@ -23,10 +24,19 @@ import Row from "../../components/Row";
 import Column from "../../components/Column";
 import Body from "./Body";
 import PriceContext from "./context/PriceContext";
-import { Trader, Option, UniswapFactory } from "@primitivefi/sdk";
+import {
+    Trader,
+    Option,
+    UniswapFactory,
+    UniswapRouter,
+    UniswapPair,
+    Token,
+} from "@primitivefi/sdk";
 import TraderDeployed from "@primitivefi/contracts/deployments/rinkeby/Trader.json";
 import Stablecoin from "@primitivefi/contracts/deployments/rinkeby/USDC.json";
 import Ether from "@primitivefi/contracts/deployments/rinkeby/ETH.json";
+import { parseEther } from "ethers/utils";
+import { getPair } from "../../lib/pool";
 
 type TradeProps = {
     web3?: any;
@@ -70,6 +80,7 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
     const [expiry, setExpiry] = useState<any>();
     const [gasSpend, setGasSpend] = useState<any>();
     const [parameters, setParameters] = useState<any>();
+    const [tableData, setTableData] = useState<any>();
 
     const injected = new InjectedConnector({
         supportedChainIds: [1, 3, 4, 5, 42],
@@ -84,22 +95,6 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
         setIsCall(isCall);
         setIsBuy(isBuy);
     };
-
-    useEffect(() => {
-        async function updateParams() {
-            if (web3React.library) {
-                const provider: ethers.providers.Web3Provider =
-                    web3React.library;
-                let params = await getOptionParameters(
-                    provider,
-                    "0x6AFAC69a1402b810bDB5733430122264b7980b6b"
-                );
-                setParameters(params);
-                console.log(parameters);
-            }
-        }
-        updateParams();
-    }, [web3React.library]);
 
     const submitOrder = async () => {
         console.log("Submitting order for: ");
@@ -136,6 +131,72 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
     ];
 
     const options = ["0x6AFAC69a1402b810bDB5733430122264b7980b6b"];
+    const getTable = async () => {
+        let data = {};
+        for (let i = 0; i < options.length; i++) {
+            let table = await getTableData(options[i]);
+            data[i] = table;
+        }
+        return data;
+    };
+
+    useEffect(() => {
+        async function updateParams() {
+            if (web3React.library) {
+                const provider: ethers.providers.Web3Provider =
+                    web3React.library;
+                let params = await getOptionParameters(
+                    provider,
+                    "0x6AFAC69a1402b810bDB5733430122264b7980b6b"
+                );
+                setParameters(params);
+                let data = await getTable();
+                setTableData(data);
+            }
+        }
+        updateParams();
+    }, [web3React.library]);
+
+    const getPairData = async () => {
+        const optionAddress = "0x6AFAC69a1402b810bDB5733430122264b7980b6b";
+        const provider = web3React.library;
+        const pairAddress = await getPair(web3React.library, optionAddress);
+        // need price to calc premium + breakeven, total liquidity for option, volume
+        const pair = new UniswapPair(pairAddress, await provider.getSigner());
+        const token0 = await pair.token0();
+        const reserves = await pair.getReserves();
+        let premium = 0;
+        let openInterest = 0;
+        if (token0 == optionAddress) {
+            premium = await pair.price0CumulativeLast();
+            openInterest = reserves._reserve0;
+        } else {
+            premium = await pair.price1CumulativeLast();
+            openInterest = reserves._reserve1;
+        }
+
+        if (premium == 0) {
+            premium = reserves._reserve0 / reserves._reserve1;
+        }
+        return { premium, openInterest };
+    };
+
+    const getPriceData = () => {
+        return ethereum.usd;
+    };
+
+    const getOptionParams = async (optionAddress) => {
+        const provider = web3React.library;
+        const params = await getOptionParameters(provider, optionAddress);
+        return params;
+    };
+
+    const getTableData = async (optionAddress) => {
+        let params = await getOptionParams(optionAddress);
+        let price = getPriceData();
+        let pair = await getPairData();
+        return { params, price, pair };
+    };
 
     const [error, setError] = useState(null);
     const [isLoaded, setIsLoaded] = useState(false);
@@ -166,37 +227,78 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
 
     const testFunc = async () => {
         if (web3React.library) {
-            const trader = new Trader(
-                TraderDeployed.address,
-                await web3React.library.getSigner()
-            );
+            const signer = await web3React.library.getSigner();
+            const trader = new Trader(TraderDeployed.address, signer);
             console.log(trader, await trader.weth());
-            const option = new Option(
-                "0x6AFAC69a1402b810bDB5733430122264b7980b6b",
-                await web3React.library.getSigner()
-            );
+            const optionAddr = "0x6AFAC69a1402b810bDB5733430122264b7980b6b";
+            const option = new Option(optionAddr, signer);
             console.log(option, await option.underlyingToken());
             const uniFac = new UniswapFactory(
                 "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
-                await web3React.library.getSigner()
+                signer
             );
-            console.log(
-                await uniFac.getPair(
-                    "0x6AFAC69a1402b810bDB5733430122264b7980b6b",
-                    Stablecoin.address
-                )
-            );
-            await uniFac.createPair(
-                "0x6AFAC69a1402b810bDB5733430122264b7980b6b",
+            console.log(await uniFac.getPair(optionAddr, Stablecoin.address));
+            const uniRoutAddr = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
+            const uniRout = new UniswapRouter(uniRoutAddr, signer);
+            const stablecoin = new Token(Stablecoin.address, signer);
+            const optionToken = new Token(optionAddr, signer);
+            const underlyingToken = new Token(Ether.address, signer);
+            const poolAddr = await uniFac.getPair(
+                optionAddr,
                 Stablecoin.address
             );
+            console.log({ poolAddr });
+            /* try {
+                await stablecoin.approve(uniRoutAddr, parseEther("10000000"));
+                await optionToken.approve(uniRoutAddr, parseEther("10000000"));
+                console.log(
+                    await signer.getAddress(),
+                    (
+                        await underlyingToken.balanceOf(
+                            await signer.getAddress()
+                        )
+                    ).toString()
+                );
+                await underlyingToken.approve(
+                    uniRoutAddr,
+                    parseEther("10000000")
+                );
+                await trader.safeMint(
+                    optionAddr,
+                    parseEther("5000"),
+                    await signer.getAddress()
+                );
+                console.log(
+                    (
+                        await option.balanceOf(await signer.getAddress())
+                    ).toString()
+                );
+                await uniRout.addLiquidity(
+                    optionAddr,
+                    Stablecoin.address,
+                    parseEther("5000"),
+                    parseEther("5000"),
+                    1,
+                    1,
+                    await signer.getAddress(),
+                    +new Date() + 1000000
+                );
+            } catch (err) {
+                console.log(err);
+            } */
         }
     };
 
     return (
         <Page web3React={web3React} injected={injected}>
             <Row>
-                <Button onClick={() => testFunc()} />
+                <Button
+                    onClick={async () => {
+                        options.map((v) => getTableData(v));
+                    }}
+                >
+                    Test
+                </Button>
                 <PriceContext.Provider value={{ ethereum, isLoaded, error }} />
                 <Column style={{ width: "80%" }}>
                     <View id="trade:page">
@@ -224,12 +326,17 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
                     <View style={{ paddingTop: "0px", height: "75vmin" }}>
                         <Section id="trade:table">
                             <Table>
-                                {options.map((v, index) => (
-                                    <TableRow
-                                        option={options[index]}
-                                        addToCart={addToCart}
-                                    />
-                                ))}
+                                {tableData ? (
+                                    options.map((v, i) => (
+                                        <TableRow
+                                            option={v}
+                                            addToCart={addToCart}
+                                            data={tableData[i]}
+                                        />
+                                    ))
+                                ) : (
+                                    <Loading />
+                                )}
                             </Table>
                         </Section>
                     </View>
