@@ -73,14 +73,15 @@ const TableHeader = styled.div`
 const ethPriceApi =
     "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd&include_24hr_change=true";
 
-const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
-    const [cart, setCart] = useState<string[]>(["Tester"]);
+const Trade: FunctionComponent<TradeProps> = () => {
+    const [cart, setCart] = useState<string[]>([ethers.constants.AddressZero]);
     const [isBuy, setIsBuy] = useState<boolean>(true);
     const [isCall, setIsCall] = useState<boolean>(true);
     const [expiry, setExpiry] = useState<any>();
     const [gasSpend, setGasSpend] = useState<any>();
     const [parameters, setParameters] = useState<any>();
     const [tableData, setTableData] = useState<any>();
+    const [totalDebit, setTotalDebit] = useState<any>();
 
     const injected = new InjectedConnector({
         supportedChainIds: [1, 3, 4, 5, 42],
@@ -91,6 +92,28 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
         setCart(cart.concat(option.toString()));
     };
 
+    const getTotalDebit = async () => {
+        let premiums: any[] = [];
+        let debit;
+        for (let i = 0; i < cart.length; i++) {
+            let premium = await getPremium(cart[i]);
+            premiums[i] = premium;
+            debit = debit + premium;
+        }
+
+        return { premiums, debit };
+    };
+
+    useEffect(() => {
+        async function calcPremium() {
+            if (web3React.library) {
+                const total = await getTotalDebit();
+                setTotalDebit(total);
+            }
+        }
+        calcPremium();
+    }, [cart]);
+
     const update = (isBuy, isCall) => {
         setIsCall(isCall);
         setIsBuy(isBuy);
@@ -98,7 +121,7 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
 
     const submitOrder = async () => {
         console.log("Submitting order for: ");
-        cart.map((v) => console.log(v));
+        cart.map((v) => console.log({ v }));
         const provider: ethers.providers.Web3Provider = web3React.library;
         try {
             let gas = await estimateMintGas(
@@ -157,6 +180,27 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
         updateParams();
     }, [web3React.library]);
 
+    const getPremium = async (optionAddress) => {
+        const provider = web3React.library;
+        const pairAddress = await getPair(web3React.library, optionAddress);
+        // need price to calc premium + breakeven, total liquidity for option, volume
+        const pair = new UniswapPair(pairAddress, await provider.getSigner());
+        const token0 = await pair.token0();
+        const reserves = await pair.getReserves();
+        let premium = 0;
+
+        if (token0 == optionAddress) {
+            premium = await pair.price0CumulativeLast();
+        } else {
+            premium = await pair.price1CumulativeLast();
+        }
+
+        if (premium == 0) {
+            premium = reserves._reserve0 / reserves._reserve1;
+        }
+        return premium;
+    };
+
     const getPairData = async () => {
         const optionAddress = "0x6AFAC69a1402b810bDB5733430122264b7980b6b";
         const provider = web3React.library;
@@ -182,7 +226,7 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
     };
 
     const getPriceData = () => {
-        return ethereum.usd;
+        return ethereum ? ethereum?.usd : "...";
     };
 
     const getOptionParams = async (optionAddress) => {
@@ -229,15 +273,15 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
         if (web3React.library) {
             const signer = await web3React.library.getSigner();
             const trader = new Trader(TraderDeployed.address, signer);
-            console.log(trader, await trader.weth());
+
             const optionAddr = "0x6AFAC69a1402b810bDB5733430122264b7980b6b";
             const option = new Option(optionAddr, signer);
-            console.log(option, await option.underlyingToken());
+
             const uniFac = new UniswapFactory(
                 "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f",
                 signer
             );
-            console.log(await uniFac.getPair(optionAddr, Stablecoin.address));
+
             const uniRoutAddr = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
             const uniRout = new UniswapRouter(uniRoutAddr, signer);
             const stablecoin = new Token(Stablecoin.address, signer);
@@ -247,7 +291,7 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
                 optionAddr,
                 Stablecoin.address
             );
-            console.log({ poolAddr });
+
             /* try {
                 await stablecoin.approve(uniRoutAddr, parseEther("10000000"));
                 await optionToken.approve(uniRoutAddr, parseEther("10000000"));
@@ -349,6 +393,7 @@ const Trade: FunctionComponent<TradeProps> = ({ web3 }) => {
                                 submitOrder={submitOrder}
                                 gasSpend={gasSpend}
                                 ethPrice={ethereum?.usd}
+                                total={totalDebit}
                             />
                         </Section>
                     </Row>

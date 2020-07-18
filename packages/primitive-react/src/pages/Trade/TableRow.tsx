@@ -1,21 +1,10 @@
-import React, {
-    FunctionComponent,
-    useEffect,
-    useState,
-    useContext,
-} from "react";
+import React, { FunctionComponent, useEffect, useState } from "react";
 import styled from "styled-components";
 import H3 from "../../components/H3";
 import Button from "../../components/Button";
-import ethers from "ethers";
-import { parseEther, formatEther } from "ethers/utils";
-import PriceContext from "./context/PriceContext";
+import { formatEther } from "ethers/utils";
 import Loading from "../../components/Loading";
-
-const Row = styled.div`
-    display: flex;
-    flex-direction: row;
-`;
+import Row from "../../components/Row";
 
 const Add = styled(Button)`
     border-radius: 0px 8px 8px 0px;
@@ -46,24 +35,26 @@ const Item = styled.div`
 `;
 
 const TableRow: FunctionComponent<any> = ({ option, addToCart, data }) => {
-    const { ethereum } = useContext(PriceContext);
     const [tableItems, setTableItems] = useState<any>();
 
     useEffect(() => {
         let table = ["", "", "", "", "", ""];
         if (data) {
+            let strike = data
+                ? data.params
+                    ? formatEther(data?.params?._quote)
+                    : "..."
+                : "...";
+            let breakeven = data ? +data?.pair?.premium + +strike : "..";
+            let openInterest = data
+                ? formatEther(data?.pair?.openInterest)
+                : "..";
             table = [
-                `$ ${
-                    data
-                        ? data.params
-                            ? formatEther(data?.params?._quote)
-                            : "..."
-                        : "..."
-                }`,
-                `$ ${data ? data?.price : ".."}`,
-                `${data ? formatEther(data?.pair?.openInterest) : ".."}`,
-                "$230,000",
-                "2.56%",
+                `$ ${(+strike).toFixed(2)}`,
+                `$ ${(+breakeven).toFixed(2)}`,
+                `${(+openInterest).toFixed(2)}`,
+                "$ ...",
+                "... %",
             ];
             console.log(data);
         }
@@ -84,7 +75,10 @@ const TableRow: FunctionComponent<any> = ({ option, addToCart, data }) => {
                     <Loading />
                 )}
                 <Item>
-                    <Cost onClick={() => addToCart(option)}>$3.00</Cost>
+                    <Cost onClick={() => addToCart(option)}>
+                        ${" "}
+                        {data ? (data?.pair?.premium).toFixed(2) : <Loading />}
+                    </Cost>
                     <Add onClick={() => addToCart(option)}>+</Add>
                 </Item>
             </Row>

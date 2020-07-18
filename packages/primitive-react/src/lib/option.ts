@@ -1,4 +1,5 @@
 import Option from "@primitivefi/contracts/artifacts/Option.json";
+import Redeem from "@primitivefi/contracts/artifacts/Redeem.json";
 import ERC20 from "@primitivefi/contracts/artifacts/ERC20.json";
 import Trader from "@primitivefi/contracts/deployments/rinkeby/Trader.json";
 import ethers from "ethers";
@@ -9,7 +10,7 @@ const DEFAULT_APPROVE = "1000000";
 const DEFAULT_MINT = "1000";
 
 const mintTestTokens = async (signer, optionAddress) => {
-    const option: any = await newOption(signer, Address);
+    const option: any = await newOption(signer, optionAddress);
     const underlyingToken: any = await newERC20(
         signer,
         await option.underlyingToken()
@@ -18,10 +19,10 @@ const mintTestTokens = async (signer, optionAddress) => {
     let underlying, quote;
     try {
         underlying = await underlyingToken.mint(
-            signer.getAddress(),
+            await signer.getAddress(),
             DEFAULT_MINT
         );
-        quote = await strikeToken.mint(signer.getAddress(), DEFAULT_MINT);
+        quote = await strikeToken.mint(await signer.getAddress(), DEFAULT_MINT);
     } catch (e) {
         console.log({ e });
     }
@@ -29,13 +30,13 @@ const mintTestTokens = async (signer, optionAddress) => {
     return { underlying, quote };
 };
 
-const checkUnderlyingBalance = async (signer, optionAddres) => {
-    const option: any = await newOption(signer, Address);
+const checkUnderlyingBalance = async (signer, optionAddress) => {
+    const option: any = await newOption(signer, optionAddress);
     const underlyingToken: any = await newERC20(
         signer,
         await option.underlyingToken()
     );
-    const bal: any = await underlyingToken.balanceOf(signer.getAddress());
+    const bal: any = await underlyingToken.balanceOf(await signer.getAddress());
     return bal;
 };
 
@@ -43,6 +44,11 @@ const newOption = (signer, address) => {
     const option = new ethers.Contract(address, Option.abi, signer);
     console.log("Got option:", option.address);
     return option;
+};
+const newRedeem = (signer, address) => {
+    const redeem = new ethers.Contract(address, Redeem.abi, signer);
+    console.log("Got redeem:", redeem.address);
+    return redeem;
 };
 
 const newTrader = (signer) => {
@@ -134,6 +140,8 @@ const safeMint = async (
     const signer: ethers.Signer = await provider.getSigner();
     const trader: any = await newTrader(signer);
     const option: any = await newOption(signer, address);
+    const redeem: any = await newRedeem(signer, await option.redeemToken());
+
     const underlyingAddress: any = await option.underlyingToken();
     const underlyingToken: any = await newERC20(signer, underlyingAddress);
     await checkAllowance(
@@ -152,10 +160,10 @@ const safeMint = async (
         write = await trader.safeMint(
             address,
             parseEther(amount.toString()),
-            signer.getAddress()
+            await signer.getAddress()
         );
     } catch (err) {
-        console.log({ err });
+        console.log({ err }, "Error on safeMint.");
         write = {};
     }
 
@@ -179,14 +187,14 @@ const estimateMintGas = async (provider, address, amount) => {
             await trader.estimateGas.safeMint(
                 address,
                 parseEther(amount.toString()),
-                signer.getAddress()
+                await signer.getAddress()
             )
         ).toString();
     } catch (err) {
         console.log({ err });
         gas = "";
     }
-    console.log(gas);
+    console.log({ gas });
     return gas;
 };
 

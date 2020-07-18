@@ -4,6 +4,8 @@ import H1 from "../../components/H1";
 import H2 from "../../components/H2";
 import H3 from "../../components/H3";
 import Button from "../../components/Button";
+import Row from "../../components/Row";
+import Column from "../../components/Column";
 
 const Wrapper = styled.div`
     display: flex;
@@ -33,16 +35,6 @@ const Inner = styled.div`
     margin-top: 7.5em;
 `;
 
-const Row = styled.div`
-    display: flex;
-    flex-direction: row;
-`;
-
-const Column = styled.div`
-    display: flex;
-    flex-direction: column;
-`;
-
 const Left = styled(H3)`
     display: flex;
     justify-content: flex-start;
@@ -60,6 +52,7 @@ interface CartProps {
     submitOrder: Function;
     gasSpend?: string;
     ethPrice?: string;
+    total?: string;
 }
 
 const gasPriceApi = `https://ethgasstation.info/api/ethgasAPI.json`;
@@ -69,11 +62,13 @@ const Cart: FunctionComponent<CartProps> = ({
     submitOrder,
     gasSpend,
     ethPrice,
+    total,
 }) => {
     const [error, setError] = useState(null);
     const [isLoaded, setIsLoaded] = useState(false);
     const [gas, setGas] = useState<any>();
     const [totalGasCost, setTotalGasCost] = useState<any>();
+    const [premium, setPremium] = useState<any>("");
 
     const calculateGasCost = async () => {
         let cost;
@@ -147,7 +142,7 @@ const Cart: FunctionComponent<CartProps> = ({
                         <Column>
                             <Row style={{ width: "100%" }}>
                                 <Left>Premium</Left>
-                                <Right>$4.00</Right>
+                                <Right>$ {total ? total : "..."}</Right>
                             </Row>
                             <Row style={{ width: "100%" }}>
                                 <Left>Gas</Left>
