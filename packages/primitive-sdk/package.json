@@ -1,6 +1,6 @@
 {
     "name": "@primitivefi/sdk",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "description": "Primitive sdk library",
     "main": "sdk.js",
     "repository": {
