@@ -1,6 +1,6 @@
 {
     "name": "@primitivefi/ethers-base",
-    "version": "0.1.7",
+    "version": "0.1.8",
     "description": "ethers.js base class abstraction",
     "main": "base.js",
     "repository": {
