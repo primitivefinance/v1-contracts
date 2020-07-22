@@ -13,5 +13,6 @@
     "dependencies": {
         "@uniswap/v2-core": "^1.0.1",
         "@uniswap/v2-periphery": "^1.1.0-beta.0"
-    }
+    },
+    "gitHead": "8a39395d627c4178e774d34a5375b2677be84dab"
 }
