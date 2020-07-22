@@ -3,7 +3,7 @@
     "version": "0.1.1",
     "description": "primitive engine",
     "main": "lib/engine.js",
-    "repository": "https://github.com/raymondpulver/primitive-contracts",
+    "repository": "https://github.com/raymondpulver/primitive-protocol",
     "author": "Primitive",
     "license": "MIT",
     "private": false
