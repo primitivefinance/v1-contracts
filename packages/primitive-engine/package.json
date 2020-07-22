@@ -1,6 +1,6 @@
 {
     "name": "@primitivefi/engine",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "primitive engine",
     "main": "lib/engine.js",
     "repository": "https://github.com/raymondpulver/primitive-contracts",

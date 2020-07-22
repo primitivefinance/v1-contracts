@@ -1,6 +1,6 @@
 {
     "name": "@primitivefi/ethers-base",
-    "version": "0.1.5",
+    "version": "0.1.6",
     "description": "ethers.js base class abstraction",
     "main": "base.js",
     "repository": "https://github.com/primitivefinance/primitive-protocol",
