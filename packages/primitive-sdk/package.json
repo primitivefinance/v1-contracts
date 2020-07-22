@@ -3,7 +3,10 @@
     "version": "0.1.1",
     "description": "Primitive sdk library",
     "main": "sdk.js",
-    "repository": "https://github.com/primitivefinance/primitive-protocol",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/primitivefinance/primitive-protocol.git"
+    },
     "author": "Primitive",
     "license": "MIT",
     "private": false,

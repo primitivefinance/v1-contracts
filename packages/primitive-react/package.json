@@ -2,6 +2,10 @@
     "name": "@primitivefi/react",
     "version": "0.1.1",
     "private": false,
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/primitivefinance/primitive-protocol.git"
+    },
     "dependencies": {
         "@material-ui/core": "^4.11.0",
         "@material-ui/icons": "^4.9.1",
