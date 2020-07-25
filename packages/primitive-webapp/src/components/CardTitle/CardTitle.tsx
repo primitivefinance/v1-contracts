@@ -11,7 +11,9 @@ const CardTitle: React.FC = (props) => {
 
 const StyledCardTitle = styled.div`
     align-items: center;
+    color: ${props => props.theme.color.grey[400]};
     display: flex;
+    font-weight: 700;
     height: 56px;
     padding-left: ${props => props.theme.spacing[4]}px;
     padding-right: ${props => props.theme.spacing[4]}px;

@@ -61,7 +61,8 @@ const StyledButton = styled.button<StyleProps>`
     cursor: pointer;
     font-size: 1rem;
     font-weight: 700;
-    height: ${props => props.theme.buttonHeight}px;
+    height: ${props => props.theme.buttonSize}px;
+    margin: 0;
     outline: none;
     padding-left: ${props => props.theme.spacing[4]}px;
     padding-right: ${props => props.theme.spacing[4]}px;
