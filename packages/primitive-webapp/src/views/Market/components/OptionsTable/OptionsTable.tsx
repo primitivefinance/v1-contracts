@@ -1,6 +1,9 @@
 import React from 'react'
 import styled from 'styled-components'
 
+import AddIcon from '@material-ui/icons/Add';
+
+import IconButton from '../../../../components/IconButton'
 import LitContainer from '../../../../components/LitContainer'
 import Table from '../../../../components/Table'
 import TableBody from '../../../../components/TableBody'
@@ -31,6 +34,7 @@ const OptionsTable: React.FC<OptionsTableProps> = (props) => {
                         <TableCell>24h Volume</TableCell>
                         <TableCell>Change</TableCell>
                         <TableCell>Price</TableCell>
+                        <StyledButtonCell />
                     </TableRow>
                 </LitContainer>
             </StyledTableHead>
@@ -45,6 +49,14 @@ const OptionsTable: React.FC<OptionsTableProps> = (props) => {
                                 <TableCell>${volume}</TableCell>
                                 <TableCell>{change * 100}%</TableCell>
                                 <TableCell>${price}</TableCell>
+                                <StyledButtonCell>
+                                    <IconButton
+                                        onClick={() => {}}
+                                        variant="outlined"
+                                    >
+                                        <AddIcon />
+                                    </IconButton>
+                                </StyledButtonCell>
                             </TableRow>
                         )
                     })}
@@ -57,6 +69,10 @@ const OptionsTable: React.FC<OptionsTableProps> = (props) => {
 const StyledTableHead = styled.div`
     background-color: ${props => props.theme.color.grey[800]};
     border-bottom: 1px solid ${props => props.theme.color.grey[600]};
+`
+
+const StyledButtonCell = styled.div`
+    width: ${props => props.theme.buttonSize}px;
 `
 
 export default OptionsTable

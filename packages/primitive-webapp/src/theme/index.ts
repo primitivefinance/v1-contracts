@@ -3,7 +3,7 @@ import { black, grey, white } from './colors'
 const theme = {
     barHeight: 72,
     borderRadius: 4,
-    buttonHeight: 44,
+    buttonSize: 44,
     color: {
         black,
         grey,
