@@ -1,6 +1,6 @@
 {
   "name": "primitive",
-  "private": false,
+  "private": true,
   "workspaces": [
     "packages/**"
   ],
@@ -8,7 +8,7 @@
     "husky": "^4.2.5"
   },
   "devDependencies": {
-    "lerna": "^3.22.0",
-    "@nomiclabs/buidler": "^1.3.1"
+    "@nomiclabs/buidler": "^1.3.1",
+    "lerna": "^3.22.1"
   }
 }
