@@ -1,5 +1,6 @@
 import React from 'react'
 import { ThemeProvider } from 'styled-components'
+import { BrowserRouter as Router } from 'react-router-dom'
 
 import TopBar from './components/TopBar'
 
@@ -10,8 +11,10 @@ import theme from './theme'
 const App: React.FC = () => {
     return (
         <ThemeProvider theme={theme}>
-            <TopBar />
-            <Market />
+            <Router>
+                <TopBar />
+                <Market />
+            </Router>
         </ThemeProvider>
     )
 }
