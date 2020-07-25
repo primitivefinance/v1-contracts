@@ -1,7 +1,7 @@
 import React from 'react'
 import styled from 'styled-components'
 
-import AddIcon from '@material-ui/icons/Add';
+import AddIcon from '@material-ui/icons/Add'
 
 import IconButton from '../../../../components/IconButton'
 import LitContainer from '../../../../components/LitContainer'

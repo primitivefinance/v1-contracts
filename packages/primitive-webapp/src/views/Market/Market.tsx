@@ -1,6 +1,8 @@
 import React from 'react'
 import styled from 'styled-components'
 
+import OrderProvider from '../../contexts/Order'
+
 import FilterBar from './components/FilterBar'
 import MarketHeader from './components/MarketHeader'
 import OptionsTable from './components/OptionsTable'
@@ -16,20 +18,22 @@ const mockOptions = [
 
 const Market: React.FC = () => {
     return (
-        <StyledMarket>
-            <StyledMain>
-                <MarketHeader
-                    name="Ethereum"
-                    price={280.33}
-                    symbol="ETH"
-                />
-                <FilterBar />
-                <OptionsTable options={mockOptions} />
-            </StyledMain>
-            <StyledSideBar>
-                <OrderCard />
-            </StyledSideBar>
-        </StyledMarket>
+        <OrderProvider>
+            <StyledMarket>
+                <StyledMain>
+                    <MarketHeader
+                        name="Ethereum"
+                        price={280.33}
+                        symbol="ETH"
+                    />
+                    <FilterBar />
+                    <OptionsTable options={mockOptions} />
+                </StyledMain>
+                <StyledSideBar>
+                    <OrderCard />
+                </StyledSideBar>
+            </StyledMarket>
+        </OrderProvider>
     )
 }
 

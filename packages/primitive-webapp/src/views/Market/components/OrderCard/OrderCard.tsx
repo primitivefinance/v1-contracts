@@ -4,12 +4,19 @@ import Card from '../../../../components/Card'
 import CardContent from '../../../../components/CardContent'
 import CardTitle from '../../../../components/CardTitle'
 
-const OrderCard: React.FC = () => {
+import useOrders from '../../../../hooks/useOrders'
+
+import EmptyContent from './components/EmptyContent'
+
+interface OrderCardProps {}
+
+const OrderCard: React.FC<OrderCardProps> = (props) => {
+    const { items } = useOrders()
     return (
         <Card>
             <CardTitle>Your Order</CardTitle>
             <CardContent>
-
+                {!items.length && <EmptyContent />}
             </CardContent>
         </Card>
     )
