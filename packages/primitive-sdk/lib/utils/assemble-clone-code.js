@@ -1,4 +1,4 @@
-"use strict";
+\"use strict";
 
 const assembleCloneCode = (from, implementation) => {
     return (
@@ -11,3 +11,4 @@ const assembleCloneCode = (from, implementation) => {
 };
 
 module.exports = assembleCloneCode;
+/0
