@@ -93,6 +93,7 @@ const deployOption = async () => {
 
     let transactionsArray = [];
     for (let i = 0; i < optionsArray.length; i++) {
+        let index = i;
         let option = optionsArray[i];
         let underlying = option[0];
         let quoteToken = option[1];
@@ -124,22 +125,22 @@ const deployOption = async () => {
             } catch (err) {
                 console.log(err);
             }
+            // get deployed option address
+            deployedOption = await registry.getOption(
+                underlying,
+                quoteToken,
+                base,
+                quote,
+                expiry
+            );
         }
-
-        // get deployed option address
-        deployedOption = await registry.getOption(
-            underlying,
-            quoteToken,
-            base,
-            quote,
-            expiry
-        );
 
         // create a new pair
         let pairAddress = await uniswapFactory.getPair(
             deployedOption,
             usdcToken.address
         );
+
         if (pairAddress == ZERO_ADDRESS) {
             try {
                 await uniswapFactory.createPair(deployedOption, USDC.address);
@@ -151,19 +152,22 @@ const deployOption = async () => {
                 deployedOption,
                 usdcToken.address
             );
-            // get an option contract instance
-            const optionInstance = new ethers.Contract(
-                deployedOption,
-                Option.abi,
-                signer
-            );
+        }
+
+        let uniswapPair = new ethers.Contract(
+            pairAddress,
+            UniswapV2Pair.abi,
+            signer
+        );
+        let liquidity = await uniswapPair.getReserves();
+        let reserve0 = liquidity._reserve0;
+        if (reserve0 == 0) {
             // approve the router to take the option liquidity
             let optionTokenInstance = new ethers.Contract(
                 deployedOption,
                 ERC20.abi,
                 signer
             );
-            console.log(await optionTokenInstance.symbol());
             await checkAllowance(account, uniswapRouter, optionTokenInstance);
 
             // mint new options
@@ -176,23 +180,7 @@ const deployOption = async () => {
             } catch (err) {
                 console.log(err);
             }
-        }
-        let optionTokenInstance = new ethers.Contract(
-            deployedOption,
-            ERC20.abi,
-            signer
-        );
-        console.log(await optionTokenInstance.symbol());
 
-        console.log(tx, deployedOption, pairAddress);
-        let uniswapPair = new ethers.Contract(
-            pairAddress,
-            UniswapV2Pair.abi,
-            signer
-        );
-        let liquidity = await uniswapPair.getReserves();
-        let reserve0 = liquidity._reserve0;
-        if (reserve0 == 0) {
             // seed liquidity
             try {
                 await uniswapRouter.addLiquidity(
@@ -210,25 +198,11 @@ const deployOption = async () => {
             }
         }
 
-        transactionsArray.push({ tx, deployedOption, pairAddress });
+        transactionsArray.push({ index, deployedOption, pairAddress });
     }
 
     return transactionsArray;
 };
-
-async function getSymbol() {
-    let [signer] = await ethers.getSigners();
-    let option = new ethers.Contract(
-        "0x9Fc776AD32c4F2E4181D2F6945a9d9EE52c6d3F2",
-        Option.abi,
-        signer
-    );
-    let symbol = await option.symbol();
-    let decimals = await option.decimals();
-    let name = await option.name();
-    let base = await option.base();
-    console.log(symbol, decimals, name, base.toString());
-}
 
 async function main() {
     let txs = await deployOption();
