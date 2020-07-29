@@ -11,14 +11,17 @@ const {
     REDEEM_FACTORY,
     OPTION,
     REDEEM,
+    UNISWAP_TRADER,
 } = CONTRACT_NAMES;
 const { OPTION_TEMPLATE_LIB, REDEEM_TEMPLATE_LIB } = LIBRARIES;
+const { checkTemplates } = require("../tasks/setup");
 const { verifyContract } = require("./lib/utils");
 const Trader = require("@primitivefi/contracts/deployments/rinkeby/Trader");
 const OptionFactory = require("@primitivefi/contracts/deployments/rinkeby/OptionFactory");
 const RedeemFactory = require("@primitivefi/contracts/deployments/rinkeby/RedeemFactory");
 const OptionTemplateLib = require("@primitivefi/contracts/deployments/rinkeby/OptionTemplateLib");
 const RedeemTemplateLib = require("@primitivefi/contracts/deployments/rinkeby/RedeemTemplateLib");
+const UniswapTrader = require("@primitivefi/contracts/deployments/rinkeby/UniswapTrader");
 const { getContractAt } = bre.ethers;
 
 const verifyRegistry = async () => {
@@ -56,6 +59,12 @@ const verifyFactories = async () => {
 const verifyTraders = async () => {
     try {
         await verifyContract(TRADER, Trader.address, Trader.args, {});
+        await verifyContract(
+            UNISWAP_TRADER,
+            UniswapTrader.address,
+            UniswapTrader.args,
+            {}
+        );
     } catch (err) {
         console.error(err);
     }
