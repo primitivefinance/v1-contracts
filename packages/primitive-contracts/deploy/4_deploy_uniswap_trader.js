@@ -24,8 +24,8 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     );
 
     const USDC = await deployments.get("USDC");
-    const quoteTokenAddress = await opFacInstance.optionTemplate();
-    const routerAddress = await reFacInstance.redeemTemplate();
+    const quoteTokenAddress = await uniswapInstance.quoteToken();
+    const routerAddress = await uniswapInstance.router();
     if (quoteTokenAddress == bre.ethers.constants.AddressZero) {
         await uniswapInstance.setQuoteToken(USDC.address);
     }

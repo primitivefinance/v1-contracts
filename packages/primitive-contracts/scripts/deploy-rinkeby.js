@@ -11,7 +11,9 @@ const Registry = require("@primitivefi/contracts/deployments/rinkeby/Registry");
 const USDC = require("@primitivefi/contracts/deployments/rinkeby/USDC");
 const ETH = require("@primitivefi/contracts/deployments/rinkeby/ETH");
 const UniswapV2Router02 = require("@uniswap/v2-periphery/build/UniswapV2Router02.json");
+const UniswapV2Pair = require("@uniswap/v2-core/build/UniswapV2Pair.json");
 const UniswapV2Factory = require("@uniswap/v2-core/build/UniswapV2Factory.json");
+const ERC20 = require("@primitivefi/contracts/artifacts/ERC20");
 const { ADDRESSES, VALUES } = require("../test/lib/constants");
 const { MILLION_ETHER } = VALUES;
 const { RINKEBY_UNI_ROUTER02, RINKEBY_UNI_FACTORY, ZERO_ADDRESS } = ADDRESSES;
@@ -20,7 +22,11 @@ async function checkAllowance(owner, spender, token) {
     const amount = parseEther("10000000000");
     let allowance = await token.allowance(owner, spender.address);
     if (allowance <= amount) {
-        await token.approve(spender.address, amount, { from: owner });
+        try {
+            await token.approve(spender.address, amount, { from: owner });
+        } catch (err) {
+            console.log(err);
+        }
     }
 }
 
@@ -70,19 +76,19 @@ const deployOption = async () => {
     await checkAllowance(account, trader, usdcToken);
     await checkAllowance(account, trader, ethToken);
     // option = [underlying, quotetoken, base, quote, expiry]
-    let ETH_CALL_250 = [ETH.address, USDC.address, "1", "250", "1609286400"];
+    let ETH_CALL_240 = [ETH.address, USDC.address, "1", "240", "1609286400"];
     let ETH_CALL_300 = [ETH.address, USDC.address, "1", "300", "1609286400"];
-    let ETH_CALL_350 = [ETH.address, USDC.address, "1", "350", "1609286400"];
-    let ETH_PUT_250 = [USDC.address, ETH.address, "250", "1", "1609286400"];
+    let ETH_CALL_340 = [ETH.address, USDC.address, "1", "340", "1609286400"];
+    let ETH_PUT_240 = [USDC.address, ETH.address, "240", "1", "1609286400"];
     let ETH_PUT_300 = [USDC.address, ETH.address, "300", "1", "1609286400"];
-    let ETH_PUT_350 = [USDC.address, ETH.address, "350", "1", "1609286400"];
+    let ETH_PUT_340 = [USDC.address, ETH.address, "340", "1", "1609286400"];
     let optionsArray = [
-        ETH_CALL_250,
-        ETH_CALL_300,
-        ETH_CALL_350,
-        ETH_PUT_250,
+        ETH_CALL_240,
+        /* ETH_CALL_300,
+        ETH_CALL_340,
+        ETH_PUT_240,
         ETH_PUT_300,
-        ETH_PUT_350,
+        ETH_PUT_340, */
     ];
 
     let transactionsArray = [];
@@ -90,8 +96,8 @@ const deployOption = async () => {
         let option = optionsArray[i];
         let underlying = option[0];
         let quoteToken = option[1];
-        let base = option[2];
-        let quote = option[3];
+        let base = parseEther(option[2]);
+        let quote = parseEther(option[3]);
         let expiry = option[4];
         // check initialized and supported
         await checkSupported(registry, ethToken, usdcToken);
@@ -106,14 +112,18 @@ const deployOption = async () => {
         // deploy an option
         let tx;
         if (deployedOption == ZERO_ADDRESS) {
-            tx = await registry.deployOption(
-                underlying,
-                quoteToken,
-                parseEther(base),
-                parseEther(quote),
-                expiry,
-                { gasLimit: 1000000 }
-            );
+            try {
+                tx = await registry.deployOption(
+                    underlying,
+                    quoteToken,
+                    base,
+                    quote,
+                    expiry,
+                    { gasLimit: 1000000 }
+                );
+            } catch (err) {
+                console.log(err);
+            }
         }
 
         // get deployed option address
@@ -131,45 +141,94 @@ const deployOption = async () => {
             usdcToken.address
         );
         if (pairAddress == ZERO_ADDRESS) {
-            await uniswapFactory.createPair(deployedOption, USDC.address);
+            try {
+                await uniswapFactory.createPair(deployedOption, USDC.address);
+            } catch (err) {
+                console.log(err);
+            }
+
+            pairAddress = await uniswapFactory.getPair(
+                deployedOption,
+                usdcToken.address
+            );
+            // get an option contract instance
+            const optionInstance = new ethers.Contract(
+                deployedOption,
+                Option.abi,
+                signer
+            );
+            // approve the router to take the option liquidity
+            let optionTokenInstance = new ethers.Contract(
+                deployedOption,
+                ERC20.abi,
+                signer
+            );
+            console.log(await optionTokenInstance.symbol());
+            await checkAllowance(account, uniswapRouter, optionTokenInstance);
+
+            // mint new options
+            try {
+                await trader.safeMint(
+                    deployedOption,
+                    parseEther("100"),
+                    await signer.getAddress()
+                );
+            } catch (err) {
+                console.log(err);
+            }
         }
-        // get an option contract instance
-        const optionInstance = new ethers.Contract(
+        let optionTokenInstance = new ethers.Contract(
             deployedOption,
-            Option.abi,
+            ERC20.abi,
             signer
         );
-        // approve the router to take the option liquidity
-        await optionInstance.approve(uniswapRouter.address, MILLION_ETHER);
-        // mint new options
-        await trader.safeMint(
-            deployedOption,
-            parseEther("100"),
-            await signer.getAddress()
-        );
+        console.log(await optionTokenInstance.symbol());
 
         console.log(tx, deployedOption, pairAddress);
-        // seed liquidity
-        await uniswapRouter.addLiquidity(
-            deployedOption,
-            usdcToken.address,
-            parseEther("100"),
-            parseEther("500"),
-            0,
-            0,
-            await signer.getAddress(),
-            await uniswapTrader.getMaxDeadline()
+        let uniswapPair = new ethers.Contract(
+            pairAddress,
+            UniswapV2Pair.abi,
+            signer
         );
-        // get pair address
-        pairAddress = await uniswapFactory.getPair(
-            deployedOption,
-            usdcToken.address
-        );
+        let liquidity = await uniswapPair.getReserves();
+        let reserve0 = liquidity._reserve0;
+        if (reserve0 == 0) {
+            // seed liquidity
+            try {
+                await uniswapRouter.addLiquidity(
+                    deployedOption,
+                    usdcToken.address,
+                    parseEther("100"),
+                    parseEther("500"),
+                    0,
+                    0,
+                    await signer.getAddress(),
+                    await uniswapTrader.getMaxDeadline()
+                );
+            } catch (err) {
+                console.log(err);
+            }
+        }
+
         transactionsArray.push({ tx, deployedOption, pairAddress });
     }
 
     return transactionsArray;
 };
+
+async function getSymbol() {
+    let [signer] = await ethers.getSigners();
+    let option = new ethers.Contract(
+        "0x9Fc776AD32c4F2E4181D2F6945a9d9EE52c6d3F2",
+        Option.abi,
+        signer
+    );
+    let symbol = await option.symbol();
+    let decimals = await option.decimals();
+    let name = await option.name();
+    let base = await option.base();
+    console.log(symbol, decimals, name, base.toString());
+}
 
 async function main() {
     let txs = await deployOption();

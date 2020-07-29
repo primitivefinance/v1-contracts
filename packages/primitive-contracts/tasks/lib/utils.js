@@ -13,7 +13,7 @@ async function checkAllowance(owner, spender, token) {
 
 async function checkInitialization(registry, optionFactory, redeemFactory) {
     const fac = await registry.optionFactory();
-    if (fac == AddressZero)
+    if (fac == AddressZero || fac != optionFactory.address)
         await registry.initialize(optionFactory.address, redeemFactory.address);
 }
 
