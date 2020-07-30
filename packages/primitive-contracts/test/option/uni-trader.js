@@ -21,6 +21,7 @@ const {
     newOptionFactory,
     newPrimitive,
     newTrader,
+    UniswapRouter,
 } = setup;
 const { ONE_ETHER, FIVE_ETHER, TEN_ETHER, HUNDRED_ETHER, THOUSAND_ETHER, MILLION_ETHER } = constants.VALUES;
 

@@ -17,7 +17,7 @@ const UniswapTrader = require("@primitivefi/contracts/artifacts/UniswapTrader");
 const constants = require("./constants");
 const { MILLION_ETHER } = constants.VALUES;
 const { OPTION_TEMPLATE_LIB, REDEEM_TEMPLATE_LIB } = constants.LIBRARIES;
-const { MockProvider, deployContract, link } = require("ethereum-waffle");
+const { deployContract, link } = require("ethereum-waffle");
 const UniswapV2Router02 = require("@uniswap/v2-periphery/build/UniswapV2Router02.json");
 const UniswapV2Factory = require("@uniswap/v2-core/build/UniswapV2Factory.json");
 const { RINKEBY_UNI_ROUTER02, RINKEBY_UNI_FACTORY } = constants.ADDRESSES;
@@ -171,22 +171,6 @@ const newUniswapRinkeby = async (signer) => {
     const uniswapRouter = new ethers.Contract(RINKEBY_UNI_ROUTER02, UniswapV2Router02.abi, signer);
     const uniswapFactory = new ethers.Contract(RINKEBY_UNI_FACTORY, UniswapV2Factory.abi, signer);
     return { uniswapRouter, uniswapFactory };
-};
-
-const UniswapRouter = class {
-    constructor(signer) {
-        this.signer = signer;
-        this.contract = new ethers.Contract(RINKEBY_UNI_ROUTER02, UniswapV2Router02.abi, signer);
-        this.address = RINKEBY_UNI_ROUTER02;
-    }
-
-    get address() {
-        return this.address;
-    }
-
-    get contract() {
-        return this.contract;
-    }
 };
 
 const newUniswapTrader = async (signer, quoteToken, router) => {

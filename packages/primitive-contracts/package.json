@@ -27,6 +27,7 @@
         "deploy:local": "cross-env buidler deploy --network local",
         "deploy:rinkeby": "cross-env buidler deploy --network rinkeby",
         "deploy:mainnet": "cross-env buidler deploy --network live",
+        "verify": "cross-env buidler run ./scripts/verify.js --network rinkeby",
         "verify:rinkeby": "cross-env buidler run ./scripts/verify-rinkeby.js",
         "verify:mainnet": "cross-env buidler run ./scripts/verify-mainnet.js"
     },

@@ -1,20 +1,9 @@
 const bre = require("@nomiclabs/buidler");
-const Registry = require("@primitivefi/contracts/deployments/rinkeby/Registry");
-const {
-    CONTRACT_NAMES,
-    LIBRARIES,
-} = require("@primitivefi/contracts/test/lib/constants");
-const {
-    REGISTRY,
-    TRADER,
-    OPTION_FACTORY,
-    REDEEM_FACTORY,
-    OPTION,
-    REDEEM,
-    UNISWAP_TRADER,
-} = CONTRACT_NAMES;
+//const Registry = require("@primitivefi/contracts/deployments/rinkeby/Registry");
+const { CONTRACT_NAMES, LIBRARIES } = require("@primitivefi/contracts/test/lib/constants");
+const { REGISTRY, TRADER, OPTION_FACTORY, REDEEM_FACTORY, OPTION, REDEEM, UNISWAP_TRADER } = CONTRACT_NAMES;
 const { OPTION_TEMPLATE_LIB, REDEEM_TEMPLATE_LIB } = LIBRARIES;
-const { checkTemplates } = require("../tasks/setup");
+const { checkTemplates } = require("../tasks/lib/setup");
 const { verifyContract } = require("./lib/utils");
 const Trader = require("@primitivefi/contracts/deployments/rinkeby/Trader");
 const OptionFactory = require("@primitivefi/contracts/deployments/rinkeby/OptionFactory");
@@ -25,6 +14,7 @@ const UniswapTrader = require("@primitivefi/contracts/deployments/rinkeby/Uniswa
 const { getContractAt } = bre.ethers;
 
 const verifyRegistry = async () => {
+    let Registry = await deployments.get("Registry");
     try {
         await verifyContract(REGISTRY, Registry.address, Registry.args, {});
     } catch (err) {
@@ -34,23 +24,17 @@ const verifyRegistry = async () => {
 
 const verifyFactories = async () => {
     try {
-        await verifyContract(
-            OPTION_FACTORY,
-            OptionFactory.address,
-            OptionFactory.args,
-            { OptionTemplateLib: OptionTemplateLib.address }
-        );
+        await verifyContract(OPTION_FACTORY, OptionFactory.address, OptionFactory.args, {
+            [OPTION_TEMPLATE_LIB]: OptionTemplateLib.address,
+        });
     } catch (err) {
         console.error(err);
     }
 
     try {
-        await verifyContract(
-            REDEEM_FACTORY,
-            RedeemFactory.address,
-            RedeemFactory.args,
-            { [REDEEM_TEMPLATE_LIB]: RedeemTemplateLib.address.toString() }
-        );
+        await verifyContract(REDEEM_FACTORY, RedeemFactory.address, RedeemFactory.args, {
+            [REDEEM_TEMPLATE_LIB]: RedeemTemplateLib.address.toString(),
+        });
     } catch (err) {
         console.error(err);
     }
@@ -59,31 +43,17 @@ const verifyFactories = async () => {
 const verifyTraders = async () => {
     try {
         await verifyContract(TRADER, Trader.address, Trader.args, {});
-        await verifyContract(
-            UNISWAP_TRADER,
-            UniswapTrader.address,
-            UniswapTrader.args,
-            {}
-        );
+        await verifyContract(UNISWAP_TRADER, UniswapTrader.address, UniswapTrader.args, {});
     } catch (err) {
         console.error(err);
     }
 };
 
 const verifyTemplates = async () => {
-    const optionFactory = await getContractAt(
-        OptionFactory.abi,
-        OptionFactory.address
-    );
-    const redeemFactory = await getContractAt(
-        RedeemFactory.abi,
-        RedeemFactory.address
-    );
+    const optionFactory = await getContractAt(OptionFactory.abi, OptionFactory.address);
+    const redeemFactory = await getContractAt(RedeemFactory.abi, RedeemFactory.address);
     // warning: deploys templates which costs gas.
-    const { optionTemplate, redeemTemplate } = await checkTemplates(
-        optionFactory,
-        redeemFactory
-    );
+    const { optionTemplate, redeemTemplate } = await checkTemplates(optionFactory, redeemFactory);
     try {
         await verifyContract(OPTION, optionTemplate, [], {});
     } catch (err) {
@@ -97,7 +67,6 @@ const verifyTemplates = async () => {
 };
 
 async function main() {
-    // Verify registry, factories, traders, and templates.
     await verifyFactories();
     await verifyRegistry();
     await verifyTraders();
