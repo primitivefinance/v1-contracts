@@ -11,7 +11,8 @@ import { IOption } from "../interfaces/IOption.sol";
 import { IRedeem } from "../interfaces/IRedeem.sol";
 import { IFlash } from "../interfaces/IFlash.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { ERC20, IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { ERC20 } from "./ERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
@@ -36,7 +37,7 @@ contract Option is IOption, ERC20, ReentrancyGuard, Pausable {
     event Fund(uint underlyingCache, uint strikeCache);
 
     // solhint-disable-next-line no-empty-blocks
-    constructor() public ERC20("Primitive V1 Vanilla Option", "OPTION") {}
+    constructor() public {}
 
     function initialize(
         address underlyingToken,

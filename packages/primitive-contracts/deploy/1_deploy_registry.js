@@ -58,8 +58,14 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         signer
     );
 
-    await opFacInstance.deployOptionTemplate();
-    await reFacInstance.deployRedeemTemplate();
+    const optionImpAddress = await opFacInstance.optionTemplate();
+    const redeemImpAddress = await reFacInstance.redeemTemplate();
+    if (optionImpAddress == ethers.constants.AddressZero) {
+        await opFacInstance.deployOptionTemplate();
+    }
+    if (redeemImpAddress == ethers.constants.AddressZero) {
+        await reFacInstance.deployRedeemTemplate();
+    }
 
     let deployed = [registry, optionFactory, redeemFactory];
     for (let i = 0; i < deployed.length; i++) {

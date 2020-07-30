@@ -157,6 +157,27 @@ describe("Option Contract", () => {
         });
     });
     describe(" Option", () => {
+        it("should return the correct name", async () => {
+            assert.equal(
+                (await optionToken.name()).toString(),
+                "Primitive V1 Token",
+                "Incorrect name"
+            );
+        });
+        it("should return the correct decimals", async () => {
+            assert.equal(
+                (await optionToken.decimals()).toString(),
+                "18",
+                "Incorrect decimals"
+            );
+        });
+        it("should return the correct symbol", async () => {
+            assert.equal(
+                (await optionToken.symbol()).toString(),
+                "PRM",
+                "Incorrect symbol"
+            );
+        });
         it("should return the correct underlyingToken", async () => {
             assert.equal(
                 (await optionToken.underlyingToken()).toString(),
