@@ -1,9 +1,5 @@
 // SPDX-License-Identifier: MIT
 
-
-
-
-
 pragma solidity ^0.6.2;
 
 import "@openzeppelin/contracts/GSN/Context.sol";
@@ -11,42 +7,35 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
 interface IERC20 {
-    function totalSupply() external view returns (uint256);
+    function totalSupply() external view returns (uint);
 
-    function balanceOf(address account) external view returns (uint256);
+    function balanceOf(address account) external view returns (uint);
 
-    function transfer(address recipient, uint256 amount) external;
+    function transfer(address recipient, uint amount) external;
 
-    function allowance(address owner, address spender)
-        external
-        view
-        returns (uint256);
+    function allowance(address owner, address spender) external view returns (uint);
 
-    function approve(address spender, uint256 amount) external returns (bool);
+    function approve(address spender, uint amount) external returns (bool);
 
     function transferFrom(
         address sender,
         address recipient,
-        uint256 amount
+        uint amount
     ) external;
 
-    event Transfer(address indexed from, address indexed to, uint256 value);
-    event Approval(
-        address indexed owner,
-        address indexed spender,
-        uint256 value
-    );
+    event Transfer(address indexed from, address indexed to, uint value);
+    event Approval(address indexed owner, address indexed spender, uint value);
 }
 
 contract BadERC20 is Context, IERC20 {
-    using SafeMath for uint256;
+    using SafeMath for uint;
     using Address for address;
 
-    mapping(address => uint256) private _balances;
+    mapping(address => uint) private _balances;
 
-    mapping(address => mapping(address => uint256)) private _allowances;
+    mapping(address => mapping(address => uint)) private _allowances;
 
-    uint256 private _totalSupply;
+    uint private _totalSupply;
 
     string private _name;
     string private _symbol;
@@ -70,42 +59,27 @@ contract BadERC20 is Context, IERC20 {
         return _decimals;
     }
 
-    function totalSupply() public override view returns (uint256) {
+    function totalSupply() public override view returns (uint) {
         return _totalSupply;
     }
 
-    function balanceOf(address account) public override view returns (uint256) {
+    function balanceOf(address account) public override view returns (uint) {
         return _balances[account];
     }
 
-    function transfer(address recipient, uint256 amount)
-        public
-        virtual
-        override
-    {
+    function transfer(address recipient, uint amount) public virtual override {
         _transfer(_msgSender(), recipient, amount);
     }
 
-    function allowance(address owner, address spender)
-        public
-        virtual
-        override
-        view
-        returns (uint256)
-    {
+    function allowance(address owner, address spender) public virtual override view returns (uint) {
         return _allowances[owner][spender];
     }
 
-    function mint(address account, uint256 amount) public {
+    function mint(address account, uint amount) public {
         _mint(account, amount);
     }
 
-    function approve(address spender, uint256 amount)
-        public
-        virtual
-        override
-        returns (bool)
-    {
+    function approve(address spender, uint amount) public virtual override returns (bool) {
         _approve(_msgSender(), spender, amount);
         return true;
     }
@@ -113,44 +87,26 @@ contract BadERC20 is Context, IERC20 {
     function transferFrom(
         address sender,
         address recipient,
-        uint256 amount
+        uint amount
     ) public virtual override {
         _transfer(sender, recipient, amount);
         _approve(
             sender,
             _msgSender(),
-            _allowances[sender][_msgSender()].sub(
-                amount,
-                "ERC20: transfer amount exceeds allowance"
-            )
+            _allowances[sender][_msgSender()].sub(amount, "ERC20: transfer amount exceeds allowance")
         );
     }
 
-    function increaseAllowance(address spender, uint256 addedValue)
-        public
-        virtual
-        returns (bool)
-    {
-        _approve(
-            _msgSender(),
-            spender,
-            _allowances[_msgSender()][spender].add(addedValue)
-        );
+    function increaseAllowance(address spender, uint addedValue) public virtual returns (bool) {
+        _approve(_msgSender(), spender, _allowances[_msgSender()][spender].add(addedValue));
         return true;
     }
 
-    function decreaseAllowance(address spender, uint256 subtractedValue)
-        public
-        virtual
-        returns (bool)
-    {
+    function decreaseAllowance(address spender, uint subtractedValue) public virtual returns (bool) {
         _approve(
             _msgSender(),
             spender,
-            _allowances[_msgSender()][spender].sub(
-                subtractedValue,
-                "ERC20: decreased allowance below zero"
-            )
+            _allowances[_msgSender()][spender].sub(subtractedValue, "ERC20: decreased allowance below zero")
         );
         return true;
     }
@@ -158,22 +114,19 @@ contract BadERC20 is Context, IERC20 {
     function _transfer(
         address sender,
         address recipient,
-        uint256 amount
+        uint amount
     ) internal virtual {
         require(sender != address(0), "ERC20: transfer from the zero address");
         require(recipient != address(0), "ERC20: transfer to the zero address");
 
         _beforeTokenTransfer(sender, recipient, amount);
 
-        _balances[sender] = _balances[sender].sub(
-            amount,
-            "ERC20: transfer amount exceeds balance"
-        );
+        _balances[sender] = _balances[sender].sub(amount, "ERC20: transfer amount exceeds balance");
         _balances[recipient] = _balances[recipient].add(amount);
         emit Transfer(sender, recipient, amount);
     }
 
-    function _mint(address account, uint256 amount) internal virtual {
+    function _mint(address account, uint amount) internal virtual {
         require(account != address(0), "ERC20: mint to the zero address");
 
         _beforeTokenTransfer(address(0), account, amount);
@@ -183,15 +136,12 @@ contract BadERC20 is Context, IERC20 {
         emit Transfer(address(0), account, amount);
     }
 
-    function _burn(address account, uint256 amount) internal virtual {
+    function _burn(address account, uint amount) internal virtual {
         require(account != address(0), "ERC20: burn from the zero address");
 
         _beforeTokenTransfer(account, address(0), amount);
 
-        _balances[account] = _balances[account].sub(
-            amount,
-            "ERC20: burn amount exceeds balance"
-        );
+        _balances[account] = _balances[account].sub(amount, "ERC20: burn amount exceeds balance");
         _totalSupply = _totalSupply.sub(amount);
         emit Transfer(account, address(0), amount);
     }
@@ -199,7 +149,7 @@ contract BadERC20 is Context, IERC20 {
     function _approve(
         address owner,
         address spender,
-        uint256 amount
+        uint amount
     ) internal virtual {
         require(owner != address(0), "ERC20: approve from the zero address");
         require(spender != address(0), "ERC20: approve to the zero address");
@@ -216,7 +166,7 @@ contract BadERC20 is Context, IERC20 {
     function _beforeTokenTransfer(
         address from,
         address to,
-        uint256 amount
+        uint amount
     ) internal virtual {
         // do nothing
     }
