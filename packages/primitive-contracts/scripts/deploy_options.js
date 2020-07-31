@@ -15,7 +15,6 @@ const UniswapV2Pair = require("@uniswap/v2-core/build/UniswapV2Pair.json");
 const UniswapV2Factory = require("@uniswap/v2-core/build/UniswapV2Factory.json");
 const ERC20 = require("@primitivefi/contracts/artifacts/ERC20");
 const { ADDRESSES, VALUES } = require("../test/lib/constants");
-const { MILLION_ETHER } = VALUES;
 const { RINKEBY_UNI_ROUTER02, RINKEBY_UNI_FACTORY, ZERO_ADDRESS } = ADDRESSES;
 
 async function checkAllowance(owner, spender, token) {
@@ -30,31 +29,22 @@ async function checkAllowance(owner, spender, token) {
     }
 }
 
-/* const deployOption = async () => {
-    const { registry, optionFactory, redeemFactory } = await setupRegistry();
-    const { usdcToken, ethToken } = await setupTokens();
-    const base = parseEther("1");
-    const quote = parseEther("1000");
-    const expiry = "1609286400";
-    await checkSupported(registry, ethToken, usdcToken);
-    await checkInitialization(registry, optionFactory, redeemFactory);
-    const tx = await registry.deployOption(ethToken.address, usdcToken.address, base, quote, expiry, { gasLimit: 1000000 });
-    const deployedOption = await registry.getOption(ethToken.address, usdcToken.address, base, quote, expiry);
-
-    return { tx, deployedOption };
-}; */
+const getInstance = async (contractName, signer) => {
+    const contract = await deployments.get(contractName);
+    const instance = new ethers.Contract(contract.address, contract.abi, signer);
+    return instance;
+};
 
 const deployOption = async () => {
     const [signer] = await ethers.getSigners();
     const account = await signer.getAddress();
-    const registry = new ethers.Contract(Registry.address, Registry.abi, signer);
-    const optionFactory = new ethers.Contract(OptionFactory.address, OptionFactory.abi, signer);
-    const redeemFactory = new ethers.Contract(RedeemFactory.address, RedeemFactory.abi, signer);
-    const trader = new ethers.Contract(Trader.address, Trader.abi, signer);
-    const uniswapTrader = new ethers.Contract(UniswapTrader.address, UniswapTrader.abi, signer);
-
-    const usdcToken = new ethers.Contract(USDC.address, USDC.abi, signer);
-    const ethToken = new ethers.Contract(ETH.address, ETH.abi, signer);
+    const registry = await getInstance("Registry");
+    const optionFactory = await getInstance("OptionFactory");
+    const redeemFactory = await getInstance("RedeemFactory");
+    const trader = await getInstance("Trader");
+    const uniswapTrader = await getInstance("UniswapTrader");
+    const usdcToken = await getInstance("USDC");
+    const ethToken = await getInstance("ETH");
 
     const uniswapFactory = new ethers.Contract(RINKEBY_UNI_FACTORY, UniswapV2Factory.abi, signer);
     const uniswapRouter = new ethers.Contract(RINKEBY_UNI_ROUTER02, UniswapV2Router02.abi, signer);
@@ -93,6 +83,7 @@ const deployOption = async () => {
         // check initialized and supported
         await checkSupported(registry, ethToken, usdcToken);
         await checkInitialization(registry, optionFactory, redeemFactory);
+        // check if option has been deployed, and if not, deploy it
         let deployedOption = await registry.getOption(underlying, quoteToken, base, quote, expiry);
         // deploy an option
         let tx;
@@ -108,14 +99,12 @@ const deployOption = async () => {
 
         // create a new pair
         let pairAddress = await uniswapFactory.getPair(deployedOption, usdcToken.address);
-
         if (pairAddress == ZERO_ADDRESS) {
             try {
                 await uniswapFactory.createPair(deployedOption, USDC.address);
             } catch (err) {
                 console.log(err);
             }
-
             pairAddress = await uniswapFactory.getPair(deployedOption, usdcToken.address);
         }
 
@@ -137,14 +126,14 @@ const deployOption = async () => {
             // seed liquidity
             try {
                 await uniswapRouter.addLiquidity(
-                    deployedOption,
-                    usdcToken.address,
-                    parseEther("100"),
-                    parseEther("500"),
-                    0,
-                    0,
-                    await signer.getAddress(),
-                    await uniswapTrader.getMaxDeadline()
+                    deployedOption, // token 0
+                    usdcToken.address, // token 1
+                    parseEther("100"), // quantity of token 0
+                    parseEther("500"), // quantity of token 1
+                    0, // min quantity of lp tokens
+                    0, // min quantity of lp tokens
+                    await signer.getAddress(), // lp token receiver
+                    await uniswapTrader.getMaxDeadline() // deadline until trade expires
                 );
             } catch (err) {
                 console.log(err);
