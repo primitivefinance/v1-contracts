@@ -2,7 +2,7 @@
 
 # Primitive Protocol
 
-[![](https://img.shields.io/github/stars/primitivefinance/primitive-v1?style=social)](https://img.shields.io/github/stars/primitivefinance/primitive-contracts?style=social)
+![Github](https://img.shields.io/github/stars/primitivefinance/primitive-protocol?style=social)
 ![Twitter Follow](https://img.shields.io/twitter/follow/primitivefi?style=social)
 [![Discord](https://img.shields.io/discord/168831573876015105.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/rzRwJ4K)
 
