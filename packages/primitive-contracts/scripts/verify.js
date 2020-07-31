@@ -3,9 +3,18 @@ const bre = require("@nomiclabs/buidler");
 const { CONTRACT_NAMES, LIBRARIES } = require("@primitivefi/contracts/test/lib/constants");
 const { REGISTRY, TRADER, OPTION_FACTORY, REDEEM_FACTORY, OPTION, REDEEM, UNISWAP_TRADER } = CONTRACT_NAMES;
 const { OPTION_TEMPLATE_LIB, REDEEM_TEMPLATE_LIB } = LIBRARIES;
-const { checkTemplates } = require("../tasks/lib/setup");
-const { verifyContract } = require("./lib/utils");
+const { checkTemplates } = require("./setup");
+const { verifyContract } = require("../test/lib/utils");
 const { getContractAt } = bre.ethers;
+
+const verifyContract = async (fullName, address, constructorArgs, library) => {
+    await run("verify-contract", {
+        address: address,
+        contractName: fullName,
+        libraries: JSON.stringify(library),
+        constructorArguments: constructorArgs,
+    });
+};
 
 const verifyRegistry = async () => {
     let Registry = await deployments.get("Registry");

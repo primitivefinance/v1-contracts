@@ -7,10 +7,6 @@ const modifyEnvironmentIfMonorepo = require("./internal/monorepo");
 const unhook = modifyEnvironmentIfMonorepo();
 require("dotenv").config();
 
-// == Tasks ==
-/* require("./tasks"); */
-require("./tasks/test-task");
-
 // == Plugins ==
 usePlugin("@nomiclabs/buidler-solhint");
 usePlugin("@nomiclabs/buidler-etherscan");

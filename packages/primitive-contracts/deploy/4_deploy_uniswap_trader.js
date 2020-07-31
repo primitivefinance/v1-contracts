@@ -3,7 +3,6 @@
 // When running the script with `buidler run <script>` you'll find the Buidler
 // Runtime Environment's members available in the global scope.
 const bre = require("@nomiclabs/buidler");
-const Weth = require("canonical-weth");
 const { ADDRESSES } = require("../test/lib/constants");
 const { RINKEBY_UNI_ROUTER02 } = ADDRESSES;
 
@@ -17,27 +16,23 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         contractName: "UniswapTrader",
         args: [],
     });
-    const uniswapInstance = new ethers.Contract(
-        uniswapTrader.address,
-        uniswapTrader.abi,
-        signer
-    );
+    const uniswapInstance = new ethers.Contract(uniswapTrader.address, uniswapTrader.abi, signer);
 
-    const USDC = await deployments.get("USDC");
-    const quoteTokenAddress = await uniswapInstance.quoteToken();
-    const routerAddress = await uniswapInstance.router();
-    if (quoteTokenAddress == bre.ethers.constants.AddressZero) {
-        await uniswapInstance.setQuoteToken(USDC.address);
-    }
-    if (routerAddress == bre.ethers.constants.AddressZero) {
-        await uniswapInstance.setRouter(RINKEBY_UNI_ROUTER02);
+    if (chainId == 4) {
+        const USDC = await deployments.get("USDC");
+        const quoteTokenAddress = await uniswapInstance.quoteToken();
+        const routerAddress = await uniswapInstance.router();
+        if (quoteTokenAddress == bre.ethers.constants.AddressZero) {
+            await uniswapInstance.setQuoteToken(USDC.address);
+        }
+        if (routerAddress == bre.ethers.constants.AddressZero) {
+            await uniswapInstance.setRouter(RINKEBY_UNI_ROUTER02);
+        }
     }
 
     let deployed = [uniswapTrader];
     for (let i = 0; i < deployed.length; i++) {
         if (deployed[i].newlyDeployed)
-            log(
-                `Contract deployed at ${deployed[i].address} using ${deployed[i].receipt.gasUsed} gas on chain ${chain}`
-            );
+            log(`Contract deployed at ${deployed[i].address} using ${deployed[i].receipt.gasUsed} gas on chain ${chain}`);
     }
 };

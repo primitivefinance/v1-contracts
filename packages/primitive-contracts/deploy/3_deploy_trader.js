@@ -28,8 +28,6 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     let deployed = [trader];
     for (let i = 0; i < deployed.length; i++) {
         if (deployed[i].newlyDeployed)
-            log(
-                `Contract deployed at ${deployed[i].address} using ${deployed[i].receipt.gasUsed} gas on chain ${chain}`
-            );
+            log(`Contract deployed at ${deployed[i].address} using ${deployed[i].receipt.gasUsed} gas on chain ${chain}`);
     }
 };

@@ -5,7 +5,7 @@ const { ethers } = require("ethers");
 const { AddressZero } = ethers.constants;
 const { parseEther } = ethers.utils;
 const { InfuraProvider } = ethers.providers;
-const { checkInitialization } = require("./utils");
+const { checkInitialization } = require("../tasks/lib/utils");
 const Option = require("@primitivefi/contracts/artifacts/Option");
 const Redeem = require("@primitivefi/contracts/artifacts/Redeem");
 
@@ -28,14 +28,8 @@ async function setupRegistry() {
     let optionFactory = await deployments.get("OptionFactory");
     let redeemFactory = await deployments.get("RedeemFactory");
     registry = await getContractAt(registry.abi, registry.address);
-    optionFactory = await getContractAt(
-        optionFactory.abi,
-        optionFactory.address
-    );
-    redeemFactory = await getContractAt(
-        redeemFactory.abi,
-        redeemFactory.address
-    );
+    optionFactory = await getContractAt(optionFactory.abi, optionFactory.address);
+    redeemFactory = await getContractAt(redeemFactory.abi, redeemFactory.address);
     await checkInitialization(registry, optionFactory, redeemFactory);
     await checkTemplates(optionFactory, redeemFactory);
     return { registry, optionFactory, redeemFactory };
@@ -81,30 +75,13 @@ async function setupPrimitive() {
     const base = parseEther("1");
     const quote = parseEther("300");
     const expiry = "1790868800";
-    let optionAddress = await registry.getOption(
-        ethToken.address,
-        usdcToken.address,
-        base,
-        quote,
-        expiry
-    );
+    let optionAddress = await registry.getOption(ethToken.address, usdcToken.address, base, quote, expiry);
 
     if (optionAddress == AddressZero) {
-        let deployOption = await registry.deployOption(
-            ethToken.address,
-            usdcToken.address,
-            base,
-            quote,
-            expiry,
-            { gasLimit: 7000000 }
-        );
-        optionAddress = await registry.getOption(
-            ethToken.address,
-            usdcToken.address,
-            base,
-            quote,
-            expiry
-        );
+        let deployOption = await registry.deployOption(ethToken.address, usdcToken.address, base, quote, expiry, {
+            gasLimit: 7000000,
+        });
+        optionAddress = await registry.getOption(ethToken.address, usdcToken.address, base, quote, expiry);
     }
 
     const { option, redeem } = await setupOption(optionAddress);
@@ -119,9 +96,7 @@ async function setupTest(signer) {
 }
 
 async function checkSupported(registry, underlyingToken, strikeToken) {
-    const isUnderlyingSupported = await registry.isSupported(
-        underlyingToken.address
-    );
+    const isUnderlyingSupported = await registry.isSupported(underlyingToken.address);
     const isStrikeSupported = await registry.isSupported(strikeToken.address);
     if (!isUnderlyingSupported) {
         await registry.addSupported(underlyingToken.address);
