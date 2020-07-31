@@ -9,23 +9,24 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     const { log, deploy } = deployments;
     const { deployer } = await getNamedAccounts();
     const chain = await bre.getChainId();
-    const ethToken = await deploy("ETH", {
-        from: deployer,
-        contractName: "TestERC20",
-        args: ["ETH", "Ether", parseEther("10000")],
-    });
+    if (chain == 4) {
+        const ethToken = await deploy("TestERC20", {
+            from: deployer,
+            contractName: "TestERC20",
+            args: ["ETH", "Ether", parseEther("10000")],
+        });
 
-    const usdcToken = await deploy("USDC", {
-        from: deployer,
-        contractName: "TestERC20",
-        args: ["USDC", "Stablecoin", parseEther("10000")],
-    });
-
-    let deployed = [ethToken, usdcToken];
-    for (let i = 0; i < deployed.length; i++) {
-        if (deployed[i].newlyDeployed)
-            log(
-                `Contract deployed at ${deployed[i].address} using ${deployed[i].receipt.gasUsed} gas on chain ${chain}`
-            );
+        const usdcToken = await deploy("TestERC20", {
+            from: deployer,
+            contractName: "TestERC20",
+            args: ["USDC", "Stablecoin", parseEther("10000")],
+        });
+        let deployed = [ethToken, usdcToken];
+        for (let i = 0; i < deployed.length; i++) {
+            if (deployed[i].newlyDeployed)
+                log(
+                    `Contract deployed at ${deployed[i].address} using ${deployed[i].receipt.gasUsed} gas on chain ${chain}`
+                );
+        }
     }
 };

@@ -13,10 +13,11 @@ const Trader = require("@primitivefi/contracts/artifacts/Trader");
 const CTokenLike = require("@primitivefi/contracts/artifacts/CTokenLike");
 const OptionTemplateLib = require("@primitivefi/contracts/artifacts/OptionTemplateLib");
 const RedeemTemplateLib = require("@primitivefi/contracts/artifacts/RedeemTemplateLib");
+const UniswapTrader = require("@primitivefi/contracts/artifacts/UniswapTrader");
 const constants = require("./constants");
 const { MILLION_ETHER } = constants.VALUES;
 const { OPTION_TEMPLATE_LIB, REDEEM_TEMPLATE_LIB } = constants.LIBRARIES;
-const { MockProvider, deployContract, link } = require("ethereum-waffle");
+const { deployContract, link } = require("ethereum-waffle");
 const UniswapV2Router02 = require("@uniswap/v2-periphery/build/UniswapV2Router02.json");
 const UniswapV2Factory = require("@uniswap/v2-core/build/UniswapV2Factory.json");
 const { RINKEBY_UNI_ROUTER02, RINKEBY_UNI_FACTORY } = constants.ADDRESSES;
@@ -172,9 +173,19 @@ const newUniswapRinkeby = async (signer) => {
     return { uniswapRouter, uniswapFactory };
 };
 
+const newUniswapTrader = async (signer, quoteToken, router) => {
+    const uniTrader = await deployContract(signer, UniswapTrader, [], {
+        gasLimit: 6000000,
+    });
+    await uniTrader.setQuoteToken(quoteToken.address);
+    await uniTrader.setRouter(router.address);
+    return uniTrader;
+};
+
 Object.assign(module.exports, {
     newUniswap,
     newUniswapRinkeby,
+    newUniswapTrader,
     newWallets,
     newERC20,
     newBadERC20,

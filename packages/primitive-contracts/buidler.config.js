@@ -7,10 +7,6 @@ const modifyEnvironmentIfMonorepo = require("./internal/monorepo");
 const unhook = modifyEnvironmentIfMonorepo();
 require("dotenv").config();
 
-// == Tasks ==
-/* require("./tasks"); */
-require("./tasks/test-task");
-
 // == Plugins ==
 usePlugin("@nomiclabs/buidler-solhint");
 usePlugin("@nomiclabs/buidler-etherscan");
@@ -23,7 +19,7 @@ usePlugin("solidity-coverage");
 unhook();
 
 // == Environment ==
-const ETHERSCAN_APY_KEY = process.env.ETHERSCAN_APY_KEY || crypto.randomBytes(20).toString("base64");
+const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || crypto.randomBytes(20).toString("base64");
 const rinkeby = process.env.RINKEBY || new ethers.providers.InfuraProvider("rinkeby").connection.url;
 const mainnet = process.env.MAINNET || new ethers.providers.InfuraProvider("mainnet").connection.url;
 const mnemonic = process.env.TEST_MNEMONIC || bip39.generateMnemonic();
@@ -63,7 +59,8 @@ Object.assign(module.exports, {
     },
     etherscan: {
         url: "https://api-rinkeby.etherscan.io/api",
-        apiKey: ETHERSCAN_APY_KEY,
+        apiKey: ETHERSCAN_API_KEY,
+        etherscanApiKey: ETHERSCAN_API_KEY,
     },
     gasReporter: {
         currency: "USD",

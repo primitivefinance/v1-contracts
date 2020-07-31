@@ -1,7 +1,7 @@
 const bre = require("@nomiclabs/buidler/config");
-const { checkSupported } = require("@primitivefi/contracts/tasks/lib/setup");
+const { checkSupported } = require("./setup");
 const { parseEther } = require("ethers/lib/utils");
-const { checkInitialization } = require("../tasks/lib/utils");
+const { checkInitialization } = require("../test/lib/utils");
 const OptionFactory = require("@primitivefi/contracts/deployments/rinkeby/OptionFactory");
 const RedeemFactory = require("@primitivefi/contracts/deployments/rinkeby/RedeemFactory");
 const UniswapTrader = require("@primitivefi/contracts/deployments/rinkeby/UniswapTrader");
@@ -15,7 +15,6 @@ const UniswapV2Pair = require("@uniswap/v2-core/build/UniswapV2Pair.json");
 const UniswapV2Factory = require("@uniswap/v2-core/build/UniswapV2Factory.json");
 const ERC20 = require("@primitivefi/contracts/artifacts/ERC20");
 const { ADDRESSES, VALUES } = require("../test/lib/constants");
-const { MILLION_ETHER } = VALUES;
 const { RINKEBY_UNI_ROUTER02, RINKEBY_UNI_FACTORY, ZERO_ADDRESS } = ADDRESSES;
 
 async function checkAllowance(owner, spender, token) {
@@ -30,44 +29,25 @@ async function checkAllowance(owner, spender, token) {
     }
 }
 
+const getInstance = async (contractName, signer) => {
+    const contract = await deployments.get(contractName);
+    const instance = new ethers.Contract(contract.address, contract.abi, signer);
+    return instance;
+};
+
 const deployOption = async () => {
     const [signer] = await ethers.getSigners();
     const account = await signer.getAddress();
-    const registry = new ethers.Contract(
-        Registry.address,
-        Registry.abi,
-        signer
-    );
-    const optionFactory = new ethers.Contract(
-        OptionFactory.address,
-        OptionFactory.abi,
-        signer
-    );
-    const redeemFactory = new ethers.Contract(
-        RedeemFactory.address,
-        RedeemFactory.abi,
-        signer
-    );
-    const trader = new ethers.Contract(Trader.address, Trader.abi, signer);
-    const uniswapTrader = new ethers.Contract(
-        UniswapTrader.address,
-        UniswapTrader.abi,
-        signer
-    );
+    const registry = await getInstance("Registry", signer);
+    const optionFactory = await getInstance("OptionFactory", signer);
+    const redeemFactory = await getInstance("RedeemFactory", signer);
+    const trader = await getInstance("Trader", signer);
+    const uniswapTrader = await getInstance("UniswapTrader", signer);
+    const usdcToken = await getInstance("USDC", signer);
+    const ethToken = await getInstance("ETH", signer);
 
-    const usdcToken = new ethers.Contract(USDC.address, USDC.abi, signer);
-    const ethToken = new ethers.Contract(ETH.address, ETH.abi, signer);
-
-    const uniswapFactory = new ethers.Contract(
-        RINKEBY_UNI_FACTORY,
-        UniswapV2Factory.abi,
-        signer
-    );
-    const uniswapRouter = new ethers.Contract(
-        RINKEBY_UNI_ROUTER02,
-        UniswapV2Router02.abi,
-        signer
-    );
+    const uniswapFactory = new ethers.Contract(RINKEBY_UNI_FACTORY, UniswapV2Factory.abi, signer);
+    const uniswapRouter = new ethers.Contract(RINKEBY_UNI_ROUTER02, UniswapV2Router02.abi, signer);
 
     // approve the router
     await checkAllowance(account, uniswapRouter, usdcToken);
@@ -103,80 +83,42 @@ const deployOption = async () => {
         // check initialized and supported
         await checkSupported(registry, ethToken, usdcToken);
         await checkInitialization(registry, optionFactory, redeemFactory);
-        let deployedOption = await registry.getOption(
-            underlying,
-            quoteToken,
-            base,
-            quote,
-            expiry
-        );
+        // check if option has been deployed, and if not, deploy it
+        let deployedOption = await registry.getOption(underlying, quoteToken, base, quote, expiry);
         // deploy an option
         let tx;
         if (deployedOption == ZERO_ADDRESS) {
             try {
-                tx = await registry.deployOption(
-                    underlying,
-                    quoteToken,
-                    base,
-                    quote,
-                    expiry,
-                    { gasLimit: 1000000 }
-                );
+                tx = await registry.deployOption(underlying, quoteToken, base, quote, expiry, { gasLimit: 1000000 });
             } catch (err) {
                 console.log(err);
             }
             // get deployed option address
-            deployedOption = await registry.getOption(
-                underlying,
-                quoteToken,
-                base,
-                quote,
-                expiry
-            );
+            deployedOption = await registry.getOption(underlying, quoteToken, base, quote, expiry);
         }
 
         // create a new pair
-        let pairAddress = await uniswapFactory.getPair(
-            deployedOption,
-            usdcToken.address
-        );
-
+        let pairAddress = await uniswapFactory.getPair(deployedOption, usdcToken.address);
         if (pairAddress == ZERO_ADDRESS) {
             try {
                 await uniswapFactory.createPair(deployedOption, USDC.address);
             } catch (err) {
                 console.log(err);
             }
-
-            pairAddress = await uniswapFactory.getPair(
-                deployedOption,
-                usdcToken.address
-            );
+            pairAddress = await uniswapFactory.getPair(deployedOption, usdcToken.address);
         }
 
-        let uniswapPair = new ethers.Contract(
-            pairAddress,
-            UniswapV2Pair.abi,
-            signer
-        );
+        let uniswapPair = new ethers.Contract(pairAddress, UniswapV2Pair.abi, signer);
         let liquidity = await uniswapPair.getReserves();
         let reserve0 = liquidity._reserve0;
         if (reserve0 == 0) {
             // approve the router to take the option liquidity
-            let optionTokenInstance = new ethers.Contract(
-                deployedOption,
-                ERC20.abi,
-                signer
-            );
+            let optionTokenInstance = new ethers.Contract(deployedOption, ERC20.abi, signer);
             await checkAllowance(account, uniswapRouter, optionTokenInstance);
 
             // mint new options
             try {
-                await trader.safeMint(
-                    deployedOption,
-                    parseEther("100"),
-                    await signer.getAddress()
-                );
+                await trader.safeMint(deployedOption, parseEther("100"), await signer.getAddress());
             } catch (err) {
                 console.log(err);
             }
@@ -184,14 +126,14 @@ const deployOption = async () => {
             // seed liquidity
             try {
                 await uniswapRouter.addLiquidity(
-                    deployedOption,
-                    usdcToken.address,
-                    parseEther("100"),
-                    parseEther("500"),
-                    0,
-                    0,
-                    await signer.getAddress(),
-                    await uniswapTrader.getMaxDeadline()
+                    deployedOption, // token 0
+                    usdcToken.address, // token 1
+                    parseEther("100"), // quantity of token 0
+                    parseEther("500"), // quantity of token 1
+                    0, // min quantity of lp tokens
+                    0, // min quantity of lp tokens
+                    await signer.getAddress(), // lp token receiver
+                    await uniswapTrader.getMaxDeadline() // deadline until trade expires
                 );
             } catch (err) {
                 console.log(err);

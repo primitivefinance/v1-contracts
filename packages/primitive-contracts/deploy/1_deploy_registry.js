@@ -3,8 +3,6 @@
 // When running the script with `buidler run <script>` you'll find the Buidler
 // Runtime Environment's members available in the global scope.
 const bre = require("@nomiclabs/buidler");
-const { LIBRARIES } = require("@primitivefi/contracts/test/lib/constants");
-const { OPTION_TEMPLATE_LIB, REDEEM_TEMPLATE_LIB } = LIBRARIES;
 const { ethers } = require("@nomiclabs/buidler");
 
 module.exports = async ({ getNamedAccounts, deployments }) => {
@@ -47,16 +45,8 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         },
     });
 
-    const opFacInstance = new ethers.Contract(
-        optionFactory.address,
-        optionFactory.abi,
-        signer
-    );
-    const reFacInstance = new ethers.Contract(
-        redeemFactory.address,
-        redeemFactory.abi,
-        signer
-    );
+    const opFacInstance = new ethers.Contract(optionFactory.address, optionFactory.abi, signer);
+    const reFacInstance = new ethers.Contract(redeemFactory.address, redeemFactory.abi, signer);
 
     const optionImpAddress = await opFacInstance.optionTemplate();
     const redeemImpAddress = await reFacInstance.redeemTemplate();
@@ -70,8 +60,6 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     let deployed = [registry, optionFactory, redeemFactory];
     for (let i = 0; i < deployed.length; i++) {
         if (deployed[i].newlyDeployed)
-            log(
-                `Contract deployed at ${deployed[i].address} using ${deployed[i].receipt.gasUsed} gas on chain ${chain}`
-            );
+            log(`Contract deployed at ${deployed[i].address} using ${deployed[i].receipt.gasUsed} gas on chain ${chain}`);
     }
 };
