@@ -5,7 +5,7 @@ const { ethers } = require("ethers");
 const { AddressZero } = ethers.constants;
 const { parseEther } = ethers.utils;
 const { InfuraProvider } = ethers.providers;
-const { checkInitialization } = require("../tasks/lib/utils");
+const { checkInitialization } = require("../test/lib/utils");
 const Option = require("@primitivefi/contracts/artifacts/Option");
 const Redeem = require("@primitivefi/contracts/artifacts/Redeem");
 

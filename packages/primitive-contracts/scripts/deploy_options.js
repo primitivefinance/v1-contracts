@@ -1,7 +1,7 @@
 const bre = require("@nomiclabs/buidler/config");
-const { checkSupported } = require("@primitivefi/contracts/tasks/lib/setup");
+const { checkSupported } = require("./setup");
 const { parseEther } = require("ethers/lib/utils");
-const { checkInitialization } = require("../tasks/lib/utils");
+const { checkInitialization } = require("../test/lib/utils");
 const OptionFactory = require("@primitivefi/contracts/deployments/rinkeby/OptionFactory");
 const RedeemFactory = require("@primitivefi/contracts/deployments/rinkeby/RedeemFactory");
 const UniswapTrader = require("@primitivefi/contracts/deployments/rinkeby/UniswapTrader");
@@ -38,13 +38,13 @@ const getInstance = async (contractName, signer) => {
 const deployOption = async () => {
     const [signer] = await ethers.getSigners();
     const account = await signer.getAddress();
-    const registry = await getInstance("Registry");
-    const optionFactory = await getInstance("OptionFactory");
-    const redeemFactory = await getInstance("RedeemFactory");
-    const trader = await getInstance("Trader");
-    const uniswapTrader = await getInstance("UniswapTrader");
-    const usdcToken = await getInstance("USDC");
-    const ethToken = await getInstance("ETH");
+    const registry = await getInstance("Registry", signer);
+    const optionFactory = await getInstance("OptionFactory", signer);
+    const redeemFactory = await getInstance("RedeemFactory", signer);
+    const trader = await getInstance("Trader", signer);
+    const uniswapTrader = await getInstance("UniswapTrader", signer);
+    const usdcToken = await getInstance("USDC", signer);
+    const ethToken = await getInstance("ETH", signer);
 
     const uniswapFactory = new ethers.Contract(RINKEBY_UNI_FACTORY, UniswapV2Factory.abi, signer);
     const uniswapRouter = new ethers.Contract(RINKEBY_UNI_ROUTER02, UniswapV2Router02.abi, signer);

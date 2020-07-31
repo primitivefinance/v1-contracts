@@ -9,7 +9,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     const { log, deploy } = deployments;
     const { deployer } = await getNamedAccounts();
     const chain = await bre.getChainId();
-    if (chainId == 4) {
+    if (chain == 4) {
         const ethToken = await deploy("TestERC20", {
             from: deployer,
             contractName: "TestERC20",

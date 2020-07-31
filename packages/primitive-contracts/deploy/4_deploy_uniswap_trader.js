@@ -18,7 +18,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     });
     const uniswapInstance = new ethers.Contract(uniswapTrader.address, uniswapTrader.abi, signer);
 
-    if (chainId == 4) {
+    if (chain == 4) {
         const USDC = await deployments.get("USDC");
         const quoteTokenAddress = await uniswapInstance.quoteToken();
         const routerAddress = await uniswapInstance.router();

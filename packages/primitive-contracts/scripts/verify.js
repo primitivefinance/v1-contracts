@@ -4,7 +4,6 @@ const { CONTRACT_NAMES, LIBRARIES } = require("@primitivefi/contracts/test/lib/c
 const { REGISTRY, TRADER, OPTION_FACTORY, REDEEM_FACTORY, OPTION, REDEEM, UNISWAP_TRADER } = CONTRACT_NAMES;
 const { OPTION_TEMPLATE_LIB, REDEEM_TEMPLATE_LIB } = LIBRARIES;
 const { checkTemplates } = require("./setup");
-const { verifyContract } = require("../test/lib/utils");
 const { getContractAt } = bre.ethers;
 
 const verifyContract = async (fullName, address, constructorArgs, library) => {
