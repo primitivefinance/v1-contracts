@@ -189,7 +189,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         // Optimistically safeTransfer out underlyingTokens.
         IERC20(underlyingToken).safeTransfer(receiver, outUnderlyings);
         if (data.length > 0)
-            IFlash(receiver).primitiveFlash(receiver, outUnderlyings, data);
+            IFlash(receiver).primitiveFlash(msg.sender, outUnderlyings, data);
 
         // Store in memory for gas savings.
         uint256 strikeBalance = IERC20(parameters.strikeToken).balanceOf(
