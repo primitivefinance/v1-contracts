@@ -25,7 +25,6 @@ contract Option is IOption, ERC20, ReentrancyGuard {
     Primitives.Option public parameters;
 
     // solhint-disable-next-line const-name-snakecase
-    uint256 public constant override EXERCISE_FEE = 1000;
     uint256 public override underlyingCache;
     uint256 public override strikeCache;
     address public override redeemToken;
@@ -209,18 +208,13 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         // Either underlyingTokens or strikeTokens must be sent into the contract.
         require(inStrikes > 0 || inUnderlyings > 0, "ERR_ZERO");
 
-        // Add the fee to the total required payment.
-        uint256 feeToPay = outUnderlyings.div(EXERCISE_FEE);
-
         // Calculate the remaining amount of underlyingToken that needs to be paid for.
         uint256 remainder = inUnderlyings > outUnderlyings
             ? 0
             : outUnderlyings.sub(inUnderlyings);
 
         // Calculate the expected payment of strikeTokens.
-        uint256 payment = remainder.add(feeToPay).mul(parameters.quote).div(
-            parameters.base
-        );
+        uint256 payment = remainder.mul(parameters.quote).div(parameters.base);
 
         // Assumes the cached optionToken balance is 0, which is what it should be.
         inOptions = balanceOf(address(this));

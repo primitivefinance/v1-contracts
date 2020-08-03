@@ -1,11 +1,5 @@
 // SPDX-License-Identifier: MIT
 
-
-
-
-
-
-
 pragma solidity ^0.6.2;
 
 interface IOption {
@@ -74,7 +68,4 @@ interface IOption {
         );
 
     function initRedeemToken(address _redeemToken) external;
-
-    // solhint-disable-next-line
-    function EXERCISE_FEE() external view returns (uint256);
 }
