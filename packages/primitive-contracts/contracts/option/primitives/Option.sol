@@ -1,11 +1,5 @@
 // SPDX-License-Identifier: MIT
 
-
-
-
-
-
-
 pragma solidity ^0.6.2;
 
 /**
@@ -71,7 +65,7 @@ contract Option is IOption, ERC20, ReentrancyGuard, Pausable {
 
     modifier notExpired {
         // solhint-disable-next-line not-rely-on-time
-        require(parameters.expiry >= block.timestamp, "ERR_EXPIRED");
+        require(isNotExpired(), "ERR_EXPIRED");
         _;
     }
 
@@ -324,9 +318,7 @@ contract Option is IOption, ERC20, ReentrancyGuard, Pausable {
         // Assumes the cached balance is 0 so inOptions = balance of optionToken.
         // If optionToken is expired, optionToken does not need to be sent in. Only redeemToken.
         // solhint-disable-next-line not-rely-on-time
-        inOptions = parameters.expiry > block.timestamp
-            ? optionBalance
-            : outUnderlyings;
+        inOptions = isNotExpired() ? optionBalance : outUnderlyings;
         require(inRedeems > 0 && inOptions > 0, "ERR_ZERO");
         require(
             inOptions >= outUnderlyings && underlyingBalance >= outUnderlyings,
@@ -335,7 +327,7 @@ contract Option is IOption, ERC20, ReentrancyGuard, Pausable {
 
         // Burn optionTokens. optionTokens are only sent into contract when not expired.
         // solhint-disable-next-line not-rely-on-time
-        if (parameters.expiry > block.timestamp) {
+        if (isNotExpired()) {
             _burn(address(this), inOptions);
         }
 
@@ -421,5 +413,9 @@ contract Option is IOption, ERC20, ReentrancyGuard, Pausable {
         _base = _parameters.base;
         _quote = _parameters.quote;
         _expiry = _parameters.expiry;
+    }
+
+    function isNotExpired() internal view returns (bool) {
+        return parameters.expiry >= block.timestamp;
     }
 }
