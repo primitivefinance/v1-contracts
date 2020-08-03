@@ -17,9 +17,8 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import {
     ReentrancyGuard
 } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 
-contract Option is IOption, ERC20, ReentrancyGuard, Pausable {
+contract Option is IOption, ERC20, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -72,11 +71,6 @@ contract Option is IOption, ERC20, ReentrancyGuard, Pausable {
     function initRedeemToken(address _redeemToken) external override {
         require(msg.sender == factory, "ERR_NOT_OWNER");
         redeemToken = _redeemToken;
-    }
-
-    function kill() external {
-        require(msg.sender == factory, "ERR_NOT_OWNER");
-        paused() ? _unpause() : _pause();
     }
 
     /**

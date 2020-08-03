@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: MIT
 
-
-
 pragma solidity ^0.6.2;
 
 /**
@@ -55,10 +53,6 @@ contract OptionFactory is IOptionFactory, Ownable, NullCloneConstructor {
             quote,
             expiry
         );
-    }
-
-    function kill(address option) external override onlyOwner {
-        Option(option).kill();
     }
 
     function initialize(address option, address redeem)
