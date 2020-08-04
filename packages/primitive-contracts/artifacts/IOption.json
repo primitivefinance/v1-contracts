@@ -3,19 +3,6 @@
   "abi": [
     {
       "inputs": [],
-      "name": "EXERCISE_FEE",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
       "name": "base",
       "outputs": [
         {
@@ -140,12 +127,12 @@
       "outputs": [
         {
           "internalType": "address",
-          "name": "_strikeToken",
+          "name": "_underlyingToken",
           "type": "address"
         },
         {
           "internalType": "address",
-          "name": "_underlyingToken",
+          "name": "_strikeToken",
           "type": "address"
         },
         {
@@ -282,6 +269,13 @@
     },
     {
       "inputs": [],
+      "name": "take",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
       "name": "tokens",
       "outputs": [
         {
@@ -327,6 +321,13 @@
         }
       ],
       "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "update",
+      "outputs": [],
+      "stateMutability": "nonpayable",
       "type": "function"
     }
   ],

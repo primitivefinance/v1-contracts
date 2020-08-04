@@ -36,6 +36,29 @@
       "inputs": [
         {
           "internalType": "address",
+          "name": "_factory",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_optionToken",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_redeemableToken",
+          "type": "address"
+        }
+      ],
+      "name": "initialize",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
           "name": "user",
           "type": "address"
         },

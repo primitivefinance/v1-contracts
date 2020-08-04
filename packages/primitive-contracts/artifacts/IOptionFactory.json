@@ -66,19 +66,6 @@
       "type": "function"
     },
     {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "option",
-          "type": "address"
-        }
-      ],
-      "name": "kill",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
       "inputs": [],
       "name": "optionTemplate",
       "outputs": [
