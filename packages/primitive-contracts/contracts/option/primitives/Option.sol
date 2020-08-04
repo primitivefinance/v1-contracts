@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+
+
 pragma solidity ^0.6.2;
 
 /**
@@ -39,6 +41,17 @@ contract Option is IOption, ERC20, ReentrancyGuard {
     event Redeem(address indexed from, uint256 inRedeems);
     event Close(address indexed from, uint256 inOptions);
     event Fund(uint256 underlyingCache, uint256 strikeCache);
+    event InitializedRedeem(
+        address indexed caller,
+        address indexed redeemToken
+    );
+    event Skimming(
+        address indexed caller,
+        uint256 quantityUnderlyings,
+        uint256 quantityStrikes,
+        uint256 quantityOptions,
+        uint256 quantityRedeems
+    );
 
     // solhint-disable-next-line no-empty-blocks
     constructor() public ERC20("Primitive V1 Vanilla Option", "OPTION") {}
@@ -70,6 +83,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
     function initRedeemToken(address _redeemToken) external override {
         require(msg.sender == factory, "ERR_NOT_OWNER");
         redeemToken = _redeemToken;
+        emit InitializedRedeem(msg.sender, _redeemToken);
     }
 
     /**
@@ -92,23 +106,26 @@ contract Option is IOption, ERC20, ReentrancyGuard {
             address _strikeToken,
             address _redeemToken
         ) = tokens();
-        IERC20(_underlyingToken).safeTransfer(
-            msg.sender,
-            IERC20(_underlyingToken).balanceOf(address(this)).sub(
-                underlyingCache
-            )
+        uint256 quantityUnderlyings = IERC20(_underlyingToken)
+            .balanceOf(address(this))
+            .sub(underlyingCache);
+        uint256 quantityStrikes = IERC20(_strikeToken)
+            .balanceOf(address(this))
+            .sub(strikeCache);
+        uint256 quantityRedeems = IERC20(_redeemToken).balanceOf(address(this));
+        uint256 quantityOptions = IERC20(address(this)).balanceOf(
+            address(this)
         );
-        IERC20(_strikeToken).safeTransfer(
+        IERC20(_underlyingToken).safeTransfer(msg.sender, quantityUnderlying);
+        IERC20(_strikeToken).safeTransfer(msg.sender, quantityStrikes);
+        IERC20(_redeemToken).safeTransfer(msg.sender, quantityRedeems);
+        IERC20(address(this)).safeTransfer(msg.sender, quantityOptions);
+        emit Skimming(
             msg.sender,
-            IERC20(_strikeToken).balanceOf(address(this)).sub(strikeCache)
-        );
-        IERC20(_redeemToken).safeTransfer(
-            msg.sender,
-            IERC20(_redeemToken).balanceOf(address(this))
-        );
-        IERC20(address(this)).safeTransfer(
-            msg.sender,
-            IERC20(address(this)).balanceOf(address(this))
+            quantityUnderlyings,
+            quantityStrikes,
+            quantityRedeems,
+            quantityOptions
         );
     }
 
