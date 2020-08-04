@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: MIT
 
-
-
 pragma solidity ^0.6.2;
 
 /**
@@ -141,7 +139,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
     /* === STATE MUTABLE === */
 
     /**
-     * @dev Mints optionTokens at a 1:1 ratio to underlyingToken deposits.
+     * @dev Mints optionTokens at a 1:1 ratio to underlyingToken deposits. Also mints Redeem tokens at a base:quote ratio.
      * @notice inUnderlyings = outOptions. inUnderlying / strike ratio = outRedeems.
      * @param receiver The newly minted tokens are sent to the receiver address.
      */
@@ -177,7 +175,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
      * @notice If the underlyingTokens are returned, only the fee has to be paid.
      * @param receiver The outUnderlyings are sent to the receiver address.
      * @param outUnderlyings Quantity of underlyingTokens to safeTransfer to receiver optimistically.
-     * @param data Passing in any abritrary data will trigger the flash exerise callback function.
+     * @param data Passing in any abritrary data will trigger the flash exercise callback function.
      */
     function exercise(
         address receiver,
@@ -194,7 +192,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         address underlyingToken = parameters.underlyingToken;
         (uint256 _underlyingCache, uint256 _strikeCache) = caches();
 
-        // Require outUnderlyings > 0, and underlyingCache >= outUnderlyings.
+        // Require outUnderlyings > 0 and balane of underlings >= outUnderlyings.
         require(outUnderlyings > 0, "ERR_ZERO");
         require(
             IERC20(underlyingToken).balanceOf(address(this)) >= outUnderlyings,
@@ -269,7 +267,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         require(inRedeems > 0, "ERR_ZERO");
         require(strikeBalance >= inRedeems, "ERR_BAL_STRIKE");
 
-        // Burn redeemTokens in the contract. Send strikeTokens to msg.sender.
+        // Burn redeemTokens in the contract. Send strikeTokens to receiver.
         IRedeem(_redeemToken).burn(address(this), inRedeems);
         IERC20(strikeToken).safeTransfer(receiver, inRedeems);
 
@@ -283,7 +281,8 @@ contract Option is IOption, ERC20, ReentrancyGuard {
     }
 
     /**
-     * @dev Burn optionTokens and redeemTokens to withdraw underlyingTokens.
+     * @dev If the option has expired, burn redeem tokens with withdraw underlying tokens.
+     * If the option is not expired, burn option and redeem tokens to withdraw underlying tokens.
      * @notice inRedeems / strike ratio = outUnderlyings && inOptions >= outUnderlyings.
      * @param receiver The outUnderlyings are sent to the receiver address.
      */
