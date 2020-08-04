@@ -134,7 +134,6 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         override
         nonReentrant
         notExpired
-        whenNotPaused
         returns (uint256 inUnderlyings, uint256 outRedeems)
     {
         // Save on gas because this variable is used twice.
@@ -173,7 +172,6 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         override
         nonReentrant
         notExpired
-        whenNotPaused
         returns (uint256 inStrikes, uint256 inOptions)
     {
         // Store the cached balances and token addresses in memory.
