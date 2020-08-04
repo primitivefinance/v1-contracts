@@ -1,15 +1,5 @@
 // SPDX-License-Identifier: MIT
 
-
-
-
-
-
-
-
-
-
-
 pragma solidity ^0.6.2;
 
 import { IOption } from "./IOption.sol";
@@ -19,13 +9,13 @@ interface ITrader {
         IOption optionToken,
         uint256 mintQuantity,
         address receiver
-    ) external returns (uint256 inTokenU, uint256 outTokenR);
+    ) external returns (uint256 outputOptions, uint256 outputRedeems);
 
     function safeExercise(
         IOption optionToken,
         uint256 exerciseQuantity,
         address receiver
-    ) external returns (uint256 inTokenS, uint256 inOptions);
+    ) external returns (uint256 inStrikes, uint256 inOptions);
 
     function safeRedeem(
         IOption optionToken,
