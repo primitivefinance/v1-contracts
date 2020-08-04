@@ -362,7 +362,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         _strikeCache = strikeCache;
     }
 
-    function tokens()
+    function getAssetAddresses()
         public
         override
         view
