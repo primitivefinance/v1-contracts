@@ -95,7 +95,7 @@ Object.assign(module.exports, {
         deployments: path.join(__dirname, "deployments"),
     },
     spdxLicenseIdentifier: {
-        overwrite: true,
-        runOnCompile: true,
+        overwrite: false,
+        runOnCompile: false,
     },
 });
