@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: MIT
 
-
-
 pragma solidity ^0.6.2;
 
 /**
@@ -39,7 +37,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         uint256 inStrikes
     );
     event Redeem(address indexed from, uint256 inRedeems);
-    event Close(address indexed from, uint256 inOptions);
+    event Close(address indexed from, uint256 outUnderlyings);
     event Fund(uint256 underlyingCache, uint256 strikeCache);
     event InitializedRedeem(
         address indexed caller,
@@ -169,7 +167,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
 
         // Update the underlyingCache.
         _fund(underlyingBalance, strikeCache);
-        emit Mint(receiver, inUnderlyings, outRedeems);
+        emit Mint(msg.sender, inUnderlyings, outRedeems);
     }
 
     /**
@@ -245,7 +243,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
 
         // Update the cached balances.
         _fund(underlyingBalance, strikeBalance);
-        emit Exercise(receiver, outUnderlyings, inStrikes);
+        emit Exercise(msg.sender, outUnderlyings, inStrikes);
     }
 
     /**
@@ -279,7 +277,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
 
         // Update the cached balances.
         _fund(underlyingCache, strikeBalance);
-        emit Redeem(receiver, inRedeems);
+        emit Redeem(msg.sender, inRedeems);
     }
 
     /**
@@ -347,7 +345,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
 
         // Update the cached balances.
         _fund(underlyingBalance, strikeCache);
-        emit Close(receiver, outUnderlyings);
+        emit Close(msg.sender, outUnderlyings);
     }
 
     /* === VIEW === */
