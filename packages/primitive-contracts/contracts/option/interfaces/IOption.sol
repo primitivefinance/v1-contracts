@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: MIT
 
-
-
 pragma solidity ^0.6.2;
 
 interface IOption {
-    function mint(address receiver)
+    function mintOptions(address receiver)
         external
         returns (uint256 inUnderlyings, uint256 outRedeems);
 
-    function exercise(
+    function exerciseOptions(
         address receiver,
         uint256 outUnderlyings,
         bytes calldata data
     ) external returns (uint256 inStrikes, uint256 inOptions);
 
-    function redeem(address receiver) external returns (uint256 inRedeems);
+    function redeemStrikeTokens(address receiver)
+        external
+        returns (uint256 inRedeems);
 
-    function close(address receiver)
+    function closeOptions(address receiver)
         external
         returns (
             uint256 inRedeems,
@@ -27,15 +27,15 @@ interface IOption {
 
     function redeemToken() external view returns (address);
 
-    function strikeToken() external view returns (address);
+    function getStrikeTokenAddress() external view returns (address);
 
-    function underlyingToken() external view returns (address);
+    function getUnderlyingTokenAddress() external view returns (address);
 
-    function base() external view returns (uint256);
+    function getBaseValue() external view returns (uint256);
 
-    function quote() external view returns (uint256);
+    function getQuoteValue() external view returns (uint256);
 
-    function expiry() external view returns (uint256);
+    function getExpiryTime() external view returns (uint256);
 
     function underlyingCache() external view returns (uint256);
 
@@ -43,12 +43,12 @@ interface IOption {
 
     function factory() external view returns (address);
 
-    function caches()
+    function getCacheBalances()
         external
         view
         returns (uint256 _underlyingCache, uint256 _strikeCache);
 
-    function tokens()
+    function getAssetAddresses()
         external
         view
         returns (
@@ -71,7 +71,7 @@ interface IOption {
 
     function initRedeemToken(address _redeemToken) external;
 
-    function update() external;
+    function updateCacheBalances() external;
 
-    function take() external;
+    function withdrawUnusedFunds() external;
 }
