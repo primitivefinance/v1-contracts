@@ -372,29 +372,34 @@ contract Option is IOption, ERC20, ReentrancyGuard {
             address _redeemToken
         )
     {
-        _underlyingToken = parameters.underlyingToken;
-        _strikeToken = parameters.strikeToken;
+        _underlyingToken = optionParameters.underlyingToken;
+        _strikeToken = optionParameters.strikeToken;
         _redeemToken = redeemToken;
     }
 
-    function strikeToken() public override view returns (address) {
-        return parameters.strikeToken;
+    function getStrikeTokenAddress() public override view returns (address) {
+        return optionParameters.strikeToken;
     }
 
-    function underlyingToken() public override view returns (address) {
-        return parameters.underlyingToken;
+    function getUnderlyingTokenAddress()
+        public
+        override
+        view
+        returns (address)
+    {
+        return optionParameters.underlyingToken;
     }
 
-    function base() public override view returns (uint256) {
-        return parameters.base;
+    function getBaseValue() public override view returns (uint256) {
+        return optionParameters.base;
     }
 
-    function quote() public override view returns (uint256) {
-        return parameters.quote;
+    function getQuoteValue() public override view returns (uint256) {
+        return optionParameters.quote;
     }
 
-    function expiry() public override view returns (uint256) {
-        return parameters.expiry;
+    function getExpiryTime() public override view returns (uint256) {
+        return optionParameters.expiry;
     }
 
     function getParameters()
@@ -410,16 +415,16 @@ contract Option is IOption, ERC20, ReentrancyGuard {
             uint256 _expiry
         )
     {
-        Primitives.Option memory _parameters = parameters;
-        _underlyingToken = _parameters.underlyingToken;
-        _strikeToken = _parameters.strikeToken;
+        Primitives.Option memory _optionParameters = optionParameters;
+        _underlyingToken = _optionParameters.underlyingToken;
+        _strikeToken = _optionParameters.strikeToken;
         _redeemToken = redeemToken;
-        _base = _parameters.base;
-        _quote = _parameters.quote;
-        _expiry = _parameters.expiry;
+        _base = _optionParameters.base;
+        _quote = _optionParameters.quote;
+        _expiry = _optionParameters.expiry;
     }
 
     function isNotExpired() internal view returns (bool) {
-        return parameters.expiry >= block.timestamp;
+        return optionParameters.expiry >= block.timestamp;
     }
 }
