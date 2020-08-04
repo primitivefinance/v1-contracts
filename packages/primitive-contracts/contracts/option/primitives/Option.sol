@@ -116,7 +116,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         uint256 quantityOptions = IERC20(address(this)).balanceOf(
             address(this)
         );
-        IERC20(_underlyingToken).safeTransfer(msg.sender, quantityUnderlying);
+        IERC20(_underlyingToken).safeTransfer(msg.sender, quantityUnderlyings);
         IERC20(_strikeToken).safeTransfer(msg.sender, quantityStrikes);
         IERC20(_redeemToken).safeTransfer(msg.sender, quantityRedeems);
         IERC20(address(this)).safeTransfer(msg.sender, quantityOptions);
