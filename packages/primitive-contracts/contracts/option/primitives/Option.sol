@@ -75,7 +75,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
     /**
      * @dev Updates the cached balances to the actual current balances.
      */
-    function update() external nonReentrant {
+    function update() external override nonReentrant {
         _fund(
             IERC20(parameters.underlyingToken).balanceOf(address(this)),
             IERC20(parameters.strikeToken).balanceOf(address(this))
@@ -86,7 +86,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
      * @dev Difference between balances and caches is sent out so balances == caches.
      * Fixes underlyingToken, strikeToken, redeemToken, and optionToken balances.
      */
-    function take() external nonReentrant {
+    function take() external override nonReentrant {
         (
             address _underlyingToken,
             address _strikeToken,
