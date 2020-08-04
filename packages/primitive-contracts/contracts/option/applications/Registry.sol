@@ -1,9 +1,5 @@
 // SPDX-License-Identifier: MIT
 
-
-
-
-
 pragma solidity ^0.6.2;
 
 /**
@@ -89,10 +85,6 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
 
         IOptionFactory(optionFactory).initialize(option, redeem);
         emit Deploy(msg.sender, option, id);
-    }
-
-    function kill(address option) external override onlyOwner {
-        IOptionFactory(optionFactory).kill(option);
     }
 
     function optionsLength() public override view returns (uint256 len) {
