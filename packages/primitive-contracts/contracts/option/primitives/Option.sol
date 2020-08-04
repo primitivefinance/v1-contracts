@@ -22,7 +22,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    Primitives.Option public parameters;
+    Primitives.Option public optionParameters;
 
     // solhint-disable-next-line const-name-snakecase
     uint256 public override underlyingCache;
@@ -38,7 +38,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
     );
     event Redeem(address indexed from, uint256 inRedeems);
     event Close(address indexed from, uint256 outUnderlyings);
-    event Fund(uint256 underlyingCache, uint256 strikeCache);
+    event UpdatedCacheBalances(uint256 underlyingCache, uint256 strikeCache);
     event InitializedRedeem(
         address indexed caller,
         address indexed redeemToken
@@ -87,7 +87,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
     /**
      * @dev Updates the cached balances to the actual current balances.
      */
-    function update() external override nonReentrant {
+    function updateCacheBalances() external override nonReentrant {
         _fund(
             IERC20(parameters.underlyingToken).balanceOf(address(this)),
             IERC20(parameters.strikeToken).balanceOf(address(this))
@@ -98,7 +98,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
      * @dev Difference between balances and caches is sent out so balances == caches.
      * Fixes underlyingToken, strikeToken, redeemToken, and optionToken balances.
      */
-    function take() external override nonReentrant {
+    function withdrawUnusedFunds() external override nonReentrant {
         (
             address _underlyingToken,
             address _strikeToken,
@@ -130,10 +130,13 @@ contract Option is IOption, ERC20, ReentrancyGuard {
     /**
      * @dev Sets the cache balances to new values.
      */
-    function _fund(uint256 underlyingBalance, uint256 strikeBalance) private {
+    function _updateCacheBalances(
+        uint256 underlyingBalance,
+        uint256 strikeBalance
+    ) private {
         underlyingCache = underlyingBalance;
         strikeCache = strikeBalance;
-        emit Fund(underlyingBalance, strikeBalance);
+        emit UpdatedCacheBalances(underlyingBalance, strikeBalance);
     }
 
     /* === STATE MUTABLE === */
