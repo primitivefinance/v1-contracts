@@ -352,7 +352,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
     }
 
     /* === VIEW === */
-    function caches()
+    function getCacheBalances()
         public
         override
         view
