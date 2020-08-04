@@ -180,7 +180,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
      * @param outUnderlyings Quantity of underlyingTokens to safeTransfer to receiver optimistically.
      * @param data Passing in any abritrary data will trigger the flash exerise callback function.
      */
-    function exercise(
+    function exerciseOptions(
         address receiver,
         uint256 outUnderlyings,
         bytes calldata data
@@ -254,7 +254,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
      * @notice inRedeems = outStrikes. Only callable when strikeTokens are in the contract.
      * @param receiver The inRedeems quantity of strikeTokens are sent to the receiver address.
      */
-    function redeem(address receiver)
+    function redeemStrikeTokens(address receiver)
         external
         override
         nonReentrant
