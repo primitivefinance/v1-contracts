@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+
+
 pragma solidity ^0.6.2;
 
 interface IOption {
@@ -59,8 +61,8 @@ interface IOption {
         external
         view
         returns (
-            address _strikeToken,
             address _underlyingToken,
+            address _strikeToken,
             address _redeemToken,
             uint256 _base,
             uint256 _quote,
@@ -68,4 +70,8 @@ interface IOption {
         );
 
     function initRedeemToken(address _redeemToken) external;
+
+    function update() external;
+
+    function take() external;
 }

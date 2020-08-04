@@ -57,10 +57,6 @@ contract OptionFactory is IOptionFactory, Ownable, NullCloneConstructor {
         );
     }
 
-    function kill(address option) external override onlyOwner {
-        Option(option).kill();
-    }
-
     function initialize(address option, address redeem)
         external
         override

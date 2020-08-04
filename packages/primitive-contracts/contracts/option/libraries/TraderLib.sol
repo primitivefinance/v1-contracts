@@ -1,5 +1,14 @@
 // SPDX-License-Identifier: MIT
 
+<<<<<<< HEAD
+=======
+
+
+
+
+
+
+>>>>>>> hotfix/audit-fixes
 pragma solidity ^0.6.2;
 
 /**
