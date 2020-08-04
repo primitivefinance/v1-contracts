@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+
+
 pragma solidity ^0.6.2;
 
 /**
@@ -25,7 +27,6 @@ contract Option is IOption, ERC20, ReentrancyGuard {
     Primitives.Option public parameters;
 
     // solhint-disable-next-line const-name-snakecase
-    uint256 public constant override EXERCISE_FEE = 1000;
     uint256 public override underlyingCache;
     uint256 public override strikeCache;
     address public override redeemToken;
@@ -40,6 +41,17 @@ contract Option is IOption, ERC20, ReentrancyGuard {
     event Redeem(address indexed from, uint256 inRedeems);
     event Close(address indexed from, uint256 inOptions);
     event Fund(uint256 underlyingCache, uint256 strikeCache);
+    event InitializedRedeem(
+        address indexed caller,
+        address indexed redeemToken
+    );
+    event Skimming(
+        address indexed caller,
+        uint256 quantityUnderlyings,
+        uint256 quantityStrikes,
+        uint256 quantityOptions,
+        uint256 quantityRedeems
+    );
 
     // solhint-disable-next-line no-empty-blocks
     constructor() public ERC20("Primitive V1 Vanilla Option", "OPTION") {}
@@ -64,13 +76,14 @@ contract Option is IOption, ERC20, ReentrancyGuard {
 
     modifier notExpired {
         // solhint-disable-next-line not-rely-on-time
-        require(parameters.expiry >= block.timestamp, "ERR_EXPIRED");
+        require(isNotExpired(), "ERR_EXPIRED");
         _;
     }
 
     function initRedeemToken(address _redeemToken) external override {
         require(msg.sender == factory, "ERR_NOT_OWNER");
         redeemToken = _redeemToken;
+        emit InitializedRedeem(msg.sender, _redeemToken);
     }
 
     /**
@@ -93,23 +106,26 @@ contract Option is IOption, ERC20, ReentrancyGuard {
             address _strikeToken,
             address _redeemToken
         ) = tokens();
-        IERC20(_underlyingToken).safeTransfer(
-            msg.sender,
-            IERC20(_underlyingToken).balanceOf(address(this)).sub(
-                underlyingCache
-            )
+        uint256 quantityUnderlyings = IERC20(_underlyingToken)
+            .balanceOf(address(this))
+            .sub(underlyingCache);
+        uint256 quantityStrikes = IERC20(_strikeToken)
+            .balanceOf(address(this))
+            .sub(strikeCache);
+        uint256 quantityRedeems = IERC20(_redeemToken).balanceOf(address(this));
+        uint256 quantityOptions = IERC20(address(this)).balanceOf(
+            address(this)
         );
-        IERC20(_strikeToken).safeTransfer(
+        IERC20(_underlyingToken).safeTransfer(msg.sender, quantityUnderlying);
+        IERC20(_strikeToken).safeTransfer(msg.sender, quantityStrikes);
+        IERC20(_redeemToken).safeTransfer(msg.sender, quantityRedeems);
+        IERC20(address(this)).safeTransfer(msg.sender, quantityOptions);
+        emit Skimming(
             msg.sender,
-            IERC20(_strikeToken).balanceOf(address(this)).sub(strikeCache)
-        );
-        IERC20(_redeemToken).safeTransfer(
-            msg.sender,
-            IERC20(_redeemToken).balanceOf(address(this))
-        );
-        IERC20(address(this)).safeTransfer(
-            msg.sender,
-            IERC20(address(this)).balanceOf(address(this))
+            quantityUnderlyings,
+            quantityStrikes,
+            quantityRedeems,
+            quantityOptions
         );
     }
 
@@ -188,7 +204,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         // Optimistically safeTransfer out underlyingTokens.
         IERC20(underlyingToken).safeTransfer(receiver, outUnderlyings);
         if (data.length > 0)
-            IFlash(receiver).primitiveFlash(receiver, outUnderlyings, data);
+            IFlash(receiver).primitiveFlash(msg.sender, outUnderlyings, data);
 
         // Store in memory for gas savings.
         uint256 strikeBalance = IERC20(parameters.strikeToken).balanceOf(
@@ -207,18 +223,13 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         // Either underlyingTokens or strikeTokens must be sent into the contract.
         require(inStrikes > 0 || inUnderlyings > 0, "ERR_ZERO");
 
-        // Add the fee to the total required payment.
-        uint256 feeToPay = outUnderlyings.div(EXERCISE_FEE);
-
         // Calculate the remaining amount of underlyingToken that needs to be paid for.
         uint256 remainder = inUnderlyings > outUnderlyings
             ? 0
             : outUnderlyings.sub(inUnderlyings);
 
         // Calculate the expected payment of strikeTokens.
-        uint256 payment = remainder.add(feeToPay).mul(parameters.quote).div(
-            parameters.base
-        );
+        uint256 payment = remainder.mul(parameters.quote).div(parameters.base);
 
         // Assumes the cached optionToken balance is 0, which is what it should be.
         inOptions = balanceOf(address(this));
@@ -310,9 +321,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         // Assumes the cached balance is 0 so inOptions = balance of optionToken.
         // If optionToken is expired, optionToken does not need to be sent in. Only redeemToken.
         // solhint-disable-next-line not-rely-on-time
-        inOptions = parameters.expiry > block.timestamp
-            ? optionBalance
-            : outUnderlyings;
+        inOptions = isNotExpired() ? optionBalance : outUnderlyings;
         require(inRedeems > 0 && inOptions > 0, "ERR_ZERO");
         require(
             inOptions >= outUnderlyings && underlyingBalance >= outUnderlyings,
@@ -321,7 +330,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
 
         // Burn optionTokens. optionTokens are only sent into contract when not expired.
         // solhint-disable-next-line not-rely-on-time
-        if (parameters.expiry > block.timestamp) {
+        if (isNotExpired()) {
             _burn(address(this), inOptions);
         }
 
@@ -407,5 +416,9 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         _base = _parameters.base;
         _quote = _parameters.quote;
         _expiry = _parameters.expiry;
+    }
+
+    function isNotExpired() internal view returns (bool) {
+        return parameters.expiry >= block.timestamp;
     }
 }
