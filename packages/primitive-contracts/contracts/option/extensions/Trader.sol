@@ -1,13 +1,5 @@
 // SPDX-License-Identifier: MIT
 
-
-
-
-
-
-
-
-
 pragma solidity ^0.6.2;
 
 /**
@@ -180,7 +172,7 @@ contract Trader is ITrader, ReentrancyGuard {
     /**
      * @dev Burn redeemTokens to withdraw underlyingTokens and strikeTokens from expired options.
      * @param optionToken The address of the option contract.
-     * @param unwindQuantity Quantity of redeemTokens to burn.
+     * @param unwindQuantity Quantity of option tokens used to calculate the amount of redeem tokens to burn.
      * @param receiver The underlyingTokens and redeemTokens are sent to the receiver address.
      */
     function safeUnwind(
