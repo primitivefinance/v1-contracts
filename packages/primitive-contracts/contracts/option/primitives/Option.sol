@@ -146,7 +146,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
      * @notice inUnderlyings = outOptions. inUnderlying / strike ratio = outRedeems.
      * @param receiver The newly minted tokens are sent to the receiver address.
      */
-    function mint(address receiver)
+    function mintOptions(address receiver)
         external
         override
         nonReentrant
