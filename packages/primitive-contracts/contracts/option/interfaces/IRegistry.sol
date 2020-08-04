@@ -1,9 +1,5 @@
 // SPDX-License-Identifier: MIT
 
-
-
-
-
 pragma solidity ^0.6.2;
 
 interface IRegistry {
@@ -14,8 +10,6 @@ interface IRegistry {
         uint256 quote,
         uint256 expiry
     ) external returns (address);
-
-    function kill(address option) external;
 
     function initialize(address _factory, address _factoryRedeem) external;
 

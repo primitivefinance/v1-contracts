@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+<<<<<<< HEAD
+=======
 
 
 
@@ -8,6 +10,7 @@
 
 
 
+>>>>>>> hotfix/audit-fixes
 pragma solidity ^0.6.2;
 
 /**
@@ -33,7 +36,7 @@ contract Redeem is IRedeem, ERC20 {
         address _factory,
         address _optionToken,
         address _redeemableToken
-    ) public {
+    ) public override {
         require(factory == address(0x0), "ERR_IS_INITIALIZED");
         factory = _factory;
         optionToken = _optionToken;
