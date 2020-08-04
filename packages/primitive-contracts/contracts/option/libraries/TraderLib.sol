@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: MIT
 
+<<<<<<< HEAD
+=======
 
 
 
 
 
 
+>>>>>>> hotfix/audit-fixes
 pragma solidity ^0.6.2;
 
 /**
@@ -58,10 +61,9 @@ library TraderLib {
         );
 
         // Calculate quantity of strikeTokens needed to exercise quantity of optionTokens.
-        inputStrikes = exerciseQuantity
-            .add(exerciseQuantity.div(IOption(optionToken).EXERCISE_FEE()))
-            .mul(optionToken.quote())
-            .div(optionToken.base());
+        inputStrikes = exerciseQuantity.mul(optionToken.quote()).div(
+            optionToken.base()
+        );
         require(
             IERC20(optionToken.strikeToken()).balanceOf(msg.sender) >=
                 inputStrikes,
