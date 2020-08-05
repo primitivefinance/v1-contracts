@@ -175,7 +175,7 @@ describe("Option Contract", () => {
 
         it("should return the correct redeemToken", async () => {
             assert.equal(
-                (await optionToken.redeemStrikeTokens()).toString(),
+                (await optionToken.redeemToken()).toString(),
                 redeemToken.address,
                 "Incorrect redeemToken"
             );
