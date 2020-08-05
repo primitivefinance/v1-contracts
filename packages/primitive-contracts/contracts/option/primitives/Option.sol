@@ -50,7 +50,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         address indexed caller,
         address indexed redeemToken
     );
-    event Skimming(
+    event TookSurplusFunds(
         address indexed caller,
         uint256 quantityUnderlyings,
         uint256 quantityStrikes,
@@ -107,10 +107,17 @@ contract Option is IOption, ERC20, ReentrancyGuard {
     }
 
     /**
-     * @dev Difference between balances and caches is sent out so balances == caches.
-     * Fixes underlyingToken, strikeToken, redeemToken, and optionToken balances.
+     * @dev The actual balances for option and redeem tokens in this contract should be zero, because they are not stored
+     * in this contract. The option and redeem tokens are held by Externally Owned Accounts or other smart contracts.
+     * The actual balances for underlying and strike tokens should match the underlyingCache and strikeCache, respectively.
+     * This is because the cache balances are internally tracking the tokens which are held in the contract through
+     * using the contract's functions: mintOptions, exerciseOptions, redeemStrikeTokens, and closeOptions.
+     * If this contract's balance in a token were to increase outside of the usual interactions,
+     * the surplus tokens would be claimable by any account that calls this function.
+     * @notice The purpose of this function is to force sync the actual balances to the caches for underlying and strike tokens,
+     * or to zero for the option and redeem tokens.
      */
-    function withdrawUnusedFunds() external override nonReentrant {
+    function takeSurplusFunds() external override nonReentrant {
         (
             address _underlyingToken,
             address _strikeToken,
@@ -130,7 +137,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         IERC20(_strikeToken).safeTransfer(msg.sender, quantityStrikes);
         IERC20(_redeemToken).safeTransfer(msg.sender, quantityRedeems);
         IERC20(address(this)).safeTransfer(msg.sender, quantityOptions);
-        emit Skimming(
+        emit TookSurplusFunds(
             msg.sender,
             quantityUnderlyings,
             quantityStrikes,
