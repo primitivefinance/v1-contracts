@@ -84,6 +84,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
 
     function initRedeemToken(address _redeemToken) external override {
         require(msg.sender == factory, "ERR_NOT_OWNER");
+        require(redeemToken == address(0x0), "ERR_REDEEM_INITIALIZED");
         redeemToken = _redeemToken;
         emit InitializedRedeem(msg.sender, _redeemToken);
     }
