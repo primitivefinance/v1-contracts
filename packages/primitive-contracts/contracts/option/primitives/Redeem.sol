@@ -8,7 +8,7 @@ pragma solidity ^0.6.2;
  */
 
 import { IRedeem } from "../interfaces/IRedeem.sol";
-import { ERC20, IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 
 contract Redeem is IRedeem, ERC20 {
