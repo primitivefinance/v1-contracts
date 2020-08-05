@@ -50,13 +50,6 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         address indexed caller,
         address indexed redeemToken
     );
-    event Skimming(
-        address indexed caller,
-        uint256 quantityUnderlyings,
-        uint256 quantityStrikes,
-        uint256 quantityOptions,
-        uint256 quantityRedeems
-    );
 
     // solhint-disable-next-line no-empty-blocks
     constructor() public ERC20("Primitive V1 Vanilla Option", "OPTION") {}
@@ -103,39 +96,6 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         _updateCacheBalances(
             IERC20(optionParameters.underlyingToken).balanceOf(address(this)),
             IERC20(optionParameters.strikeToken).balanceOf(address(this))
-        );
-    }
-
-    /**
-     * @dev Difference between balances and caches is sent out so balances == caches.
-     * Fixes underlyingToken, strikeToken, redeemToken, and optionToken balances.
-     */
-    function withdrawUnusedFunds() external override nonReentrant {
-        (
-            address _underlyingToken,
-            address _strikeToken,
-            address _redeemToken
-        ) = getAssetAddresses();
-        uint256 quantityUnderlyings = IERC20(_underlyingToken)
-            .balanceOf(address(this))
-            .sub(underlyingCache);
-        uint256 quantityStrikes = IERC20(_strikeToken)
-            .balanceOf(address(this))
-            .sub(strikeCache);
-        uint256 quantityRedeems = IERC20(_redeemToken).balanceOf(address(this));
-        uint256 quantityOptions = IERC20(address(this)).balanceOf(
-            address(this)
-        );
-        IERC20(_underlyingToken).safeTransfer(msg.sender, quantityUnderlyings);
-        IERC20(_strikeToken).safeTransfer(msg.sender, quantityStrikes);
-        IERC20(_redeemToken).safeTransfer(msg.sender, quantityRedeems);
-        IERC20(address(this)).safeTransfer(msg.sender, quantityOptions);
-        emit Skimming(
-            msg.sender,
-            quantityUnderlyings,
-            quantityStrikes,
-            quantityRedeems,
-            quantityOptions
         );
     }
 
