@@ -168,8 +168,8 @@ contract Option is IOption, ERC20, ReentrancyGuard {
      * are transferred into this contract prior to the function call. If an incorrect amount of tokens are transferred
      * into this contract, and this function is called, it can result in the loss of funds.
      * Sends out underlyingTokens then checks to make sure they are returned or paid for.
-     * This function enables flash exercises and flash loans. Only smart contracts who implements
-     * their own IFlash interface should be calling this function with the intention to initiate a flash exercise/loan.
+     * This function enables flash exercises and flash loans. Only smart contracts who implement
+     * their own IFlash interface should be calling this function to initiate a flash exercise/loan.
      * @notice If the underlyingTokens are returned, only the fee has to be paid.
      * @param receiver The outUnderlyings are sent to the receiver address.
      * @param outUnderlyings Quantity of underlyingTokens to safeTransfer to receiver optimistically.
@@ -210,7 +210,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
             address(this)
         );
 
-        // Calculate the Differences.
+        // Calculate the differences.
         inStrikes = strikeBalance.sub(_strikeCache);
         uint256 inUnderlyings = underlyingBalance.sub(
             _underlyingCache.sub(outUnderlyings)
