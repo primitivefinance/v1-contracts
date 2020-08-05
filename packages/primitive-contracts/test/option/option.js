@@ -159,7 +159,7 @@ describe("Option Contract", () => {
     describe(" Option", () => {
         it("should return the correct underlyingToken", async () => {
             assert.equal(
-                (await optionToken.underlyingToken()).toString(),
+                (await optionToken.getUnderlyingTokenAddress()).toString(),
                 underlyingToken.address,
                 "Incorrect underlyingToken"
             );
@@ -167,7 +167,7 @@ describe("Option Contract", () => {
 
         it("should return the correct strikeToken", async () => {
             assert.equal(
-                (await optionToken.strikeToken()).toString(),
+                (await optionToken.getStrikeTokenAddress()).toString(),
                 strikeToken.address,
                 "Incorrect strikeToken"
             );
@@ -183,7 +183,7 @@ describe("Option Contract", () => {
 
         it("should return the correct base", async () => {
             assert.equal(
-                (await optionToken.base()).toString(),
+                (await optionToken.getBaseValue()).toString(),
                 base,
                 "Incorrect base"
             );
@@ -191,7 +191,7 @@ describe("Option Contract", () => {
 
         it("should return the correct quote", async () => {
             assert.equal(
-                (await optionToken.quote()).toString(),
+                (await optionToken.getQuoteValue()).toString(),
                 quote,
                 "Incorrect quote"
             );
@@ -199,7 +199,7 @@ describe("Option Contract", () => {
 
         it("should return the correct expiry", async () => {
             assert.equal(
-                (await optionToken.expiry()).toString(),
+                (await optionToken.getExpiryTime()).toString(),
                 expiry,
                 "Incorrect expiry"
             );
@@ -228,7 +228,7 @@ describe("Option Contract", () => {
         });
 
         it("should get the tokens", async () => {
-            let result = await optionToken.tokens();
+            let result = await optionToken.getAssetAddresses();
             assert.equal(
                 result._underlyingToken.toString(),
                 underlyingToken.address,
@@ -247,7 +247,7 @@ describe("Option Contract", () => {
         });
 
         it("should get the caches", async () => {
-            let result = await optionToken.caches();
+            let result = await optionToken.getCacheBalances();
             assert.equal(
                 result._underlyingCache.toString(),
                 "0",
@@ -308,36 +308,6 @@ describe("Option Contract", () => {
             );
         });
 
-        describe("kill", () => {
-            it("revert if msg.sender is not owner", async () => {
-                await expect(
-                    optionToken.connect(Bob).kill()
-                ).to.be.revertedWith(ERR_NOT_OWNER);
-            });
-
-            it("should pause contract", async () => {
-                await registry.kill(optionToken.address);
-                assert.equal(await optionToken.paused(), true);
-            });
-
-            it("should revert mint function call while paused contract", async () => {
-                await expect(optionToken.mint(Alice)).to.be.revertedWith(
-                    ERR_PAUSED
-                );
-            });
-
-            it("should revert swap function call while paused contract", async () => {
-                await expect(
-                    optionToken.exercise(Alice, 1, [])
-                ).to.be.revertedWith(ERR_PAUSED);
-            });
-
-            it("should unpause contract", async () => {
-                await registry.kill(optionToken.address);
-                assert.equal(await optionToken.paused(), false);
-            });
-        });
-
         describe("initRedeemToken", () => {
             it("revert if msg.sender is not owner", async () => {
                 await expect(
@@ -378,14 +348,14 @@ describe("Option Contract", () => {
                         inUnderlyings
                     );
 
-                    await expect(optionToken.mint(Alice))
+                    await expect(optionToken.mintOptions(Alice))
                         .to.emit(optionToken, "Mint")
                         .withArgs(
                             Alice,
                             inUnderlyings.toString(),
                             outTokenR.toString()
                         )
-                        .to.emit(optionToken, "Fund");
+                        .to.emit(optionToken, "UpdatedCacheBalances");
 
                     let deltaU = (await getBalance(underlyingToken, Alice)).sub(
                         underlyingBalance
@@ -411,7 +381,7 @@ describe("Option Contract", () => {
             });
 
             it("revert if no tokens were sent to contract", async () => {
-                await expect(optionToken.mint(Alice)).to.be.revertedWith(
+                await expect(optionToken.mintOptions(Alice)).to.be.revertedWith(
                     ERR_ZERO
                 );
             });
@@ -427,7 +397,7 @@ describe("Option Contract", () => {
                     optionToken.address,
                     inUnderlyings
                 );
-                await expect(optionToken.mint(Alice)).to.be.revertedWith(
+                await expect(optionToken.mintOptions(Alice)).to.be.revertedWith(
                     ERR_ZERO
                 );
             });
@@ -452,7 +422,8 @@ describe("Option Contract", () => {
 
                 exercise = async (inTokenP) => {
                     let inTokenS = inTokenP.mul(quote).div(base);
-                    let fee = inTokenP.div(1000).mul(quote).div(base);
+                    //let fee = inTokenP.div(1000).mul(quote).div(base);
+                    let fee = 0;
                     let outTokenU = inTokenP;
 
                     const {
@@ -472,10 +443,12 @@ describe("Option Contract", () => {
                         inTokenS.add(fee)
                     );
 
-                    await expect(optionToken.exercise(Alice, inTokenP, []))
+                    await expect(
+                        optionToken.exerciseOptions(Alice, inTokenP, [])
+                    )
                         .to.emit(optionToken, "Exercise")
                         .withArgs(Alice, outTokenU, inTokenS.add(fee))
-                        .and.to.emit(optionToken, "Fund");
+                        .and.to.emit(optionToken, "UpdatedCacheBalances");
 
                     let deltaU = (await getBalance(underlyingToken, Alice)).sub(
                         underlyingBalance
@@ -503,13 +476,13 @@ describe("Option Contract", () => {
 
             it("revert if 0 underlyingToken requested to be taken out", async () => {
                 await expect(
-                    optionToken.exercise(Alice, 0, [])
+                    optionToken.exerciseOptions(Alice, 0, [])
                 ).to.be.revertedWith(ERR_ZERO);
             });
 
             it("revert if not enough underlying tokens to take", async () => {
                 await expect(
-                    optionToken.exercise(Alice, ONE_ETHER, [])
+                    optionToken.exerciseOptions(Alice, ONE_ETHER, [])
                 ).to.be.revertedWith(ERR_BAL_UNDERLYING);
             });
 
@@ -522,15 +495,15 @@ describe("Option Contract", () => {
                 await strikeToken.deposit({ value: quote });
                 await strikeToken.transfer(optionToken.address, quote);
                 await expect(
-                    optionToken.exercise(Alice, quote, [])
+                    optionToken.exerciseOptions(Alice, quote, [])
                 ).to.be.revertedWith(ERR_BAL_UNDERLYING);
-                await optionToken.take();
+                await optionToken.withdrawUnusedFunds();
             });
 
             it("reverts if 0 strikeToken and 0 underlyingToken are sent into contract", async () => {
                 await mint(FIVE_ETHER);
                 await expect(
-                    optionToken.exercise(Alice, ONE_ETHER, [])
+                    optionToken.exerciseOptions(Alice, ONE_ETHER, [])
                 ).to.be.revertedWith(ERR_ZERO);
             });
 
@@ -538,7 +511,7 @@ describe("Option Contract", () => {
                 await mint(FIVE_ETHER);
                 await strikeToken.transfer(optionToken.address, quote);
                 await expect(
-                    optionToken.exercise(Alice, ONE_ETHER, [])
+                    optionToken.exerciseOptions(Alice, ONE_ETHER, [])
                 ).to.be.revertedWith("ERR_BAL_INPUT");
             });
 
@@ -585,10 +558,10 @@ describe("Option Contract", () => {
                     } = await getTokenBalances(Primitive, Alice);
 
                     await redeemToken.transfer(optionToken.address, inTokenR);
-                    await expect(optionToken.redeem(Alice))
+                    await expect(optionToken.redeemStrikeTokens(Alice))
                         .to.emit(optionToken, "Redeem")
                         .withArgs(Alice, inTokenR.toString())
-                        .and.to.emit(optionToken, "Fund");
+                        .and.to.emit(optionToken, "UpdatedCacheBalances");
 
                     let deltaS = (await getBalance(strikeToken, Alice)).sub(
                         strikeBalance
@@ -610,9 +583,9 @@ describe("Option Contract", () => {
             });
 
             it("revert if 0 redeemToken were sent to contract", async () => {
-                await expect(optionToken.redeem(Alice)).to.be.revertedWith(
-                    ERR_ZERO
-                );
+                await expect(
+                    optionToken.redeemStrikeTokens(Alice)
+                ).to.be.revertedWith(ERR_ZERO);
             });
 
             it("reverts if not enough strikeToken in optionToken contract", async () => {
@@ -621,10 +594,10 @@ describe("Option Contract", () => {
                     optionToken.address,
                     parseEther("1")
                 );
-                await expect(optionToken.redeem(Alice)).to.be.revertedWith(
-                    ERR_BAL_STRIKE
-                );
-                await optionToken.take();
+                await expect(
+                    optionToken.redeemStrikeTokens(Alice)
+                ).to.be.revertedWith(ERR_BAL_STRIKE);
+                await optionToken.withdrawUnusedFunds();
             });
 
             it("redeemTokens consecutively", async () => {
@@ -669,10 +642,10 @@ describe("Option Contract", () => {
                     await optionToken.transfer(optionToken.address, inTokenP);
                     await redeemToken.transfer(optionToken.address, inTokenR);
 
-                    await expect(optionToken.close(Alice))
+                    await expect(optionToken.closeOptions(Alice))
                         .to.emit(optionToken, "Close")
                         .withArgs(Alice, outTokenU.toString())
-                        .and.to.emit(optionToken, "Fund");
+                        .and.to.emit(optionToken, "UpdatedCacheBalances");
 
                     let deltaU = (await getBalance(underlyingToken, Alice)).sub(
                         underlyingBalance
@@ -701,9 +674,9 @@ describe("Option Contract", () => {
                 let inTokenP = ONE_ETHER;
                 await mint(inTokenP);
                 await optionToken.transfer(optionToken.address, inTokenP);
-                await expect(optionToken.close(Alice)).to.be.revertedWith(
-                    ERR_ZERO
-                );
+                await expect(
+                    optionToken.closeOptions(Alice)
+                ).to.be.revertedWith(ERR_ZERO);
             });
 
             it("revert if 0 optionToken were sent to contract", async () => {
@@ -711,15 +684,15 @@ describe("Option Contract", () => {
                 await mint(inTokenP);
                 let inTokenR = inTokenP.mul(quote).div(base);
                 await redeemToken.transfer(optionToken.address, inTokenR);
-                await expect(optionToken.close(Alice)).to.be.revertedWith(
-                    ERR_ZERO
-                );
+                await expect(
+                    optionToken.closeOptions(Alice)
+                ).to.be.revertedWith(ERR_ZERO);
             });
 
             it("revert if no tokens were sent to contract", async () => {
-                await expect(optionToken.close(Alice)).to.be.revertedWith(
-                    ERR_ZERO
-                );
+                await expect(
+                    optionToken.closeOptions(Alice)
+                ).to.be.revertedWith(ERR_ZERO);
             });
 
             it("revert if not enough optionToken was sent into contract", async () => {
@@ -731,9 +704,9 @@ describe("Option Contract", () => {
                     optionToken.address,
                     parseEther("0.5")
                 );
-                await expect(optionToken.close(Alice)).to.be.revertedWith(
-                    ERR_BAL_UNDERLYING
-                );
+                await expect(
+                    optionToken.closeOptions(Alice)
+                ).to.be.revertedWith(ERR_BAL_UNDERLYING);
             });
 
             // Interesting, the two 0s at the end of this are necessary. If they are not 0s, the
@@ -819,7 +792,10 @@ describe("Option Contract", () => {
                 );
                 await strikeToken.transfer(optionToken.address, inTokenS);
                 await redeemToken.transfer(optionToken.address, inTokenS);
-                await expect(optionToken.update()).to.emit(optionToken, "Fund");
+                await expect(optionToken.updateCacheBalances()).to.emit(
+                    optionToken,
+                    "UpdatedCacheBalances"
+                );
 
                 let underlyingCache = await getCache("u");
                 let strikeCache = await getCache("s");
@@ -868,7 +844,7 @@ describe("Option Contract", () => {
                 );
                 await strikeToken.transfer(optionToken.address, inTokenS);
                 await redeemToken.transfer(optionToken.address, inTokenS);
-                let take = await optionToken.take();
+                let take = await optionToken.withdrawUnusedFunds();
 
                 let underlyingCache = await getCache("u");
                 let strikeCache = await getCache("s");
@@ -915,14 +891,14 @@ describe("Option Contract", () => {
                     optionToken.address,
                     inUnderlyings
                 );
-                await optionToken.mint(Alice);
+                await optionToken.mintOptions(Alice);
                 let expired = "1589386232";
                 await optionToken.setExpiry(expired);
             });
 
             it("should be expired", async () => {
                 let expired = "1589386232";
-                assert.equal(await optionToken.expiry(), expired);
+                assert.equal(await optionToken.getExpiryTime(), expired);
             });
 
             it("should close position with just redeemToken tokens after expiry", async () => {
@@ -941,7 +917,7 @@ describe("Option Contract", () => {
 
                 let inTokenR = await redeemToken.balanceOf(Alice);
                 await redeemToken.transfer(optionToken.address, inTokenR);
-                await optionToken.close(Alice);
+                await optionToken.closeOptions(Alice);
 
                 let balance1R = await redeemToken.totalSupply();
                 let balance1U = await getBalance(underlyingToken, Alice);
@@ -966,14 +942,14 @@ describe("Option Contract", () => {
             });
 
             it("revert when calling mint on an expired optionToken", async () => {
-                await expect(optionToken.mint(Alice)).to.be.revertedWith(
+                await expect(optionToken.mintOptions(Alice)).to.be.revertedWith(
                     ERR_EXPIRED
                 );
             });
 
             it("revert when calling swap on an expired optionToken", async () => {
                 await expect(
-                    optionToken.exercise(Alice, 1, [])
+                    optionToken.exerciseOptions(Alice, 1, [])
                 ).to.be.revertedWith(ERR_EXPIRED);
             });
         });
@@ -1012,7 +988,7 @@ describe("Option Contract", () => {
                     optionToken.address,
                     inUnderlyings
                 );
-                await optionToken.mint(Alice);
+                await optionToken.mintOptions(Alice);
             });
 
             it("should revert on swap because option contract can handle bad erc20s", async () => {
@@ -1020,16 +996,16 @@ describe("Option Contract", () => {
                 let inTokenS = parseEther("0.515"); // 100 ether (underlyingToken:base) / 200 (strikeToken:quote) = 0.5 strikeToken
                 await strikeToken.transfer(optionToken.address, inTokenS);
                 await optionToken.transfer(optionToken.address, inTokenP);
-                await optionToken.exercise(Alice, inTokenP, []);
+                await optionToken.exerciseOptions(Alice, inTokenP, []);
             });
 
             it("should not revert on redeemToken because option contract can handle bad erc20s", async () => {
                 // no way to swap, because it reverts, so we need to send strikeToken and call update()
                 let inTokenS = parseEther("0.5"); // 100 ether (underlyingToken:base) / 200 (strikeToken:quote) = 0.5 strikeToken
                 await strikeToken.transfer(optionToken.address, inTokenS);
-                await optionToken.update();
+                await optionToken.updateCacheBalances();
                 await redeemToken.transfer(optionToken.address, inTokenS);
-                await optionToken.redeem(Alice);
+                await optionToken.redeemStrikeTokens(Alice);
             });
 
             it("should not revert on close because option contract can handle bad erc20s", async () => {
@@ -1038,7 +1014,7 @@ describe("Option Contract", () => {
                 let inTokenR = parseEther("0.5"); // 100 ether (underlyingToken:base) / 200 (strikeToken:quote) = 0.5 strikeToken
                 await redeemToken.transfer(optionToken.address, inTokenR);
                 await optionToken.transfer(optionToken.address, inTokenP);
-                await optionToken.close(Alice);
+                await optionToken.closeOptions(Alice);
             });
         });
     });
