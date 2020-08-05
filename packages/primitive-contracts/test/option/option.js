@@ -497,7 +497,7 @@ describe("Option Contract", () => {
                 await expect(
                     optionToken.exerciseOptions(Alice, quote, [])
                 ).to.be.revertedWith(ERR_BAL_UNDERLYING);
-                await optionToken.takeSurplusFunds();
+                await optionToken.updateCacheBalances();
             });
 
             it("reverts if 0 strikeToken and 0 underlyingToken are sent into contract", async () => {
@@ -597,7 +597,7 @@ describe("Option Contract", () => {
                 await expect(
                     optionToken.redeemStrikeTokens(Alice)
                 ).to.be.revertedWith(ERR_BAL_STRIKE);
-                await optionToken.takeSurplusFunds();
+                await optionToken.updateCacheBalances();
             });
 
             it("redeemTokens consecutively", async () => {
@@ -810,61 +810,6 @@ describe("Option Contract", () => {
 
                 assertBNEqual(underlyingCache, underlyingBalance);
                 assertBNEqual(strikeCache, strikeBalance);
-            });
-        });
-
-        describe("take", () => {
-            beforeEach(async () => {
-                registry = await newRegistry(Admin);
-                factoryOption = await newOptionFactory(Admin, registry);
-                Primitive = await newPrimitive(
-                    Admin,
-                    registry,
-                    underlyingToken,
-                    strikeToken,
-                    base,
-                    quote,
-                    expiry
-                );
-
-                optionToken = Primitive.optionToken;
-                redeemToken = Primitive.redeemToken;
-            });
-
-            it("should take the balances which are not in the cache", async () => {
-                await underlyingToken.mint(Alice, THOUSAND_ETHER);
-                await underlyingToken.mint(Alice, THOUSAND_ETHER);
-                let inUnderlyings = THOUSAND_ETHER;
-                let inTokenS = inUnderlyings.mul(quote).div(base);
-                await strikeToken.deposit({ value: inTokenS });
-                await mint(inUnderlyings);
-                await underlyingToken.transfer(
-                    optionToken.address,
-                    inUnderlyings
-                );
-                await strikeToken.transfer(optionToken.address, inTokenS);
-                await redeemToken.transfer(optionToken.address, inTokenS);
-                let take = await optionToken.takeSurplusFunds();
-
-                let underlyingCache = await getCache("u");
-                let strikeCache = await getCache("s");
-                let underlyingBalance = await getBalance(
-                    underlyingToken,
-                    optionToken.address
-                );
-                let strikeBalance = await getBalance(
-                    strikeToken,
-                    optionToken.address
-                );
-
-                assertBNEqual(underlyingCache, underlyingBalance);
-                assertBNEqual(strikeCache, strikeBalance);
-                await verifyOptionInvariants(
-                    underlyingToken,
-                    strikeToken,
-                    optionToken,
-                    redeemToken
-                );
             });
         });
 
