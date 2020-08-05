@@ -2,7 +2,9 @@
 
 pragma solidity ^0.6.2;
 
-interface IOption {
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
+interface IOption is IERC20 {
     function mintOptions(address receiver)
         external
         returns (uint256 inUnderlyings, uint256 outRedeems);
