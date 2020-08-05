@@ -11,8 +11,6 @@ pragma solidity ^0.6.2;
 import { IOption } from "../interfaces/IOption.sol";
 import { ITrader } from "../interfaces/ITrader.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { ERC20, IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import {
     ReentrancyGuard
 } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
@@ -20,7 +18,6 @@ import { TraderLib } from "../libraries/TraderLib.sol";
 
 contract Trader is ITrader, ReentrancyGuard {
     using SafeMath for uint256;
-    using SafeERC20 for IERC20;
 
     address payable public weth;
 
