@@ -7,6 +7,8 @@ pragma solidity ^0.6.2;
  * @notice  This is a low-level contract that is designed to be interacted with by
  *          other sophisticated smart contracts which have important safety checks,
  *          and not by externally owned accounts.
+ *          Incorrect usage through direct interaction from externally owned accounts
+ *          can lead to the loss of funds.
  *          Use Primitive's Trader.sol contract to interact with this contract safely.
  * @author  Primitive
  */
