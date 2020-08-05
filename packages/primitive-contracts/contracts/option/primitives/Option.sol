@@ -125,6 +125,9 @@ contract Option is IOption, ERC20, ReentrancyGuard {
     /**
      * @dev Warning: This low-level function should be called from a contract which performs important safety checks.
      * This function should never be called directly by an externally owned account.
+     * A sophsticated smart contract should make the important checks to make sure the correct amount of tokens
+     * are transferred into this contract prior to the function call. If an incorrect amount of tokens are transferred
+     * into this contract, and this function is called, it can result in the loss of funds.
      * Mints optionTokens at a 1:1 ratio to underlyingToken deposits. Also mints Redeem tokens at a base:quote ratio.
      * @notice inUnderlyings = outOptionTokens. inUnderlying / strike ratio = outRedeemTokens.
      * @param receiver The newly minted tokens are sent to the receiver address.
@@ -161,6 +164,9 @@ contract Option is IOption, ERC20, ReentrancyGuard {
     /**
      * @dev Warning: This low-level function should be called from a contract which performs important safety checks.
      * This function should never be called directly by an externally owned account.
+     * A sophsticated smart contract should make the important checks to make sure the correct amount of tokens
+     * are transferred into this contract prior to the function call. If an incorrect amount of tokens are transferred
+     * into this contract, and this function is called, it can result in the loss of funds.
      * Sends out underlyingTokens then checks to make sure they are returned or paid for.
      * @notice If the underlyingTokens are returned, only the fee has to be paid.
      * @param receiver The outUnderlyings are sent to the receiver address.
@@ -239,6 +245,9 @@ contract Option is IOption, ERC20, ReentrancyGuard {
     /**
      * @dev Warning: This low-level function should be called from a contract which performs important safety checks.
      * This function should never be called directly by an externally owned account.
+     * A sophsticated smart contract should make the important checks to make sure the correct amount of tokens
+     * are transferred into this contract prior to the function call. If an incorrect amount of tokens are transferred
+     * into this contract, and this function is called, it can result in the loss of funds.
      * Burns redeemTokens to withdraw strikeTokens at a ratio of 1:1.
      * @notice inRedeemTokens = outStrikeTokens. Only callable when strikeTokens are in the contract.
      * @param receiver The inRedeems quantity of strikeTokens are sent to the receiver address.
@@ -273,6 +282,9 @@ contract Option is IOption, ERC20, ReentrancyGuard {
     /**
      * @dev Warning: This low-level function should be called from a contract which performs important safety checks.
      * This function should never be called directly by an externally owned account.
+     * A sophsticated smart contract should make the important checks to make sure the correct amount of tokens
+     * are transferred into this contract prior to the function call. If an incorrect amount of tokens are transferred
+     * into this contract, and this function is called, it can result in the loss of funds.
      * If the option has expired, burn redeem tokens to withdraw underlying tokens.
      * If the option is not expired, burn option and redeem tokens to withdraw underlying tokens.
      * @notice inRedeemTokens / strike ratio = outUnderlyingTokens && inOptionTokens >= outUnderlyingTokens.
