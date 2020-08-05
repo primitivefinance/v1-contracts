@@ -4,6 +4,12 @@ pragma solidity ^0.6.2;
 
 /**
  * @title   Vanilla Option Token
+ * @notice  This is a low-level contract that is designed to be interacted with by
+ *          other sophisticated smart contracts which have important safety checks,
+ *          and not by externally owned accounts.
+ *          Incorrect usage through direct interaction from externally owned accounts
+ *          can lead to the loss of funds.
+ *          Use Primitive's Trader.sol contract to interact with this contract safely.
  * @author  Primitive
  */
 
@@ -90,7 +96,10 @@ contract Option is IOption, ERC20, ReentrancyGuard {
     }
 
     /**
-     * @dev Updates the cached balances to the actual current balances.
+     * @dev Updates the cached balances to match the actual current balances.
+     * Attempting to transfer tokens to this contract directly, in a separate transaction,
+     * is incorrect and could result in loss of funds. Calling this function will permanently lock any excess
+     * underlying or strike tokens which were erroneously sent to this contract.
      */
     function updateCacheBalances() external override nonReentrant {
         _updateCacheBalances(
@@ -114,8 +123,10 @@ contract Option is IOption, ERC20, ReentrancyGuard {
     /* === STATE MUTABLE === */
 
     /**
-     * @dev Mints optionTokens at a 1:1 ratio to underlyingToken deposits. Also mints Redeem tokens at a base:quote ratio.
-     * @notice inUnderlyings = outOptions. inUnderlying / strike ratio = outRedeems.
+     * @dev Warning: This low-level function should be called from a contract which performs important safety checks.
+     * This function should never be called directly by an externally owned account.
+     * Mints optionTokens at a 1:1 ratio to underlyingToken deposits. Also mints Redeem tokens at a base:quote ratio.
+     * @notice inUnderlyings = outOptionTokens. inUnderlying / strike ratio = outRedeemTokens.
      * @param receiver The newly minted tokens are sent to the receiver address.
      */
     function mintOptions(address receiver)
@@ -148,7 +159,9 @@ contract Option is IOption, ERC20, ReentrancyGuard {
     }
 
     /**
-     * @dev Sends out underlyingTokens then checks to make sure they are returned or paid for.
+     * @dev Warning: This low-level function should be called from a contract which performs important safety checks.
+     * This function should never be called directly by an externally owned account.
+     * Sends out underlyingTokens then checks to make sure they are returned or paid for.
      * @notice If the underlyingTokens are returned, only the fee has to be paid.
      * @param receiver The outUnderlyings are sent to the receiver address.
      * @param outUnderlyings Quantity of underlyingTokens to safeTransfer to receiver optimistically.
@@ -224,8 +237,10 @@ contract Option is IOption, ERC20, ReentrancyGuard {
     }
 
     /**
-     * @dev Burns redeemTokens to withdraw strikeTokens at a ratio of 1:1.
-     * @notice inRedeems = outStrikes. Only callable when strikeTokens are in the contract.
+     * @dev Warning: This low-level function should be called from a contract which performs important safety checks.
+     * This function should never be called directly by an externally owned account.
+     * Burns redeemTokens to withdraw strikeTokens at a ratio of 1:1.
+     * @notice inRedeemTokens = outStrikeTokens. Only callable when strikeTokens are in the contract.
      * @param receiver The inRedeems quantity of strikeTokens are sent to the receiver address.
      */
     function redeemStrikeTokens(address receiver)
@@ -256,10 +271,12 @@ contract Option is IOption, ERC20, ReentrancyGuard {
     }
 
     /**
-     * @dev If the option has expired, burn redeem tokens with withdraw underlying tokens.
+     * @dev Warning: This low-level function should be called from a contract which performs important safety checks.
+     * This function should never be called directly by an externally owned account.
+     * If the option has expired, burn redeem tokens to withdraw underlying tokens.
      * If the option is not expired, burn option and redeem tokens to withdraw underlying tokens.
-     * @notice inRedeems / strike ratio = outUnderlyings && inOptions >= outUnderlyings.
-     * @param receiver The outUnderlyings are sent to the receiver address.
+     * @notice inRedeemTokens / strike ratio = outUnderlyingTokens && inOptionTokens >= outUnderlyingTokens.
+     * @param receiver The outUnderlyingTokens are sent to the receiver address.
      */
     function closeOptions(address receiver)
         external
