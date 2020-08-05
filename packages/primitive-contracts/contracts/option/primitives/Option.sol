@@ -245,10 +245,8 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         inOptions = balanceOf(address(this));
 
         // Enforce the invariants.
-        require(
-            inStrikes >= payment && inOptions >= remainder,
-            "ERR_BAL_INPUT"
-        );
+        require(inStrikes >= payment, "ERR_STRIKES_INPUT");
+        require(inOptions >= remainder, "ERR_OPTIONS_INPUT");
 
         // Burn the optionTokens at a 1:1 ratio to outUnderlyings.
         _burn(address(this), inOptions);
