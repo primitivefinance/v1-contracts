@@ -74,6 +74,4 @@ interface IOption is IERC20 {
     function initRedeemToken(address _redeemToken) external;
 
     function updateCacheBalances() external;
-
-    function withdrawUnusedFunds() external;
 }
