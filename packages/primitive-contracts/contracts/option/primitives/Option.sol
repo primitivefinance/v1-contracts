@@ -62,6 +62,10 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         uint256 expiry
     ) public {
         require(factory == address(0x0), "ERR_IS_INITIALIZED");
+        require(underlyingToken != strikeToken, "ERR_SAME_ASSETS");
+        require(base > 0, "ERR_BASE_ZERO");
+        require(quote > 0, "ERR_QUOTE_ZERO");
+        require(expiry >= block.timestamp, "ERR_EXPIRY");
         factory = msg.sender;
         optionParameters = Primitives.Option(
             underlyingToken,
