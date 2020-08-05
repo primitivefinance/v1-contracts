@@ -270,10 +270,9 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         address strikeToken = optionParameters.strikeToken;
         address _redeemToken = redeemToken;
         uint256 strikeBalance = IERC20(strikeToken).balanceOf(address(this));
-        uint256 redeemBalance = IERC20(_redeemToken).balanceOf(address(this));
+        inRedeems = IERC20(_redeemToken).balanceOf(address(this));
 
         // Difference between redeemTokens balance and cache.
-        inRedeems = redeemBalance;
         require(inRedeems > 0, "ERR_ZERO");
         require(strikeBalance >= inRedeems, "ERR_BAL_STRIKE");
 
@@ -283,7 +282,6 @@ contract Option is IOption, ERC20, ReentrancyGuard {
 
         // Current balances.
         strikeBalance = IERC20(strikeToken).balanceOf(address(this));
-        redeemBalance = IERC20(_redeemToken).balanceOf(address(this));
 
         // Update the cached balances.
         _updateCacheBalances(underlyingCache, strikeBalance);
@@ -311,11 +309,8 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         uint256 underlyingBalance = IERC20(underlyingToken).balanceOf(
             address(this)
         );
-        uint256 redeemBalance = IERC20(_redeemToken).balanceOf(address(this));
         uint256 optionBalance = balanceOf(address(this));
-
-        // Differences between current and cached balances.
-        inRedeems = redeemBalance;
+        inRedeems = IERC20(_redeemToken).balanceOf(address(this));
 
         // The quantity of underlyingToken to send out it still determined by the quantity of inRedeems.
         // inRedeems is in units of strikeTokens, which is converted to underlyingTokens
@@ -353,7 +348,6 @@ contract Option is IOption, ERC20, ReentrancyGuard {
 
         // Current balances of underlyingToken and redeemToken.
         underlyingBalance = IERC20(underlyingToken).balanceOf(address(this));
-        redeemBalance = IERC20(_redeemToken).balanceOf(address(this));
 
         // Update the cached balances.
         _updateCacheBalances(underlyingBalance, strikeCache);
