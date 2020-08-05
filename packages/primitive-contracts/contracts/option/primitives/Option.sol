@@ -7,7 +7,6 @@ pragma solidity ^0.6.2;
  * @author  Primitive
  */
 
-import { Primitives } from "../../Primitives.sol";
 import { IOption } from "../interfaces/IOption.sol";
 import { IRedeem } from "../interfaces/IRedeem.sol";
 import { IFlash } from "../interfaces/IFlash.sol";
@@ -22,7 +21,15 @@ contract Option is IOption, ERC20, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    Primitives.Option public optionParameters;
+    struct OptionParameters {
+        address underlyingToken;
+        address strikeToken;
+        uint256 base;
+        uint256 quote;
+        uint256 expiry;
+    }
+
+    OptionParameters public optionParameters;
 
     // solhint-disable-next-line const-name-snakecase
     uint256 public override underlyingCache;
@@ -67,7 +74,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         require(quote > 0, "ERR_QUOTE_ZERO");
         require(expiry >= block.timestamp, "ERR_EXPIRY");
         factory = msg.sender;
-        optionParameters = Primitives.Option(
+        optionParameters = OptionParameters(
             underlyingToken,
             strikeToken,
             base,
@@ -419,7 +426,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
             uint256 _expiry
         )
     {
-        Primitives.Option memory _optionParameters = optionParameters;
+        OptionParameters memory _optionParameters = optionParameters;
         _underlyingToken = _optionParameters.underlyingToken;
         _strikeToken = _optionParameters.strikeToken;
         _redeemToken = redeemToken;
