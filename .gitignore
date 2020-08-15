@@ -1,11 +1,2 @@
 node_modules
-
-#Buidler files
-cache
-artifacts
-
-#Env settings
-.env
-
-coverage
-coverage.json
+*.swp

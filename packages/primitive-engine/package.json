@@ -1,0 +1,14 @@
+{
+    "name": "@primitivefi/engine",
+    "version": "0.1.4",
+    "description": "primitive engine",
+    "main": "lib/engine.js",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/primitivefinance/primitive-protocol.git"
+    },
+    "author": "Primitive",
+    "license": "MIT",
+    "private": false,
+    "gitHead": "c50308617c3c6ecb51b45527c55c4c7045daa2fc"
+}

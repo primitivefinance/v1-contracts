@@ -1,0 +1,11 @@
+version: '3.4'
+services:
+  primitive:
+    image: primitive/ubuntu
+    build:
+      context: ./
+      dockerfile: docker/Dockerfile
+    ports:
+      - "2222:22"
+    volumes:
+      - ~/.primitive-ssh:/home/user/.ssh
