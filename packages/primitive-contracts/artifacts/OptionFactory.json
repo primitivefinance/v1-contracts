@@ -94,6 +94,45 @@
       "inputs": [
         {
           "internalType": "address",
+          "name": "underlyingToken",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "strikeToken",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "base",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "quote",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "expiry",
+          "type": "uint256"
+        }
+      ],
+      "name": "getOption",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "option",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
           "name": "option",
           "type": "address"
         },
@@ -162,7 +201,11 @@
       "OptionTemplateLib": [
         {
           "length": 20,
+<<<<<<< HEAD
           "start": 3377
+=======
+          "start": 3917
+>>>>>>> 7e9e00418e7ccb1da05482f268175836af98474d
         }
       ]
     }
@@ -172,7 +215,11 @@
       "OptionTemplateLib": [
         {
           "length": 20,
+<<<<<<< HEAD
           "start": 2560
+=======
+          "start": 3085
+>>>>>>> 7e9e00418e7ccb1da05482f268175836af98474d
         }
       ]
     }

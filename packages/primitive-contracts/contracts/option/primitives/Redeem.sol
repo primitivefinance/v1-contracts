@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity ^0.6.2;
 
 /**
@@ -12,7 +11,7 @@ import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 
 contract Redeem is IRedeem, ERC20 {
-    using SafeMath for uint256;
+    using SafeMath for uint;
 
     address public override factory;
     address public override optionToken;
@@ -32,12 +31,12 @@ contract Redeem is IRedeem, ERC20 {
         redeemableToken = _redeemableToken;
     }
 
-    function mint(address to, uint256 amount) external override {
+    function mint(address to, uint amount) external override {
         require(msg.sender == optionToken, "ERR_NOT_VALID");
         _mint(to, amount);
     }
 
-    function burn(address to, uint256 amount) external override {
+    function burn(address to, uint amount) external override {
         require(msg.sender == optionToken, "ERR_NOT_VALID");
         _burn(to, amount);
     }

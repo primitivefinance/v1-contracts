@@ -11,9 +11,9 @@ interface IRedeem is IERC20 {
 
     function factory() external view returns (address);
 
-    function mint(address user, uint256 amount) external;
+    function mint(address user, uint amount) external;
 
-    function burn(address user, uint256 amount) external;
+    function burn(address user, uint amount) external;
 
     function initialize(
         address _factory,

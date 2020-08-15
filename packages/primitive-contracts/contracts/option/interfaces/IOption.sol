@@ -11,9 +11,9 @@ interface IOption is IERC20 {
 
     function exerciseOptions(
         address receiver,
-        uint256 outUnderlyings,
+        uint outUnderlyings,
         bytes calldata data
-    ) external returns (uint256 inStrikes, uint256 inOptions);
+    ) external returns (uint inStrikes, uint inOptions);
 
     function redeemStrikeTokens(address receiver)
         external
@@ -22,9 +22,9 @@ interface IOption is IERC20 {
     function closeOptions(address receiver)
         external
         returns (
-            uint256 inRedeems,
-            uint256 inOptions,
-            uint256 outUnderlyings
+            uint inRedeems,
+            uint inOptions,
+            uint outUnderlyings
         );
 
     function redeemToken() external view returns (address);
@@ -33,22 +33,34 @@ interface IOption is IERC20 {
 
     function getUnderlyingTokenAddress() external view returns (address);
 
+<<<<<<< HEAD
     function getBaseValue() external view returns (uint256);
 
     function getQuoteValue() external view returns (uint256);
 
     function getExpiryTime() external view returns (uint256);
+=======
+    function base() external view returns (uint);
 
-    function underlyingCache() external view returns (uint256);
+    function quote() external view returns (uint);
 
-    function strikeCache() external view returns (uint256);
+    function expiry() external view returns (uint);
+>>>>>>> 7e9e00418e7ccb1da05482f268175836af98474d
+
+    function underlyingCache() external view returns (uint);
+
+    function strikeCache() external view returns (uint);
 
     function factory() external view returns (address);
 
+<<<<<<< HEAD
     function getCacheBalances()
         external
         view
         returns (uint256 _underlyingCache, uint256 _strikeCache);
+=======
+    function caches() external view returns (uint _underlyingCache, uint _strikeCache);
+>>>>>>> 7e9e00418e7ccb1da05482f268175836af98474d
 
     function getAssetAddresses()
         external
@@ -66,12 +78,17 @@ interface IOption is IERC20 {
             address _underlyingToken,
             address _strikeToken,
             address _redeemToken,
-            uint256 _base,
-            uint256 _quote,
-            uint256 _expiry
+            uint _base,
+            uint _quote,
+            uint _expiry
         );
 
     function initRedeemToken(address _redeemToken) external;
 
+<<<<<<< HEAD
     function updateCacheBalances() external;
+=======
+    // solhint-disable-next-line
+    function EXERCISE_FEE() external view returns (uint);
+>>>>>>> 7e9e00418e7ccb1da05482f268175836af98474d
 }
