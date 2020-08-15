@@ -56,6 +56,7 @@ library TraderLib {
         );
 
         // Calculate quantity of strikeTokens needed to exercise quantity of optionTokens.
+<<<<<<< HEAD
         inputStrikes = exerciseQuantity
             .add(exerciseQuantity.div(IOption(optionToken).EXERCISE_FEE()))
             .mul(optionToken.quote())
@@ -66,6 +67,17 @@ library TraderLib {
             "ERR_BAL_STRIKE"
         );
         IERC20(optionToken.strikeToken()).safeTransferFrom(
+=======
+        inputStrikes = exerciseQuantity.mul(optionToken.getQuoteValue()).div(
+            optionToken.getBaseValue()
+        );
+        require(
+            IERC20(optionToken.getStrikeTokenAddress()).balanceOf(msg.sender) >=
+                inputStrikes,
+            "ERR_BAL_STRIKE"
+        );
+        IERC20(optionToken.getStrikeTokenAddress()).safeTransferFrom(
+>>>>>>> release/v0.3.0
             msg.sender,
             address(optionToken),
             inputStrikes
@@ -75,7 +87,11 @@ library TraderLib {
             address(optionToken),
             exerciseQuantity
         );
+<<<<<<< HEAD
         (inputStrikes, inputOptions) = optionToken.exercise(
+=======
+        (inputStrikes, inputOptions) = optionToken.exerciseOptions(
+>>>>>>> release/v0.3.0
             receiver,
             exerciseQuantity,
             new bytes(0)
@@ -106,7 +122,11 @@ library TraderLib {
             address(optionToken),
             redeemQuantity
         );
+<<<<<<< HEAD
         (inputRedeems) = optionToken.redeem(receiver);
+=======
+        (inputRedeems) = optionToken.redeemStrikeTokens(receiver);
+>>>>>>> release/v0.3.0
     }
 
     /**
@@ -137,8 +157,13 @@ library TraderLib {
         );
 
         // Calculate the quantity of redeemTokens that need to be burned. (What we mean by Implicit).
+<<<<<<< HEAD
         inputRedeems = closeQuantity.mul(optionToken.quote()).div(
             optionToken.base()
+=======
+        inputRedeems = closeQuantity.mul(optionToken.getQuoteValue()).div(
+            optionToken.getBaseValue()
+>>>>>>> release/v0.3.0
         );
         require(
             IERC20(optionToken.redeemToken()).balanceOf(msg.sender) >=
@@ -155,7 +180,11 @@ library TraderLib {
             address(optionToken),
             closeQuantity
         );
+<<<<<<< HEAD
         (inputRedeems, inputOptions, outUnderlyings) = optionToken.close(
+=======
+        (inputRedeems, inputOptions, outUnderlyings) = optionToken.closeOptions(
+>>>>>>> release/v0.3.0
             receiver
         );
     }
@@ -163,8 +192,13 @@ library TraderLib {
     /**
      * @dev Burn redeemTokens to withdraw underlyingTokens and strikeTokens from expired options.
      * @param optionToken The address of the option contract.
+<<<<<<< HEAD
      * @param unwindQuantity Quantity of redeemTokens to burn.
      * @param receiver The underlyingTokens and redeemTokens are sent to the receiver address.
+=======
+     * @param unwindQuantity Quantity of option tokens used to calculate the amount of redeem tokens to burn.
+     * @param receiver The underlyingTokens are sent to the receiver address and the redeemTokens are burned.
+>>>>>>> release/v0.3.0
      */
     function safeUnwind(
         IOption optionToken,
@@ -181,11 +215,22 @@ library TraderLib {
         // Checks
         require(unwindQuantity > 0, "ERR_ZERO");
         // solhint-disable-next-line not-rely-on-time
+<<<<<<< HEAD
         require(optionToken.expiry() < block.timestamp, "ERR_NOT_EXPIRED");
 
         // Calculate amount of redeems required
         inputRedeems = unwindQuantity.mul(optionToken.quote()).div(
             optionToken.base()
+=======
+        require(
+            optionToken.getExpiryTime() < block.timestamp,
+            "ERR_NOT_EXPIRED"
+        );
+
+        // Calculate amount of redeems required
+        inputRedeems = unwindQuantity.mul(optionToken.getQuoteValue()).div(
+            optionToken.getBaseValue()
+>>>>>>> release/v0.3.0
         );
         require(
             IERC20(optionToken.redeemToken()).balanceOf(msg.sender) >=
@@ -197,7 +242,11 @@ library TraderLib {
             address(optionToken),
             inputRedeems
         );
+<<<<<<< HEAD
         (inputRedeems, inputOptions, outUnderlyings) = optionToken.close(
+=======
+        (inputRedeems, inputOptions, outUnderlyings) = optionToken.closeOptions(
+>>>>>>> release/v0.3.0
             receiver
         );
     }

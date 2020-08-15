@@ -1,119 +1,125 @@
 {
-  "contractName": "RedeemFactory",
-  "abi": [
-    {
-      "inputs": [
+    "contractName": "RedeemFactory",
+    "abi": [
         {
-          "internalType": "address",
-          "name": "registry",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "constructor"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "previousOwner",
-          "type": "address"
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "registry",
+                    "type": "address"
+                }
+            ],
+            "stateMutability": "nonpayable",
+            "type": "constructor"
         },
         {
-          "indexed": true,
-          "internalType": "address",
-          "name": "newOwner",
-          "type": "address"
-        }
-      ],
-      "name": "OwnershipTransferred",
-      "type": "event"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bytes",
-          "name": "consData",
-          "type": "bytes"
-        }
-      ],
-      "name": "cloneConstructor",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "optionToken",
-          "type": "address"
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "previousOwner",
+                    "type": "address"
+                },
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "newOwner",
+                    "type": "address"
+                }
+            ],
+            "name": "OwnershipTransferred",
+            "type": "event"
         },
         {
-          "internalType": "address",
-          "name": "redeemableToken",
-          "type": "address"
-        }
-      ],
-      "name": "deploy",
-      "outputs": [
+            "inputs": [
+                {
+                    "internalType": "bytes",
+                    "name": "consData",
+                    "type": "bytes"
+                }
+            ],
+            "name": "cloneConstructor",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
         {
-          "internalType": "address",
-          "name": "redeem",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "deployRedeemTemplate",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "owner",
-      "outputs": [
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "optionToken",
+                    "type": "address"
+                },
+                {
+                    "internalType": "address",
+                    "name": "redeemableToken",
+                    "type": "address"
+                }
+            ],
+            "name": "deploy",
+            "outputs": [
+                {
+                    "internalType": "address",
+                    "name": "redeem",
+                    "type": "address"
+                }
+            ],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
         {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "redeemTemplate",
-      "outputs": [
+            "inputs": [],
+            "name": "deployRedeemTemplate",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
         {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "renounceOwnership",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
+            "inputs": [],
+            "name": "owner",
+            "outputs": [
+                {
+                    "internalType": "address",
+                    "name": "",
+                    "type": "address"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
         {
-          "internalType": "address",
-          "name": "newOwner",
-          "type": "address"
+            "inputs": [],
+            "name": "redeemTemplate",
+            "outputs": [
+                {
+                    "internalType": "address",
+                    "name": "",
+                    "type": "address"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "renounceOwnership",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "newOwner",
+                    "type": "address"
+                }
+            ],
+            "name": "transferOwnership",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
         }
       ],
       "name": "transferOwnership",
@@ -131,17 +137,15 @@
           "length": 20,
           "start": 1536
         }
-      ]
-    }
-  },
-  "deployedLinkReferences": {
-    "contracts/option/libraries/RedeemTemplateLib.sol": {
-      "RedeemTemplateLib": [
-        {
-          "length": 20,
-          "start": 719
+    },
+    "deployedLinkReferences": {
+        "contracts/option/libraries/RedeemTemplateLib.sol": {
+            "RedeemTemplateLib": [
+                {
+                    "length": 20,
+                    "start": 719
+                }
+            ]
         }
-      ]
     }
-  }
 }

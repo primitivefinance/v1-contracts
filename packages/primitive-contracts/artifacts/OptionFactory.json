@@ -148,19 +148,6 @@
       "type": "function"
     },
     {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "option",
-          "type": "address"
-        }
-      ],
-      "name": "kill",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
       "inputs": [],
       "name": "optionTemplate",
       "outputs": [
@@ -214,7 +201,11 @@
       "OptionTemplateLib": [
         {
           "length": 20,
+<<<<<<< HEAD
+          "start": 3377
+=======
           "start": 3917
+>>>>>>> 7e9e00418e7ccb1da05482f268175836af98474d
         }
       ]
     }
@@ -224,7 +215,11 @@
       "OptionTemplateLib": [
         {
           "length": 20,
+<<<<<<< HEAD
+          "start": 2560
+=======
           "start": 3085
+>>>>>>> 7e9e00418e7ccb1da05482f268175836af98474d
         }
       ]
     }
