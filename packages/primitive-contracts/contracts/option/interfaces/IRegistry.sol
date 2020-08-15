@@ -11,8 +11,6 @@ interface IRegistry {
         uint expiry
     ) external returns (address);
 
-    function kill(address option) external;
-
     function initialize(address _factory, address _factoryRedeem) external;
 
     function addSupported(address token) external;

@@ -2,18 +2,20 @@
 
 pragma solidity ^0.6.2;
 
-interface IOption {
-    function mint(address receiver) external returns (uint inUnderlyings, uint outRedeems);
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-    function exercise(
+interface IOption is IERC20 {
+    function mintOptions(address receiver) external returns (uint inUnderlyings, uint outRedeems);
+
+    function exerciseOptions(
         address receiver,
         uint outUnderlyings,
         bytes calldata data
     ) external returns (uint inStrikes, uint inOptions);
 
-    function redeem(address receiver) external returns (uint inRedeems);
+    function redeemStrikeTokens(address receiver) external returns (uint inRedeems);
 
-    function close(address receiver)
+    function closeOptions(address receiver)
         external
         returns (
             uint inRedeems,
@@ -23,15 +25,15 @@ interface IOption {
 
     function redeemToken() external view returns (address);
 
-    function strikeToken() external view returns (address);
+    function getStrikeTokenAddress() external view returns (address);
 
-    function underlyingToken() external view returns (address);
+    function getUnderlyingTokenAddress() external view returns (address);
 
-    function base() external view returns (uint);
+    function getBaseValue() external view returns (uint);
 
-    function quote() external view returns (uint);
+    function getQuoteValue() external view returns (uint);
 
-    function expiry() external view returns (uint);
+    function getExpiryTime() external view returns (uint);
 
     function underlyingCache() external view returns (uint);
 
@@ -39,9 +41,9 @@ interface IOption {
 
     function factory() external view returns (address);
 
-    function caches() external view returns (uint _underlyingCache, uint _strikeCache);
+    function getCacheBalances() external view returns (uint _underlyingCache, uint _strikeCache);
 
-    function tokens()
+    function getAssetAddresses()
         external
         view
         returns (
@@ -54,8 +56,8 @@ interface IOption {
         external
         view
         returns (
-            address _strikeToken,
             address _underlyingToken,
+            address _strikeToken,
             address _redeemToken,
             uint _base,
             uint _quote,
@@ -64,6 +66,5 @@ interface IOption {
 
     function initRedeemToken(address _redeemToken) external;
 
-    // solhint-disable-next-line
-    function EXERCISE_FEE() external view returns (uint);
+    function updateCacheBalances() external;
 }

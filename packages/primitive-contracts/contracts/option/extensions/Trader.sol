@@ -11,13 +11,11 @@ pragma solidity ^0.6.2;
 import { IOption } from "../interfaces/IOption.sol";
 import { ITrader } from "../interfaces/ITrader.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { ERC20, IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import { TraderLib } from "../libraries/TraderLib.sol";
 
 contract Trader is ITrader, ReentrancyGuard {
     using SafeMath for uint;
-    using SafeERC20 for IERC20;
 
     address payable public weth;
 
@@ -137,7 +135,7 @@ contract Trader is ITrader, ReentrancyGuard {
     /**
      * @dev Burn redeemTokens to withdraw underlyingTokens and strikeTokens from expired options.
      * @param optionToken The address of the option contract.
-     * @param unwindQuantity Quantity of redeemTokens to burn.
+     * @param unwindQuantity Quantity of option tokens used to calculate the amount of redeem tokens to burn.
      * @param receiver The underlyingTokens and redeemTokens are sent to the receiver address.
      */
     function safeUnwind(

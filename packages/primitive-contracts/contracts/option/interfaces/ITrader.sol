@@ -9,13 +9,13 @@ interface ITrader {
         IOption optionToken,
         uint mintQuantity,
         address receiver
-    ) external returns (uint inTokenU, uint outTokenR);
+    ) external returns (uint outputOptions, uint outputRedeems);
 
     function safeExercise(
         IOption optionToken,
         uint exerciseQuantity,
         address receiver
-    ) external returns (uint inTokenS, uint inOptions);
+    ) external returns (uint inStrikes, uint inOptions);
 
     function safeRedeem(
         IOption optionToken,
