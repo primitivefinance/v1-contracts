@@ -1,9 +1,5 @@
 // SPDX-License-Identifier: MIT
 
-
-
-
-
 pragma solidity ^0.6.2;
 
 /**
@@ -15,7 +11,7 @@ pragma solidity ^0.6.2;
 
 import { IOption } from "../interfaces/IOption.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
 library TraderLib {
@@ -28,12 +24,12 @@ library TraderLib {
         address receiver
     ) internal returns (uint256 outputOptions, uint256 outputRedeem) {
         require(mintQuantity > 0, "ERR_ZERO");
-        IERC20(optionToken.underlyingToken()).safeTransferFrom(
+        IERC20(optionToken.getUnderlyingTokenAddress()).safeTransferFrom(
             msg.sender,
             address(optionToken),
             mintQuantity
         );
-        (outputOptions, outputRedeem) = optionToken.mint(receiver);
+        (outputOptions, outputRedeem) = optionToken.mintOptions(receiver);
     }
 
     /**
@@ -57,15 +53,22 @@ library TraderLib {
 
         // Calculate quantity of strikeTokens needed to exercise quantity of optionTokens.
 <<<<<<< HEAD
+<<<<<<< HEAD
         inputStrikes = exerciseQuantity
             .add(exerciseQuantity.div(IOption(optionToken).EXERCISE_FEE()))
             .mul(optionToken.quote())
             .div(optionToken.base());
+=======
+        inputStrikes = exerciseQuantity.mul(optionToken.getQuoteValue()).div(
+            optionToken.getBaseValue()
+        );
+>>>>>>> release/v0.3.0
         require(
-            IERC20(optionToken.strikeToken()).balanceOf(msg.sender) >=
+            IERC20(optionToken.getStrikeTokenAddress()).balanceOf(msg.sender) >=
                 inputStrikes,
             "ERR_BAL_STRIKE"
         );
+<<<<<<< HEAD
         IERC20(optionToken.strikeToken()).safeTransferFrom(
 =======
         inputStrikes = exerciseQuantity.mul(optionToken.getQuoteValue()).div(
@@ -78,6 +81,9 @@ library TraderLib {
         );
         IERC20(optionToken.getStrikeTokenAddress()).safeTransferFrom(
 >>>>>>> release/v0.3.0
+=======
+        IERC20(optionToken.getStrikeTokenAddress()).safeTransferFrom(
+>>>>>>> release/v0.3.0
             msg.sender,
             address(optionToken),
             inputStrikes
@@ -88,7 +94,11 @@ library TraderLib {
             exerciseQuantity
         );
 <<<<<<< HEAD
+<<<<<<< HEAD
         (inputStrikes, inputOptions) = optionToken.exercise(
+=======
+        (inputStrikes, inputOptions) = optionToken.exerciseOptions(
+>>>>>>> release/v0.3.0
 =======
         (inputStrikes, inputOptions) = optionToken.exerciseOptions(
 >>>>>>> release/v0.3.0
@@ -123,7 +133,11 @@ library TraderLib {
             redeemQuantity
         );
 <<<<<<< HEAD
+<<<<<<< HEAD
         (inputRedeems) = optionToken.redeem(receiver);
+=======
+        (inputRedeems) = optionToken.redeemStrikeTokens(receiver);
+>>>>>>> release/v0.3.0
 =======
         (inputRedeems) = optionToken.redeemStrikeTokens(receiver);
 >>>>>>> release/v0.3.0
@@ -158,8 +172,13 @@ library TraderLib {
 
         // Calculate the quantity of redeemTokens that need to be burned. (What we mean by Implicit).
 <<<<<<< HEAD
+<<<<<<< HEAD
         inputRedeems = closeQuantity.mul(optionToken.quote()).div(
             optionToken.base()
+=======
+        inputRedeems = closeQuantity.mul(optionToken.getQuoteValue()).div(
+            optionToken.getBaseValue()
+>>>>>>> release/v0.3.0
 =======
         inputRedeems = closeQuantity.mul(optionToken.getQuoteValue()).div(
             optionToken.getBaseValue()
@@ -181,7 +200,11 @@ library TraderLib {
             closeQuantity
         );
 <<<<<<< HEAD
+<<<<<<< HEAD
         (inputRedeems, inputOptions, outUnderlyings) = optionToken.close(
+=======
+        (inputRedeems, inputOptions, outUnderlyings) = optionToken.closeOptions(
+>>>>>>> release/v0.3.0
 =======
         (inputRedeems, inputOptions, outUnderlyings) = optionToken.closeOptions(
 >>>>>>> release/v0.3.0
@@ -193,8 +216,13 @@ library TraderLib {
      * @dev Burn redeemTokens to withdraw underlyingTokens and strikeTokens from expired options.
      * @param optionToken The address of the option contract.
 <<<<<<< HEAD
+<<<<<<< HEAD
      * @param unwindQuantity Quantity of redeemTokens to burn.
      * @param receiver The underlyingTokens and redeemTokens are sent to the receiver address.
+=======
+     * @param unwindQuantity Quantity of option tokens used to calculate the amount of redeem tokens to burn.
+     * @param receiver The underlyingTokens are sent to the receiver address and the redeemTokens are burned.
+>>>>>>> release/v0.3.0
 =======
      * @param unwindQuantity Quantity of option tokens used to calculate the amount of redeem tokens to burn.
      * @param receiver The underlyingTokens are sent to the receiver address and the redeemTokens are burned.
@@ -216,11 +244,22 @@ library TraderLib {
         require(unwindQuantity > 0, "ERR_ZERO");
         // solhint-disable-next-line not-rely-on-time
 <<<<<<< HEAD
+<<<<<<< HEAD
         require(optionToken.expiry() < block.timestamp, "ERR_NOT_EXPIRED");
 
         // Calculate amount of redeems required
         inputRedeems = unwindQuantity.mul(optionToken.quote()).div(
             optionToken.base()
+=======
+        require(
+            optionToken.getExpiryTime() < block.timestamp,
+            "ERR_NOT_EXPIRED"
+        );
+
+        // Calculate amount of redeems required
+        inputRedeems = unwindQuantity.mul(optionToken.getQuoteValue()).div(
+            optionToken.getBaseValue()
+>>>>>>> release/v0.3.0
 =======
         require(
             optionToken.getExpiryTime() < block.timestamp,
@@ -243,7 +282,11 @@ library TraderLib {
             inputRedeems
         );
 <<<<<<< HEAD
+<<<<<<< HEAD
         (inputRedeems, inputOptions, outUnderlyings) = optionToken.close(
+=======
+        (inputRedeems, inputOptions, outUnderlyings) = optionToken.closeOptions(
+>>>>>>> release/v0.3.0
 =======
         (inputRedeems, inputOptions, outUnderlyings) = optionToken.closeOptions(
 >>>>>>> release/v0.3.0
