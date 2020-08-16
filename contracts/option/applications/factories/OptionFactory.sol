@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+
+
 pragma solidity ^0.6.2;
 
 /**
@@ -12,17 +14,18 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { OptionTemplateLib } from "../../libraries/OptionTemplateLib.sol";
 import { NullCloneConstructor } from "../NullCloneConstructor.sol";
 import { CloneLib } from "../../libraries/CloneLib.sol";
+import { IOptionFactory } from "../../interfaces/IOptionFactory.sol";
 
 contract OptionFactory is IOptionFactory, Ownable, NullCloneConstructor {
     using SafeMath for uint256;
 
-    address public optionTemplate;
+    address public override optionTemplate;
 
     constructor(address registry) public {
         transferOwnership(registry);
     }
 
-    function deployOptionTemplate() public {
+    function deployOptionTemplate() public override {
         optionTemplate = OptionTemplateLib.deployTemplate();
     }
 

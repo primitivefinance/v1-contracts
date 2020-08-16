@@ -19,8 +19,8 @@ usePlugin("solidity-coverage");
 unhook();
 
 // == Environment ==
-const ETHERSCAN_APY_KEY =
-    process.env.ETHERSCAN_APY_KEY || crypto.randomBytes(20).toString("base64");
+const ETHERSCAN_API_KEY =
+    process.env.ETHERSCAN_API_KEY || crypto.randomBytes(20).toString("base64");
 const rinkeby =
     process.env.RINKEBY ||
     new ethers.providers.InfuraProvider("rinkeby").connection.url;
