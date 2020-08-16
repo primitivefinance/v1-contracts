@@ -44,45 +44,6 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "underlyingToken",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "strikeToken",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "base",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "quote",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "expiry",
-          "type": "uint256"
-        }
-      ],
-      "name": "getOption",
-      "outputs": [
-        {
-          "internalType": "address",
-          "name": "option",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
           "name": "option",
           "type": "address"
         },

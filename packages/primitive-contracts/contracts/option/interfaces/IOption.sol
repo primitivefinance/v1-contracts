@@ -1,24 +1,32 @@
 // SPDX-License-Identifier: MIT
 
+
+
+
+
+
+
 pragma solidity ^0.6.2;
 
 interface IOption {
-    function mint(address receiver) external returns (uint inUnderlyings, uint outRedeems);
+    function mint(address receiver)
+        external
+        returns (uint256 inUnderlyings, uint256 outRedeems);
 
     function exercise(
         address receiver,
-        uint outUnderlyings,
+        uint256 outUnderlyings,
         bytes calldata data
-    ) external returns (uint inStrikes, uint inOptions);
+    ) external returns (uint256 inStrikes, uint256 inOptions);
 
-    function redeem(address receiver) external returns (uint inRedeems);
+    function redeem(address receiver) external returns (uint256 inRedeems);
 
     function close(address receiver)
         external
         returns (
-            uint inRedeems,
-            uint inOptions,
-            uint outUnderlyings
+            uint256 inRedeems,
+            uint256 inOptions,
+            uint256 outUnderlyings
         );
 
     function redeemToken() external view returns (address);
@@ -27,19 +35,22 @@ interface IOption {
 
     function underlyingToken() external view returns (address);
 
-    function base() external view returns (uint);
+    function base() external view returns (uint256);
 
-    function quote() external view returns (uint);
+    function quote() external view returns (uint256);
 
-    function expiry() external view returns (uint);
+    function expiry() external view returns (uint256);
 
-    function underlyingCache() external view returns (uint);
+    function underlyingCache() external view returns (uint256);
 
-    function strikeCache() external view returns (uint);
+    function strikeCache() external view returns (uint256);
 
     function factory() external view returns (address);
 
-    function caches() external view returns (uint _underlyingCache, uint _strikeCache);
+    function caches()
+        external
+        view
+        returns (uint256 _underlyingCache, uint256 _strikeCache);
 
     function tokens()
         external
@@ -57,13 +68,13 @@ interface IOption {
             address _strikeToken,
             address _underlyingToken,
             address _redeemToken,
-            uint _base,
-            uint _quote,
-            uint _expiry
+            uint256 _base,
+            uint256 _quote,
+            uint256 _expiry
         );
 
     function initRedeemToken(address _redeemToken) external;
 
     // solhint-disable-next-line
-    function EXERCISE_FEE() external view returns (uint);
+    function EXERCISE_FEE() external view returns (uint256);
 }

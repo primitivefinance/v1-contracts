@@ -1,5 +1,15 @@
 // SPDX-License-Identifier: MIT
 
+
+
+
+
+
+
+
+
+
+
 pragma solidity ^0.6.2;
 
 import { IOption } from "./IOption.sol";
@@ -7,43 +17,43 @@ import { IOption } from "./IOption.sol";
 interface ITrader {
     function safeMint(
         IOption optionToken,
-        uint mintQuantity,
+        uint256 mintQuantity,
         address receiver
-    ) external returns (uint inTokenU, uint outTokenR);
+    ) external returns (uint256 inTokenU, uint256 outTokenR);
 
     function safeExercise(
         IOption optionToken,
-        uint exerciseQuantity,
+        uint256 exerciseQuantity,
         address receiver
-    ) external returns (uint inTokenS, uint inOptions);
+    ) external returns (uint256 inTokenS, uint256 inOptions);
 
     function safeRedeem(
         IOption optionToken,
-        uint redeemQuantity,
+        uint256 redeemQuantity,
         address receiver
-    ) external returns (uint inRedeems);
+    ) external returns (uint256 inRedeems);
 
     function safeClose(
         IOption optionToken,
-        uint closeQuantity,
+        uint256 closeQuantity,
         address receiver
     )
         external
         returns (
-            uint inRedeems,
-            uint inOptions,
-            uint outUnderlyings
+            uint256 inRedeems,
+            uint256 inOptions,
+            uint256 outUnderlyings
         );
 
     function safeUnwind(
         IOption optionToken,
-        uint unwindQuantity,
+        uint256 unwindQuantity,
         address receiver
     )
         external
         returns (
-            uint inRedeems,
-            uint inOptions,
-            uint outUnderlyings
+            uint256 inRedeems,
+            uint256 inOptions,
+            uint256 outUnderlyings
         );
 }

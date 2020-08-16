@@ -2,12 +2,19 @@
 
 pragma solidity ^0.6.2;
 
+/**
+ * @title Library of Primitives
+ * @author Primitive
+ */
 library Primitives {
+    /*
+     * @notice Vanilla Option.
+     */
     struct Option {
         address underlyingToken;
         address strikeToken;
-        uint base;
-        uint quote;
-        uint expiry;
+        uint256 base;
+        uint256 quote;
+        uint256 expiry;
     }
 }
