@@ -62,7 +62,7 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "inTokenS",
+          "name": "inStrikes",
           "type": "uint256"
         },
         {
@@ -96,12 +96,12 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "inTokenU",
+          "name": "outputOptions",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "outTokenR",
+          "name": "outputRedeems",
           "type": "uint256"
         }
       ],

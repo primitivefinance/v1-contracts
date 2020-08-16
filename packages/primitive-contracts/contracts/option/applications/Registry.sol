@@ -87,10 +87,6 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
         emit Deploy(msg.sender, option, id);
     }
 
-    function kill(address option) external override onlyOwner {
-        IOptionFactory(optionFactory).kill(option);
-    }
-
     function optionsLength() public override view returns (uint256 len) {
         len = activeOptions.length;
     }

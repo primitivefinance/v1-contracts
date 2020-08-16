@@ -139,33 +139,20 @@
             "name": "_factoryRedeem",
             "type": "address"
         }
-    ],
-    "name": "initialize",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-},
-{
-    "inputs": [
+      ],
+      "name": "initialize",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "optionFactory",
+      "outputs": [
         {
-            "internalType": "address",
-            "name": "option",
-            "type": "address"
-        }
-    ],
-    "name": "kill",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-},
-{
-    "inputs": [],
-    "name": "optionFactory",
-    "outputs": [
-        {
-            "internalType": "address",
-            "name": "",
-            "type": "address"
+          "internalType": "address",
+          "name": "",
+          "type": "address"
         }
     ],
     "stateMutability": "nonpayable",

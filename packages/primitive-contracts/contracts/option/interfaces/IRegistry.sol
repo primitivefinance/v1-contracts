@@ -11,8 +11,6 @@ interface IRegistry {
         uint256 expiry
     ) external returns (address);
 
-    function kill(address option) external;
-
     function initialize(address _factory, address _factoryRedeem) external;
 
     function optionsLength() external view returns (uint256 len);

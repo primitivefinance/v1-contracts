@@ -11,7 +11,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     const chain = await bre.getChainId();
     let wethAddress;
     if (chain == 31337) {
-        const weth = await deploy("Weth", {
+        const weth = await deploy("WETH9", {
             from: deployer,
             contractName: "WETH9",
             args: [],

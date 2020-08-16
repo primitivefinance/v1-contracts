@@ -1,11 +1,5 @@
 // SPDX-License-Identifier: MIT
 
-
-
-
-
-
-
 pragma solidity ^0.6.2;
 
 import { IOption } from "../option/interfaces/IOption.sol";
@@ -26,12 +20,20 @@ contract Flash is IFlash {
 
     function goodFlashLoan(uint256 amount) external {
         // trigger the fallback function
-        IOption(optionToken).exercise(address(this), amount, new bytes(1));
+        IOption(optionToken).exerciseOptions(
+            address(this),
+            amount,
+            new bytes(1)
+        );
     }
 
     function badFlashLoan(uint256 amount) external {
         // trigger the fallback function
-        IOption(optionToken).exercise(address(this), amount, new bytes(2));
+        IOption(optionToken).exerciseOptions(
+            address(this),
+            amount,
+            new bytes(2)
+        );
     }
 
     function primitiveFlash(

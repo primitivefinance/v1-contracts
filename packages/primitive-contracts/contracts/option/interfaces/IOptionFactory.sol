@@ -11,8 +11,6 @@ interface IOptionFactory {
         uint256 expiry
     ) external returns (address option);
 
-    function kill(address option) external;
-
     function initialize(address option, address redeem) external;
 
     function deployOptionTemplate() external;
