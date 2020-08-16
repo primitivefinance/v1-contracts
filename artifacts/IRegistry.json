@@ -1,69 +1,143 @@
+({
+    "contractName": "IRegistry",
+    "abi": [
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "token",
+                    "type": "address"
+                }
+            ],
+            "name": "addSupported",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "underlyingToken",
+                    "type": "address"
+                },
+                {
+                    "internalType": "address",
+                    "name": "strikeToken",
+                    "type": "address"
+                },
+                {
+                    "internalType": "uint256",
+                    "name": "base",
+                    "type": "uint256"
+                },
+                {
+                    "internalType": "uint256",
+                    "name": "quote",
+                    "type": "uint256"
+                },
+                {
+                    "internalType": "uint256",
+                    "name": "expiry",
+                    "type": "uint256"
+                }
+            ],
+            "name": "deployOption",
+            "outputs": [
+                {
+                    "internalType": "address",
+                    "name": "",
+                    "type": "address"
+                }
+            ],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "_factory",
+                    "type": "address"
+                },
+                {
+                    "internalType": "address",
+                    "name": "_factoryRedeem",
+                    "type": "address"
+                }
+            ],
+            "name": "initialize",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "internalType": "uint256",
+            "name": "expiry",
+            "type": "uint256"
+        }
+    ],
+    "name": "deployOption",
+    "outputs": [
+        {
+            "internalType": "address",
+            "name": "",
+            "type": "address"
+        }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+},
 {
-  "contractName": "IRegistry",
-  "abi": [
-    {
-      "inputs": [
+    "inputs": [
         {
-          "internalType": "address",
-          "name": "token",
-          "type": "address"
+            "internalType": "address",
+            "name": "underlyingToken",
+            "type": "address"
+        },
+        {
+            "internalType": "address",
+            "name": "strikeToken",
+            "type": "address"
+        },
+        {
+            "internalType": "uint256",
+            "name": "base",
+            "type": "uint256"
+        },
+        {
+            "internalType": "uint256",
+            "name": "quote",
+            "type": "uint256"
+        },
+        {
+            "internalType": "uint256",
+            "name": "expiry",
+            "type": "uint256"
         }
-      ],
-      "name": "addSupported",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
+    ],
+    "name": "getOption",
+    "outputs": [
         {
-          "internalType": "address",
-          "name": "underlyingToken",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "strikeToken",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "base",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "quote",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "expiry",
-          "type": "uint256"
+            "internalType": "address",
+            "name": "option",
+            "type": "address"
         }
-      ],
-      "name": "deployOption",
-      "outputs": [
+    ],
+    "stateMutability": "view",
+    "type": "function"
+},
+{
+    "inputs": [
         {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_factory",
-          "type": "address"
+            "internalType": "address",
+            "name": "_factory",
+            "type": "address"
         },
         {
-          "internalType": "address",
-          "name": "_factoryRedeem",
-          "type": "address"
+            "internalType": "address",
+            "name": "_factoryRedeem",
+            "type": "address"
         }
       ],
       "name": "initialize",
@@ -80,26 +154,35 @@
           "name": "",
           "type": "address"
         }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "redeemFactory",
-      "outputs": [
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+},
+{
+    "inputs": [],
+    "name": "optionsLength",
+    "outputs": [
         {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
+            "internalType": "uint256",
+            "name": "len",
+            "type": "uint256"
         }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    }
-  ],
-  "bytecode": "0x",
-  "deployedBytecode": "0x",
-  "linkReferences": {},
-  "deployedLinkReferences": {}
-}
+    ],
+    "stateMutability": "view",
+    "type": "function"
+},
+{
+    "inputs": [],
+    "name": "redeemFactory",
+    "outputs": [
+        {
+            "internalType": "address",
+            "name": "",
+            "type": "address"
+        }
+    ],
+    "bytecode": "0x",
+    "deployedBytecode": "0x",
+    "linkReferences": {},
+    "deployedLinkReferences": {}
+})

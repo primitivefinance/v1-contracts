@@ -19,9 +19,14 @@ usePlugin("solidity-coverage");
 unhook();
 
 // == Environment ==
-const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || crypto.randomBytes(20).toString("base64");
-const rinkeby = process.env.RINKEBY || new ethers.providers.InfuraProvider("rinkeby").connection.url;
-const mainnet = process.env.MAINNET || new ethers.providers.InfuraProvider("mainnet").connection.url;
+const ETHERSCAN_APY_KEY =
+    process.env.ETHERSCAN_APY_KEY || crypto.randomBytes(20).toString("base64");
+const rinkeby =
+    process.env.RINKEBY ||
+    new ethers.providers.InfuraProvider("rinkeby").connection.url;
+const mainnet =
+    process.env.MAINNET ||
+    new ethers.providers.InfuraProvider("mainnet").connection.url;
 const mnemonic = process.env.TEST_MNEMONIC || bip39.generateMnemonic();
 const live = process.env.MNEMONIC || mnemonic;
 
