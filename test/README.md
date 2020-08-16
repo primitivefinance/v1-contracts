@@ -1,5 +1,7 @@
 # Testing
 
+The testing files are in the appropriate contract modules they cover.
+
 ## Use Docker
 
 ```

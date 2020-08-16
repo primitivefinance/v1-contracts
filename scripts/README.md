@@ -1,17 +1,19 @@
 # Scripts
 
-Buidler does not have a `migrations` folder or system like truffle. Instead, buidler uses these scripts to deploy contracts.
+## Verify
 
-The `deploy` script will deploy the contracts to the specified network using `--network`.
+This script will verify most of the core protocol contracts on etherscan. There are problems with verifying conmtracts with libraries linked (Option Factory and Redeem Factory). Also, since the options are clones, there is no way to individually verify each option contract.
 
-To deploy to mainnet:
+```
+yarn verify:rinkeby
+yarn verify:mainnet
+```
 
-    npm deploy:mainnet
+## Deploy Options
 
-To deploy to a local environment (forked mainnet):
+With the protocol setup on rinkeby or mainnet, running this script will deploy both the specified option series and uniswap pools to go with them.
 
-    npm deploy:local
-
-To deploy to a test environment (rinkeby):
-
-## FIX - Add test net system.
+```
+yarn deploy-options:rinkeby
+yarn deploy-options:mainnet
+```

@@ -1,42 +1,49 @@
+![](https://raw.githubusercontent.com/primitivefinance/primitive-frontend/develop/src/icons/primitivebannersvg.svg)
+
 # Primitive Protocol
 
 [![](https://img.shields.io/github/stars/primitivefinance/primitive-v1?style=social)](https://img.shields.io/github/stars/primitivefinance/primitive-contracts?style=social)
 ![Twitter Follow](https://img.shields.io/twitter/follow/primitivefi?style=social)
 [![Discord](https://img.shields.io/discord/168831573876015105.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/rzRwJ4K)
 
-Primitive is a permissionless options protocol.
+Primitive is an options market protocol. Built on Ethereum.
 
-## Overvie
+## Risk
+
+The protocol and software is in an alpha stage. While security is our core focus in the development process, the complex interactions with the protocol, other protocols, and incentive models could lead to vulnerabilities.
+
+## Overview
 
 We overview the contracts and their functions as well as how to test them.
 
--   Core Documentation: [Documentation](https://docs.primitive.finance)
--   Protocol Overview: [Overview](https://docs.google.com/document/d/19neM6bFmTCBdxLygQbDDJubwcLcuMIx8x2Fs-llt9sQ/edit?usp=sharing)
+- Documentation: [Documentation](https://docs.primitive.finance)
+- Protocol Overview: [Overview](https://docs.google.com/document/d/19neM6bFmTCBdxLygQbDDJubwcLcuMIx8x2Fs-llt9sQ/edit?usp=sharing)
 
-## Environment
+# Environment
 
 Our development environment consists of the following:
 
--   Buidler - Framework
--   Solidity Visual Auditor - VS Code
--   Slither - static analyzer
--   Solium - linter
--   Web3/Truffle plugins for Buidler
--   Mocha - testing framework
--   Chai, chai-bn, and bn.js - unit testing
--   Truffle assertions - unit testing
--   Open Zeppelin Contracts - contract dependency
+- Buidler - Development Framework
+- buidler-waffle buidler-ethers plugins for buidler
+- buidler-deploy plugin for getting deployed contract artifacts.
+- buidler-solhint - linter plugin
+- buidler-etherscan - verification plugin
+- Mocha - testing framework
+- Chai, chai-bn, and bn.js - unit testing and our choice of BN library. Ether's BigNumber wraps BN.
+- Solidity Visual Auditor - VS Code
+- Slither - static analyzer
+- Open Zeppelin Contracts - external contracts dependency
 
 # Contracts
 
 ## Mainnet
 
-| Status | Contract     | Address                                    | Link                                                                                 |
-| :----: | :----------- | :----------------------------------------- | :----------------------------------------------------------------------------------- |
-| Active | Prime Option | 0xced83f96AA38bFe34617ea1F699F9f0022548f61 | [Etherscan](https://etherscan.io/address/0xced83f96aa38bfe34617ea1f699f9f0022548f61) |
-| Active | Prime Redeem | 0xB0A4d596939715f203Fa9E907935938FEdEa715F | [Etherscan](https://etherscan.io/address/0xb0a4d596939715f203fa9e907935938fedea715f) |
-| Active | Prime Trader | 0xff5C103d76586BB55bb33CE01f3dEc9cEe55617f | [Etherscan](https://etherscan.io/address/0xff5c103d76586bb55bb33ce01f3dec9cee55617f) |
-| Paused | Prime Pool   | 0xf7a7126C6eB9c2cC0dB9F936bA4d0D5685662830 | [Etherscan](https://etherscan.io/address/0xf7a7126C6eB9c2cC0dB9F936bA4d0D5685662830) |
+| Status  | Contract | Address                                    | Link                                                                                 |
+| :-----: | :------- | :----------------------------------------- | :----------------------------------------------------------------------------------- |
+| Expired | Option   | 0xced83f96AA38bFe34617ea1F699F9f0022548f61 | [Etherscan](https://etherscan.io/address/0xced83f96aa38bfe34617ea1f699f9f0022548f61) |
+| Expired | Redeem   | 0xB0A4d596939715f203Fa9E907935938FEdEa715F | [Etherscan](https://etherscan.io/address/0xb0a4d596939715f203fa9e907935938fedea715f) |
+| Active  | Trader   | 0xff5C103d76586BB55bb33CE01f3dEc9cEe55617f | [Etherscan](https://etherscan.io/address/0xff5c103d76586bb55bb33ce01f3dec9cee55617f) |
+| Expired | Pool     | 0xf7a7126C6eB9c2cC0dB9F936bA4d0D5685662830 | [Etherscan](https://etherscan.io/address/0xf7a7126C6eB9c2cC0dB9F936bA4d0D5685662830) |
 
 # Documentation
 
@@ -44,136 +51,31 @@ Our development environment consists of the following:
 
 # Testing
 
-## Use Docker
-
 ```
-docker build -t primitive-contracts
-docker run -it --name primitive primitive
-
-npm run test
-npm run coverage
+cd packages/primitive-contracts
+yarn bevm
+yarn test
 ```
 
-## Or...
+# Tooling
 
-#### Steps to testing using the buidler EVM
+Coverage is currently bugged with the latest version of waffle, it will show 0 coverage.
 
-Step 1 - Install Dependencies
+```
+yarn coverage
+```
 
-    npm run clean-install
+Linter
 
-Step 2 - Compile Contracts
-
-    npm run compile
-
-Step 3 - Start Buidler EVM Node
-
-    npm run bevm
-
-Step 4 - Run the tests
-
-    npm run test
-
-#### Steps to testing using the ganache-cli on forked mainnet
-
-Step 1
-
-    npm i
-
-Step 2
-
-    npm compile
-
-Step 3 - A forked mainnet node with network ID 999 is required.
-
-    npm start:f-mainnet
-
-Step 4
-
-    npm test:f-mainnet
-
-#### Coverage
-
-For coverage, we use buidler's plugin for solidity-coverage.
-
-    npm run coverage
-
-#### Linting
-
-For linting you can run this command which uses the solium linter:
-
-    npm run lint
-
-Solium can also fix some linting errors which can be checked with this command:
-
-    npm run lint:fix
-
-#### Static analysis
-
-For static analysis you can run the contracts through slither with this command:
-
-    npm slither
-
-# Etherscan Addresses
-
-[PrimeOption - Primitive](https://etherscan.io/address/0xced83f96aa38bfe34617ea1f699f9f0022548f61)
-
-[PrimeRedeem - Primitive](https://etherscan.io/address/0xb0a4d596939715f203fa9e907935938fedea715f)
-
-[PrimeTrader - Extension](https://etherscan.io/address/0xff5c103d76586bb55bb33ce01f3dec9cee55617f)
-
-[PrimePool - Extension](https://etherscan.io/address/0xf7a7126C6eB9c2cC0dB9F936bA4d0D5685662830)
-
-## Primitives
-
-### Prime Option
-
-The Prime is a smart token with vanilla option attributes and functionality embedded into the token. It inherits the ERC-20 token standard and adds functionality which matches the specification of a vanilla option.
-
-#### The vanilla option specification:
-
-    - Underlying asset.
-    - Strike Price denominated in $USD.
-    - Expiration date.
-
-#### The Prime specification:
-
-    - Address of underlying token.
-    - Address of stike token.
-    - "Base" value (Amount of underlying tokens).
-    - "Price" value (Amount of strike tokens).
-    - Expiration Date, a UNIX timestamp.
-
-The Base and Price attributes make up the _strike ratio_.
-
-    - Base / Price = Strike Ratio
-
-### Prime Redeem
-
-The Redeem token is a helper token for the Prime which manages the accounting for the underwriters. When underwriters deposit underlying tokens they receive Primes and also a 'receipt' token, the Redeem. This Redeem token is used to withdraw strike tokens from the Prime when the Prime's underlying tokens are exercised, or its used to withdraw underlying tokens when the Primes expire.
-
-## Extensions
-
-### Prime Trader
-
-This is an extension contract to support easier interaction with the Prime Option contract. The Prime
-Option contract operates with _optimistic swap_ technology. It assumes that tokens are sent into it
-before its functions are called. The Prime Option contract does not use any `transferFrom` calls.
-
-The trader does the `transferFrom` call to the user, then it `transfer`s the tokens to the Prime Option contract, and finally it calls one of the functions in the Prime Option contract like `mint`.
-
-The trader contract does this all in a single transaction and it can call any function in the Prime Option contract.
-
-### Prime Pool
-
-This is a liquidity pool contract that has the logic to (1) Accept underlying token deposits. (2) Mint Primes with the underlying tokens. (3) Sell the Primes for premium to buyers.
-
-### Prime Oracle
-
-Feeds a price, the _premium_, to the Prime Pool. The Primes are sold from the pool to buyers at this price given by the oracle.
+```
+yarn lint
+yarn lint:fix
+```
 
 # Contributing and Discussion
 
 Join our community and protocol developers in the Primitive [Discord](https://discord.gg/rzRwJ4K).
 
-If you have security concerns, email us at [primitive@primitive.finance](mailto:primitive@primitive.finance).
+# Security
+
+If you have security concerns, email us at [security@primitive.finance](mailto:security@primitive.finance). We will have a bug bounty when the contracts are live on mainnet.
