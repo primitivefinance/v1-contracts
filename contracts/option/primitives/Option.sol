@@ -1,50 +1,82 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.6.2;
 
 /**
- * @title   ERC-20 Vanilla Option Primitive
+ * @title   Vanilla Option Token
+ * @notice  This is a low-level contract that is designed to be interacted with by
+ *          other sophisticated smart contracts which have important safety checks,
+ *          and not by externally owned accounts.
+ *          Incorrect usage through direct interaction from externally owned accounts
+ *          can lead to the loss of funds.
+ *          Use Primitive's Trader.sol contract to interact with this contract safely.
  * @author  Primitive
  */
 
-import "../../Primitives.sol";
-import "../interfaces/IOption.sol";
-import "../interfaces/IRedeem.sol";
-import "../interfaces/IFlash.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/Pausable.sol";
+import { IOption } from "../interfaces/IOption.sol";
+import { IRedeem } from "../interfaces/IRedeem.sol";
+import { IFlash } from "../interfaces/IFlash.sol";
+import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { ERC20 } from "./ERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import {
+    ReentrancyGuard
+} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract Option is IOption, ERC20, ReentrancyGuard, Pausable {
-    using SafeMath for uint;
+contract Option is IOption, ERC20, ReentrancyGuard {
+    using SafeMath for uint256;
+    using SafeERC20 for IERC20;
 
-    Primitives.Option public option;
+    struct OptionParameters {
+        address underlyingToken;
+        address strikeToken;
+        uint256 base;
+        uint256 quote;
+        uint256 expiry;
+    }
 
-    uint public override constant FEE = 1000;
-    uint public override cacheU;
-    uint public override cacheS;
-    address public override tokenR;
+    OptionParameters public optionParameters;
+
+    // solhint-disable-next-line const-name-snakecase
+    uint256 public override underlyingCache;
+    uint256 public override strikeCache;
+    address public override redeemToken;
     address public override factory;
 
-    event Mint(address indexed from, uint outTokenP, uint outTokenR);
-    event Exercise(address indexed from, uint outTokenU, uint inTokenS);
-    event Redeem(address indexed from, uint inTokenR);
-    event Close(address indexed from, uint inTokenP);
-    event Fund(uint cacheU, uint cacheS);
+    event Mint(address indexed from, uint256 outOptions, uint256 outRedeems);
+    event Exercise(
+        address indexed from,
+        uint256 outUnderlyings,
+        uint256 inStrikes
+    );
+    event Redeem(address indexed from, uint256 inRedeems);
+    event Close(address indexed from, uint256 outUnderlyings);
+    event UpdatedCacheBalances(uint256 underlyingCache, uint256 strikeCache);
+    event InitializedRedeem(
+        address indexed caller,
+        address indexed redeemToken
+    );
 
-    constructor (
-        address tokenU,
-        address tokenS,
-        uint base,
-        uint quote,
-        uint expiry
-    )
-        public
-        ERC20("Primitive V1 Vanilla Option", "OPTION")
-    {
+    // solhint-disable-next-line no-empty-blocks
+    constructor() public {}
+
+    function initialize(
+        address underlyingToken,
+        address strikeToken,
+        uint256 base,
+        uint256 quote,
+        uint256 expiry
+    ) public {
+        require(factory == address(0x0), "ERR_IS_INITIALIZED");
+        require(underlyingToken != strikeToken, "ERR_SAME_ASSETS");
+        require(base > 0, "ERR_BASE_ZERO");
+        require(quote > 0, "ERR_QUOTE_ZERO");
+        require(expiry >= block.timestamp, "ERR_EXPIRY");
         factory = msg.sender;
-        option = Primitives.Option(
-            tokenU,
-            tokenS,
+        optionParameters = OptionParameters(
+            underlyingToken,
+            strikeToken,
             base,
             quote,
             expiry
@@ -52,288 +84,350 @@ contract Option is IOption, ERC20, ReentrancyGuard, Pausable {
     }
 
     modifier notExpired {
-        require(option.expiry >= block.timestamp, "ERR_EXPIRED");
+        // solhint-disable-next-line not-rely-on-time
+        require(isNotExpired(), "ERR_EXPIRED");
         _;
     }
 
-    function initTokenR(address _tokenR) external override {
+    function initRedeemToken(address _redeemToken) external override {
         require(msg.sender == factory, "ERR_NOT_OWNER");
-        tokenR = _tokenR;
-    }
-
-    function kill() external {
-        require(msg.sender == factory, "ERR_NOT_OWNER");
-        paused() ? _unpause() : _pause();
-    }
-
-    /* === ACCOUNTING === */
-
-    /**
-     * @dev Updates the cached balances to the actual current balances.
-     */
-    function update() external nonReentrant {
-        _fund(
-            IERC20(option.tokenU).balanceOf(address(this)),
-            IERC20(option.tokenS).balanceOf(address(this))
-        );
+        require(redeemToken == address(0x0), "ERR_REDEEM_INITIALIZED");
+        redeemToken = _redeemToken;
+        emit InitializedRedeem(msg.sender, _redeemToken);
     }
 
     /**
-     * @dev Difference between balances and caches is sent out so balances == caches.
-     * Fixes tokenU, tokenS, tokenR, and tokenP balances.
+     * @dev Updates the cached balances to match the actual current balances.
+     * Attempting to transfer tokens to this contract directly, in a separate transaction,
+     * is incorrect and could result in loss of funds. Calling this function will permanently lock any excess
+     * underlying or strike tokens which were erroneously sent to this contract.
      */
-    function take() external nonReentrant {
-        (address _tokenU, address _tokenS, address _tokenR) = getTokens();
-        IERC20(_tokenU).transfer(
-            msg.sender, IERC20(_tokenU).balanceOf(address(this)).sub(cacheU)
-        );
-        IERC20(_tokenS).transfer(
-            msg.sender, IERC20(_tokenS).balanceOf(address(this)).sub(cacheS)
-        );
-        IERC20(_tokenR).transfer(
-            msg.sender, IERC20(_tokenR).balanceOf(address(this))
-        );
-        IERC20(address(this)).transfer(
-            msg.sender, IERC20(address(this)).balanceOf(address(this))
+    function updateCacheBalances() external override nonReentrant {
+        _updateCacheBalances(
+            IERC20(optionParameters.underlyingToken).balanceOf(address(this)),
+            IERC20(optionParameters.strikeToken).balanceOf(address(this))
         );
     }
 
     /**
      * @dev Sets the cache balances to new values.
      */
-    function _fund(uint balanceU, uint balanceS) private {
-        cacheU = balanceU;
-        cacheS = balanceS;
-        emit Fund(balanceU, balanceS);
+    function _updateCacheBalances(
+        uint256 underlyingBalance,
+        uint256 strikeBalance
+    ) private {
+        underlyingCache = underlyingBalance;
+        strikeCache = strikeBalance;
+        emit UpdatedCacheBalances(underlyingBalance, strikeBalance);
     }
 
-    /* === FUNCTIONS === */
+    /* === STATE MUTABLE === */
 
     /**
-     * @dev Mints options at a 1:1 ratio to underlying token deposits.
-     * @notice inTokenU = outTokenP, inTokenU / strike ratio = outTokenR.
+     * @dev Warning: This low-level function should be called from a contract which performs important safety checks.
+     * This function should never be called directly by an externally owned account.
+     * A sophsticated smart contract should make the important checks to make sure the correct amount of tokens
+     * are transferred into this contract prior to the function call. If an incorrect amount of tokens are transferred
+     * into this contract, and this function is called, it can result in the loss of funds.
+     * Mints optionTokens at a 1:1 ratio to underlyingToken deposits. Also mints Redeem tokens at a base:quote ratio.
+     * @notice inUnderlyings = outOptionTokens. inUnderlying / strike ratio = outRedeemTokens.
      * @param receiver The newly minted tokens are sent to the receiver address.
      */
-    function mint(address receiver)
+    function mintOptions(address receiver)
         external
         override
         nonReentrant
         notExpired
-        whenNotPaused
-        returns (uint inTokenU, uint outTokenR)
+        returns (uint256 inUnderlyings, uint256 outRedeems)
     {
-        // Save on gas.
-        uint balanceU = IERC20(option.tokenU).balanceOf(address(this));
-        uint base = option.base;
-        uint quote = option.quote;
+        // Save on gas because this variable is used twice.
+        uint256 underlyingBalance = IERC20(optionParameters.underlyingToken)
+            .balanceOf(address(this));
 
-        // Mint inTokenU equal to the difference between current and cached balance of tokenU.
-        inTokenU = balanceU.sub(cacheU);
-        outTokenR = inTokenU.mul(quote).div(base);
-        require(outTokenR > 0, "ERR_ZERO");
+        // Mint optionTokens equal to the difference between current and cached balance of underlyingTokens.
+        inUnderlyings = underlyingBalance.sub(underlyingCache);
 
-        // Mint the tokens.
-        IRedeem(tokenR).mint(receiver, outTokenR);
-        _mint(receiver, inTokenU);
+        // Calculate the quantity of redeemTokens to mint.
+        outRedeems = inUnderlyings.mul(optionParameters.quote).div(
+            optionParameters.base
+        );
+        require(outRedeems > 0, "ERR_ZERO");
 
-        // Update the caches.
-        _fund(balanceU, cacheS);
-        emit Mint(receiver, inTokenU, outTokenR);
+        // Mint the optionTokens and redeemTokens.
+        IRedeem(redeemToken).mint(receiver, outRedeems);
+        _mint(receiver, inUnderlyings);
+
+        // Update the underlyingCache.
+        _updateCacheBalances(underlyingBalance, strikeCache);
+        emit Mint(msg.sender, inUnderlyings, outRedeems);
     }
 
     /**
-     * @dev Sends out underlying tokens then checks to make sure they are returned or paid for.
-     * @notice If the underlying tokens are returned, only the fee has to be paid.
-     * @param receiver The outTokenU is sent to the receiver address.
-     * @param outTokenU Quantity of underlyings to transfer to receiver optimistically.
-     * @param data Passing in any abritrary data will trigger the flash callback function.
+     * @dev Warning: This low-level function should be called from a contract which performs important safety checks.
+     * This function should never be called directly by an externally owned account.
+     * A sophsticated smart contract should make the important checks to make sure the correct amount of tokens
+     * are transferred into this contract prior to the function call. If an incorrect amount of tokens are transferred
+     * into this contract, and this function is called, it can result in the loss of funds.
+     * Sends out underlyingTokens then checks to make sure they are returned or paid for.
+     * This function enables flash exercises and flash loans. Only smart contracts who implement
+     * their own IFlash interface should be calling this function to initiate a flash exercise/loan.
+     * @notice If the underlyingTokens are returned, only the fee has to be paid.
+     * @param receiver The outUnderlyings are sent to the receiver address.
+     * @param outUnderlyings Quantity of underlyingTokens to safeTransfer to receiver optimistically.
+     * @param data Passing in any abritrary data will trigger the flash exercise callback function.
      */
-    function exercise(address receiver, uint outTokenU, bytes calldata data)
+    function exerciseOptions(
+        address receiver,
+        uint256 outUnderlyings,
+        bytes calldata data
+    )
         external
         override
         nonReentrant
         notExpired
-        whenNotPaused
-        returns (uint inTokenS, uint inTokenP)
+        returns (uint256 inStrikes, uint256 inOptions)
     {
         // Store the cached balances and token addresses in memory.
-        address _tokenU = option.tokenU;
-        (uint _cacheU, uint _cacheS) = getCaches();
+        address underlyingToken = optionParameters.underlyingToken;
+        (uint256 _underlyingCache, uint256 _strikeCache) = getCacheBalances();
 
-        // Require outTokenU > 0, and cacheU > outTokenU.
-        require(outTokenU > 0, "ERR_ZERO");
-        require(IERC20(_tokenU).balanceOf(address(this)) >= outTokenU, "ERR_BAL_UNDERLYING");
+        // Require outUnderlyings > 0 and balance of underlyings >= outUnderlyings.
+        require(outUnderlyings > 0, "ERR_ZERO");
+        require(
+            IERC20(underlyingToken).balanceOf(address(this)) >= outUnderlyings,
+            "ERR_BAL_UNDERLYING"
+        );
 
-        // Optimistically transfer out tokenU.
-        IERC20(_tokenU).transfer(receiver, outTokenU);
-        if (data.length > 0) IFlash(receiver).primitiveFlash(receiver, outTokenU, data);
+        // Optimistically safeTransfer out underlyingTokens.
+        IERC20(underlyingToken).safeTransfer(receiver, outUnderlyings);
+        if (data.length > 0)
+            IFlash(receiver).primitiveFlash(msg.sender, outUnderlyings, data);
 
         // Store in memory for gas savings.
-        uint balanceS = IERC20(option.tokenS).balanceOf(address(this));
-        uint balanceU = IERC20(_tokenU).balanceOf(address(this));
+        uint256 strikeBalance = IERC20(optionParameters.strikeToken).balanceOf(
+            address(this)
+        );
+        uint256 underlyingBalance = IERC20(underlyingToken).balanceOf(
+            address(this)
+        );
 
-        // Calculate the Differences.
-        inTokenS = balanceS.sub(_cacheS);
-        uint inTokenU = balanceU.sub(_cacheU.sub(outTokenU)); // will be > 0 if tokenU returned.
-        require(inTokenS > 0 || inTokenU > 0, "ERR_ZERO");
+        // Calculate the differences.
+        inStrikes = strikeBalance.sub(_strikeCache);
+        uint256 inUnderlyings = underlyingBalance.sub(
+            _underlyingCache.sub(outUnderlyings)
+        ); // will be > 0 if underlyingTokens are returned.
 
-        // Add the fee to the total required payment.
-        //outTokenU = outTokenU.add(outTokenU.div(FEE));
+        // Either underlyingTokens or strikeTokens must be sent into the contract.
+        require(inStrikes > 0 || inUnderlyings > 0, "ERR_ZERO");
 
-        uint feeToPay = outTokenU.div(FEE);
+        // Calculate the remaining amount of underlyingToken that needs to be paid for.
+        uint256 remainder = inUnderlyings > outUnderlyings
+            ? 0
+            : outUnderlyings.sub(inUnderlyings);
 
-        // Calculate the remaining amount of tokenU that needs to be paid for.
-        uint remainder = inTokenU > outTokenU ? 0 : outTokenU.sub(inTokenU);
+        // Calculate the expected payment of strikeTokens.
+        uint256 payment = remainder.mul(optionParameters.quote).div(
+            optionParameters.base
+        );
 
-        // Calculate the expected payment of tokenS.
-        uint payment = remainder.add(feeToPay).mul(option.quote).div(option.base);
-
-        // Assumes the cached tokenP balance is 0.
-        inTokenP = balanceOf(address(this));
+        // Assumes the cached optionToken balance is 0, which is what it should be.
+        inOptions = balanceOf(address(this));
 
         // Enforce the invariants.
-        require(inTokenS >= payment && inTokenP >= remainder, "ERR_BAL_INPUT");
+        require(inStrikes >= payment, "ERR_STRIKES_INPUT");
+        require(inOptions >= remainder, "ERR_OPTIONS_INPUT");
 
-        // Burn the  options at a 1:1 ratio to outTokenU.
-        _burn(address(this), inTokenP);
+        // Burn the optionTokens at a 1:1 ratio to outUnderlyings.
+        _burn(address(this), inOptions);
 
         // Update the cached balances.
-        _fund(balanceU, balanceS);
-        emit Exercise(receiver, outTokenU, inTokenS);
+        _updateCacheBalances(underlyingBalance, strikeBalance);
+        emit Exercise(msg.sender, outUnderlyings, inStrikes);
     }
 
     /**
-     * @dev Burns tokenR to withdraw tokenS at a ratio of 1:1.
-     * @notice inTokenR = outTokenS. Only callable when strike tokens are in the contract.
-     * @param receiver The inTokenR quantity of tokenS is sent to the receiver address.
+     * @dev Warning: This low-level function should be called from a contract which performs important safety checks.
+     * This function should never be called directly by an externally owned account.
+     * A sophsticated smart contract should make the important checks to make sure the correct amount of tokens
+     * are transferred into this contract prior to the function call. If an incorrect amount of tokens are transferred
+     * into this contract, and this function is called, it can result in the loss of funds.
+     * Burns redeemTokens to withdraw strikeTokens at a ratio of 1:1.
+     * @notice inRedeemTokens = outStrikeTokens. Only callable when strikeTokens are in the contract.
+     * @param receiver The inRedeems quantity of strikeTokens are sent to the receiver address.
      */
-    function redeem(address receiver)
+    function redeemStrikeTokens(address receiver)
         external
         override
         nonReentrant
-        returns (uint inTokenR)
+        returns (uint256 inRedeems)
     {
-        address _tokenS = option.tokenS;
-        address _tokenR = tokenR;
-        uint balanceS = IERC20(_tokenS).balanceOf(address(this));
-        uint balanceR = IERC20(_tokenR).balanceOf(address(this));
+        address strikeToken = optionParameters.strikeToken;
+        address _redeemToken = redeemToken;
+        uint256 strikeBalance = IERC20(strikeToken).balanceOf(address(this));
+        inRedeems = IERC20(_redeemToken).balanceOf(address(this));
 
-        // Difference between tokenR balance and cache.
-        inTokenR = balanceR;
-        require(inTokenR > 0, "ERR_ZERO");
-        require(balanceS >= inTokenR, "ERR_BAL_STRIKE");
+        // Difference between redeemTokens balance and cache.
+        require(inRedeems > 0, "ERR_ZERO");
+        require(strikeBalance >= inRedeems, "ERR_BAL_STRIKE");
 
-        // Burn tokenR in the contract. Send tokenS to msg.sender.
-        IRedeem(_tokenR).burn(address(this), inTokenR);
-        require(
-            IERC20(_tokenS).transfer(receiver, inTokenR),
-            "ERR_TRANSFER_OUT_FAIL"
-        );
+        // Burn redeemTokens in the contract. Send strikeTokens to receiver.
+        IRedeem(_redeemToken).burn(address(this), inRedeems);
+        IERC20(strikeToken).safeTransfer(receiver, inRedeems);
 
         // Current balances.
-        balanceS = IERC20(_tokenS).balanceOf(address(this));
-        balanceR = IERC20(_tokenR).balanceOf(address(this));
+        strikeBalance = IERC20(strikeToken).balanceOf(address(this));
 
         // Update the cached balances.
-        _fund(cacheU, balanceS);
-        emit Redeem(receiver, inTokenR);
+        _updateCacheBalances(underlyingCache, strikeBalance);
+        emit Redeem(msg.sender, inRedeems);
     }
 
     /**
-     * @dev Burn  and  Redeem tokens to withdraw underlying tokens.
-     * @notice inTokenR / ratio = outTokenU && inTokenP >= outTokenU.
-     * @param receiver The outTokenU is sent to the receiver address.
+     * @dev Warning: This low-level function should be called from a contract which performs important safety checks.
+     * This function should never be called directly by an externally owned account.
+     * A sophsticated smart contract should make the important checks to make sure the correct amount of tokens
+     * are transferred into this contract prior to the function call. If an incorrect amount of tokens are transferred
+     * into this contract, and this function is called, it can result in the loss of funds.
+     * If the option has expired, burn redeem tokens to withdraw underlying tokens.
+     * If the option is not expired, burn option and redeem tokens to withdraw underlying tokens.
+     * @notice inRedeemTokens / strike ratio = outUnderlyingTokens && inOptionTokens >= outUnderlyingTokens.
+     * @param receiver The outUnderlyingTokens are sent to the receiver address.
      */
-    function close(address receiver)
+    function closeOptions(address receiver)
         external
         override
         nonReentrant
-        returns (uint inTokenR, uint inTokenP, uint outTokenU)
-    {
-        // Stores addresses and balances locally for gas savings.
-        address _tokenU = option.tokenU;
-        address _tokenR = tokenR;
-        uint balanceU = IERC20(_tokenU).balanceOf(address(this));
-        uint balanceR = IERC20(_tokenR).balanceOf(address(this));
-        uint balanceP = balanceOf(address(this));
-
-        // Differences between current and cached balances.
-        inTokenR = balanceR;
-
-        // The quantity of tokenU to send out it still determined by the amount of inTokenR.
-        // inTokenR is in units of strike tokens, which is converted to underlying tokens
-        // by multiplying inTokenR by the strike ratio: base / quote.
-        // This outTokenU amount is checked against inTokenP.
-        // inTokenP must be greater than or equal to outTokenU.
-        // balanceP must be greater than or equal to outTokenU.
-        // Neither inTokenR or inTokenP can be zero.
-        outTokenU = inTokenR.mul(option.base).div(option.quote);
-
-        // Assumes the cached balance is 0 so inTokenP = balance of tokenP.
-        // If option is expired, tokenP does not need to be sent in. Only tokenR.
-        inTokenP = option.expiry > block.timestamp ? balanceP : outTokenU;
-        require(inTokenR > 0 && inTokenP > 0, "ERR_ZERO");
-        require(inTokenP >= outTokenU && balanceU >= outTokenU, "ERR_BAL_UNDERLYING");
-
-        // Burn  tokens.  tokens are only sent into contract when not expired.
-        if(option.expiry > block.timestamp) {
-            _burn(address(this), inTokenP);
-        }
-
-        // Send underlying tokens to user.
-        // Burn tokenR held in the contract.
-        // User does not receive extra tokenU if there was extra tokenP in the contract.
-        // User receives outTokenU proportional to inTokenR.
-        IRedeem(_tokenR).burn(address(this), inTokenR);
-        require(
-            IERC20(_tokenU).transfer(receiver, outTokenU),
-            "ERR_TRANSFER_OUT_FAIL"
-        );
-
-        // Current balances of tokenU and tokenR.
-        balanceU = IERC20(_tokenU).balanceOf(address(this));
-        balanceR = IERC20(_tokenR).balanceOf(address(this));
-
-        // Update the cached balances.
-        _fund(balanceU, cacheS);
-        emit Close(receiver, outTokenU);
-    }
-    
-    /* === VIEW === */
-    function getCaches() public view override returns (uint _cacheU, uint _cacheS) {
-        _cacheU = cacheU;
-        _cacheS = cacheS;
-    }
-
-    function getTokens() public view override returns (
-        address _tokenU, address _tokenS, address _tokenR
-    ) {
-        _tokenU = option.tokenU;
-        _tokenS = option.tokenS;
-        _tokenR = tokenR;
-    }
-
-    function tokenS() public view override returns (address) { return option.tokenS; }
-    function tokenU() public view override returns (address) { return option.tokenU;}
-    function base() public view override returns (uint) { return option.base; }
-    function quote() public view override returns (uint) { return option.quote; }
-    function expiry() public view override returns (uint) { return option.expiry; }
-
-    function getOption() public view override returns (
-            address _tokenU,
-            address _tokenS,
-            address _tokenR,
-            uint _base,
-            uint _quote,
-            uint _expiry
+        returns (
+            uint256 inRedeems,
+            uint256 inOptions,
+            uint256 outUnderlyings
         )
     {
-        Primitives.Option memory _option = option;
-        _tokenU = _option.tokenU;
-        _tokenS = _option.tokenS;
-        _tokenR = tokenR;
-        _base = _option.base;
-        _quote = _option.quote;
-        _expiry = _option.expiry;
+        // Stores addresses and balances locally for gas savings.
+        address underlyingToken = optionParameters.underlyingToken;
+        address _redeemToken = redeemToken;
+        uint256 underlyingBalance = IERC20(underlyingToken).balanceOf(
+            address(this)
+        );
+        uint256 optionBalance = balanceOf(address(this));
+        inRedeems = IERC20(_redeemToken).balanceOf(address(this));
+
+        // The quantity of underlyingToken to send out it still determined by the quantity of inRedeems.
+        // inRedeems is in units of strikeTokens, which is converted to underlyingTokens
+        // by multiplying inRedeems by the strike ratio, which is base / quote.
+        // This outUnderlyings quantity is checked against inOptions.
+        // inOptions must be greater than or equal to outUnderlyings (1 option burned per 1 underlying purchased).
+        // optionBalance must be greater than or equal to outUnderlyings.
+        // Neither inRedeems or inOptions can be zero.
+        outUnderlyings = inRedeems.mul(optionParameters.base).div(
+            optionParameters.quote
+        );
+
+        // Assumes the cached balance is 0 so inOptions = balance of optionToken.
+        // If optionToken is expired, optionToken does not need to be sent in. Only redeemToken.
+        // solhint-disable-next-line not-rely-on-time
+        inOptions = isNotExpired() ? optionBalance : outUnderlyings;
+        require(inRedeems > 0 && inOptions > 0, "ERR_ZERO");
+        require(
+            inOptions >= outUnderlyings && underlyingBalance >= outUnderlyings,
+            "ERR_BAL_UNDERLYING"
+        );
+
+        // Burn optionTokens. optionTokens are only sent into contract when not expired.
+        // solhint-disable-next-line not-rely-on-time
+        if (isNotExpired()) {
+            _burn(address(this), inOptions);
+        }
+
+        // Send underlyingTokens to user.
+        // Burn redeemTokens held in the contract.
+        // User does not receive extra underlyingTokens if there was extra optionTokens in the contract.
+        // User receives outUnderlyings proportional to inRedeems.
+        IRedeem(_redeemToken).burn(address(this), inRedeems);
+        IERC20(underlyingToken).safeTransfer(receiver, outUnderlyings);
+
+        // Current balances of underlyingToken and redeemToken.
+        underlyingBalance = IERC20(underlyingToken).balanceOf(address(this));
+
+        // Update the cached balances.
+        _updateCacheBalances(underlyingBalance, strikeCache);
+        emit Close(msg.sender, outUnderlyings);
+    }
+
+    /* === VIEW === */
+    function getCacheBalances()
+        public
+        override
+        view
+        returns (uint256 _underlyingCache, uint256 _strikeCache)
+    {
+        _underlyingCache = underlyingCache;
+        _strikeCache = strikeCache;
+    }
+
+    function getAssetAddresses()
+        public
+        override
+        view
+        returns (
+            address _underlyingToken,
+            address _strikeToken,
+            address _redeemToken
+        )
+    {
+        _underlyingToken = optionParameters.underlyingToken;
+        _strikeToken = optionParameters.strikeToken;
+        _redeemToken = redeemToken;
+    }
+
+    function getStrikeTokenAddress() public override view returns (address) {
+        return optionParameters.strikeToken;
+    }
+
+    function getUnderlyingTokenAddress()
+        public
+        override
+        view
+        returns (address)
+    {
+        return optionParameters.underlyingToken;
+    }
+
+    function getBaseValue() public override view returns (uint256) {
+        return optionParameters.base;
+    }
+
+    function getQuoteValue() public override view returns (uint256) {
+        return optionParameters.quote;
+    }
+
+    function getExpiryTime() public override view returns (uint256) {
+        return optionParameters.expiry;
+    }
+
+    function getParameters()
+        public
+        override
+        view
+        returns (
+            address _underlyingToken,
+            address _strikeToken,
+            address _redeemToken,
+            uint256 _base,
+            uint256 _quote,
+            uint256 _expiry
+        )
+    {
+        OptionParameters memory _optionParameters = optionParameters;
+        _underlyingToken = _optionParameters.underlyingToken;
+        _strikeToken = _optionParameters.strikeToken;
+        _redeemToken = redeemToken;
+        _base = _optionParameters.base;
+        _quote = _optionParameters.quote;
+        _expiry = _optionParameters.expiry;
+    }
+
+    function isNotExpired() internal view returns (bool) {
+        return optionParameters.expiry >= block.timestamp;
     }
 }

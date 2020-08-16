@@ -11,7 +11,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     const chain = await bre.getChainId();
     let wethAddress;
     if (chain == 31337) {
-        const weth = await deploy("Weth", {
+        const weth = await deploy("WETH9", {
             from: deployer,
             contractName: "WETH9",
             args: [],
@@ -20,16 +20,14 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     } else {
         wethAddress = Weth.networks[chain.toString()].address;
     }
-    const trader = await deploy("PrimeTrader", {
+    const trader = await deploy("Trader", {
         from: deployer,
-        contractName: "PrimeTrader",
+        contractName: "Trader",
         args: [wethAddress],
     });
     let deployed = [trader];
     for (let i = 0; i < deployed.length; i++) {
         if (deployed[i].newlyDeployed)
-            log(
-                `Contract deployed at ${deployed[i].address} using ${deployed[i].receipt.gasUsed} gas on chain ${chain}`
-            );
+            log(`Contract deployed at ${deployed[i].address} using ${deployed[i].receipt.gasUsed} gas on chain ${chain}`);
     }
 };

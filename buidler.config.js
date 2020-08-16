@@ -1,35 +1,37 @@
-usePlugin("@nomiclabs/buidler-truffle5");
-usePlugin("@nomiclabs/buidler-solhint");
-usePlugin("buidler-gas-reporter");
-usePlugin("solidity-coverage");
-usePlugin("@nomiclabs/buidler-etherscan");
-usePlugin("@nomiclabs/buidler-web3");
-usePlugin("buidler-deploy");
-usePlugin("@nomiclabs/buidler-ethers");
+// == Libraries ==
+const path = require("path");
+const bip39 = require("bip39");
+const crypto = require("crypto");
+const ethers = require("ethers");
+const modifyEnvironmentIfMonorepo = require("./internal/monorepo");
+const unhook = modifyEnvironmentIfMonorepo();
 require("dotenv").config();
-/* require("./tasks/trader.js");
-require("./tasks/option.js"); */
 
-const ETHERSCAN_APY_KEY = process.env.ETHERSCAN_APY_KEY;
-const web3 = require("web3");
-const HDWalletProvider = require("@truffle/hdwallet-provider");
-const rinkeby = process.env.RINKEBY;
-const mainnet = process.env.MAINNET;
-const mnemonic = process.env.TEST_MNEMONIC;
-const live = process.env.MNEMONIC;
+// == Plugins ==
+usePlugin("@nomiclabs/buidler-solhint");
+usePlugin("@nomiclabs/buidler-etherscan");
+usePlugin("@nomiclabs/buidler-waffle");
+usePlugin("buidler-gas-reporter");
+usePlugin("buidler-spdx-license-identifier");
+usePlugin("buidler-deploy");
+usePlugin("solidity-coverage");
 
-task("accounts", "Prints the list of accounts", async () => {
-    const accounts = await web3.eth.getAccounts();
+unhook();
 
-    for (const account of accounts) {
-        console.log(await account.getAddress());
-    }
-});
+// == Environment ==
+const ETHERSCAN_API_KEY =
+    process.env.ETHERSCAN_API_KEY || crypto.randomBytes(20).toString("base64");
+const rinkeby =
+    process.env.RINKEBY ||
+    new ethers.providers.InfuraProvider("rinkeby").connection.url;
+const mainnet =
+    process.env.MAINNET ||
+    new ethers.providers.InfuraProvider("mainnet").connection.url;
+const mnemonic = process.env.TEST_MNEMONIC || bip39.generateMnemonic();
+const live = process.env.MNEMONIC || mnemonic;
 
-module.exports = {
-    paths: {
-        artifacts: "./artifacts",
-    },
+// == Buidler Config ==
+Object.assign(module.exports, {
     networks: {
         local: {
             url: "http://127.0.0.1:8545",
@@ -52,6 +54,9 @@ module.exports = {
             },
             chainId: 4,
         },
+        coverage: {
+            url: "http://127.0.0.1:8555", // Coverage launches its own ganache-cli client
+        },
     },
     mocha: {
         timeout: 100000000,
@@ -59,7 +64,8 @@ module.exports = {
     },
     etherscan: {
         url: "https://api-rinkeby.etherscan.io/api",
-        apiKey: ETHERSCAN_APY_KEY,
+        apiKey: ETHERSCAN_API_KEY,
+        etherscanApiKey: ETHERSCAN_API_KEY,
     },
     gasReporter: {
         currency: "USD",
@@ -78,7 +84,15 @@ module.exports = {
         },
     },
     paths: {
-        deploy: "deploy",
-        deployments: "deployments",
+        sources: path.join(__dirname, "contracts"),
+        tests: path.join(__dirname, "test"),
+        cache: path.join(__dirname, "cache"),
+        artifacts: path.join(__dirname, "artifacts"),
+        deploy: path.join(__dirname, "deploy"),
+        deployments: path.join(__dirname, "deployments"),
     },
-};
+    spdxLicenseIdentifier: {
+        overwrite: false,
+        runOnCompile: false,
+    },
+});

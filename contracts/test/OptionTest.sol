@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.6.2;
 
 /**
@@ -5,36 +7,17 @@ pragma solidity ^0.6.2;
  * @author  Primitive
  */
 
-
 import "../option/primitives/Option.sol";
 
 contract OptionTest is Option {
-
-    constructor(
-        address tokenU,
-        address tokenS,
-        uint256 base,
-        uint256 price,
-        uint256 expiry
-    )
-        public
-        Option(
-            tokenU,
-            tokenS,
-            base,
-            price,
-            expiry
-        )
-    { }
+    // solhint-disable-next-line no-empty-blocks
+    constructor() public Option() {}
 
     function setExpiry(uint256 expiry) public {
-        option.expiry = expiry;
+        optionParameters.expiry = expiry;
     }
 
-    function setTokenR(address redeem) public {
-        tokenR = redeem;
+    function setRedeemToken(address redeem) public {
+        redeemToken = redeem;
     }
-
 }
-
-    

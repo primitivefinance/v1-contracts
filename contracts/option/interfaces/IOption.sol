@@ -1,42 +1,77 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.6.2;
 
-interface IOption {
-    function mint(address receiver) external returns (
-        uint inTokenU,
-        uint outTokenR
-    );
-    function exercise(address receiver, uint outTokenU, bytes calldata data) external returns (
-        uint inTokenS,
-        uint inTokenP
-    );
-    function redeem(address receiver) external returns (
-        uint inTokenR
-    );
-    function close(address receiver) external returns (
-        uint inTokenR,
-        uint inTokenP,
-        uint outTokenU
-    );
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-    function tokenR() external view returns (address);
-    function tokenS() external view returns (address);
-    function tokenU() external view returns (address);
-    function base() external view returns (uint);
-    function quote() external view returns (uint);
-    function expiry() external view returns (uint);
-    function cacheU() external view returns (uint);
-    function cacheS() external view returns (uint);
+interface IOption is IERC20 {
+    function mintOptions(address receiver)
+        external
+        returns (uint256 inUnderlyings, uint256 outRedeems);
+
+    function exerciseOptions(
+        address receiver,
+        uint256 outUnderlyings,
+        bytes calldata data
+    ) external returns (uint256 inStrikes, uint256 inOptions);
+
+    function redeemStrikeTokens(address receiver)
+        external
+        returns (uint256 inRedeems);
+
+    function closeOptions(address receiver)
+        external
+        returns (
+            uint256 inRedeems,
+            uint256 inOptions,
+            uint256 outUnderlyings
+        );
+
+    function redeemToken() external view returns (address);
+
+    function getStrikeTokenAddress() external view returns (address);
+
+    function getUnderlyingTokenAddress() external view returns (address);
+
+    function getBaseValue() external view returns (uint256);
+
+    function getQuoteValue() external view returns (uint256);
+
+    function getExpiryTime() external view returns (uint256);
+
+    function underlyingCache() external view returns (uint256);
+
+    function strikeCache() external view returns (uint256);
+
     function factory() external view returns (address);
-    function getCaches() external view returns (uint _cacheU, uint _cacheS);
-    function getTokens() external view returns (address _tokenU, address _tokenS, address _tokenR);
-    function getOption() external view returns (
-            address _tokenS,
-            address _tokenU,
-            address _tokenR,
-            uint _base,
-            uint _quote,
-            uint _expiry
-    );
-    function initTokenR(address _tokenR) external;
-    function FEE() external view returns (uint);
+
+    function getCacheBalances()
+        external
+        view
+        returns (uint256 _underlyingCache, uint256 _strikeCache);
+
+    function getAssetAddresses()
+        external
+        view
+        returns (
+            address _underlyingToken,
+            address _strikeToken,
+            address _redeemToken
+        );
+
+    function getParameters()
+        external
+        view
+        returns (
+            address _underlyingToken,
+            address _strikeToken,
+            address _redeemToken,
+            uint256 _base,
+            uint256 _quote,
+            uint256 _expiry
+        );
+
+    function initRedeemToken(address _redeemToken) external;
+
+    function updateCacheBalances() external;
 }

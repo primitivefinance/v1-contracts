@@ -1,121 +1,282 @@
-const { assert, expect } = require("chai");
-const chai = require("chai");
-const BN = require("bn.js");
-const TestERC20 = artifacts.require("TestERC20");
-const BadERC20 = artifacts.require("BadERC20");
-const Factory = artifacts.require("Factory");
-const FactoryRedeem = artifacts.require("FactoryRedeem");
-const Option = artifacts.require("Option");
-const OptionTest = artifacts.require("OptionTest");
-const Redeem = artifacts.require("Redeem");
-const Registry = artifacts.require("Registry");
-const Flash = artifacts.require("Flash");
-const Weth = artifacts.require("WETH9");
-const CTokenLike = artifacts.require("CTokenLike");
-chai.use(require("chai-bn")(BN));
+const { ethers } = require("@nomiclabs/buidler");
+const TestERC20 = require("../../artifacts/TestERC20");
+const BadERC20 = require("../../artifacts/BadERC20");
+const OptionFactory = require("../../artifacts/OptionFactory");
+const RedeemFactory = require("../../artifacts/RedeemFactory");
+const Option = require("../../artifacts/Option");
+const OptionTest = require("../../artifacts/OptionTest");
+const Redeem = require("../../artifacts/Redeem");
+const Registry = require("../../artifacts/Registry");
+const Flash = require("../../artifacts/Flash");
+const Weth = require("../../artifacts/WETH9");
+const Trader = require("../../artifacts/Trader");
+const CTokenLike = require("../../artifacts/CTokenLike");
+const OptionTemplateLib = require("../../artifacts/OptionTemplateLib");
+const RedeemTemplateLib = require("../../artifacts/RedeemTemplateLib");
+const UniswapTrader = require("../../artifacts/UniswapTrader");
 const constants = require("./constants");
 const { MILLION_ETHER } = constants.VALUES;
+const { OPTION_TEMPLATE_LIB, REDEEM_TEMPLATE_LIB } = constants.LIBRARIES;
+const { deployContract, link } = require("ethereum-waffle");
+const UniswapV2Router02 = require("@uniswap/v2-periphery/build/UniswapV2Router02.json");
+const UniswapV2Factory = require("@uniswap/v2-core/build/UniswapV2Factory.json");
+const { RINKEBY_UNI_ROUTER02, RINKEBY_UNI_FACTORY } = constants.ADDRESSES;
 
-const newERC20 = async (name, symbol, totalSupply) => {
-    let erc20 = await TestERC20.new(name, symbol, totalSupply);
-    return erc20;
+const newWallets = async () => {
+    const wallets = await ethers.getSigners();
+    return wallets;
 };
 
-const newBadERC20 = async (name, symbol) => {
-    let erc20 = await BadERC20.new(name, symbol);
-    return erc20;
+const newERC20 = async (signer, name, symbol, totalSupply) => {
+    const ERC20 = await deployContract(
+        signer,
+        TestERC20,
+        [name, symbol, totalSupply],
+        {
+            gasLimit: 6000000,
+        }
+    );
+    return ERC20;
 };
 
-const newWeth = async () => {
-    let weth = await Weth.new();
+const newBadERC20 = async (signer, name, symbol) => {
+    const bad = await deployContract(signer, BadERC20, [name, symbol], {
+        gasLimit: 6000000,
+    });
+    return bad;
+};
+
+const newWeth = async (signer) => {
+    const weth = await deployContract(signer, Weth, [], {
+        gasLimit: 6000000,
+    });
     return weth;
 };
 
-const newFlash = async (tokenP) => {
-    let flash = await Flash.new(tokenP);
+const newFlash = async (signer, optionToken) => {
+    const flash = await deployContract(signer, Flash, [optionToken], {
+        gasLimit: 6000000,
+    });
     return flash;
 };
 
-const newRegistry = async () => {
-    let registry = await Registry.new();
+const newRegistry = async (signer) => {
+    const registry = await deployContract(signer, Registry, [], {
+        gasLimit: 6500000,
+    });
     return registry;
 };
 
-const newOptionFactory = async (registry) => {
-    let factory = await Factory.new(registry.address);
-    let factoryRedeem = await FactoryRedeem.new(registry.address);
-    await registry.initialize(factory.address, factoryRedeem.address);
-    return factory;
+const newOptionFactory = async (signer, registry) => {
+    let oLib = await deployContract(signer, OptionTemplateLib, [], {
+        gasLimit: 6000000,
+    });
+    let opFacContract = Object.assign(OptionFactory, {
+        evm: { bytecode: { object: OptionFactory.bytecode } },
+    });
+    link(opFacContract, OPTION_TEMPLATE_LIB, oLib.address);
+
+    let optionFactory = await deployContract(
+        signer,
+        opFacContract,
+        [registry.address],
+        {
+            gasLimit: 6000000,
+        }
+    );
+    let rLib = await deployContract(signer, RedeemTemplateLib, [], {
+        gasLimit: 6000000,
+    });
+
+    let reFacContract = Object.assign(RedeemFactory, {
+        evm: { bytecode: { object: RedeemFactory.bytecode } },
+    });
+    link(reFacContract, REDEEM_TEMPLATE_LIB, rLib.address);
+
+    let redeemTokenFactory = await deployContract(
+        signer,
+        reFacContract,
+        [registry.address],
+        {
+            gasLimit: 6000000,
+        }
+    );
+    await optionFactory.deployOptionTemplate();
+    await redeemTokenFactory.deployRedeemTemplate();
+    await registry.initialize(
+        optionFactory.address,
+        redeemTokenFactory.address
+    );
+    return optionFactory;
 };
 
-const newInterestBearing = async (underlying, name, symbol) => {
-    let compound = await CTokenLike.new(underlying, name, symbol);
+const newInterestBearing = async (signer, underlying, name, symbol) => {
+    const compound = await deployContract(
+        signer,
+        CTokenLike,
+        [underlying, name, symbol],
+        {
+            gasLimit: 6000000,
+        }
+    );
     return compound;
 };
 
-const newTestOption = async (tokenU, tokenS, base, quote, expiry) => {
-    let prime = await OptionTest.new(tokenU, tokenS, base, quote, expiry);
-    return prime;
-};
-
-const newTestRedeem = async (factory, prime, underlying) => {
-    let redeem = await Redeem.new(factory, prime, underlying);
-    return redeem;
-};
-
-const newOption = async (registry, tokenU, tokenS, base, quote, expiry) => {
-    await registry.addSupported(tokenU);
-    await registry.addSupported(tokenS);
-    await registry.deployOption(tokenU, tokenS, base, quote, expiry);
-    let prime = await Option.at(
-        await registry.activeOptions(
-            ((await registry.optionsLength()) - 1).toString()
-        )
-    );
-    return prime;
-};
-
-const newRedeem = async (prime) => {
-    let tokenR = await prime.tokenR();
-    let redeem = await Redeem.at(tokenR);
-    return redeem;
-};
-
-const newPrimitive = async (
-    registry,
-    underlying,
-    strike,
+const newTestOption = async (
+    signer,
+    underlyingToken,
+    strikeToken,
     base,
     quote,
     expiry
 ) => {
-    let tokenU = underlying;
-    let tokenS = strike;
-
-    let prime = await newOption(
-        registry,
-        tokenU.address,
-        tokenS.address,
+    const optionToken = await deployContract(signer, OptionTest, [], {
+        gasLimit: 6000000,
+    });
+    await optionToken.initialize(
+        underlyingToken,
+        strikeToken,
         base,
         quote,
         expiry
     );
-    let redeem = await newRedeem(prime);
+    return optionToken;
+};
+
+const newTestRedeem = async (signer, factory, optionToken, underlying) => {
+    const redeemToken = await deployContract(signer, Redeem, [], {
+        gasLimit: 6000000,
+    });
+    await redeemToken.initialize(factory, optionToken, underlying);
+    return redeemToken;
+};
+
+const newTrader = async (signer, weth) => {
+    const trader = await deployContract(signer, Trader, [weth], {
+        gasLimit: 6000000,
+    });
+    return trader;
+};
+
+const newOption = async (
+    signer,
+    registry,
+    underlyingToken,
+    strikeToken,
+    base,
+    quote,
+    expiry
+) => {
+    await registry.addSupported(underlyingToken);
+    await registry.addSupported(strikeToken);
+    await registry.deployOption(
+        underlyingToken,
+        strikeToken,
+        base,
+        quote,
+        expiry
+    );
+    let optionToken = new ethers.Contract(
+        await registry.activeOptions(
+            ((await registry.optionsLength()) - 1).toString()
+        ),
+        Option.abi,
+        signer
+    );
+    return optionToken;
+};
+
+const newRedeem = async (signer, optionToken) => {
+    let redeemTokenAddress = await optionToken.redeemToken();
+    let redeemToken = new ethers.Contract(
+        redeemTokenAddress,
+        Redeem.abi,
+        signer
+    );
+    return redeemToken;
+};
+
+const newPrimitive = async (
+    signer,
+    registry,
+    underlyingToken,
+    strikeToken,
+    base,
+    quote,
+    expiry
+) => {
+    let optionToken = await newOption(
+        signer,
+        registry,
+        underlyingToken.address,
+        strikeToken.address,
+        base,
+        quote,
+        expiry
+    );
+    let redeemToken = await newRedeem(signer, optionToken);
 
     const Primitive = {
-        tokenU: tokenU,
-        tokenS: tokenS,
-        prime: prime,
-        redeem: redeem,
+        underlyingToken: underlyingToken,
+        strikeToken: strikeToken,
+        optionToken: optionToken,
+        redeemToken: redeemToken,
     };
     return Primitive;
 };
 
-const approveToken = async (token, owner, spender) => {
-    await token.approve(spender, MILLION_ETHER, { from: owner });
+const approveToken = async (token, signer, spender) => {
+    await token.approve(spender, MILLION_ETHER, { from: signer });
 };
 
-module.exports = {
+const newUniswapTrader = async (signer, quoteToken, router) => {
+    const uniTrader = await deployContract(signer, UniswapTrader, [], {
+        gasLimit: 6000000,
+    });
+    await uniTrader.setQuoteToken(quoteToken.address);
+    await uniTrader.setRouter(router.address);
+    return uniTrader;
+};
+
+const newUniswap = async (signer, feeToSetter, WETH) => {
+    const uniswapFactory = await deployContract(
+        signer,
+        UniswapV2Factory,
+        [feeToSetter],
+        {
+            gasLimit: 6000000,
+        }
+    );
+    const uniswapRouter = await deployContract(
+        signer,
+        UniswapV2Router02,
+        [uniswapFactory.address, WETH.address],
+        {
+            gasLimit: 6000000,
+        }
+    );
+    return { uniswapRouter, uniswapFactory };
+};
+
+const newUniswapRinkeby = async (signer) => {
+    const uniswapRouter = new ethers.Contract(
+        RINKEBY_UNI_ROUTER02,
+        UniswapV2Router02.abi,
+        signer
+    );
+    const uniswapFactory = new ethers.Contract(
+        RINKEBY_UNI_FACTORY,
+        UniswapV2Factory.abi,
+        signer
+    );
+    return { uniswapRouter, uniswapFactory };
+};
+
+Object.assign(module.exports, {
+    newUniswapTrader,
+    newUniswap,
+    newUniswapRinkeby,
+    newWallets,
     newERC20,
     newBadERC20,
     newWeth,
@@ -129,4 +290,5 @@ module.exports = {
     newInterestBearing,
     newPrimitive,
     approveToken,
-};
+    newTrader,
+});

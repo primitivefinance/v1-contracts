@@ -1,134 +1,196 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.6.2;
 
 /**
  * @title   Trader
- * @notice  Abstracts the interfacing with the protocol for ease-of-use.
+ * @notice  Abstracts the interfacing with the protocol's option contract for ease-of-use.
  * @author  Primitive
  */
 
-import "../interfaces/IOption.sol";
-import "../interfaces/ITrader.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import { IOption } from "../interfaces/IOption.sol";
+import { ITrader } from "../interfaces/ITrader.sol";
+import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
+import {
+    ReentrancyGuard
+} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import { TraderLib } from "../libraries/TraderLib.sol";
 
 contract Trader is ITrader, ReentrancyGuard {
-    using SafeMath for uint;
+    using SafeMath for uint256;
 
     address payable public weth;
 
-    event Mint(address indexed from, uint256 outTokenP, uint256 outTokenR);
-    event Exercise(address indexed from, uint256 outTokenU, uint256 inTokenS);
-    event Redeem(address indexed from, uint256 inTokenR);
-    event Close(address indexed from, uint256 inTokenP);
+    event TraderMint(
+        address indexed from,
+        address indexed option,
+        uint256 outputOptions,
+        uint256 outputRedeems
+    );
+    event TraderExercise(
+        address indexed from,
+        address indexed option,
+        uint256 outUnderlyings,
+        uint256 inStrikes
+    );
+    event TraderRedeem(
+        address indexed from,
+        address indexed option,
+        uint256 inRedeems
+    );
+    event TraderClose(
+        address indexed from,
+        address indexed option,
+        uint256 inOptions
+    );
 
-    constructor (address payable _weth) public { weth = _weth; }
+    event TraderUnwind(
+        address indexed from,
+        address indexed option,
+        uint256 inOptions
+    );
 
-    /**
-     * @dev Mint s by depositing tokenU.
-     * @notice Also mints  Redeem tokens. Calls msg.sender with transferFrom.
-     * @param tokenP The address of the  Option contract.
-     * @param amount Quantity of  options to mint and tokenU to deposit.
-     * @param receiver The newly minted tokens are sent to the receiver address.
-     */
-    function safeMint(IOption tokenP, uint amount, address receiver)
-        external
-        override
-        nonReentrant
-        returns (uint inTokenU, uint outTokenR)
-    {
-        require(amount > 0, "ERR_ZERO");
-        IERC20(tokenP.tokenU()).transferFrom(msg.sender, address(tokenP), amount);
-        (inTokenU, outTokenR) = tokenP.mint(receiver);
-        emit Mint(msg.sender, inTokenU, outTokenR);
+    constructor(address payable _weth) public {
+        weth = _weth;
     }
 
     /**
-     * @dev Swaps tokenS to tokenU using the strike ratio as the exchange rate.
-     * @notice Burns , contract receives tokenS, user receives tokenU.
-     * @param tokenP The address of the  Option contract.
-     * @param amount Quantity of  options to exercise.
-     * @param receiver The underlying tokens are sent to the receiver address.
+     * @dev Mint options at a 1:1 ratio with deposited underlying tokens.
+     * @notice Also mints redeems at a strike ratio to the deposited underlyings.
+     * Warning: Calls msg.sender with safeTransferFrom.
+     * @param optionToken The address of the option contract.
+     * @param mintQuantity Quantity of options to mint and underlyingToken to deposit.
+     * @param receiver The newly minted options and redeems are sent to the receiver address.
      */
-    function safeExercise(IOption tokenP, uint amount, address receiver)
+    function safeMint(
+        IOption optionToken,
+        uint256 mintQuantity,
+        address receiver
+    )
         external
         override
         nonReentrant
-        returns (uint inTokenS, uint inTokenP)
+        returns (uint256 outputOptions, uint256 outputRedeems)
     {
-        require(amount > 0, "ERR_ZERO");
-        require(IERC20(address(tokenP)).balanceOf(msg.sender) >= amount, "ERR_BAL_PRIME");
-        inTokenS = amount.add(amount.div(1000)).mul(tokenP.quote()).div(tokenP.base());
-        //uint fee = inTokenS.div(1000);
-        require(IERC20(tokenP.tokenS()).balanceOf(msg.sender) >= inTokenS, "ERR_BAL_STRIKE");
-        IERC20(tokenP.tokenS()).transferFrom(msg.sender, address(tokenP), inTokenS);
-        IERC20(address(tokenP)).transferFrom(msg.sender, address(tokenP), amount);
-        (inTokenS, inTokenP) = tokenP.exercise(receiver, amount, new bytes(0));
+        (outputOptions, outputRedeems) = TraderLib.safeMint(
+            optionToken,
+            mintQuantity,
+            receiver
+        );
+        emit TraderMint(
+            msg.sender,
+            address(optionToken),
+            outputOptions,
+            outputRedeems
+        );
     }
 
     /**
-     * @dev Burns  Redeem tokens to withdraw available tokenS.
-     * @notice inTokenR = outTokenS.
-     * @param tokenP The address of the  Option contract.
-     * @param amount Quantity of Redeems to burn.
-     * @param receiver The strike tokens are sent to the receiver address.
+     * @dev Swaps strikeTokens to underlyingTokens using the strike ratio as the exchange rate.
+     * @notice Burns optionTokens, option contract receives strikeTokens, user receives underlyingTokens.
+     * @param optionToken The address of the option contract.
+     * @param exerciseQuantity Quantity of optionTokens to exercise.
+     * @param receiver The underlyingTokens are sent to the receiver address.
      */
-    function safeRedeem(IOption tokenP, uint amount, address receiver)
+    function safeExercise(
+        IOption optionToken,
+        uint256 exerciseQuantity,
+        address receiver
+    )
         external
         override
         nonReentrant
-        returns (uint inTokenR)
+        returns (uint256 inStrikes, uint256 inOptions)
     {
-        require(amount > 0, "ERR_ZERO");
-        require(IERC20(tokenP.tokenR()).balanceOf(msg.sender) >= amount, "ERR_BAL_REDEEM");
-        // There can be the case there is no available tokenS to redeem, causing a revert.
-        IERC20(tokenP.tokenR()).transferFrom(msg.sender, address(tokenP), amount);
-        (inTokenR) = tokenP.redeem(receiver);
-        emit Redeem(msg.sender, inTokenR);
+        (inStrikes, inOptions) = TraderLib.safeExercise(
+            optionToken,
+            exerciseQuantity,
+            receiver
+        );
+        emit TraderExercise(
+            msg.sender,
+            address(optionToken),
+            exerciseQuantity,
+            inStrikes
+        );
     }
 
     /**
-     * @dev Burn  and  Redeem tokens to withdraw tokenU.
-     * @notice The  Redeems to burn is equal to the s * strike ratio.
-     * inTokenP = inTokenR / strike ratio = outTokenU
-     * @param tokenP The address of the  Option contract.
-     * @param amount Quantity of s to burn.
-     * @param receiver The underlying tokens are sent to the receiver address.
+     * @dev Burns redeemTokens to withdraw available strikeTokens.
+     * @notice inRedeems = outStrikes.
+     * @param optionToken The address of the option contract.
+     * @param redeemQuantity redeemQuantity of redeemTokens to burn.
+     * @param receiver The strikeTokens are sent to the receiver address.
      */
-    function safeClose(IOption tokenP, uint amount, address receiver)
-        external
-        override
-        nonReentrant
-        returns (uint inTokenR, uint inTokenP, uint outTokenU)
-    {
-        require(amount > 0, "ERR_ZERO");
-        require(IERC20(address(tokenP)).balanceOf(msg.sender) >= amount, "ERR_BAL_PRIME");
-        inTokenR = amount.mul(tokenP.quote()).div(tokenP.base());
-        require(IERC20(tokenP.tokenR()).balanceOf(msg.sender) >= inTokenR, "ERR_BAL_REDEEM");
-        IERC20(tokenP.tokenR()).transferFrom(msg.sender, address(tokenP), inTokenR);
-        IERC20(address(tokenP)).transferFrom(msg.sender, address(tokenP), amount);
-        (inTokenR, inTokenP, outTokenU) = tokenP.close(receiver);
-        emit Close(msg.sender, inTokenP);
+    function safeRedeem(
+        IOption optionToken,
+        uint256 redeemQuantity,
+        address receiver
+    ) external override nonReentrant returns (uint256 inRedeems) {
+        (inRedeems) = TraderLib.safeRedeem(
+            optionToken,
+            redeemQuantity,
+            receiver
+        );
+        emit TraderRedeem(msg.sender, address(optionToken), inRedeems);
     }
 
     /**
-     * @dev Burn  Redeem tokens to withdraw tokenU and tokenS from expired options.
-     * @param tokenP The address of the  Option contract.
-     * @param amount Quantity of Redeems to burn.
-     * @param receiver The underlying tokens are sent to the receiver address.
+     * @dev Burn optionTokens and redeemTokens to withdraw underlyingTokens.
+     * @notice The redeemTokens to burn is equal to the optionTokens * strike ratio.
+     * inOptions = inRedeems / strike ratio = outUnderlyings
+     * @param optionToken The address of the option contract.
+     * @param closeQuantity Quantity of optionTokens to burn.
+     * (Implictly will burn the strike ratio quantity of redeemTokens).
+     * @param receiver The underlyingTokens are sent to the receiver address.
      */
-    function safeUnwind(IOption tokenP, uint amount, address receiver)
+    function safeClose(
+        IOption optionToken,
+        uint256 closeQuantity,
+        address receiver
+    )
         external
         override
         nonReentrant
-        returns (uint inTokenR, uint inTokenP, uint outTokenU)
+        returns (
+            uint256 inRedeems,
+            uint256 inOptions,
+            uint256 outUnderlyings
+        )
     {
-        require(amount > 0, "ERR_ZERO");
-        require(tokenP.expiry() < block.timestamp, "ERR_NOT_EXPIRED");
-        inTokenR = amount.mul(tokenP.quote()).div(tokenP.base());
-        require(IERC20(tokenP.tokenR()).balanceOf(msg.sender) >= inTokenR, "ERR_BAL_REDEEM");
-        IERC20(tokenP.tokenR()).transferFrom(msg.sender, address(tokenP), inTokenR);
-        (inTokenR, inTokenP, outTokenU) = tokenP.close(receiver);
-        emit Close(msg.sender, inTokenP);
+        (inRedeems, inOptions, outUnderlyings) = TraderLib.safeClose(
+            optionToken,
+            closeQuantity,
+            receiver
+        );
+        emit TraderClose(msg.sender, address(optionToken), inOptions);
+    }
+
+    /**
+     * @dev Burn redeemTokens to withdraw underlyingTokens and strikeTokens from expired options.
+     * @param optionToken The address of the option contract.
+     * @param unwindQuantity Quantity of option tokens used to calculate the amount of redeem tokens to burn.
+     * @param receiver The underlyingTokens and redeemTokens are sent to the receiver address.
+     */
+    function safeUnwind(
+        IOption optionToken,
+        uint256 unwindQuantity,
+        address receiver
+    )
+        external
+        override
+        nonReentrant
+        returns (
+            uint256 inRedeems,
+            uint256 inOptions,
+            uint256 outUnderlyings
+        )
+    {
+        (inRedeems, inOptions, outUnderlyings) = TraderLib.safeUnwind(
+            optionToken,
+            unwindQuantity,
+            receiver
+        );
+        emit TraderUnwind(msg.sender, address(optionToken), inOptions);
     }
 }
