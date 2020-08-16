@@ -16,4 +16,8 @@ interface IRegistry {
     function initialize(address _factory, address _factoryRedeem) external;
 
     function addSupported(address token) external;
+
+    function optionFactory() external returns (address);
+
+    function redeemFactory() external returns (address);
 }

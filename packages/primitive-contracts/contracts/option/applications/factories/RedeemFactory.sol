@@ -12,20 +12,22 @@ import { RedeemTemplateLib } from "../../libraries/RedeemTemplateLib.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { CloneLib } from "../../libraries/CloneLib.sol";
 import { NullCloneConstructor } from "../NullCloneConstructor.sol";
+import { IRedeemFactory } from "../../interfaces/IRedeemFactory.sol";
 
-contract RedeemFactory is Ownable, NullCloneConstructor {
+contract RedeemFactory is IRedeemFactory, Ownable, NullCloneConstructor {
     using SafeMath for uint;
-    address public redeemTemplate;
+
+    address public override redeemTemplate;
 
     constructor(address registry) public {
         transferOwnership(registry);
     }
 
-    function deployRedeemTemplate() public {
+    function deployRedeemTemplate() public override {
         redeemTemplate = RedeemTemplateLib.deployTemplate();
     }
 
-    function deploy(address optionToken, address redeemableToken) external onlyOwner returns (address redeem) {
+    function deploy(address optionToken, address redeemableToken) external override onlyOwner returns (address redeem) {
         bytes32 salt = keccak256(abi.encodePacked(RedeemTemplateLib.REDEEM_SALT(), owner(), optionToken, redeemableToken));
         redeem = CloneLib.create2Clone(redeemTemplate, uint(salt));
         Redeem(redeem).initialize(owner(), optionToken, redeemableToken);

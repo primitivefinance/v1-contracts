@@ -19,9 +19,8 @@ import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
     using SafeMath for uint;
 
-    address public optionFactory;
-    address public redeemFactory;
-    address[] public activeOptions;
+    address public override optionFactory;
+    address public override redeemFactory;
 
     mapping(address => bool) public isSupported;
 
@@ -69,6 +68,6 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
         uint quote,
         uint expiry
     ) public view returns (address option) {
-        option = options[getId(underlyingToken, strikeToken, base, quote, expiry)];
+        option = IOptionFactory(optionFactory).getOption(underlyingToken, strikeToken, base, quote, expiry);
     }
 }
