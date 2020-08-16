@@ -1,7 +1,7 @@
 const { assert, expect } = require("chai");
-const utils = require("../lib/utils");
-const setup = require("../lib/setup");
-const constants = require("../lib/constants");
+const utils = require("./lib/utils");
+const setup = require("./lib/setup");
+const constants = require("./lib/constants");
 const { parseEther } = require("ethers/lib/utils");
 const chai = require("chai");
 const { solidity } = require("ethereum-waffle");

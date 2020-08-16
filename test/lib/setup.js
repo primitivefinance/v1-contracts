@@ -1,20 +1,19 @@
 const { ethers } = require("@nomiclabs/buidler");
-const TestERC20 = require("@primitivefi/contracts/artifacts/TestERC20");
-const BadERC20 = require("@primitivefi/contracts/artifacts/BadERC20");
-const OptionFactory = require("@primitivefi/contracts/artifacts/OptionFactory");
-const RedeemFactory = require("@primitivefi/contracts/artifacts/RedeemFactory");
-const Option = require("@primitivefi/contracts/artifacts/Option");
-const OptionTest = require("@primitivefi/contracts/artifacts/OptionTest");
-const Redeem = require("@primitivefi/contracts/artifacts/Redeem");
-const Registry = require("@primitivefi/contracts/artifacts/Registry");
-const Flash = require("@primitivefi/contracts/artifacts/Flash");
-const Weth = require("@primitivefi/contracts/artifacts/WETH9");
-const Trader = require("@primitivefi/contracts/artifacts/Trader");
-const CTokenLike = require("@primitivefi/contracts/artifacts/CTokenLike");
-const UniswapTrader = require("@primitivefi/contracts/artifacts/UniswapTrader");
-const OptionTemplateLib = require("@primitivefi/contracts/artifacts/OptionTemplateLib");
-const RedeemTemplateLib = require("@primitivefi/contracts/artifacts/RedeemTemplateLib");
-const UniswapTrader = require("@primitivefi/contracts/artifacts/UniswapTrader");
+const TestERC20 = require("../../artifacts/TestERC20");
+const BadERC20 = require("../../artifacts/BadERC20");
+const OptionFactory = require("../../artifacts/OptionFactory");
+const RedeemFactory = require("../../artifacts/RedeemFactory");
+const Option = require("../../artifacts/Option");
+const OptionTest = require("../../artifacts/OptionTest");
+const Redeem = require("../../artifacts/Redeem");
+const Registry = require("../../artifacts/Registry");
+const Flash = require("../../artifacts/Flash");
+const Weth = require("../../artifacts/WETH9");
+const Trader = require("../../artifacts/Trader");
+const CTokenLike = require("../../artifacts/CTokenLike");
+const OptionTemplateLib = require("../../artifacts/OptionTemplateLib");
+const RedeemTemplateLib = require("../../artifacts/RedeemTemplateLib");
+const UniswapTrader = require("../../artifacts/UniswapTrader");
 const constants = require("./constants");
 const { MILLION_ETHER } = constants.VALUES;
 const { OPTION_TEMPLATE_LIB, REDEEM_TEMPLATE_LIB } = constants.LIBRARIES;
@@ -273,20 +272,10 @@ const newUniswapRinkeby = async (signer) => {
     return { uniswapRouter, uniswapFactory };
 };
 
-const newUniswapTrader = async (signer, quoteToken, router) => {
-    const uniTrader = await deployContract(signer, UniswapTrader, [], {
-        gasLimit: 6000000,
-    });
-    await uniTrader.setQuoteToken(quoteToken.address);
-    await uniTrader.setRouter(router.address);
-    return uniTrader;
-};
-
 Object.assign(module.exports, {
     newUniswapTrader,
     newUniswap,
     newUniswapRinkeby,
-    newUniswapTrader,
     newWallets,
     newERC20,
     newBadERC20,

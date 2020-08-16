@@ -2,9 +2,9 @@ const { assert, expect } = require("chai");
 const chai = require("chai");
 const { solidity } = require("ethereum-waffle");
 chai.use(solidity);
-const utils = require("../lib/utils");
-const setup = require("../lib/setup");
-const constants = require("../lib/constants");
+const utils = require("./lib/utils");
+const setup = require("./lib/setup");
+const constants = require("./lib/constants");
 const { parseEther } = require("ethers/lib/utils");
 const { assertBNEqual, verifyOptionInvariants, getTokenBalance } = utils;
 const {

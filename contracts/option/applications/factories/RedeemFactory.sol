@@ -12,6 +12,7 @@ import { RedeemTemplateLib } from "../../libraries/RedeemTemplateLib.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { CloneLib } from "../../libraries/CloneLib.sol";
 import { NullCloneConstructor } from "../NullCloneConstructor.sol";
+import { IRedeemFactory } from "../../interfaces/IRedeemFactory.sol";
 
 contract RedeemFactory is IRedeemFactory, Ownable, NullCloneConstructor {
     using SafeMath for uint256;
@@ -22,7 +23,7 @@ contract RedeemFactory is IRedeemFactory, Ownable, NullCloneConstructor {
         transferOwnership(registry);
     }
 
-    function deployRedeemTemplate() public {
+    function deployRedeemTemplate() public override {
         redeemTemplate = RedeemTemplateLib.deployTemplate();
     }
 
