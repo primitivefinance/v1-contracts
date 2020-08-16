@@ -198,7 +198,7 @@ describe("Trader", () => {
                         Alice,
                         optionToken.address,
                         inTokenU.toString(),
-                        inTokenS.add(inTokenS.div(1000)).toString()
+                        inTokenS.toString()
                     );
 
                 let deltaU = (
@@ -213,7 +213,7 @@ describe("Trader", () => {
 
                 assertBNEqual(deltaU, inTokenU);
                 assertBNEqual(deltaP, inTokenP.mul(-1));
-                assertBNEqual(deltaS, inTokenS.add(inTokenS.div(1000)).mul(-1));
+                assertBNEqual(deltaS, inTokenS.mul(-1));
 
                 await verifyOptionInvariants(
                     underlyingToken,
@@ -501,7 +501,7 @@ describe("Trader", () => {
 
             let expired = "1589386232";
             await optionToken.setExpiry(expired);
-            assert.equal(await optionToken.expiry(), expired);
+            assert.equal(await optionToken.getExpiryTime(), expired);
 
             safeUnwind = async (inTokenP) => {
                 let inTokenR = inTokenP.mul(quote).div(base);
@@ -592,7 +592,7 @@ describe("Trader", () => {
             await underlyingToken.mint(Alice, inTokenU);
             await strikeToken.mint(Alice, inTokenU);
             await underlyingToken.transfer(optionToken.address, inTokenU);
-            await optionToken.mint(Alice);
+            await optionToken.mintOptions(Alice);
         });
 
         it("should revert on mint because transfer does not return a boolean", async () => {
@@ -612,7 +612,7 @@ describe("Trader", () => {
             // no way to swap, because it reverts, so we need to send strikeToken and call update()
             let inTokenS = parseEther("0.5"); // 100 ether (underlyingToken:base) / 200 (strikeToken:quote) = 0.5 strikeToken
             await strikeToken.transfer(optionToken.address, inTokenS);
-            await optionToken.update();
+            await optionToken.updateCacheBalances();
             await expect(
                 trader.safeRedeem(optionToken.address, inTokenS, Alice)
             ).to.be.reverted;

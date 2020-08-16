@@ -21,9 +21,15 @@ const {
     newOptionFactory,
     newPrimitive,
     newTrader,
-    UniswapRouter,
 } = setup;
-const { ONE_ETHER, FIVE_ETHER, TEN_ETHER, HUNDRED_ETHER, THOUSAND_ETHER, MILLION_ETHER } = constants.VALUES;
+const {
+    ONE_ETHER,
+    FIVE_ETHER,
+    TEN_ETHER,
+    HUNDRED_ETHER,
+    THOUSAND_ETHER,
+    MILLION_ETHER,
+} = constants.VALUES;
 
 const {
     ERR_BAL_UNDERLYING,
@@ -68,20 +74,42 @@ describe("UniTrader", () => {
         quote = parseEther("200");
         expiry = "1690868800"; // May 30, 2020, 8PM UTC
 
-        Primitive = await newPrimitive(Admin, registry, underlyingToken, strikeToken, base, quote, expiry);
+        Primitive = await newPrimitive(
+            Admin,
+            registry,
+            underlyingToken,
+            strikeToken,
+            base,
+            quote,
+            expiry
+        );
 
         optionToken = Primitive.optionToken;
         redeemToken = Primitive.redeemToken;
         trader = await newTrader(Admin, weth.address);
-        await underlyingToken.connect(Admin).approve(trader.address, MILLION_ETHER);
+        await underlyingToken
+            .connect(Admin)
+            .approve(trader.address, MILLION_ETHER);
         await strikeToken.connect(Admin).approve(trader.address, MILLION_ETHER);
         await optionToken.connect(Admin).approve(trader.address, MILLION_ETHER);
-        await underlyingToken.connect(Admin).approve(uniswapTrader.address, MILLION_ETHER);
-        await strikeToken.connect(Admin).approve(uniswapTrader.address, MILLION_ETHER);
-        await optionToken.connect(Admin).approve(uniswapTrader.address, MILLION_ETHER);
-        await underlyingToken.connect(Admin).approve(uniswapRouter.address, MILLION_ETHER);
-        await strikeToken.connect(Admin).approve(uniswapRouter.address, MILLION_ETHER);
-        await optionToken.connect(Admin).approve(uniswapRouter.address, MILLION_ETHER);
+        await underlyingToken
+            .connect(Admin)
+            .approve(uniswapTrader.address, MILLION_ETHER);
+        await strikeToken
+            .connect(Admin)
+            .approve(uniswapTrader.address, MILLION_ETHER);
+        await optionToken
+            .connect(Admin)
+            .approve(uniswapTrader.address, MILLION_ETHER);
+        await underlyingToken
+            .connect(Admin)
+            .approve(uniswapRouter.address, MILLION_ETHER);
+        await strikeToken
+            .connect(Admin)
+            .approve(uniswapRouter.address, MILLION_ETHER);
+        await optionToken
+            .connect(Admin)
+            .approve(uniswapRouter.address, MILLION_ETHER);
         await uniswapFactory.createPair(optionToken.address, dai.address);
         await trader.safeMint(optionToken.address, TEN_ETHER, Alice);
         await uniswapRouter.addLiquidity(
@@ -104,25 +132,45 @@ describe("UniTrader", () => {
 
     describe("mintAndMarketSell", () => {
         it("should mint then market sell", async () => {
-            const pair = await uniswapFactory.getPair(optionToken.address, dai.address);
+            const pair = await uniswapFactory.getPair(
+                optionToken.address,
+                dai.address
+            );
             let balanceBefore = await dai.balanceOf(Alice);
             let optionBalanceBefore = await optionToken.balanceOf(pair);
-            await expect(uniswapTrader.mintAndMarketSell(optionToken.address, ONE_ETHER, 1))
+            await expect(
+                uniswapTrader.mintAndMarketSell(
+                    optionToken.address,
+                    ONE_ETHER,
+                    1
+                )
+            )
                 .to.emit(uniswapTrader, "UniswapTraderSell")
                 .withArgs(Alice, Alice, optionToken.address, ONE_ETHER);
             let balanceAfter = await dai.balanceOf(Alice);
             let optionBalanceAfter = await optionToken.balanceOf(pair);
             let balanceDelta = balanceAfter.sub(balanceBefore).toString();
-            let balanceOptionDelta = optionBalanceAfter.sub(optionBalanceBefore).toString();
-            console.log(balanceBefore.toString(), balanceAfter.toString(), balanceDelta, balanceOptionDelta);
+            let balanceOptionDelta = optionBalanceAfter
+                .sub(optionBalanceBefore)
+                .toString();
+            console.log(
+                balanceBefore.toString(),
+                balanceAfter.toString(),
+                balanceDelta,
+                balanceOptionDelta
+            );
         });
     });
 
     describe("safeMint", () => {
         beforeEach(async () => {
             trader = await newTrader(Admin, weth.address);
-            await underlyingToken.connect(Admin).approve(trader.address, MILLION_ETHER);
-            await strikeToken.connect(Admin).approve(trader.address, MILLION_ETHER);
+            await underlyingToken
+                .connect(Admin)
+                .approve(trader.address, MILLION_ETHER);
+            await strikeToken
+                .connect(Admin)
+                .approve(trader.address, MILLION_ETHER);
 
             safeMint = async (inTokenU) => {
                 let outTokenR = inTokenU.mul(quote).div(base);
@@ -131,13 +179,26 @@ describe("UniTrader", () => {
                 let balanceP = await getTokenBalance(optionToken, Alice);
                 let balanceR = await getTokenBalance(redeemToken, Alice);
 
-                await expect(trader.safeMint(optionToken.address, inTokenU, Alice))
+                await expect(
+                    trader.safeMint(optionToken.address, inTokenU, Alice)
+                )
                     .to.emit(trader, "TraderMint")
-                    .withArgs(Alice, optionToken.address, inTokenU.toString(), outTokenR.toString());
+                    .withArgs(
+                        Alice,
+                        optionToken.address,
+                        inTokenU.toString(),
+                        outTokenR.toString()
+                    );
 
-                let deltaU = (await getTokenBalance(underlyingToken, Alice)).sub(balanceU);
-                let deltaP = (await getTokenBalance(optionToken, Alice)).sub(balanceP);
-                let deltaR = (await getTokenBalance(redeemToken, Alice)).sub(balanceR);
+                let deltaU = (
+                    await getTokenBalance(underlyingToken, Alice)
+                ).sub(balanceU);
+                let deltaP = (await getTokenBalance(optionToken, Alice)).sub(
+                    balanceP
+                );
+                let deltaR = (await getTokenBalance(redeemToken, Alice)).sub(
+                    balanceR
+                );
 
                 assertBNEqual(deltaU, inTokenU.mul(-1));
                 assertBNEqual(deltaP, inTokenU);
@@ -146,7 +207,9 @@ describe("UniTrader", () => {
         });
 
         it("should revert if amount is 0", async () => {
-            await expect(trader.safeMint(optionToken.address, 0, Alice)).to.be.revertedWith(ERR_ZERO);
+            await expect(
+                trader.safeMint(optionToken.address, 0, Alice)
+            ).to.be.revertedWith(ERR_ZERO);
         });
     });
 });

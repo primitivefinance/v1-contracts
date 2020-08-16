@@ -1,9 +1,5 @@
 // SPDX-License-Identifier: MIT
 
-
-
-
-
 pragma solidity ^0.6.2;
 
 /**
@@ -15,7 +11,7 @@ pragma solidity ^0.6.2;
 
 import { IOption } from "../interfaces/IOption.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
 library TraderLib {
@@ -28,12 +24,12 @@ library TraderLib {
         address receiver
     ) internal returns (uint256 outputOptions, uint256 outputRedeem) {
         require(mintQuantity > 0, "ERR_ZERO");
-        IERC20(optionToken.underlyingToken()).safeTransferFrom(
+        IERC20(optionToken.getUnderlyingTokenAddress()).safeTransferFrom(
             msg.sender,
             address(optionToken),
             mintQuantity
         );
-        (outputOptions, outputRedeem) = optionToken.mint(receiver);
+        (outputOptions, outputRedeem) = optionToken.mintOptions(receiver);
     }
 
     /**
@@ -56,16 +52,15 @@ library TraderLib {
         );
 
         // Calculate quantity of strikeTokens needed to exercise quantity of optionTokens.
-        inputStrikes = exerciseQuantity
-            .add(exerciseQuantity.div(IOption(optionToken).EXERCISE_FEE()))
-            .mul(optionToken.quote())
-            .div(optionToken.base());
+        inputStrikes = exerciseQuantity.mul(optionToken.getQuoteValue()).div(
+            optionToken.getBaseValue()
+        );
         require(
-            IERC20(optionToken.strikeToken()).balanceOf(msg.sender) >=
+            IERC20(optionToken.getStrikeTokenAddress()).balanceOf(msg.sender) >=
                 inputStrikes,
             "ERR_BAL_STRIKE"
         );
-        IERC20(optionToken.strikeToken()).safeTransferFrom(
+        IERC20(optionToken.getStrikeTokenAddress()).safeTransferFrom(
             msg.sender,
             address(optionToken),
             inputStrikes
@@ -75,7 +70,7 @@ library TraderLib {
             address(optionToken),
             exerciseQuantity
         );
-        (inputStrikes, inputOptions) = optionToken.exercise(
+        (inputStrikes, inputOptions) = optionToken.exerciseOptions(
             receiver,
             exerciseQuantity,
             new bytes(0)
@@ -106,7 +101,7 @@ library TraderLib {
             address(optionToken),
             redeemQuantity
         );
-        (inputRedeems) = optionToken.redeem(receiver);
+        (inputRedeems) = optionToken.redeemStrikeTokens(receiver);
     }
 
     /**
@@ -137,8 +132,8 @@ library TraderLib {
         );
 
         // Calculate the quantity of redeemTokens that need to be burned. (What we mean by Implicit).
-        inputRedeems = closeQuantity.mul(optionToken.quote()).div(
-            optionToken.base()
+        inputRedeems = closeQuantity.mul(optionToken.getQuoteValue()).div(
+            optionToken.getBaseValue()
         );
         require(
             IERC20(optionToken.redeemToken()).balanceOf(msg.sender) >=
@@ -155,7 +150,7 @@ library TraderLib {
             address(optionToken),
             closeQuantity
         );
-        (inputRedeems, inputOptions, outUnderlyings) = optionToken.close(
+        (inputRedeems, inputOptions, outUnderlyings) = optionToken.closeOptions(
             receiver
         );
     }
@@ -163,8 +158,8 @@ library TraderLib {
     /**
      * @dev Burn redeemTokens to withdraw underlyingTokens and strikeTokens from expired options.
      * @param optionToken The address of the option contract.
-     * @param unwindQuantity Quantity of redeemTokens to burn.
-     * @param receiver The underlyingTokens and redeemTokens are sent to the receiver address.
+     * @param unwindQuantity Quantity of option tokens used to calculate the amount of redeem tokens to burn.
+     * @param receiver The underlyingTokens are sent to the receiver address and the redeemTokens are burned.
      */
     function safeUnwind(
         IOption optionToken,
@@ -181,11 +176,14 @@ library TraderLib {
         // Checks
         require(unwindQuantity > 0, "ERR_ZERO");
         // solhint-disable-next-line not-rely-on-time
-        require(optionToken.expiry() < block.timestamp, "ERR_NOT_EXPIRED");
+        require(
+            optionToken.getExpiryTime() < block.timestamp,
+            "ERR_NOT_EXPIRED"
+        );
 
         // Calculate amount of redeems required
-        inputRedeems = unwindQuantity.mul(optionToken.quote()).div(
-            optionToken.base()
+        inputRedeems = unwindQuantity.mul(optionToken.getQuoteValue()).div(
+            optionToken.getBaseValue()
         );
         require(
             IERC20(optionToken.redeemToken()).balanceOf(msg.sender) >=
@@ -197,7 +195,7 @@ library TraderLib {
             address(optionToken),
             inputRedeems
         );
-        (inputRedeems, inputOptions, outUnderlyings) = optionToken.close(
+        (inputRedeems, inputOptions, outUnderlyings) = optionToken.closeOptions(
             receiver
         );
     }

@@ -3,12 +3,12 @@
         {
             "files": ["*.sol", "*.js", "*.json"],
             "options": {
-                "printWidth": 125,
+                "printWidth": 80,
                 "tabWidth": 4,
                 "useTabs": false,
                 "singleQuote": false,
                 "bracketSpacing": true,
-                "explicitTypes": "never",
+                "explicitTypes": "always",
                 "jsxBracketSameLine": false,
                 "semi": true
             }
