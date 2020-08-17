@@ -3,8 +3,6 @@ const path = require("path");
 const bip39 = require("bip39");
 const crypto = require("crypto");
 const ethers = require("ethers");
-const modifyEnvironmentIfMonorepo = require("./internal/monorepo");
-const unhook = modifyEnvironmentIfMonorepo();
 require("dotenv").config();
 
 // == Plugins ==
@@ -15,8 +13,6 @@ usePlugin("buidler-gas-reporter");
 usePlugin("buidler-spdx-license-identifier");
 usePlugin("buidler-deploy");
 usePlugin("solidity-coverage");
-
-unhook();
 
 // == Environment ==
 const ETHERSCAN_API_KEY =
