@@ -29,7 +29,6 @@ const {
 
 const {
     ERR_ZERO,
-    ERR_PAUSED,
     ERR_EXPIRED,
     ERR_NOT_VALID,
     ERR_NOT_OWNER,

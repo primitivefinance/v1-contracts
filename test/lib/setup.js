@@ -60,10 +60,53 @@ const newFlash = async (signer, optionToken) => {
     return flash;
 };
 
+/**
+ * @notice Deploys a Registry instance and initializes it with the correct factories.
+ * @param signer A Signer object from ethers js.
+ */
 const newRegistry = async (signer) => {
     const registry = await deployContract(signer, Registry, [], {
         gasLimit: 6500000,
     });
+    let oLib = await deployContract(signer, OptionTemplateLib, [], {
+        gasLimit: 6000000,
+    });
+    let opFacContract = Object.assign(OptionFactory, {
+        evm: { bytecode: { object: OptionFactory.bytecode } },
+    });
+    link(opFacContract, OPTION_TEMPLATE_LIB, oLib.address);
+
+    let optionFactory = await deployContract(
+        signer,
+        opFacContract,
+        [registry.address],
+        {
+            gasLimit: 6000000,
+        }
+    );
+    let rLib = await deployContract(signer, RedeemTemplateLib, [], {
+        gasLimit: 6000000,
+    });
+
+    let reFacContract = Object.assign(RedeemFactory, {
+        evm: { bytecode: { object: RedeemFactory.bytecode } },
+    });
+    link(reFacContract, REDEEM_TEMPLATE_LIB, rLib.address);
+
+    let redeemTokenFactory = await deployContract(
+        signer,
+        reFacContract,
+        [registry.address],
+        {
+            gasLimit: 6000000,
+        }
+    );
+    await optionFactory.deployOptionTemplate();
+    await redeemTokenFactory.deployRedeemTemplate();
+    await registry.initialize(
+        optionFactory.address,
+        redeemTokenFactory.address
+    );
     return registry;
 };
 
