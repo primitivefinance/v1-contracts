@@ -134,10 +134,8 @@ const newRegistry = async (signer) => {
     );
     await optionFactory.deployOptionTemplate();
     await redeemTokenFactory.deployRedeemTemplate();
-    await registry.initialize(
-        optionFactory.address,
-        redeemTokenFactory.address
-    );
+    await registry.setOptionFactory(optionFactory.address);
+    await registry.setRedeemFactory(redeemTokenFactory.address);
     return registry;
 };
 
@@ -182,10 +180,8 @@ const newOptionFactory = async (signer, registry) => {
     );
     await optionFactory.deployOptionTemplate();
     await redeemTokenFactory.deployRedeemTemplate();
-    await registry.initialize(
-        optionFactory.address,
-        redeemTokenFactory.address
-    );
+    await registry.setOptionFactory(optionFactory.address);
+    await registry.setRedeemFactory(redeemTokenFactory.address);
     return optionFactory;
 };
 
