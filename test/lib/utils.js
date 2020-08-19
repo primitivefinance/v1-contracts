@@ -1,34 +1,65 @@
 const { assert } = require("chai");
-const bre = require("@nomiclabs/buidler/config");
-const { ethers } = require("ethers");
+const { ethers } = require("@nomiclabs/buidler");
 const { parseEther } = ethers.utils;
 const { AddressZero } = ethers.constants;
 
-async function checkAllowance(owner, spender, token) {
+/**
+ * @dev If the allowance of an account is less than some large amount, approve a large amount.
+ * @param {*} owner The signer account calling the transaction.
+ * @param {*} spender The signer account that should be approved.
+ * @param {*} token The ERC-20 token to update its allowance mapping.
+ */
+const checkAllowance = async (owner, spender, token) => {
     const amount = parseEther("10000000000");
     let allowance = await token.allowance(owner.address, spender.address);
     if (allowance <= amount) {
         await token.approve(spender.address, amount, { from: owner.address });
     }
-}
+};
 
-async function checkInitialization(registry, optionFactory, redeemFactory) {
+/**
+ * @dev Checks the Registry contract to make sure it has set its factory addresses.
+ * @param {*} registry The Registry contract instance.
+ * @param {*} optionFactory The OptionFactory contract instance.
+ * @param {*} redeemFactory The RedeemFactory contract instance.
+ */
+const checkInitialization = async (registry, optionFactory, redeemFactory) => {
     const fac = await registry.optionFactory();
     if (fac == AddressZero || fac != optionFactory.address)
         await registry.initialize(optionFactory.address, redeemFactory.address);
-}
+};
 
 const assertBNEqual = (actualBN, expectedBN, message) => {
     assert.equal(actualBN.toString(), expectedBN.toString(), message);
 };
 
+/**
+ * @dev A generalized function to get the token balance of an address.
+ * @param {*} token The ERC-20 token contract instance.
+ * @param {*} address The address of the account to check the balance of.
+ */
 const getTokenBalance = async (token, address) => {
     let bal = await token.balanceOf(address);
     return bal;
 };
 
-const verifyOptionInvariants = async (tokenU, strikeToken, optionToken, redeem) => {
-    let underlyingBalance = await tokenU.balanceOf(optionToken.address);
+/**
+ * @dev Asserts the actual balances of underlying and strike tokens matches the cache balances.
+ *      Asserts the balances of option and redeem tokens is 0.
+ * @param {*} underlyingToken The contract instance of the underlying token.
+ * @param {*} strikeToken The contract instance of the strike token.
+ * @param {*} optionToken The contract instance of the option token.
+ * @param {*} redeem The contract instance of the redeem token.
+ */
+const verifyOptionInvariants = async (
+    underlyingToken,
+    strikeToken,
+    optionToken,
+    redeem
+) => {
+    let underlyingBalance = await underlyingToken.balanceOf(
+        optionToken.address
+    );
     let underlyingCache = await optionToken.underlyingCache();
     let strikeCache = await optionToken.strikeCache();
     let strikeBalance = await strikeToken.balanceOf(optionToken.address);
@@ -43,8 +74,16 @@ const verifyOptionInvariants = async (tokenU, strikeToken, optionToken, redeem) 
     assertBNEqual(redeemBalance, 0);
 };
 
+/**
+ * @dev Gets the token balances for the four tokens, underlying, strike, option, and redeem.
+ * @param {*} Primitive An object returned by the ../lib/setup function `newPrimitive()`
+ * @param {*} address The address to check the balance of.
+ */
 const getTokenBalances = async (Primitive, address) => {
-    const underlyingBalance = await getTokenBalance(Primitive.underlyingToken, address);
+    const underlyingBalance = await getTokenBalance(
+        Primitive.underlyingToken,
+        address
+    );
     const strikeBalance = await getTokenBalance(Primitive.strikeToken, address);
     const redeemBalance = await getTokenBalance(Primitive.redeemToken, address);
     const optionBalance = await getTokenBalance(Primitive.optionToken, address);
