@@ -1,7 +1,13 @@
+// Testing suite tools
 const { expect } = require("chai");
 const chai = require("chai");
 const { solidity } = require("ethereum-waffle");
 chai.use(solidity);
+
+// Convert to wei
+const { parseEther } = require("ethers/lib/utils");
+
+// Helper functions and constants
 const setup = require("./lib/setup");
 const constants = require("./lib/constants");
 const { parseEther } = require("ethers/lib/utils");
