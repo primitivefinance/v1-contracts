@@ -100,6 +100,10 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
     ) external override nonReentrant whenNotPaused returns (address) {
         // Checks to make sure tokens are not the same.
         require(underlyingToken != strikeToken, "ERR_ADDRESS");
+        require(
+            underlyingToken != address(0x0) && strikeToken != address(0x0),
+            "ERR_ZERO_ADDRESS"
+        );
 
         // Deploy option and redeem contract clones.
         address optionAddress = IOptionFactory(optionFactory).deploy(
