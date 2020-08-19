@@ -18,7 +18,7 @@ interface IOptionFactory {
 
     function optionTemplate() external returns (address);
 
-    function getOption(
+    function getOptionAddress(
         address underlyingToken,
         address strikeToken,
         uint256 base,

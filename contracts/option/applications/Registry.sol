@@ -142,7 +142,7 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
         uint256 quote,
         uint256 expiry
     ) public override view returns (address) {
-        address optionAddress = IOptionFactory(optionFactory).getOption(
+        address optionAddress = IOptionFactory(optionFactory).getOptionAddress(
             underlyingToken,
             strikeToken,
             base,

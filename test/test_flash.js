@@ -10,7 +10,6 @@ const { parseEther } = require("ethers/lib/utils");
 // Helper functions and constants
 const setup = require("./lib/setup");
 const constants = require("./lib/constants");
-const { parseEther } = require("ethers/lib/utils");
 const { ONE_ETHER, MILLION_ETHER } = constants.VALUES;
 const { ERR_ZERO } = constants.ERR_CODES;
 
