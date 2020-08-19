@@ -1,80 +1,70 @@
-const { assert, expect } = require("chai");
-const utils = require("./lib/utils");
-const setup = require("./lib/setup");
-const constants = require("./lib/constants");
-const { parseEther } = require("ethers/lib/utils");
+// Testing suite tools
+const { expect } = require("chai");
 const chai = require("chai");
 const { solidity } = require("ethereum-waffle");
 chai.use(solidity);
-const { assertBNEqual, verifyOptionInvariants, getTokenBalance } = utils;
-const {
-    newUniswapTrader,
-    newUniswapRinkeby,
-    newUniswap,
-    newWallets,
-    newERC20,
-    newWeth,
-    newRegistry,
-    newBadERC20,
-    newTestRedeem,
-    newTestOption,
-    newOptionFactory,
-    newPrimitive,
-    newTrader,
-} = setup;
-const {
-    ONE_ETHER,
-    FIVE_ETHER,
-    TEN_ETHER,
-    HUNDRED_ETHER,
-    THOUSAND_ETHER,
-    MILLION_ETHER,
-} = constants.VALUES;
 
-const {
-    ERR_BAL_UNDERLYING,
-    ERR_ZERO,
-    ERR_BAL_STRIKE,
-    ERR_BAL_OPTIONS,
-    ERR_BAL_REDEEM,
-    ERR_NOT_EXPIRED,
-} = constants.ERR_CODES;
+// Convert to wei
+const { parseEther } = require("ethers/lib/utils");
 
-describe("UniTrader", () => {
-    // ACCOUNTS
-    let signers, Admin, User, Alice, Bob;
+// Helper functions and constants
+const utils = require("./lib/utils");
+const setup = require("./lib/setup");
+const constants = require("./lib/constants");
+const { assertBNEqual, getTokenBalance } = utils;
+const { ONE_ETHER, TEN_ETHER, HUNDRED_ETHER, MILLION_ETHER } = constants.VALUES;
+const { ERR_ZERO } = constants.ERR_CODES;
 
-    let trader, weth, dai, optionToken, redeemToken;
-    let underlyingToken, strikeToken;
-    let base, quote, expiry;
-    let Primitive, registry;
-    let uniswapFactory, uniswapRouter;
-    let uniswapTrader;
+describe("UniswapTrader", () => {
+    // Accounts
+    let Admin, User, Alice, Bob;
+
+    // Tokens
+    let weth, dai, optionToken;
+
+    // Option Parameters
+    let underlyingToken, strikeToken, base, quote, expiry;
+
+    // Periphery and Administrative contracts
+    let registry, trader;
+
+    // Uniswap contracts
+    let uniswapFactory, uniswapRouter, uniswapTrader;
 
     before(async () => {
-        signers = await newWallets();
+        let signers = await setup.newWallets();
+
+        // Signers
         Admin = signers[0];
         User = signers[1];
+
+        // Addresses of Signers
         Alice = Admin._address;
         Bob = User._address;
-        weth = await newWeth(Admin);
-        dai = await newERC20(Admin, "TEST DAI", "DAI", MILLION_ETHER);
-        registry = await newRegistry(Admin);
-        factoryOption = await newOptionFactory(Admin, registry);
-        const uniswap = await newUniswap(Admin, Alice, weth);
+
+        // Underlying and quote token instances
+        weth = await setup.newWeth(Admin);
+        dai = await setup.newERC20(Admin, "TEST DAI", "DAI", MILLION_ETHER);
+
+        // Administrative contract instances
+        registry = await setup.newRegistry(Admin);
+
+        // Uniswap contract instances
+        const uniswap = await setup.newUniswap(Admin, Alice, weth);
         uniswapFactory = uniswap.uniswapFactory;
         uniswapRouter = uniswap.uniswapRouter;
-        console.log(uniswapFactory.address, uniswapRouter.address);
-        uniswapTrader = await newUniswapTrader(Admin, dai, uniswapRouter);
+        uniswapTrader = await setup.newUniswapTrader(Admin, dai, uniswapRouter);
 
+        // Option Parameters
         await weth.deposit({ from: Alice, value: HUNDRED_ETHER });
         underlyingToken = weth;
         strikeToken = dai;
-        base = parseEther("1");
-        quote = parseEther("200");
-        expiry = "1690868800"; // May 30, 2020, 8PM UTC
+        base = parseEther("1").toString();
+        quote = parseEther("200").toString();
+        expiry = "1690868800";
 
-        Primitive = await newPrimitive(
+        // Option and Redeem token instances for parameters
+        Primitive = await setup.newPrimitive(
             Admin,
             registry,
             underlyingToken,
@@ -86,7 +76,7 @@ describe("UniTrader", () => {
 
         optionToken = Primitive.optionToken;
         redeemToken = Primitive.redeemToken;
-        trader = await newTrader(Admin, weth.address);
+        trader = await setup.newTrader(Admin, weth.address);
         await underlyingToken
             .connect(Admin)
             .approve(trader.address, MILLION_ETHER);
@@ -164,7 +154,7 @@ describe("UniTrader", () => {
 
     describe("safeMint", () => {
         beforeEach(async () => {
-            trader = await newTrader(Admin, weth.address);
+            trader = await setup.newTrader(Admin, weth.address);
             await underlyingToken
                 .connect(Admin)
                 .approve(trader.address, MILLION_ETHER);

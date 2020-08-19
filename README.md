@@ -52,7 +52,7 @@ Our development environment consists of the following:
 # Testing
 
 ```
-cd packages/primitive-contracts
+yarn install
 yarn bevm
 yarn test
 ```
