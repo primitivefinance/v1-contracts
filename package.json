@@ -22,8 +22,8 @@
         "venv": "virtualenv .venv",
         "slither": "pip install slither-analyzer && slither .",
         "bevm": "buidler node",
-        "test": "cross-env buidler test ./test/test_trader.js ./test/option.js ./test/uni-trader.js",
-        "test:local": "cross-env buidler test --network local ./test/test_trader.js ./test/option.js ./test/uni-trader.js",
+        "test": "cross-env buidler test ./test/test_trader.js ./test/test_option.js ./test/test_uniswap_trader.js ./test/test_flash.js",
+        "test:local": "cross-env buidler test --network local ./test/test_trader.js ./test/test_option.js ./test/test_uniswap_trader.js ./test/test_flash.js",
         "deploy:local": "cross-env buidler deploy --network local",
         "deploy:rinkeby": "cross-env buidler deploy --network rinkeby",
         "deploy:mainnet": "cross-env buidler deploy --network live",
@@ -35,7 +35,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/primitivefinance/primitive-protocol.git"
+        "url": "git+https://github.com/primitivefinance/primitive-contracts.git"
     },
     "keywords": [
         "defi",
@@ -47,7 +47,7 @@
     "author": "Primitive",
     "license": "MIT",
     "bugs": {
-        "url": "https://github.com/primitivefinance/primitive-protocol/issues"
+        "url": "https://github.com/primitivefinance/primitive-contracts/issues"
     },
     "homepage": "https://primitive.finance",
     "devDependencies": {
