@@ -11,21 +11,28 @@ interface IRegistry {
         uint256 expiry
     ) external returns (address);
 
-    function initialize(address _factory, address _factoryRedeem) external;
+    function setOptionFactory(address optionFactory_) external;
 
-    function optionsLength() external view returns (uint256 len);
-
-    function addSupported(address token) external;
+    function setRedeemFactory(address redeemFactory_) external;
 
     function optionFactory() external returns (address);
 
     function redeemFactory() external returns (address);
 
-    function getOption(
+    function verifyToken(address tokenAddress) external;
+
+    function verifyExpiry(uint256 expiry) external;
+
+    function getOptionAddress(
         address underlyingToken,
         address strikeToken,
         uint256 base,
         uint256 quote,
         uint256 expiry
-    ) external view returns (address option);
+    ) external view returns (address);
+
+    function isVerifiedOption(address optionAddress)
+        external
+        view
+        returns (bool);
 }

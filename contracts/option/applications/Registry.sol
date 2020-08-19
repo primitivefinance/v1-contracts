@@ -23,99 +23,160 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
 
     address public override optionFactory;
     address public override redeemFactory;
-    address[] public activeOptions;
 
-    mapping(address => bool) public isSupported;
-    mapping(bytes32 => address) public options;
+    mapping(address => bool) public verifiedTokens;
+    mapping(uint256 => bool) public verifiedExpiries;
+    address[] public allOptionClones;
 
-    event Deploy(
+    event UpdatedOptionFactory(address indexed optionFactory_);
+    event UpdatedRedeemFactory(address indexed redeemFactory_);
+    event DeployedOptionClone(
         address indexed from,
-        address indexed option,
-        bytes32 indexed id
+        address indexed optionAddress,
+        address indexed redeemAddress
     );
 
     constructor() public {
         transferOwnership(msg.sender);
     }
 
-    function initialize(address _optionFactory, address _redeemFactory)
+    /**
+     * @dev Sets the option factory contract to use for deploying clones.
+     * @param optionFactory_ The address of the option factory.
+     */
+    function setOptionFactory(address optionFactory_)
         external
         override
         onlyOwner
     {
-        optionFactory = _optionFactory;
-        redeemFactory = _redeemFactory;
+        optionFactory = optionFactory_;
+        emit UpdatedOptionFactory(optionFactory_);
     }
 
-    function addSupported(address token) external override onlyOwner {
-        isSupported[token] = true;
+    /**
+     * @dev Sets the redeem factory contract to use for deploying clones.
+     * @param redeemFactory_ The address of the redeem factory.
+     */
+    function setRedeemFactory(address redeemFactory_)
+        external
+        override
+        onlyOwner
+    {
+        redeemFactory = redeemFactory_;
+        emit UpdatedRedeemFactory(redeemFactory_);
     }
 
+    /**
+     * @dev A mapping of "verified" ERC-20 tokens.
+     * @notice A "verified" token is a standard ERC-20 token that we have tested with the option contract.
+     */
+    function verifyToken(address tokenAddress) external override onlyOwner {
+        verifiedTokens[tokenAddress] = true;
+    }
+
+    /**
+     * @dev A mapping of standardized, "verified", timestamps for the options.
+     * @notice The definition of a standardized time is loose and will evolve over time.
+     */
+    function verifyExpiry(uint256 expiry) external override onlyOwner {
+        verifiedExpiries[expiry] = true;
+    }
+
+    /**
+     * @dev Deploys an option contract clone with create2.
+     * @param underlyingToken The address of the ERC-20 underlying token.
+     * @param strikeToken The address of the ERC-20 strike token.
+     * @param base The quantity of underlying tokens per unit of quote amount of strike tokens.
+     * @param quote The quantity of strike tokens per unit of base amount of underlying tokens.
+     * @param expiry The unix timestamp of the option's expiration date.
+     * @return The address of the deployed option clone.
+     */
     function deployOption(
         address underlyingToken,
         address strikeToken,
         uint256 base,
         uint256 quote,
         uint256 expiry
-    ) external override nonReentrant whenNotPaused returns (address option) {
-        // Checks
-        require(
-            underlyingToken != strikeToken &&
-                isSupported[underlyingToken] &&
-                isSupported[strikeToken],
-            "ERR_ADDRESS"
-        );
-        bytes32 id = getId(underlyingToken, strikeToken, base, quote, expiry);
-        require(options[id] == address(0), "ERR_OPTION_DEPLOYED");
+    ) external override nonReentrant whenNotPaused returns (address) {
+        // Checks to make sure tokens are not the same.
+        require(underlyingToken != strikeToken, "ERR_ADDRESS");
 
-        // Deploy option and redeem.
-        option = IOptionFactory(optionFactory).deploy(
+        // Deploy option and redeem contract clones.
+        address optionAddress = IOptionFactory(optionFactory).deploy(
             underlyingToken,
             strikeToken,
             base,
             quote,
             expiry
         );
-        options[id] = option;
-        activeOptions.push(option);
-        address redeem = IRedeemFactory(redeemFactory).deploy(
-            option,
+        address redeemAddress = IRedeemFactory(redeemFactory).deploy(
+            optionAddress,
             strikeToken
         );
 
-        IOptionFactory(optionFactory).initialize(option, redeem);
-        emit Deploy(msg.sender, option, id);
-    }
+        // Add the clone to the address array
+        allOptionClones.push(optionAddress);
 
-    function optionsLength() public override view returns (uint256 len) {
-        len = activeOptions.length;
-    }
-
-    function getId(
-        address underlyingToken,
-        address strikeToken,
-        uint256 base,
-        uint256 quote,
-        uint256 expiry
-    ) public pure returns (bytes32 id) {
-        id = keccak256(
-            abi.encodePacked(underlyingToken, strikeToken, base, quote, expiry)
+        // Initialize the new option contract's paired redeem token.
+        IOptionFactory(optionFactory).initRedeemToken(
+            optionAddress,
+            redeemAddress
         );
+        emit DeployedOptionClone(msg.sender, optionAddress, redeemAddress);
+        return optionAddress;
     }
 
-    function getOption(
+    /**
+     * @dev Calculates the option address deployed with create2 using the parameter arguments.
+     * @param underlyingToken The address of the ERC-20 underlying token.
+     * @param strikeToken The address of the ERC-20 strike token.
+     * @param base The quantity of underlying tokens per unit of quote amount of strike tokens.
+     * @param quote The quantity of strike tokens per unit of base amount of underlying tokens.
+     * @param expiry The unix timestamp of the option's expiration date.
+     * @return The address of the option with the parameter arguments.
+     */
+    function getOptionAddress(
         address underlyingToken,
         address strikeToken,
         uint256 base,
         uint256 quote,
         uint256 expiry
-    ) public override view returns (address option) {
-        option = options[getId(
+    ) public override view returns (address) {
+        address optionAddress = IOptionFactory(optionFactory).getOption(
             underlyingToken,
             strikeToken,
             base,
             quote,
             expiry
-        )];
+        );
+        return optionAddress;
+    }
+
+    /**
+     * @dev Checks an option address to see if it has verified assets and expiry time.
+     * @param optionAddress The address of the option token.
+     * @return bool If the option has verified underlying and strike tokens, and expiry time.
+     */
+    function isVerifiedOption(address optionAddress)
+        external
+        override
+        view
+        returns (bool)
+    {
+        IOption option = IOption(optionAddress);
+        address underlyingToken = option.getUnderlyingTokenAddress();
+        address strikeToken = option.getStrikeTokenAddress();
+        uint256 expiry = option.getExpiryTime();
+        bool verifiedUnderlying = verifiedTokens[underlyingToken];
+        bool verifiedStrike = verifiedTokens[strikeToken];
+        bool verifiedExpiry = verifiedExpiries[expiry];
+        return verifiedUnderlying && verifiedStrike && verifiedExpiry;
+    }
+
+    /**
+     * @dev Returns the length of the allOptionClones address array.
+     */
+    function getAllOptionClonesLength() public view returns (uint256) {
+        return allOptionClones.length;
     }
 }
