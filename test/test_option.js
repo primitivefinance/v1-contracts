@@ -96,7 +96,7 @@ describe("Option Contract", () => {
     });
 
     describe("Registry", () => {
-        it("getOption()", async () => {
+        it("getOptionAddress()", async () => {
             let option = await registry.getOptionAddress(
                 underlyingToken.address,
                 strikeToken.address,
