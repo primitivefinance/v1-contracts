@@ -1,14 +1,24 @@
-# Primitive Protocol
+# primitivefi/contracts
 
-Contract libraries are seperated into _modules_ which are further seperated into more directories. Modules are purposefully designed in order to reduce
+All contracts are in this directory.
+
+## Subdirectories
+
+- [`testing`](test): Contracts designed for testing purposes.
+
+## Contracts
+
+- [`Option`](option/primitives/Option.sol): Oracle-less option token.
+- [`Redeem`](option/primitives/Redeem.sol): Paired redeem token for option.
+- [`Registry`](option/applications/Registry.sol): Manages option clone contracts.
+- [`OptionFactory`](option/applications/factories/OptionFactory.sol): Deploys option contract clones.
+- [`RedeemFactory`](option/applications/factories/RedeemFactory.sol): Deploys redeem contract clones.
+- [`Trader`](option/extensions/Trader.sol): Contract wrapper for Option.sol for SAFE interactions.
+- [`CloneLib`](option/libraries/CloneLib.sol): Contains code for building the clones and deploying them with create2.
 
 # Documentation
 
 Documentation is also [here](https://docs.primitive.finance).
-
-# Directory Structure
-
-The folders are structured in a way to organize the three components of the protocol: primitives, extensions, and applications. Each Primitive Module is composed of this directory structure.
 
 # Join the community in Discord
 
