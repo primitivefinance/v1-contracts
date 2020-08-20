@@ -178,7 +178,7 @@ describe("Option Contract", () => {
         it("should return the correct name", async () => {
             assert.equal(
                 (await optionToken.name()).toString(),
-                "Primitive V1 Token",
+                "Primitive V1 Option",
                 "Incorrect name"
             );
         });

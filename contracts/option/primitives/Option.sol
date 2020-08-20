@@ -81,6 +81,8 @@ contract Option is IOption, ERC20, ReentrancyGuard {
             quote,
             expiry
         );
+        name = "Primitive V1 Option";
+        symbol = "PRM";
     }
 
     modifier notExpired {
