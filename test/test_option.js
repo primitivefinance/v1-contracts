@@ -124,14 +124,14 @@ describe("Option Contract", () => {
         it("symbol()", async () => {
             assert.equal(
                 (await redeemToken.symbol()).toString(),
-                "REDEEM",
+                "RDM",
                 "Incorrect symbol"
             );
         });
         it("name()", async () => {
             assert.equal(
                 (await redeemToken.name()).toString(),
-                "Primitive Strike Redeem",
+                "Primitive V1 Redeem",
                 "Incorrect name"
             );
         });

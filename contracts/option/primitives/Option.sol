@@ -18,13 +18,13 @@ import { IRedeem } from "../interfaces/IRedeem.sol";
 import { IFlash } from "../interfaces/IFlash.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import { ERC20 } from "./ERC20.sol";
+import { OptionBaseERC20 } from "./OptionBaseERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import {
     ReentrancyGuard
 } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract Option is IOption, ERC20, ReentrancyGuard {
+contract Option is IOption, OptionBaseERC20, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -81,8 +81,6 @@ contract Option is IOption, ERC20, ReentrancyGuard {
             quote,
             expiry
         );
-        name = "Primitive V1 Option";
-        symbol = "PRM";
     }
 
     modifier notExpired {

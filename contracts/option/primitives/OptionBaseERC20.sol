@@ -35,7 +35,7 @@ import "@openzeppelin/contracts/utils/Address.sol";
  * functions have been added to mitigate the well-known issues around setting
  * allowances. See {IERC20-approve}.
  */
-contract ERC20 is Context, IERC20 {
+contract OptionBaseERC20 is Context, IERC20 {
     using SafeMath for uint256;
     using Address for address;
 
@@ -45,8 +45,8 @@ contract ERC20 is Context, IERC20 {
 
     uint256 private _totalSupply;
 
-    string public name;
-    string public symbol;
+    string public constant name = "Primitive V1 Option";
+    string public constant symbol = "PRM";
     uint8 public constant decimals = 18;
 
     /**

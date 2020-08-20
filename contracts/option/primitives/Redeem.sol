@@ -7,10 +7,10 @@ pragma solidity ^0.6.2;
  */
 
 import { IRedeem } from "../interfaces/IRedeem.sol";
-import { ERC20 } from "./ERC20.sol";
+import { RedeemBaseERC20 } from "./RedeemBaseERC20.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 
-contract Redeem is IRedeem, ERC20 {
+contract Redeem is IRedeem, RedeemBaseERC20 {
     using SafeMath for uint256;
 
     address public override factory;
@@ -29,8 +29,6 @@ contract Redeem is IRedeem, ERC20 {
         factory = _factory;
         optionToken = _optionToken;
         redeemableToken = _redeemableToken;
-        name = "Primitive Strike Redeem";
-        symbol = "REDEEM";
     }
 
     function mint(address to, uint256 amount) external override {
