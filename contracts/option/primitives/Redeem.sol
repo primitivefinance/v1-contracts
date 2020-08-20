@@ -7,7 +7,7 @@ pragma solidity ^0.6.2;
  */
 
 import { IRedeem } from "../interfaces/IRedeem.sol";
-import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { ERC20 } from "./ERC20.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 
 contract Redeem is IRedeem, ERC20 {
@@ -17,8 +17,12 @@ contract Redeem is IRedeem, ERC20 {
     address public override optionToken;
     address public override redeemableToken;
 
+    string public constant name = "Primitive V1 Redeem";
+    string public constant symbol = "RDM";
+    uint8 public constant decimals = 18;
+
     // solhint-disable-next-line no-empty-blocks
-    constructor() public ERC20("Primitive Strike Redeem", "REDEEM") {}
+    constructor() public {}
 
     function initialize(
         address _factory,

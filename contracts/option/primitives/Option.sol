@@ -44,6 +44,10 @@ contract Option is IOption, ERC20, ReentrancyGuard {
     address public override redeemToken;
     address public override factory;
 
+    string public constant name = "Primitive V1 Option";
+    string public constant symbol = "PRM";
+    uint8 public constant decimals = 18;
+
     event Mint(address indexed from, uint256 outOptions, uint256 outRedeems);
     event Exercise(
         address indexed from,

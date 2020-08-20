@@ -121,6 +121,27 @@ describe("Option Contract", () => {
     });
 
     describe("Redeem", () => {
+        it("symbol()", async () => {
+            assert.equal(
+                (await redeemToken.symbol()).toString(),
+                "RDM",
+                "Incorrect symbol"
+            );
+        });
+        it("name()", async () => {
+            assert.equal(
+                (await redeemToken.name()).toString(),
+                "Primitive V1 Redeem",
+                "Incorrect name"
+            );
+        });
+        it("decimals()", async () => {
+            assert.equal(
+                (await redeemToken.decimals()).toString(),
+                18,
+                "Incorrect decimals"
+            );
+        });
         it("factory()", async () => {
             assert.equal(
                 (await redeemToken.factory()).toString(),
@@ -157,7 +178,7 @@ describe("Option Contract", () => {
         it("should return the correct name", async () => {
             assert.equal(
                 (await optionToken.name()).toString(),
-                "Primitive V1 Token",
+                "Primitive V1 Option",
                 "Incorrect name"
             );
         });

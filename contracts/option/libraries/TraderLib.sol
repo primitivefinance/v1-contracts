@@ -5,7 +5,7 @@ pragma solidity ^0.6.2;
 /**
  * @title   Trader Library
  * @notice  Internal functions that can be used to safeTransfer
- *          tokens into the option contract then call respective option contractfunctions.
+ *          tokens into the option contract then call respective option contract functions.
  * @author  Primitive
  */
 
