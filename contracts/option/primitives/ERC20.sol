@@ -2,6 +2,10 @@
 
 pragma solidity ^0.6.0;
 
+/**
+ * @dev Modifies name, symbol, and decimals by changing them from private to public.
+ */
+
 import "@openzeppelin/contracts/GSN/Context.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
