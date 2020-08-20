@@ -18,13 +18,13 @@ import { IRedeem } from "../interfaces/IRedeem.sol";
 import { IFlash } from "../interfaces/IFlash.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import { OptionBaseERC20 } from "./OptionBaseERC20.sol";
+import { ERC20 } from "./ERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import {
     ReentrancyGuard
 } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract Option is IOption, OptionBaseERC20, ReentrancyGuard {
+contract Option is IOption, ERC20, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -43,6 +43,10 @@ contract Option is IOption, OptionBaseERC20, ReentrancyGuard {
     uint256 public override strikeCache;
     address public override redeemToken;
     address public override factory;
+
+    string public constant name = "Primitive V1 Option";
+    string public constant symbol = "PRM";
+    uint8 public constant decimals = 18;
 
     event Mint(address indexed from, uint256 outOptions, uint256 outRedeems);
     event Exercise(

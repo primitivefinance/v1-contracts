@@ -3,7 +3,7 @@
 pragma solidity ^0.6.0;
 
 /**
- * @dev Modifies name, symbol, and decimals by changing them from private to public.
+ * @dev Modifies name, symbol, and decimals by deleting them. Implemented as constants in parent contract.
  */
 
 import "@openzeppelin/contracts/GSN/Context.sol";
@@ -35,7 +35,7 @@ import "@openzeppelin/contracts/utils/Address.sol";
  * functions have been added to mitigate the well-known issues around setting
  * allowances. See {IERC20-approve}.
  */
-contract OptionBaseERC20 is Context, IERC20 {
+contract ERC20 is Context, IERC20 {
     using SafeMath for uint256;
     using Address for address;
 
@@ -44,10 +44,6 @@ contract OptionBaseERC20 is Context, IERC20 {
     mapping(address => mapping(address => uint256)) private _allowances;
 
     uint256 private _totalSupply;
-
-    string public constant name = "Primitive V1 Option";
-    string public constant symbol = "PRM";
-    uint8 public constant decimals = 18;
 
     /**
      * @dev See {IERC20-totalSupply}.
