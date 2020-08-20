@@ -134,10 +134,8 @@ const newRegistry = async (signer) => {
     );
     await optionFactory.deployOptionTemplate();
     await redeemTokenFactory.deployRedeemTemplate();
-    await registry.initialize(
-        optionFactory.address,
-        redeemTokenFactory.address
-    );
+    await registry.setOptionFactory(optionFactory.address);
+    await registry.setRedeemFactory(redeemTokenFactory.address);
     return registry;
 };
 
@@ -182,10 +180,8 @@ const newOptionFactory = async (signer, registry) => {
     );
     await optionFactory.deployOptionTemplate();
     await redeemTokenFactory.deployRedeemTemplate();
-    await registry.initialize(
-        optionFactory.address,
-        redeemTokenFactory.address
-    );
+    await registry.setOptionFactory(optionFactory.address);
+    await registry.setRedeemFactory(redeemTokenFactory.address);
     return optionFactory;
 };
 
@@ -284,8 +280,8 @@ const newOption = async (
     quote,
     expiry
 ) => {
-    await registry.addSupported(underlyingToken);
-    await registry.addSupported(strikeToken);
+    await registry.verifyToken(underlyingToken);
+    await registry.verifyToken(strikeToken);
     await registry.deployOption(
         underlyingToken,
         strikeToken,
@@ -294,8 +290,8 @@ const newOption = async (
         expiry
     );
     let optionToken = new ethers.Contract(
-        await registry.activeOptions(
-            ((await registry.optionsLength()) - 1).toString()
+        await registry.allOptionClones(
+            ((await registry.getAllOptionClonesLength()) - 1).toString()
         ),
         Option.abi,
         signer

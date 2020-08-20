@@ -33,7 +33,7 @@
       "outputs": [
         {
           "internalType": "address",
-          "name": "option",
+          "name": "",
           "type": "address"
         }
       ],
@@ -51,16 +51,55 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "option",
+          "name": "underlyingToken",
           "type": "address"
         },
         {
           "internalType": "address",
-          "name": "redeem",
+          "name": "strikeToken",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "base",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "quote",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "expiry",
+          "type": "uint256"
+        }
+      ],
+      "name": "getOptionAddress",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
           "type": "address"
         }
       ],
-      "name": "initialize",
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "optionAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "redeemAddress",
+          "type": "address"
+        }
+      ],
+      "name": "initRedeemToken",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

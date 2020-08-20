@@ -9,11 +9,20 @@ interface IOptionFactory {
         uint256 base,
         uint256 quote,
         uint256 expiry
-    ) external returns (address option);
+    ) external returns (address);
 
-    function initialize(address option, address redeem) external;
+    function initRedeemToken(address optionAddress, address redeemAddress)
+        external;
 
     function deployOptionTemplate() external;
 
     function optionTemplate() external returns (address);
+
+    function getOptionAddress(
+        address underlyingToken,
+        address strikeToken,
+        uint256 base,
+        uint256 quote,
+        uint256 expiry
+    ) external view returns (address);
 }

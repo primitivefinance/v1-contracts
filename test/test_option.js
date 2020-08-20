@@ -96,8 +96,8 @@ describe("Option Contract", () => {
     });
 
     describe("Registry", () => {
-        it("getOption()", async () => {
-            let option = await registry.getOption(
+        it("getOptionAddress()", async () => {
+            let option = await registry.getOptionAddress(
                 underlyingToken.address,
                 strikeToken.address,
                 base,
@@ -116,7 +116,7 @@ describe("Option Contract", () => {
                     quote,
                     expiry
                 )
-            ).to.be.revertedWith("ERR_ADDRESS");
+            ).to.be.revertedWith("ERR_ZERO_ADDRESS");
         });
     });
 
