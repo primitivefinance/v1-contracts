@@ -142,17 +142,17 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         override
         nonReentrant
         notExpired
-        returns (uint256 inUnderlyings, uint256 outRedeems)
+        returns (uint256, uint256)
     {
         // Save on gas because this variable is used twice.
         uint256 underlyingBalance = IERC20(optionParameters.underlyingToken)
             .balanceOf(address(this));
 
         // Mint optionTokens equal to the difference between current and cached balance of underlyingTokens.
-        inUnderlyings = underlyingBalance.sub(underlyingCache);
+        uint256 inUnderlyings = underlyingBalance.sub(underlyingCache);
 
         // Calculate the quantity of redeemTokens to mint.
-        outRedeems = inUnderlyings.mul(optionParameters.quote).div(
+        uint256 outRedeems = inUnderlyings.mul(optionParameters.quote).div(
             optionParameters.base
         );
         require(outRedeems > 0, "ERR_ZERO");
@@ -164,6 +164,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         // Update the underlyingCache.
         _updateCacheBalances(underlyingBalance, strikeCache);
         emit Mint(msg.sender, inUnderlyings, outRedeems);
+        return (inUnderlyings, outRedeems);
     }
 
     /**
@@ -184,16 +185,10 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         address receiver,
         uint256 outUnderlyings,
         bytes calldata data
-    )
-        external
-        override
-        nonReentrant
-        notExpired
-        returns (uint256 inStrikes, uint256 inOptions)
-    {
+    ) external override nonReentrant notExpired returns (uint256, uint256) {
         // Store the cached balances and token addresses in memory.
         address underlyingToken = optionParameters.underlyingToken;
-        (uint256 _underlyingCache, uint256 _strikeCache) = getCacheBalances();
+        //(uint256 _underlyingCache, uint256 _strikeCache) = getCacheBalances();
 
         // Require outUnderlyings > 0 and balance of underlyings >= outUnderlyings.
         require(outUnderlyings > 0, "ERR_ZERO");
@@ -216,9 +211,9 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         );
 
         // Calculate the differences.
-        inStrikes = strikeBalance.sub(_strikeCache);
+        uint256 inStrikes = strikeBalance.sub(strikeCache);
         uint256 inUnderlyings = underlyingBalance.sub(
-            _underlyingCache.sub(outUnderlyings)
+            underlyingCache.sub(outUnderlyings)
         ); // will be > 0 if underlyingTokens are returned.
 
         // Either underlyingTokens or strikeTokens must be sent into the contract.
@@ -235,7 +230,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         );
 
         // Assumes the cached optionToken balance is 0, which is what it should be.
-        inOptions = balanceOf(address(this));
+        uint256 inOptions = balanceOf(address(this));
 
         // Enforce the invariants.
         require(inStrikes >= payment, "ERR_STRIKES_INPUT");
@@ -247,6 +242,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         // Update the cached balances.
         _updateCacheBalances(underlyingBalance, strikeBalance);
         emit Exercise(msg.sender, outUnderlyings, inStrikes);
+        return (inStrikes, inOptions);
     }
 
     /**
@@ -263,12 +259,12 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         external
         override
         nonReentrant
-        returns (uint256 inRedeems)
+        returns (uint256)
     {
         address strikeToken = optionParameters.strikeToken;
         address _redeemToken = redeemToken;
         uint256 strikeBalance = IERC20(strikeToken).balanceOf(address(this));
-        inRedeems = IERC20(_redeemToken).balanceOf(address(this));
+        uint256 inRedeems = IERC20(_redeemToken).balanceOf(address(this));
 
         // Difference between redeemTokens balance and cache.
         require(inRedeems > 0, "ERR_ZERO");
@@ -284,6 +280,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         // Update the cached balances.
         _updateCacheBalances(underlyingCache, strikeBalance);
         emit Redeem(msg.sender, inRedeems);
+        return inRedeems;
     }
 
     /**
@@ -302,9 +299,9 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         override
         nonReentrant
         returns (
-            uint256 inRedeems,
-            uint256 inOptions,
-            uint256 outUnderlyings
+            uint256,
+            uint256,
+            uint256
         )
     {
         // Stores addresses and balances locally for gas savings.
@@ -314,7 +311,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
             address(this)
         );
         uint256 optionBalance = balanceOf(address(this));
-        inRedeems = IERC20(_redeemToken).balanceOf(address(this));
+        uint256 inRedeems = IERC20(_redeemToken).balanceOf(address(this));
 
         // The quantity of underlyingToken to send out it still determined by the quantity of inRedeems.
         // inRedeems is in units of strikeTokens, which is converted to underlyingTokens
@@ -323,14 +320,14 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         // inOptions must be greater than or equal to outUnderlyings (1 option burned per 1 underlying purchased).
         // optionBalance must be greater than or equal to outUnderlyings.
         // Neither inRedeems or inOptions can be zero.
-        outUnderlyings = inRedeems.mul(optionParameters.base).div(
+        uint256 outUnderlyings = inRedeems.mul(optionParameters.base).div(
             optionParameters.quote
         );
 
         // Assumes the cached balance is 0 so inOptions = balance of optionToken.
         // If optionToken is expired, optionToken does not need to be sent in. Only redeemToken.
         // solhint-disable-next-line not-rely-on-time
-        inOptions = isNotExpired() ? optionBalance : outUnderlyings;
+        uint256 inOptions = isNotExpired() ? optionBalance : outUnderlyings;
         require(inRedeems > 0 && inOptions > 0, "ERR_ZERO");
         require(
             inOptions >= outUnderlyings && underlyingBalance >= outUnderlyings,
@@ -356,6 +353,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         // Update the cached balances.
         _updateCacheBalances(underlyingBalance, strikeCache);
         emit Close(msg.sender, outUnderlyings);
+        return (inRedeems, inOptions, outUnderlyings);
     }
 
     /* === VIEW === */
@@ -363,10 +361,9 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         public
         override
         view
-        returns (uint256 _underlyingCache, uint256 _strikeCache)
+        returns (uint256, uint256)
     {
-        _underlyingCache = underlyingCache;
-        _strikeCache = strikeCache;
+        return (underlyingCache, strikeCache);
     }
 
     function getAssetAddresses()
@@ -374,14 +371,16 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         override
         view
         returns (
-            address _underlyingToken,
-            address _strikeToken,
-            address _redeemToken
+            address,
+            address,
+            address
         )
     {
-        _underlyingToken = optionParameters.underlyingToken;
-        _strikeToken = optionParameters.strikeToken;
-        _redeemToken = redeemToken;
+        return (
+            optionParameters.underlyingToken,
+            optionParameters.strikeToken,
+            redeemToken
+        );
     }
 
     function getStrikeTokenAddress() public override view returns (address) {
