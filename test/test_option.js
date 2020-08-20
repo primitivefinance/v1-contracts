@@ -269,17 +269,17 @@ describe("Option Contract", () => {
         it("should get the tokens", async () => {
             let result = await optionToken.getAssetAddresses();
             assert.equal(
-                result._underlyingToken.toString(),
+                result[0].toString(),
                 underlyingToken.address,
                 "Incorrect underlyingToken"
             );
             assert.equal(
-                result._strikeToken.toString(),
+                result[1].toString(),
                 strikeToken.address,
                 "Incorrect strikeToken"
             );
             assert.equal(
-                result._redeemToken.toString(),
+                result[2].toString(),
                 redeemToken.address,
                 "Incorrect redeemToken"
             );
@@ -288,15 +288,11 @@ describe("Option Contract", () => {
         it("should get the cache balances", async () => {
             let result = await optionToken.getCacheBalances();
             assert.equal(
-                result._underlyingCache.toString(),
+                result[0].toString(),
                 "0",
                 "Incorrect underlyingCache"
             );
-            assert.equal(
-                result._strikeCache.toString(),
-                "0",
-                "Incorrect strikeCache"
-            );
+            assert.equal(result[1].toString(), "0", "Incorrect strikeCache");
         });
 
         it("should return the correct initial underlyingCache", async () => {
