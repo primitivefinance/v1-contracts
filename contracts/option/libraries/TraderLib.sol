@@ -22,14 +22,16 @@ library TraderLib {
         IOption optionToken,
         uint256 mintQuantity,
         address receiver
-    ) internal returns (uint256 outputOptions, uint256 outputRedeem) {
+    ) internal returns (uint256, uint256) {
         require(mintQuantity > 0, "ERR_ZERO");
         IERC20(optionToken.getUnderlyingTokenAddress()).safeTransferFrom(
             msg.sender,
             address(optionToken),
             mintQuantity
         );
-        (outputOptions, outputRedeem) = optionToken.mintOptions(receiver);
+        (uint256 outputOptions, uint256 outputRedeems) = optionToken
+            .mintOptions(receiver);
+        return (outputOptions, outputRedeems);
     }
 
     /**
@@ -43,7 +45,7 @@ library TraderLib {
         IOption optionToken,
         uint256 exerciseQuantity,
         address receiver
-    ) internal returns (uint256 inputStrikes, uint256 inputOptions) {
+    ) internal returns (uint256, uint256) {
         require(exerciseQuantity > 0, "ERR_ZERO");
         require(
             IERC20(address(optionToken)).balanceOf(msg.sender) >=
@@ -52,9 +54,9 @@ library TraderLib {
         );
 
         // Calculate quantity of strikeTokens needed to exercise quantity of optionTokens.
-        inputStrikes = exerciseQuantity.mul(optionToken.getQuoteValue()).div(
-            optionToken.getBaseValue()
-        );
+        uint256 inputStrikes = exerciseQuantity
+            .mul(optionToken.getQuoteValue())
+            .div(optionToken.getBaseValue());
         require(
             IERC20(optionToken.getStrikeTokenAddress()).balanceOf(msg.sender) >=
                 inputStrikes,
@@ -70,11 +72,14 @@ library TraderLib {
             address(optionToken),
             exerciseQuantity
         );
+
+        uint256 inputOptions;
         (inputStrikes, inputOptions) = optionToken.exerciseOptions(
             receiver,
             exerciseQuantity,
             new bytes(0)
         );
+        return (inputStrikes, inputOptions);
     }
 
     /**
@@ -88,7 +93,7 @@ library TraderLib {
         IOption optionToken,
         uint256 redeemQuantity,
         address receiver
-    ) internal returns (uint256 inputRedeems) {
+    ) internal returns (uint256) {
         require(redeemQuantity > 0, "ERR_ZERO");
         require(
             IERC20(optionToken.redeemToken()).balanceOf(msg.sender) >=
@@ -101,7 +106,8 @@ library TraderLib {
             address(optionToken),
             redeemQuantity
         );
-        (inputRedeems) = optionToken.redeemStrikeTokens(receiver);
+        uint256 inputRedeems = optionToken.redeemStrikeTokens(receiver);
+        return inputRedeems;
     }
 
     /**
@@ -120,9 +126,9 @@ library TraderLib {
     )
         internal
         returns (
-            uint256 inputRedeems,
-            uint256 inputOptions,
-            uint256 outUnderlyings
+            uint256,
+            uint256,
+            uint256
         )
     {
         require(closeQuantity > 0, "ERR_ZERO");
@@ -132,9 +138,9 @@ library TraderLib {
         );
 
         // Calculate the quantity of redeemTokens that need to be burned. (What we mean by Implicit).
-        inputRedeems = closeQuantity.mul(optionToken.getQuoteValue()).div(
-            optionToken.getBaseValue()
-        );
+        uint256 inputRedeems = closeQuantity
+            .mul(optionToken.getQuoteValue())
+            .div(optionToken.getBaseValue());
         require(
             IERC20(optionToken.redeemToken()).balanceOf(msg.sender) >=
                 inputRedeems,
@@ -150,9 +156,13 @@ library TraderLib {
             address(optionToken),
             closeQuantity
         );
+
+        uint256 inputOptions;
+        uint256 outUnderlyings;
         (inputRedeems, inputOptions, outUnderlyings) = optionToken.closeOptions(
             receiver
         );
+        return (inputRedeems, inputOptions, outUnderlyings);
     }
 
     /**
@@ -168,9 +178,9 @@ library TraderLib {
     )
         internal
         returns (
-            uint256 inputRedeems,
-            uint256 inputOptions,
-            uint256 outUnderlyings
+            uint256,
+            uint256,
+            uint256
         )
     {
         // Checks
@@ -182,9 +192,9 @@ library TraderLib {
         );
 
         // Calculate amount of redeems required
-        inputRedeems = unwindQuantity.mul(optionToken.getQuoteValue()).div(
-            optionToken.getBaseValue()
-        );
+        uint256 inputRedeems = unwindQuantity
+            .mul(optionToken.getQuoteValue())
+            .div(optionToken.getBaseValue());
         require(
             IERC20(optionToken.redeemToken()).balanceOf(msg.sender) >=
                 inputRedeems,
@@ -195,8 +205,13 @@ library TraderLib {
             address(optionToken),
             inputRedeems
         );
+
+        uint256 inputOptions;
+        uint256 outUnderlyings;
         (inputRedeems, inputOptions, outUnderlyings) = optionToken.closeOptions(
             receiver
         );
+
+        return (inputRedeems, inputOptions, outUnderlyings);
     }
 }
