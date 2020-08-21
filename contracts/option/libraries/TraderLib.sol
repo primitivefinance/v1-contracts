@@ -18,6 +18,12 @@ library TraderLib {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
+    /**
+     * @dev Conducts important safety checks to safely mint option tokens.
+     * @param optionToken The address of the option token to mint.
+     * @param mintQuantity The quantity of option tokens to mint.
+     * @param receiver The address which receives the minted option tokens.
+     */
     function safeMint(
         IOption optionToken,
         uint256 mintQuantity,
