@@ -370,6 +370,10 @@ contract Option is IOption, ERC20, ReentrancyGuard {
     }
 
     /* === VIEW === */
+
+    /**
+     * @dev Returns the previously saved balances of underlying and strike tokens.
+     */
     function getCacheBalances()
         public
         override
@@ -379,6 +383,9 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         return (underlyingCache, strikeCache);
     }
 
+    /**
+     * @dev Returns the underlying, strike, and redeem token addresses.
+     */
     function getAssetAddresses()
         public
         override
@@ -396,10 +403,16 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         );
     }
 
+    /**
+     * @dev Returns the strike token address.
+     */
     function getStrikeTokenAddress() public override view returns (address) {
         return optionParameters.strikeToken;
     }
 
+    /**
+     * @dev Returns the underlying token address.
+     */
     function getUnderlyingTokenAddress()
         public
         override
@@ -409,18 +422,30 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         return optionParameters.underlyingToken;
     }
 
+    /**
+     * @dev Returns the base value option parameter.
+     */
     function getBaseValue() public override view returns (uint256) {
         return optionParameters.base;
     }
 
+    /**
+     * @dev Returns the quote value option parameter.
+     */
     function getQuoteValue() public override view returns (uint256) {
         return optionParameters.quote;
     }
 
+    /**
+     * @dev Returns the expiry timestamp option parameter.
+     */
     function getExpiryTime() public override view returns (uint256) {
         return optionParameters.expiry;
     }
 
+    /**
+     * @dev Returns the option parameters and redeem token address.
+     */
     function getParameters()
         public
         override
