@@ -2,7 +2,8 @@
 pragma solidity 0.6.2;
 
 /**
- * @title   Vanilla Option Redeem Token for Strike Tokens
+ * @title   Redeem Token
+ * @notice  A token that is redeemable for it's paird option token's strike token at a 1:1 ratio.
  * @author  Primitive
  */
 
@@ -24,22 +25,38 @@ contract Redeem is IRedeem, ERC20 {
     // solhint-disable-next-line no-empty-blocks
     constructor() public {}
 
+    /**
+     * @dev Sets the initial state for the redeem token. Called only once and immediately after deployment.
+     * @param factory_ The address of the factory contract which handles the deployment.
+     * @param optionToken_ The address of the option token which this redeem token will be paired with.
+     * @param redeemableToken_ The address of the strike token of the option contract.
+     */
     function initialize(
-        address _factory,
-        address _optionToken,
-        address _redeemableToken
+        address factory_,
+        address optionToken_,
+        address redeemableToken_
     ) public override {
         require(factory == address(0x0), "ERR_IS_INITIALIZED");
-        factory = _factory;
-        optionToken = _optionToken;
-        redeemableToken = _redeemableToken;
+        factory = factory_;
+        optionToken = optionToken_;
+        redeemableToken = redeemableToken_;
     }
 
+    /**
+     * @dev Mints redeem tokens. Only callable by the paired option contract.
+     * @param to The address to mint redeem tokens to.
+     * @param amount The quantity of redeem tokens to mint.
+     */
     function mint(address to, uint256 amount) external override {
         require(msg.sender == optionToken, "ERR_NOT_VALID");
         _mint(to, amount);
     }
 
+    /**
+     * @dev Burns redeem tokens. Only callable by the paired option contract.
+     * @param to The address to burn redeem tokens from.
+     * @param amount The quantity of redeem tokens to burn.
+     */
     function burn(address to, uint256 amount) external override {
         require(msg.sender == optionToken, "ERR_NOT_VALID");
         _burn(to, amount);

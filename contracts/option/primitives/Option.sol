@@ -65,6 +65,14 @@ contract Option is IOption, ERC20, ReentrancyGuard {
     // solhint-disable-next-line no-empty-blocks
     constructor() public {}
 
+    /**
+     * @dev Sets the intial state for the contract. Only called immediately after deployment.
+     * @param underlyingToken The address of the underlying asset.
+     * @param strikeToken The address of the strike asset.
+     * @param base The quantity of underlying tokens per quote amount of strike tokens.
+     * @param quote The quantity of strike tokens per base amount of underlying tokens.
+     * @param expiry The expiration date for the option.
+     */
     function initialize(
         address underlyingToken,
         address strikeToken,
@@ -93,11 +101,16 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         _;
     }
 
-    function initRedeemToken(address _redeemToken) external override {
+    /**
+     * @dev Called after the option contract is initialized, and a redeem token has been deployed.
+     * @notice Entangles a redeem token to this option contract permanently.
+     * @param redeemToken_ The address of the redeem token.
+     */
+    function initRedeemToken(address redeemToken_) external override {
         require(msg.sender == factory, "ERR_NOT_OWNER");
         require(redeemToken == address(0x0), "ERR_REDEEM_INITIALIZED");
-        redeemToken = _redeemToken;
-        emit InitializedRedeem(msg.sender, _redeemToken);
+        redeemToken = redeemToken_;
+        emit InitializedRedeem(msg.sender, redeemToken_);
     }
 
     /**
@@ -357,6 +370,10 @@ contract Option is IOption, ERC20, ReentrancyGuard {
     }
 
     /* === VIEW === */
+
+    /**
+     * @dev Returns the previously saved balances of underlying and strike tokens.
+     */
     function getCacheBalances()
         public
         override
@@ -366,6 +383,9 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         return (underlyingCache, strikeCache);
     }
 
+    /**
+     * @dev Returns the underlying, strike, and redeem token addresses.
+     */
     function getAssetAddresses()
         public
         override
@@ -383,10 +403,16 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         );
     }
 
+    /**
+     * @dev Returns the strike token address.
+     */
     function getStrikeTokenAddress() public override view returns (address) {
         return optionParameters.strikeToken;
     }
 
+    /**
+     * @dev Returns the underlying token address.
+     */
     function getUnderlyingTokenAddress()
         public
         override
@@ -396,18 +422,30 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         return optionParameters.underlyingToken;
     }
 
+    /**
+     * @dev Returns the base value option parameter.
+     */
     function getBaseValue() public override view returns (uint256) {
         return optionParameters.base;
     }
 
+    /**
+     * @dev Returns the quote value option parameter.
+     */
     function getQuoteValue() public override view returns (uint256) {
         return optionParameters.quote;
     }
 
+    /**
+     * @dev Returns the expiry timestamp option parameter.
+     */
     function getExpiryTime() public override view returns (uint256) {
         return optionParameters.expiry;
     }
 
+    /**
+     * @dev Returns the option parameters and redeem token address.
+     */
     function getParameters()
         public
         override
@@ -430,6 +468,9 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         _expiry = _optionParameters.expiry;
     }
 
+    /**
+     * @dev Internal function to check if the option is expired.
+     */
     function isNotExpired() internal view returns (bool) {
         return optionParameters.expiry >= block.timestamp;
     }
