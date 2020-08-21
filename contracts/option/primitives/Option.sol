@@ -468,6 +468,9 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         _expiry = _optionParameters.expiry;
     }
 
+    /**
+     * @dev Internal function to check if the option is expired.
+     */
     function isNotExpired() internal view returns (bool) {
         return optionParameters.expiry >= block.timestamp;
     }
