@@ -65,6 +65,14 @@ contract Option is IOption, ERC20, ReentrancyGuard {
     // solhint-disable-next-line no-empty-blocks
     constructor() public {}
 
+    /**
+     * @dev Sets the intial state for the contract. Only called immediately after deployment.
+     * @param underlyingToken The address of the underlying asset.
+     * @param strikeToken The address of the strike asset.
+     * @param base The quantity of underlying tokens per quote amount of strike tokens.
+     * @param quote The quantity of strike tokens per base amount of underlying tokens.
+     * @param expiry The expiration date for the option.
+     */
     function initialize(
         address underlyingToken,
         address strikeToken,
@@ -93,11 +101,16 @@ contract Option is IOption, ERC20, ReentrancyGuard {
         _;
     }
 
-    function initRedeemToken(address _redeemToken) external override {
+    /**
+     * @dev Called after the option contract is initialized, and a redeem token has been deployed.
+     * @notice Entangles a redeem token to this option contract permanently.
+     * @param redeemToken_ The address of the redeem token.
+     */
+    function initRedeemToken(address redeemToken_) external override {
         require(msg.sender == factory, "ERR_NOT_OWNER");
         require(redeemToken == address(0x0), "ERR_REDEEM_INITIALIZED");
-        redeemToken = _redeemToken;
-        emit InitializedRedeem(msg.sender, _redeemToken);
+        redeemToken = redeemToken_;
+        emit InitializedRedeem(msg.sender, redeemToken_);
     }
 
     /**
