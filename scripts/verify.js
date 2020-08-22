@@ -13,8 +13,24 @@ const {
     UNISWAP_TRADER,
 } = CONTRACT_NAMES;
 const { OPTION_TEMPLATE_LIB, REDEEM_TEMPLATE_LIB } = LIBRARIES;
-const { checkTemplates } = require("./setup");
 const { getContractAt } = bre.ethers;
+
+/**
+ * @dev Checks the optionTemplate and redeemTemplate. If they are address zero, it will call deployTemplate().
+ * @param {*} optionFactory The OptionFactory contract instance.
+ * @param {*} redeemFactory The RedeemFactory contract instance.
+ */
+const checkTemplates = async (optionFactory, redeemFactory) => {
+    const optionTemplate = await optionFactory.optionTemplate();
+    const redeemTemplate = await redeemFactory.redeemTemplate();
+    if (optionTemplate.toString() == ethers.constants.AddressZero.toString()) {
+        await optionFactory.deployOptionTemplate();
+    }
+    if (redeemTemplate.toString() == ethers.constants.AddressZero.toString()) {
+        await redeemFactory.deployRedeemTemplate();
+    }
+    return { optionTemplate, redeemTemplate };
+};
 
 /**
  * @dev Generalized verification function using the verify-contract task from the buidlers-etherscan plugin.

@@ -589,10 +589,10 @@
     safe-buffer "^5.1.1"
     util.promisify "^1.0.0"
 
-"@openzeppelin/contracts@^3.0.1":
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-3.1.0.tgz#bcea457ef89069fbe5a617f50b25b6a8272895d5"
-  integrity sha512-dVXDnUKxrAKLzPdCRkz+N8qsVkK1XxJ6kk3zuI6zaQmcKxN7CkizoDP7lXxcs/Mi2I0mxceTRjJBqlzFffLJrQ==
+"@openzeppelin/contracts@3.0.1":
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-3.0.1.tgz#2f327f77d16b43f14674086b2b634bda38cb0838"
+  integrity sha512-uSrD7hZ0ViuHGqHZbeHawZBi/uy7aBiNramXAt2dFFuSuoU4u9insS3V3zdVfOnYSPreUo636xSOuQIFN4//HA==
 
 "@resolver-engine/core@^0.3.3":
   version "0.3.3"
@@ -2409,9 +2409,9 @@ buffer@^5.0.5, buffer@^5.2.1, buffer@^5.5.0, buffer@^5.6.0:
     ieee754 "^1.1.4"
 
 buidler-deploy@^0.5.8:
-  version "0.5.17"
-  resolved "https://registry.yarnpkg.com/buidler-deploy/-/buidler-deploy-0.5.17.tgz#9659be2f18b2460f4452663795f299d1fc3d6859"
-  integrity sha512-nyuAxy1rZ3iENAmlZu6879lcmBdrlPJY7hp6jm+dXy8SoUwi1JkT2i9y3snxHjv0AoZ1am5IL93Oa6olXLzVwg==
+  version "0.5.18"
+  resolved "https://registry.yarnpkg.com/buidler-deploy/-/buidler-deploy-0.5.18.tgz#8c07acb62010512909ed5eb67d82d5f9041c892b"
+  integrity sha512-RfvSR3uB/HOrkCj4baO4OHFVof43mb+8zE2W5Kl0+muEhGLwKEaoVe6D5RTD8dzSQgheDLFfFWwKSFy5B10YVA==
   dependencies:
     "@ethersproject/abi" "^5.0.2"
     "@ethersproject/abstract-signer" "^5.0.2"

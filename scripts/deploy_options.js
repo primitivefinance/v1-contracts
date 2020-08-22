@@ -2,39 +2,36 @@ const bre = require("@nomiclabs/buidler/config");
 const { checkSupported } = require("./setup");
 const { parseEther } = require("ethers/lib/utils");
 const { checkInitialization } = require("../test/lib/utils");
-const OptionFactory = require("@primitivefi/contracts/deployments/rinkeby/OptionFactory");
-const RedeemFactory = require("@primitivefi/contracts/deployments/rinkeby/RedeemFactory");
-const UniswapTrader = require("@primitivefi/contracts/deployments/rinkeby/UniswapTrader");
-const Option = require("@primitivefi/contracts/artifacts/Option");
-const Trader = require("@primitivefi/contracts/deployments/rinkeby/Trader");
-const Registry = require("@primitivefi/contracts/deployments/rinkeby/Registry");
 const USDC = require("@primitivefi/contracts/deployments/rinkeby/USDC");
 const ETH = require("@primitivefi/contracts/deployments/rinkeby/ETH");
 const UniswapV2Router02 = require("@uniswap/v2-periphery/build/UniswapV2Router02.json");
 const UniswapV2Pair = require("@uniswap/v2-core/build/UniswapV2Pair.json");
 const UniswapV2Factory = require("@uniswap/v2-core/build/UniswapV2Factory.json");
 const ERC20 = require("@primitivefi/contracts/artifacts/ERC20");
-const { ADDRESSES, VALUES } = require("../test/lib/constants");
+const { ADDRESSES } = require("../test/lib/constants");
 const { RINKEBY_UNI_ROUTER02, RINKEBY_UNI_FACTORY, ZERO_ADDRESS } = ADDRESSES;
+const { checkAllowance } = require("../test/lib/utils");
 
-async function checkAllowance(owner, spender, token) {
-    const amount = parseEther("10000000000");
-    let allowance = await token.allowance(owner, spender.address);
-    if (allowance <= amount) {
-        try {
-            await token.approve(spender.address, amount, { from: owner });
-        } catch (err) {
-            console.log(err);
-        }
-    }
-}
-
+/**
+ * @dev Gets the contract instance of a contract using its name.
+ * @param {*} contractName The contract name `contract NAME {}`.
+ * @param {*} signer The ethers js Signer object to call the transaction.
+ * @return Contract instance.
+ */
 const getInstance = async (contractName, signer) => {
     const contract = await deployments.get(contractName);
-    const instance = new ethers.Contract(contract.address, contract.abi, signer);
+    const instance = new ethers.Contract(
+        contract.address,
+        contract.abi,
+        signer
+    );
     return instance;
 };
 
+/**
+ * @dev Deploys an option contract clone through the Registry contract.
+ * @notice Deploys a Uniswap V2 Pair and adds liquidity to it (if its testnet).
+ */
 const deployOption = async () => {
     const [signer] = await ethers.getSigners();
     const account = await signer.getAddress();
@@ -46,8 +43,16 @@ const deployOption = async () => {
     const usdcToken = await getInstance("USDC", signer);
     const ethToken = await getInstance("ETH", signer);
 
-    const uniswapFactory = new ethers.Contract(RINKEBY_UNI_FACTORY, UniswapV2Factory.abi, signer);
-    const uniswapRouter = new ethers.Contract(RINKEBY_UNI_ROUTER02, UniswapV2Router02.abi, signer);
+    const uniswapFactory = new ethers.Contract(
+        RINKEBY_UNI_FACTORY,
+        UniswapV2Factory.abi,
+        signer
+    );
+    const uniswapRouter = new ethers.Contract(
+        RINKEBY_UNI_ROUTER02,
+        UniswapV2Router02.abi,
+        signer
+    );
 
     // approve the router
     await checkAllowance(account, uniswapRouter, usdcToken);
@@ -84,41 +89,78 @@ const deployOption = async () => {
         await checkSupported(registry, ethToken, usdcToken);
         await checkInitialization(registry, optionFactory, redeemFactory);
         // check if option has been deployed, and if not, deploy it
-        let deployedOption = await registry.getOption(underlying, quoteToken, base, quote, expiry);
+        let deployedOption = await registry.getOption(
+            underlying,
+            quoteToken,
+            base,
+            quote,
+            expiry
+        );
         // deploy an option
         let tx;
         if (deployedOption == ZERO_ADDRESS) {
             try {
-                tx = await registry.deployOption(underlying, quoteToken, base, quote, expiry, { gasLimit: 1000000 });
+                tx = await registry.deployOption(
+                    underlying,
+                    quoteToken,
+                    base,
+                    quote,
+                    expiry,
+                    { gasLimit: 1000000 }
+                );
             } catch (err) {
                 console.log(err);
             }
             // get deployed option address
-            deployedOption = await registry.getOption(underlying, quoteToken, base, quote, expiry);
+            deployedOption = await registry.getOption(
+                underlying,
+                quoteToken,
+                base,
+                quote,
+                expiry
+            );
         }
 
         // create a new pair
-        let pairAddress = await uniswapFactory.getPair(deployedOption, usdcToken.address);
+        let pairAddress = await uniswapFactory.getPair(
+            deployedOption,
+            usdcToken.address
+        );
         if (pairAddress == ZERO_ADDRESS) {
             try {
                 await uniswapFactory.createPair(deployedOption, USDC.address);
             } catch (err) {
                 console.log(err);
             }
-            pairAddress = await uniswapFactory.getPair(deployedOption, usdcToken.address);
+            pairAddress = await uniswapFactory.getPair(
+                deployedOption,
+                usdcToken.address
+            );
         }
 
-        let uniswapPair = new ethers.Contract(pairAddress, UniswapV2Pair.abi, signer);
+        let uniswapPair = new ethers.Contract(
+            pairAddress,
+            UniswapV2Pair.abi,
+            signer
+        );
         let liquidity = await uniswapPair.getReserves();
         let reserve0 = liquidity._reserve0;
         if (reserve0 == 0) {
             // approve the router to take the option liquidity
-            let optionTokenInstance = new ethers.Contract(deployedOption, ERC20.abi, signer);
+            let optionTokenInstance = new ethers.Contract(
+                deployedOption,
+                ERC20.abi,
+                signer
+            );
             await checkAllowance(account, uniswapRouter, optionTokenInstance);
 
             // mint new options
             try {
-                await trader.safeMint(deployedOption, parseEther("100"), await signer.getAddress());
+                await trader.safeMint(
+                    deployedOption,
+                    parseEther("100"),
+                    await signer.getAddress()
+                );
             } catch (err) {
                 console.log(err);
             }
