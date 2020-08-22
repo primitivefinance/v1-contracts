@@ -1,11 +1,28 @@
 const bre = require("@nomiclabs/buidler");
-//const Registry = require("@primitivefi/contracts/deployments/rinkeby/Registry");
-const { CONTRACT_NAMES, LIBRARIES } = require("@primitivefi/contracts/test/lib/constants");
-const { REGISTRY, TRADER, OPTION_FACTORY, REDEEM_FACTORY, OPTION, REDEEM, UNISWAP_TRADER } = CONTRACT_NAMES;
+const {
+    CONTRACT_NAMES,
+    LIBRARIES,
+} = require("@primitivefi/contracts/test/lib/constants");
+const {
+    REGISTRY,
+    TRADER,
+    OPTION_FACTORY,
+    REDEEM_FACTORY,
+    OPTION,
+    REDEEM,
+    UNISWAP_TRADER,
+} = CONTRACT_NAMES;
 const { OPTION_TEMPLATE_LIB, REDEEM_TEMPLATE_LIB } = LIBRARIES;
 const { checkTemplates } = require("./setup");
 const { getContractAt } = bre.ethers;
 
+/**
+ * @dev Generalized verification function using the verify-contract task from the buidlers-etherscan plugin.
+ * @param {*} fullName The full name of the contract in the format: /path/to/contract:contractName.
+ * @param {*} address The address of the contract to verify.
+ * @param {*} constructorArgs Any constructor arguments for the contract, in an array.
+ * @param {*} library Library that the contract has linked.
+ */
 const verifyContract = async (fullName, address, constructorArgs, library) => {
     await run("verify-contract", {
         address: address,
@@ -15,6 +32,9 @@ const verifyContract = async (fullName, address, constructorArgs, library) => {
     });
 };
 
+/**
+ * @dev Verifies the Registry.sol contract on etherscan.
+ */
 const verifyRegistry = async () => {
     let Registry = await deployments.get("Registry");
     try {
@@ -24,13 +44,21 @@ const verifyRegistry = async () => {
     }
 };
 
+/**
+ * @dev Verifies the Option and Redeem factories.
+ */
 const verifyFactories = async () => {
     let OptionFactory = await deployments.get("OptionFactory");
     let OptionTemplateLib = await deployments.get("OptionTemplateLib");
     try {
-        await verifyContract(OPTION_FACTORY, OptionFactory.address, OptionFactory.args, {
-            [OPTION_TEMPLATE_LIB]: OptionTemplateLib.address,
-        });
+        await verifyContract(
+            OPTION_FACTORY,
+            OptionFactory.address,
+            OptionFactory.args,
+            {
+                [OPTION_TEMPLATE_LIB]: OptionTemplateLib.address,
+            }
+        );
     } catch (err) {
         console.error(err);
     }
@@ -39,32 +67,58 @@ const verifyFactories = async () => {
     let RedeemTemplateLib = await deployments.get("RedeemTemplateLib");
 
     try {
-        await verifyContract(REDEEM_FACTORY, RedeemFactory.address, RedeemFactory.args, {
-            [REDEEM_TEMPLATE_LIB]: RedeemTemplateLib.address,
-        });
+        await verifyContract(
+            REDEEM_FACTORY,
+            RedeemFactory.address,
+            RedeemFactory.args,
+            {
+                [REDEEM_TEMPLATE_LIB]: RedeemTemplateLib.address,
+            }
+        );
     } catch (err) {
         console.error(err);
     }
 };
 
+/**
+ * @dev Verifies the Trader and UniswapTrader contracts.
+ */
 const verifyTraders = async () => {
     let Trader = await deployments.get("Trader");
     let UniswapTrader = await deployments.get("UniswapTrader");
     try {
         await verifyContract(TRADER, Trader.address, Trader.args, {});
-        await verifyContract(UNISWAP_TRADER, UniswapTrader.address, UniswapTrader.args, {});
+        await verifyContract(
+            UNISWAP_TRADER,
+            UniswapTrader.address,
+            UniswapTrader.args,
+            {}
+        );
     } catch (err) {
         console.error(err);
     }
 };
 
+/**
+ * @dev Verifies the template addresses which will be cloned. These are the canonical
+ *      Option and Redeem contracts effectively.
+ */
 const verifyTemplates = async () => {
     let OptionFactory = await deployments.get("OptionFactory");
     let RedeemFactory = await deployments.get("RedeemFactory");
-    const optionFactory = await getContractAt(OptionFactory.abi, OptionFactory.address);
-    const redeemFactory = await getContractAt(RedeemFactory.abi, RedeemFactory.address);
+    const optionFactory = await getContractAt(
+        OptionFactory.abi,
+        OptionFactory.address
+    );
+    const redeemFactory = await getContractAt(
+        RedeemFactory.abi,
+        RedeemFactory.address
+    );
     // warning: deploys templates which costs gas.
-    const { optionTemplate, redeemTemplate } = await checkTemplates(optionFactory, redeemFactory);
+    const { optionTemplate, redeemTemplate } = await checkTemplates(
+        optionFactory,
+        redeemFactory
+    );
     try {
         await verifyContract(OPTION, optionTemplate, [], {});
     } catch (err) {
@@ -77,6 +131,9 @@ const verifyTemplates = async () => {
     }
 };
 
+/**
+ * @dev Calling this verify script with the --network tag will verify them on etherscan automatically.
+ */
 async function main() {
     await verifyFactories();
     await verifyRegistry();
