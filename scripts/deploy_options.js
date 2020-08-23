@@ -2,7 +2,6 @@ const bre = require("@nomiclabs/buidler/config");
 const { parseEther, formatEther, formatUnits } = require("ethers/lib/utils");
 const { checkInitialization } = require("../test/lib/utils");
 const USDC = require("../deployments/rinkeby/USDC");
-const ETH = require("../deployments/rinkeby/ETH");
 const UniswapV2Router02 = require("@uniswap/v2-periphery/build/UniswapV2Router02.json");
 const UniswapV2Pair = require("@uniswap/v2-core/build/UniswapV2Pair.json");
 const UniswapV2Factory = require("@uniswap/v2-core/build/UniswapV2Factory.json");
@@ -31,7 +30,7 @@ const checkTemplates = async (optionFactory, redeemFactory) => {
 
 const writeOptionJson = (optionJsonObject) => {
     let data = JSON.stringify(optionJsonObject, null, 2);
-    fs.writeFileSync("./options.json", data);
+    fs.writeFileSync("./options_deployments.json", data);
 };
 
 /**
@@ -183,7 +182,6 @@ const deployOption = async (optionParametersObject) => {
             quote,
             expiry
         );
-        console.log("Deployed:", optionAddress, "in the tx:", deployCloneTx);
     }
 
     return optionAddress;
@@ -289,13 +287,53 @@ const addUniswapV2Liquidity = async (optionAddress, tokenAddress) => {
 };
 
 async function main() {
+    // Get the signer and tokens.
+    const [signer] = await ethers.getSigners();
+    let ether = await getInstance("ETH", signer);
+    let stablecoin = await getInstance("USDC", signer);
     // option = [underlying, strike, base, quote, expiry]
-    let ETH_CALL_340 = [ETH.address, USDC.address, "1", "340", "1609286400"];
-    let ETH_CALL_400 = [ETH.address, USDC.address, "1", "400", "1609286400"];
-    let ETH_CALL_440 = [ETH.address, USDC.address, "1", "440", "1609286400"];
-    let ETH_PUT_340 = [USDC.address, ETH.address, "340", "1", "1609286400"];
-    let ETH_PUT_400 = [USDC.address, ETH.address, "400", "1", "1609286400"];
-    let ETH_PUT_440 = [USDC.address, ETH.address, "440", "1", "1609286400"];
+    let ETH_CALL_340 = [
+        ether.address,
+        stablecoin.address,
+        "1",
+        "340",
+        "1609286400",
+    ];
+    let ETH_CALL_400 = [
+        ether.address,
+        stablecoin.address,
+        "1",
+        "400",
+        "1609286400",
+    ];
+    let ETH_CALL_440 = [
+        ether.address,
+        stablecoin.address,
+        "1",
+        "440",
+        "1609286400",
+    ];
+    let ETH_PUT_340 = [
+        stablecoin.address,
+        ether.address,
+        "340",
+        "1",
+        "1609286400",
+    ];
+    let ETH_PUT_400 = [
+        stablecoin.address,
+        ether.address,
+        "400",
+        "1",
+        "1609286400",
+    ];
+    let ETH_PUT_440 = [
+        stablecoin.address,
+        ether.address,
+        "440",
+        "1",
+        "1609286400",
+    ];
     let optionsArray = [
         ETH_CALL_340,
         ETH_CALL_400,
@@ -307,6 +345,7 @@ async function main() {
 
     let optionJsonObject = {};
     let optionAddressArray = [];
+    // For each option object, parse its parameters, deploy it, and save it to options.json.
     for (let i = 0; i < optionsArray.length; i++) {
         let option = optionsArray[i];
         let underlyingToken = option[0];
