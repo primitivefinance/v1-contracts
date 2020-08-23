@@ -10,8 +10,24 @@ const ERC20 = require("../artifacts/ERC20");
 const { ADDRESSES } = require("../test/lib/constants");
 const { RINKEBY_UNI_ROUTER02, RINKEBY_UNI_FACTORY, ZERO_ADDRESS } = ADDRESSES;
 const { checkAllowance } = require("../test/lib/utils");
-const { checkTemplates } = require("./verify");
 const fs = require("fs");
+
+/**
+ * @dev Checks the optionTemplate and redeemTemplate. If they are address zero, it will call deployTemplate().
+ * @param {*} optionFactory The OptionFactory contract instance.
+ * @param {*} redeemFactory The RedeemFactory contract instance.
+ */
+const checkTemplates = async (optionFactory, redeemFactory) => {
+    const optionTemplate = await optionFactory.optionTemplate();
+    const redeemTemplate = await redeemFactory.redeemTemplate();
+    if (optionTemplate.toString() == ethers.constants.AddressZero.toString()) {
+        await optionFactory.deployOptionTemplate();
+    }
+    if (redeemTemplate.toString() == ethers.constants.AddressZero.toString()) {
+        await redeemFactory.deployRedeemTemplate();
+    }
+    return { optionTemplate, redeemTemplate };
+};
 
 const writeOptionJson = (optionJsonObject) => {
     let data = JSON.stringify(optionJsonObject, null, 2);
@@ -60,7 +76,14 @@ const getOptionParametersObject = (
     return optionParametersObject;
 };
 
-const getOptionSymbol = async (optionParametersObject, signer) => {
+/**
+ * @dev Concatenates a string of the option's symbol in the format:
+ *      ASSET + YY + MM + DD + TYPE + STRIKE
+ * @param {*} optionParametersObject The object with the option's parameters.
+ * @returns An option's symbol according to its parameters.
+ */
+const getOptionSymbol = async (optionParametersObject) => {
+    const [signer] = await ethers.getSigners();
     let underlyingInstance = await getERC20Instance(
         optionParametersObject.underlyingToken,
         signer
@@ -71,28 +94,34 @@ const getOptionSymbol = async (optionParametersObject, signer) => {
         signer
     );
     let strikeSymbol = await strikeInstance.symbol();
-    let base = formatUnits(optionParametersObject.base);
-    let quote = formatUnits(optionParametersObject.quote);
+    let base = formatEther(optionParametersObject.base);
+    let quote = formatEther(optionParametersObject.quote);
     let expiry = optionParametersObject.expiry;
     let type;
     let strike;
     let asset;
-    if (base == "1") {
-        type = "P";
-        strike = quote;
-        asset = strikeSymbol.toString();
-    }
-    if (quote == "1") {
+    if (base == 1) {
         type = "C";
-        strike = base;
+        strike = +quote;
         asset = underlyingSymbol.toString();
+    }
+    if (quote == 1) {
+        type = "P";
+        strike = +base;
+        asset = strikeSymbol.toString();
     }
 
     const date = new Date(expiry * 1000);
     let month = date.getMonth().toString();
     let day = date.getDay().toString();
-    let formattedSymbol = asset + month + day + type + strike;
-    console.log(formattedSymbol);
+    let year = date.getFullYear().toString();
+    let formattedSymbol =
+        asset +
+        year +
+        month +
+        day +
+        type +
+        strike.toString().padStart(6, "0").padEnd(2, "0");
     return formattedSymbol;
 };
 
@@ -157,7 +186,6 @@ const deployOption = async (optionParametersObject) => {
         console.log("Deployed:", optionAddress, "in the tx:", deployCloneTx);
     }
 
-    await getOptionSymbol(optionParametersObject, signer);
     return optionAddress;
 };
 
@@ -279,7 +307,7 @@ async function main() {
 
     let optionJsonObject = {};
     let optionAddressArray = [];
-    for (let i = 0; i < 1; i++) {
+    for (let i = 0; i < optionsArray.length; i++) {
         let option = optionsArray[i];
         let underlyingToken = option[0];
         let strikeToken = option[1];
@@ -295,8 +323,9 @@ async function main() {
         );
         let optionAddress = await deployOption(optionParametersObject);
         optionAddressArray.push(optionAddress);
+        let symbol = await getOptionSymbol(optionParametersObject);
         Object.assign(optionJsonObject, {
-            [i]: {
+            [symbol]: {
                 optionParameters: option,
                 address: optionAddress,
             },
