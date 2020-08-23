@@ -1,8 +1,5 @@
 const bre = require("@nomiclabs/buidler");
-const {
-    CONTRACT_NAMES,
-    LIBRARIES,
-} = require("@primitivefi/contracts/test/lib/constants");
+const { CONTRACT_NAMES, LIBRARIES } = require("../test/lib/constants");
 const {
     REGISTRY,
     TRADER,
@@ -163,3 +160,7 @@ main()
         console.error(error);
         process.exit(1);
     });
+
+Object.assign(module.exports, {
+    checkTemplates,
+});
