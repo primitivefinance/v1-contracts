@@ -93,7 +93,7 @@ contract OptionFactory is IOptionFactory, Ownable, NullCloneConstructor {
      * @dev Calculates the option token's address using the five option parameters.
      * @return The address of the option with the parameter arguments.
      */
-    function getOptionAddress(
+    function calculateOptionAddress(
         address underlyingToken,
         address strikeToken,
         uint256 base,

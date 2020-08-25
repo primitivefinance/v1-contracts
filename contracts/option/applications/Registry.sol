@@ -21,11 +21,20 @@ import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
     using SafeMath for uint256;
 
+    struct OptionParameters {
+        address underlyingToken;
+        address strikeToken;
+        uint256 base;
+        uint256 quote;
+        uint256 expiry;
+    }
+
     address public override optionFactory;
     address public override redeemFactory;
 
     mapping(address => bool) private verifiedTokens;
     mapping(uint256 => bool) private verifiedExpiries;
+    mapping(OptionParameters => address) private optionClones;
     address[] public allOptionClones;
 
     event UpdatedOptionFactory(address indexed optionFactory_);
@@ -34,7 +43,6 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
     event VerifiedExpiry(uint256 expiry);
     event UnverifiedToken(address indexed token);
     event UnverifiedExpiry(uint256 expiry);
-
     event DeployedOptionClone(
         address indexed from,
         address indexed optionAddress,
@@ -77,7 +85,7 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
      *         An example of an "unverified" token is a non-standard ERC-20 token which has not been tested.
      */
     function verifyToken(address tokenAddress) external override onlyOwner {
-        require(tokenAddress != address(0x0), "ERR_ADDRESS_ZERO");
+        require(tokenAddress != address(0x0), "ERR_ZERO_ADDRESS");
         verifiedTokens[tokenAddress] = true;
         emit VerifiedToken(tokenAddress);
     }
@@ -125,8 +133,11 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
         uint256 quote,
         uint256 expiry
     ) external override nonReentrant whenNotPaused returns (address) {
-        // Checks to make sure tokens are not the same.
-        require(underlyingToken != strikeToken, "ERR_ADDRESS");
+        // Validation checks for option parameters.
+        require(base > 0, "ERR_BASE_ZERO");
+        require(quote > 0, "ERR_QUOTE_ZERO");
+        require(expiry >= now, "ERR_EXPIRY");
+        require(underlyingToken != strikeToken, "ERR_SAME_ASSETS");
         require(
             underlyingToken != address(0x0) && strikeToken != address(0x0),
             "ERR_ZERO_ADDRESS"
@@ -145,7 +156,7 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
             strikeToken
         );
 
-        // Add the clone to the address array
+        // Add the clone to the allOptionClones address array.
         allOptionClones.push(optionAddress);
 
         // Initialize the new option contract's paired redeem token.
@@ -166,14 +177,15 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
      * @param expiry The unix timestamp of the option's expiration date.
      * @return The address of the option with the parameter arguments.
      */
-    function getOptionAddress(
+    function calculateOptionAddress(
         address underlyingToken,
         address strikeToken,
         uint256 base,
         uint256 quote,
         uint256 expiry
     ) public override view returns (address) {
-        address optionAddress = IOptionFactory(optionFactory).getOptionAddress(
+        address optionAddress = IOptionFactory(optionFactory)
+            .calculateOptionAddress(
             underlyingToken,
             strikeToken,
             base,
@@ -225,5 +237,23 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
      */
     function isVerifiedExpiry(uint256 expiry) public view returns (bool) {
         return verifiedExpiries[expiry];
+    }
+
+    function getOptionAddress(
+        address underlyingToken,
+        address strikeToken,
+        uint256 base,
+        uint256 quote,
+        uint256 expiry
+    ) public view returns (address) {
+        OptionParameters args = OptionParameters(
+            underlyingToken,
+            strikeToken,
+            base,
+            quote,
+            expiry
+        );
+        address optionAddress = optionClones[args];
+        return optionAddress;
     }
 }
