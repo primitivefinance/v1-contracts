@@ -23,6 +23,18 @@ interface IRegistry {
 
     function verifyExpiry(uint256 expiry) external;
 
+    function unverifyToken(address tokenAddress) external;
+
+    function unverifyExpiry(uint256 expiry) external;
+
+    function calculateOptionAddress(
+        address underlyingToken,
+        address strikeToken,
+        uint256 base,
+        uint256 quote,
+        uint256 expiry
+    ) external view returns (address);
+
     function getOptionAddress(
         address underlyingToken,
         address strikeToken,
