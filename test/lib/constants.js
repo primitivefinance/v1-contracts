@@ -62,8 +62,10 @@ const ADDRESSES = {
 };
 
 const LIBRARIES = {
-    OPTION_TEMPLATE_LIB: "contracts/option/libraries/OptionTemplateLib.sol:OptionTemplateLib",
-    REDEEM_TEMPLATE_LIB: "contracts/option/libraries/RedeemTemplateLib.sol:RedeemTemplateLib",
+    OPTION_TEMPLATE_LIB:
+        "contracts/option/libraries/OptionTemplateLib.sol:OptionTemplateLib",
+    REDEEM_TEMPLATE_LIB:
+        "contracts/option/libraries/RedeemTemplateLib.sol:RedeemTemplateLib",
     TRADER_LIB: "contracts/option/libraries/TraderLib.sol:TraderLib",
 };
 
@@ -71,11 +73,14 @@ const CONTRACT_NAMES = {
     REGISTRY: "contracts/option/applications/Registry.sol:Registry",
     TRADER: "contracts/option/extensions/Trader.sol:Trader",
 
-    OPTION_FACTORY: "contracts/option/applications/factories/OptionFactory.sol:OptionFactory",
-    REDEEM_FACTORY: "contracts/option/applications/factories/RedeemFactory.sol:RedeemFactory",
+    OPTION_FACTORY:
+        "contracts/option/applications/factories/OptionFactory.sol:OptionFactory",
+    REDEEM_FACTORY:
+        "contracts/option/applications/factories/RedeemFactory.sol:RedeemFactory",
     OPTION: "contracts/option/primitives/Option.sol:Option",
     REDEEM: "contracts/option/primitives/Redeem.sol:Redeem",
-    UNISWAP_TRADER: "contracts/option/extensions/UniswapTrader.sol:UniswapTrader",
+    UNISWAP_TRADER:
+        "contracts/option/extensions/UniswapTrader.sol:UniswapTrader",
 };
 
 module.exports = {

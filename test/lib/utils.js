@@ -24,9 +24,14 @@ const checkAllowance = async (owner, spender, token) => {
  * @param {*} redeemFactory The RedeemFactory contract instance.
  */
 const checkInitialization = async (registry, optionFactory, redeemFactory) => {
-    const fac = await registry.optionFactory();
-    if (fac == AddressZero || fac != optionFactory.address)
-        await registry.initialize(optionFactory.address, redeemFactory.address);
+    const optionFactoryAddress = await registry.optionFactory();
+    const redeemFactoryAddress = await registry.redeemFactory();
+    if (optionFactoryAddress == AddressZero) {
+        await registry.setOptionFactory(optionFactory.address);
+    }
+    if (redeemFactoryAddress == AddressZero) {
+        await registry.setRedeemFactory(redeemFactory.address);
+    }
 };
 
 const assertBNEqual = (actualBN, expectedBN, message) => {
