@@ -238,6 +238,18 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
         return verifiedExpiries[expiry];
     }
 
+    /**
+     * @dev Gets the option address and returns address zero if not yet deployed.
+     * @notice Will calculate the option address using the parameter arguments.
+     *         Checks the code size of the address to see if the contract has been deployed yet.
+     *         If contract has not been deployed, returns address zero.
+     * @param underlyingToken The address of the ERC-20 underlying token.
+     * @param strikeToken The address of the ERC-20 strike token.
+     * @param base The quantity of underlying tokens per unit of quote amount of strike tokens.
+     * @param quote The quantity of strike tokens per unit of base amount of underlying tokens.
+     * @param expiry The unix timestamp of the option's expiration date.
+     * @return The address of the option with the parameter arguments.
+     */
     function getOptionAddress(
         address underlyingToken,
         address strikeToken,
@@ -252,7 +264,7 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
             quote,
             expiry
         );
-        uint256 size = checkCodeSize(optionAddress);
+        uint32 size = checkCodeSize(optionAddress);
         if (size > 0) {
             return optionAddress;
         } else {
@@ -260,7 +272,11 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
         }
     }
 
-    function checkCodeSize(address target) private view returns (uint256) {
+    /**
+     * @dev Checks the code size of a target address and returns the uint32 size.
+     * @param target The address to check code size.
+     */
+    function checkCodeSize(address target) private view returns (uint32) {
         uint32 size;
         assembly {
             size := extcodesize(target)

@@ -20,11 +20,8 @@ import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { ERC20 } from "./ERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import {
-    ReentrancyGuard
-} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract Option is IOption, ERC20, ReentrancyGuard {
+contract Option is IOption, ERC20 {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -43,6 +40,7 @@ contract Option is IOption, ERC20, ReentrancyGuard {
     uint256 public override strikeCache;
     address public override redeemToken;
     address public override factory;
+    bool private _notEntered;
 
     string public constant name = "Primitive V1 Option";
     string public constant symbol = "PRM";
@@ -93,12 +91,34 @@ contract Option is IOption, ERC20, ReentrancyGuard {
             quote,
             expiry
         );
+        _notEntered = true;
     }
 
     modifier notExpired {
         // solhint-disable-next-line not-rely-on-time
         require(isNotExpired(), "ERR_EXPIRED");
         _;
+    }
+
+    /**
+     * @dev Prevents a contract from calling itself, directly or indirectly.
+     * Calling a `nonReentrant` function from another `nonReentrant`
+     * function is not supported. It is possible to prevent this from happening
+     * by making the `nonReentrant` function external, and make it call a
+     * `private` function that does the actual work.
+     */
+    modifier nonReentrant() {
+        // On the first call to nonReentrant, _notEntered will be true
+        require(_notEntered, "ReentrancyGuard: reentrant call");
+
+        // Any calls to nonReentrant after this point will fail
+        _notEntered = false;
+
+        _;
+
+        // By storing the original value once again, a refund is triggered (see
+        // https://eips.ethereum.org/EIPS/eip-2200)
+        _notEntered = true;
     }
 
     /**
