@@ -29,7 +29,7 @@
           "type": "uint256"
         }
       ],
-      "name": "deploy",
+      "name": "calculateOptionAddress",
       "outputs": [
         {
           "internalType": "address",
@@ -37,14 +37,7 @@
           "type": "address"
         }
       ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "deployOptionTemplate",
-      "outputs": [],
-      "stateMutability": "nonpayable",
+      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -75,7 +68,7 @@
           "type": "uint256"
         }
       ],
-      "name": "getOptionAddress",
+      "name": "deploy",
       "outputs": [
         {
           "internalType": "address",
@@ -83,7 +76,14 @@
           "type": "address"
         }
       ],
-      "stateMutability": "view",
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "deployOptionTemplate",
+      "outputs": [],
+      "stateMutability": "nonpayable",
       "type": "function"
     },
     {

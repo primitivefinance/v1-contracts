@@ -34,7 +34,6 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
 
     mapping(address => bool) private verifiedTokens;
     mapping(uint256 => bool) private verifiedExpiries;
-    mapping(OptionParameters => address) private optionClones;
     address[] public allOptionClones;
 
     event UpdatedOptionFactory(address indexed optionFactory_);
@@ -93,7 +92,7 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
     /**
      * @dev Sets a verified token's verification status to false.
      */
-    function unVerifyToken(address tokenAddress) external override onlyOwner {
+    function unverifyToken(address tokenAddress) external override onlyOwner {
         verifiedTokens[tokenAddress] = false;
         emit UnverifiedToken(tokenAddress);
     }
@@ -112,7 +111,7 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
      * @dev Sets an expiry timestamp's verification status to false.
      * @notice A mapping of standardized, "verified", timestamps for the options.
      */
-    function unVerifyExpiry(uint256 expiry) external override onlyOwner {
+    function unverifyExpiry(uint256 expiry) external override onlyOwner {
         verifiedExpiries[expiry] = false;
         emit UnverifiedExpiry(expiry);
     }
@@ -245,15 +244,27 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
         uint256 base,
         uint256 quote,
         uint256 expiry
-    ) public view returns (address) {
-        OptionParameters args = OptionParameters(
+    ) public override view returns (address) {
+        address optionAddress = calculateOptionAddress(
             underlyingToken,
             strikeToken,
             base,
             quote,
             expiry
         );
-        address optionAddress = optionClones[args];
-        return optionAddress;
+        uint256 size = checkCodeSize(optionAddress);
+        if (size > 0) {
+            return optionAddress;
+        } else {
+            return address(0x0);
+        }
+    }
+
+    function checkCodeSize(address target) private view returns (uint256) {
+        uint32 size;
+        assembly {
+            size := extcodesize(target)
+        }
+        return size;
     }
 }
