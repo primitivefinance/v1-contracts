@@ -139,6 +139,7 @@ const addUniswapV2Liquidity = async (optionAddress, tokenAddress) => {
         signer
     );
     try {
+        console.log(optionAddress);
         console.log(
             await optionTokenInstance.allowance(
                 await signer.getAddress(),

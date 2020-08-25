@@ -1,14 +1,8 @@
-const bre = require("@nomiclabs/buidler/config");
-const { parseEther, formatEther, formatUnits } = require("ethers/lib/utils");
+const { parseEther, formatEther } = require("ethers/lib/utils");
 const { checkInitialization } = require("../test/lib/utils");
 const USDC = require("../deployments/rinkeby/USDC");
-const UniswapV2Router02 = require("@uniswap/v2-periphery/build/UniswapV2Router02.json");
-const UniswapV2Pair = require("@uniswap/v2-core/build/UniswapV2Pair.json");
-const UniswapV2Factory = require("@uniswap/v2-core/build/UniswapV2Factory.json");
-const ERC20 = require("../artifacts/ERC20");
 const { ADDRESSES } = require("../test/lib/constants");
-const { RINKEBY_UNI_ROUTER02, RINKEBY_UNI_FACTORY, ZERO_ADDRESS } = ADDRESSES;
-const { checkAllowance } = require("../test/lib/utils");
+const { ZERO_ADDRESS } = ADDRESSES;
 const fs = require("fs");
 
 /**
@@ -185,105 +179,6 @@ const deployOption = async (optionParametersObject) => {
     }
 
     return optionAddress;
-};
-
-/**
- * @dev Gets a UniswapV2Pair pool for the option address and another token.
- * @notice If the pair is address zero, it will create the pair.
- * @param {*} optionAddress The address of the option contract clone to create a pair for.
- * @return The address of the newly created pair.
- */
-const getUniswapV2Pair = async (optionAddress, tokenAddress) => {
-    // Get the admin signer.
-    const [signer] = await ethers.getSigners();
-
-    // Get the contract instances.
-    const uniswapFactory = new ethers.Contract(
-        RINKEBY_UNI_FACTORY,
-        UniswapV2Factory.abi,
-        signer
-    );
-
-    // Create a new pair if it does not exist (equal to address zero).
-    let pairAddress = await uniswapFactory.getPair(optionAddress, tokenAddress);
-    if (pairAddress == ZERO_ADDRESS) {
-        try {
-            await uniswapFactory.createPair(optionAddress, tokenAddress);
-        } catch (err) {
-            console.log(err);
-        }
-        pairAddress = await uniswapFactory.getPair(optionAddress, tokenAddress);
-    }
-    return pairAddress;
-};
-
-/**
- * @dev Adds liquidity to a uniswap V2 pair of the option token and a token.
- * @param optionAddress The address of the option contract.
- * @param tokenAddress The address of the paired token.
- */
-const addUniswapV2Liquidity = async (optionAddress, tokenAddress) => {
-    // Get the admin signer.
-    const [signer] = await ethers.getSigners();
-    const account = await signer.getAddress();
-
-    // Get the contract instances.
-    const trader = await getInstance("Trader", signer);
-    const uniswapTrader = await getInstance("UniswapTrader", signer);
-    const usdcToken = await getInstance("USDC", signer);
-    const ethToken = await getInstance("ETH", signer);
-    const uniswapFactory = new ethers.Contract(
-        RINKEBY_UNI_FACTORY,
-        UniswapV2Factory.abi,
-        signer
-    );
-    const uniswapRouter = new ethers.Contract(
-        RINKEBY_UNI_ROUTER02,
-        UniswapV2Router02.abi,
-        signer
-    );
-
-    // Approve the router.
-    await checkAllowance(account, uniswapRouter, usdcToken);
-    await checkAllowance(account, uniswapRouter, ethToken);
-    // Approve the trader.
-    await checkAllowance(account, trader, usdcToken);
-    await checkAllowance(account, trader, ethToken);
-
-    // Create a new pair if it does not exist (equal to address zero).
-    let pairAddress = await getUniswapV2Pair(optionAddress, usdcToken.address);
-
-    // approve the router to take the option liquidity
-    let optionTokenInstance = new ethers.Contract(
-        optionAddress,
-        ERC20.abi,
-        signer
-    );
-    await checkAllowance(account, uniswapRouter, optionTokenInstance);
-
-    // Mint new options to add liquidity to uniswap pool.
-    try {
-        await trader.safeMint(optionAddress, parseEther("100"), account);
-    } catch (err) {
-        console.log(err);
-    }
-
-    // Add liquidity to Uniswap pool.
-    try {
-        await uniswapRouter.addLiquidity(
-            optionAddress, // token 0
-            usdcToken.address, // token 1
-            parseEther("100"), // quantity of token 0
-            parseEther("500"), // quantity of token 1
-            0, // min quantity of lp tokens
-            0, // min quantity of lp tokens
-            account, // lp token receiver
-            await uniswapTrader.getMaxDeadline() // deadline until trade expires
-        );
-    } catch (err) {
-        console.log(err);
-    }
-    return pairAddress;
 };
 
 async function main() {
