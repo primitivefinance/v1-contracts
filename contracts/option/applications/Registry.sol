@@ -24,12 +24,17 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
     address public override optionFactory;
     address public override redeemFactory;
 
-    mapping(address => bool) public verifiedTokens;
-    mapping(uint256 => bool) public verifiedExpiries;
+    mapping(address => bool) private verifiedTokens;
+    mapping(uint256 => bool) private verifiedExpiries;
     address[] public allOptionClones;
 
     event UpdatedOptionFactory(address indexed optionFactory_);
     event UpdatedRedeemFactory(address indexed redeemFactory_);
+    event VerifiedToken(address indexed token);
+    event VerifiedExpiry(uint256 expiry);
+    event UnverifiedToken(address indexed token);
+    event UnverifiedExpiry(uint256 expiry);
+
     event DeployedOptionClone(
         address indexed from,
         address indexed optionAddress,
@@ -67,19 +72,41 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
     }
 
     /**
-     * @dev A mapping of "verified" ERC-20 tokens.
+     * @dev Sets an ERC-20 token verification status to true.
      * @notice A "verified" token is a standard ERC-20 token that we have tested with the option contract.
+     *         An example of an "unverified" token is a non-standard ERC-20 token which has not been tested.
      */
     function verifyToken(address tokenAddress) external override onlyOwner {
+        require(tokenAddress != address(0x0), "ERR_ADDRESS_ZERO");
         verifiedTokens[tokenAddress] = true;
+        emit VerifiedToken(tokenAddress);
     }
 
     /**
-     * @dev A mapping of standardized, "verified", timestamps for the options.
-     * @notice The definition of a standardized time is loose and will evolve over time.
+     * @dev Sets a verified token's verification status to false.
+     */
+    function unVerifyToken(address tokenAddress) external override onlyOwner {
+        verifiedTokens[tokenAddress] = false;
+        emit UnverifiedToken(tokenAddress);
+    }
+
+    /**
+     * @dev Sets an expiry timestamp's verification status to true.
+     * @notice A mapping of standardized, "verified", timestamps for the options.
      */
     function verifyExpiry(uint256 expiry) external override onlyOwner {
+        require(expiry >= now, "ERR_EXPIRED_TIMESTAMP");
         verifiedExpiries[expiry] = true;
+        emit VerifiedExpiry(expiry);
+    }
+
+    /**
+     * @dev Sets an expiry timestamp's verification status to false.
+     * @notice A mapping of standardized, "verified", timestamps for the options.
+     */
+    function unVerifyExpiry(uint256 expiry) external override onlyOwner {
+        verifiedExpiries[expiry] = false;
+        emit UnverifiedExpiry(expiry);
     }
 
     /**
@@ -171,9 +198,9 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
         address underlyingToken = option.getUnderlyingTokenAddress();
         address strikeToken = option.getStrikeTokenAddress();
         uint256 expiry = option.getExpiryTime();
-        bool verifiedUnderlying = verifiedTokens[underlyingToken];
-        bool verifiedStrike = verifiedTokens[strikeToken];
-        bool verifiedExpiry = verifiedExpiries[expiry];
+        bool verifiedUnderlying = isVerifiedToken(underlyingToken);
+        bool verifiedStrike = isVerifiedToken(strikeToken);
+        bool verifiedExpiry = isVerifiedExpiry(expiry);
         return verifiedUnderlying && verifiedStrike && verifiedExpiry;
     }
 
@@ -182,5 +209,21 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
      */
     function getAllOptionClonesLength() public view returns (uint256) {
         return allOptionClones.length;
+    }
+
+    /**
+     * @dev Checks the verifiedTokens private mapping and returns verification status of token.
+     * @return bool Verified or not verified.
+     */
+    function isVerifiedToken(address tokenAddress) public view returns (bool) {
+        return verifiedTokens[tokenAddress];
+    }
+
+    /**
+     * @dev Checks the verifiedExpiries private mapping and returns verification status of token.
+     * @return bool Verified or not verified.
+     */
+    function isVerifiedExpiry(uint256 expiry) public view returns (bool) {
+        return verifiedExpiries[expiry];
     }
 }
