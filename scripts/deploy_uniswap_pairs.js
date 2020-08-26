@@ -138,17 +138,6 @@ const addUniswapV2Liquidity = async (optionAddress, tokenAddress) => {
         USDC.abi,
         signer
     );
-    try {
-        console.log(optionAddress);
-        console.log(
-            await optionTokenInstance.allowance(
-                await signer.getAddress(),
-                uniswapRouter.address
-            )
-        );
-    } catch (err) {
-        console.log(err, "Allowance error.");
-    }
 
     await checkAllowance(signer, uniswapRouter, optionTokenInstance);
 
@@ -166,8 +155,8 @@ const addUniswapV2Liquidity = async (optionAddress, tokenAddress) => {
         await uniswapRouter.addLiquidity(
             optionAddress, // token 0
             tokenAddress, // token 1
-            parseEther("1000"), // quantity of token 0
-            parseEther("5000"), // quantity of token 1
+            parseEther("100"), // quantity of token 0
+            parseEther("500"), // quantity of token 1
             0, // min quantity of lp tokens
             0, // min quantity of lp tokens
             account, // lp token receiver
@@ -182,6 +171,7 @@ const addUniswapV2Liquidity = async (optionAddress, tokenAddress) => {
 async function main() {
     const [signer] = await ethers.getSigners();
     let uniswapPairJsonObject = {};
+    let uniswapPairsArray = [];
     let optionAddressArray = getOptionDeploymentAddresses();
     let stablecoin = await getInstance("USDC", signer);
     // For each option object, get its address, deploy a uniswap pair for it an a stablecoin,
@@ -192,6 +182,7 @@ async function main() {
             optionAddress,
             stablecoin.address
         );
+        uniswapPairsArray.push(pairAddress);
         Object.assign(uniswapPairJsonObject, {
             [Object.keys(optionsDeployments)[i]]: {
                 optionAddress: optionAddress,
@@ -202,7 +193,7 @@ async function main() {
     }
 
     writeUniswapJson(uniswapPairJsonObject);
-    console.log(optionAddressArray);
+    console.log(uniswapPairsArray);
 }
 
 main()
