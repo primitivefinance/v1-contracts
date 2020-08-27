@@ -1,13 +1,7 @@
-const bre = require("@nomiclabs/buidler/config");
-const { parseEther, formatEther, formatUnits } = require("ethers/lib/utils");
-const { checkInitialization } = require("../test/lib/utils");
+const { parseEther } = require("ethers/lib/utils");
 const USDC = require("../deployments/rinkeby/USDC");
-const ETH = require("../deployments/rinkeby/ETH");
 const UniswapV2Router02 = require("@uniswap/v2-periphery/build/UniswapV2Router02.json");
-const UniswapV2Pair = require("@uniswap/v2-core/build/UniswapV2Pair.json");
 const UniswapV2Factory = require("@uniswap/v2-core/build/UniswapV2Factory.json");
-const ERC20 = require("../artifacts/ERC20");
-const Option = require("../artifacts/Option");
 const { ADDRESSES } = require("../test/lib/constants");
 const { RINKEBY_UNI_ROUTER02, RINKEBY_UNI_FACTORY, ZERO_ADDRESS } = ADDRESSES;
 const fs = require("fs");
@@ -57,11 +51,6 @@ const getInstance = async (contractName, signer) => {
         contract.abi,
         signer
     );
-    return instance;
-};
-
-const getERC20Instance = async (contractAddress, signer) => {
-    const instance = new ethers.Contract(contractAddress, USDC.abi, signer);
     return instance;
 };
 
