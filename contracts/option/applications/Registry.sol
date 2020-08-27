@@ -53,6 +53,20 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
     }
 
     /**
+     * @dev Pauses the deployOption function.
+     */
+    function pauseDeployments() external override onlyOwner {
+        _pause();
+    }
+
+    /**
+     * @dev Unpauses the deployOption function.
+     */
+    function unpauseDeployments() external override onlyOwner {
+        _unpause();
+    }
+
+    /**
      * @dev Sets the option factory contract to use for deploying clones.
      * @param optionFactory_ The address of the option factory.
      */

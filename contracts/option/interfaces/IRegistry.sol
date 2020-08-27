@@ -3,6 +3,10 @@
 pragma solidity 0.6.2;
 
 interface IRegistry {
+    function pauseDeployments() external;
+
+    function unpauseDeployments() external;
+
     function deployOption(
         address underlyingToken,
         address strikeToken,
