@@ -3,7 +3,7 @@
 pragma solidity 0.6.2;
 
 /**
- * @title Protocol Registry Contract for Deployed Options
+ * @title Protocol Registry Contract for Deployed Options.
  * @author Primitive
  */
 
