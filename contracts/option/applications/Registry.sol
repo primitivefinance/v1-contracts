@@ -21,14 +21,6 @@ import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
     using SafeMath for uint256;
 
-    struct OptionParameters {
-        address underlyingToken;
-        address strikeToken;
-        uint256 base;
-        uint256 quote;
-        uint256 expiry;
-    }
-
     address public override optionFactory;
     address public override redeemFactory;
 
