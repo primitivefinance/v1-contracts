@@ -3,7 +3,8 @@
 pragma solidity 0.6.2;
 
 /**
- * @title Protocol Factory Contract for Redeems
+ * @title Protocol Factory Contract for Redeem Tokens.
+ * @notice Uses cloning technology on a deployed template contract.
  * @author Primitive
  */
 
@@ -23,25 +24,36 @@ contract RedeemFactory is IRedeemFactory, Ownable, NullCloneConstructor {
         transferOwnership(registry);
     }
 
+    /**
+     * @dev Deploys the full bytecode of the Redeem contract to be used as a template for clones.
+     */
     function deployRedeemTemplate() public override {
         redeemTemplate = RedeemTemplateLib.deployTemplate();
     }
 
-    function deploy(address optionToken, address redeemableToken)
+    /**
+     * @dev Deploys a cloned instance of the template Redeem contract.
+     * @param optionToken The address of the option token which this redeem clone will be paired with.
+     * @return redeemAddress The address of the deployed Redeem token clone.
+     */
+    function deployClone(address optionToken)
         external
         override
         onlyOwner
-        returns (address redeem)
+        returns (address)
     {
         bytes32 salt = keccak256(
             abi.encodePacked(
                 RedeemTemplateLib.REDEEM_SALT(),
                 owner(),
-                optionToken,
-                redeemableToken
+                optionToken
             )
         );
-        redeem = CloneLib.create2Clone(redeemTemplate, uint256(salt));
-        Redeem(redeem).initialize(owner(), optionToken, redeemableToken);
+        address redeemAddress = CloneLib.create2Clone(
+            redeemTemplate,
+            uint256(salt)
+        );
+        Redeem(redeemAddress).initialize(owner(), optionToken);
+        return redeemAddress;
     }
 }

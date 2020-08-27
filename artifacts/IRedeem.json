@@ -160,11 +160,6 @@
           "internalType": "address",
           "name": "_optionToken",
           "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "_redeemableToken",
-          "type": "address"
         }
       ],
       "name": "initialize",
@@ -193,19 +188,6 @@
     {
       "inputs": [],
       "name": "optionToken",
-      "outputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "redeemableToken",
       "outputs": [
         {
           "internalType": "address",

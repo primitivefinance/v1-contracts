@@ -3,7 +3,7 @@
 pragma solidity 0.6.2;
 
 interface IOptionFactory {
-    function deploy(
+    function deployClone(
         address underlyingToken,
         address strikeToken,
         uint256 base,

@@ -156,13 +156,6 @@ describe("Option Contract", () => {
                 "Incorrect optionToken"
             );
         });
-        it("strikeToken()", async () => {
-            assert.equal(
-                (await redeemToken.redeemableToken()).toString(),
-                strikeToken.address,
-                "Incorrect strikeToken"
-            );
-        });
         it("should revert on mint if msg.sender is not optionToken contract", async () => {
             await expect(redeemToken.mint(Alice, 10)).to.be.revertedWith(
                 ERR_NOT_VALID
@@ -324,14 +317,6 @@ describe("Option Contract", () => {
                 (await redeemToken.optionToken()).toString(),
                 optionToken.address,
                 "Incorrect optionToken"
-            );
-        });
-
-        it("should return the correct strikeToken for redeemToken", async () => {
-            assert.equal(
-                (await redeemToken.redeemableToken()).toString(),
-                strikeToken.address,
-                "Incorrect strikeToken"
             );
         });
 
@@ -882,8 +867,7 @@ describe("Option Contract", () => {
                 redeemToken = await setup.newTestRedeem(
                     Admin,
                     Alice,
-                    optionToken.address,
-                    underlyingToken.address
+                    optionToken.address
                 );
                 await optionToken.setRedeemToken(redeemToken.address);
                 let inputUnderlyings = THOUSAND_ETHER;
@@ -978,8 +962,7 @@ describe("Option Contract", () => {
                 redeemToken = await setup.newTestRedeem(
                     Admin,
                     Alice,
-                    optionToken.address,
-                    underlyingToken.address
+                    optionToken.address
                 );
                 await optionToken.setRedeemToken(redeemToken.address);
                 let inputUnderlyings = THOUSAND_ETHER;

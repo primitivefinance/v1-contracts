@@ -3,7 +3,7 @@ pragma solidity 0.6.2;
 
 /**
  * @title   Redeem Token
- * @notice  A token that is redeemable for it's paird option token's strike token at a 1:1 ratio.
+ * @notice  A token that is redeemable for it's paird option token's assets.
  * @author  Primitive
  */
 
@@ -16,7 +16,6 @@ contract Redeem is IRedeem, ERC20 {
 
     address public override factory;
     address public override optionToken;
-    address public override redeemableToken;
 
     string public constant name = "Primitive V1 Redeem";
     string public constant symbol = "RDM";
@@ -29,17 +28,14 @@ contract Redeem is IRedeem, ERC20 {
      * @dev Sets the initial state for the redeem token. Called only once and immediately after deployment.
      * @param factory_ The address of the factory contract which handles the deployment.
      * @param optionToken_ The address of the option token which this redeem token will be paired with.
-     * @param redeemableToken_ The address of the strike token of the option contract.
      */
-    function initialize(
-        address factory_,
-        address optionToken_,
-        address redeemableToken_
-    ) public override {
+    function initialize(address factory_, address optionToken_)
+        public
+        override
+    {
         require(factory == address(0x0), "ERR_IS_INITIALIZED");
         factory = factory_;
         optionToken = optionToken_;
-        redeemableToken = redeemableToken_;
     }
 
     /**

@@ -152,6 +152,13 @@
     },
     {
       "inputs": [],
+      "name": "pauseDeployments",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
       "name": "redeemFactory",
       "outputs": [
         {
@@ -185,6 +192,13 @@
         }
       ],
       "name": "setRedeemFactory",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "unpauseDeployments",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

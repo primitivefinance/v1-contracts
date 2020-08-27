@@ -221,11 +221,11 @@ const newTestOption = async (
  * @param {*} optionToken The address of the option token linked to the redeem token.
  * @param {*} underlying The address of the underlying token for the option token.
  */
-const newTestRedeem = async (signer, factory, optionToken, underlying) => {
+const newTestRedeem = async (signer, factory, optionToken) => {
     const redeemToken = await deployContract(signer, Redeem, [], {
         gasLimit: 6000000,
     });
-    await redeemToken.initialize(factory, optionToken, underlying);
+    await redeemToken.initialize(factory, optionToken);
     return redeemToken;
 };
 

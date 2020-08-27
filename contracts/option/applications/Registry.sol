@@ -149,16 +149,15 @@ contract Registry is IRegistry, Ownable, Pausable, ReentrancyGuard {
         );
 
         // Deploy option and redeem contract clones.
-        address optionAddress = IOptionFactory(optionFactory).deploy(
+        address optionAddress = IOptionFactory(optionFactory).deployClone(
             underlyingToken,
             strikeToken,
             base,
             quote,
             expiry
         );
-        address redeemAddress = IRedeemFactory(redeemFactory).deploy(
-            optionAddress,
-            strikeToken
+        address redeemAddress = IRedeemFactory(redeemFactory).deployClone(
+            optionAddress
         );
 
         // Add the clone to the allOptionClones address array.
