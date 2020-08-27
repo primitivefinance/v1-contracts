@@ -38,7 +38,7 @@ contract OptionFactory is IOptionFactory, Ownable, NullCloneConstructor {
      * @param quote The quantity of strike tokens per unit of base amount of underlying tokens.
      * @param expiry The unix timestamp for option expiry.
      */
-    function deploy(
+    function deployClone(
         address underlyingToken,
         address strikeToken,
         uint256 base,

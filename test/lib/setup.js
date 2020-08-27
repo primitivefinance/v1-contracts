@@ -12,7 +12,6 @@ const Registry = require("../../artifacts/Registry");
 const Flash = require("../../artifacts/Flash");
 const Weth = require("../../artifacts/WETH9");
 const Trader = require("../../artifacts/Trader");
-const CTokenLike = require("../../artifacts/CTokenLike");
 const OptionTemplateLib = require("../../artifacts/OptionTemplateLib");
 const RedeemTemplateLib = require("../../artifacts/RedeemTemplateLib");
 const UniswapTrader = require("../../artifacts/UniswapTrader");
@@ -186,25 +185,6 @@ const newOptionFactory = async (signer, registry) => {
 };
 
 /**
- *
- * @param {*} signer
- * @param {*} underlying
- * @param {*} name
- * @param {*} symbol
- */
-const newInterestBearing = async (signer, underlying, name, symbol) => {
-    const compound = await deployContract(
-        signer,
-        CTokenLike,
-        [underlying, name, symbol],
-        {
-            gasLimit: 6000000,
-        }
-    );
-    return compound;
-};
-
-/**
  * @dev Deploys a TestOption contract instance and returns it.
  * @param {*} signer
  * @param {*} underlyingToken The address of the underlying token.
@@ -241,11 +221,11 @@ const newTestOption = async (
  * @param {*} optionToken The address of the option token linked to the redeem token.
  * @param {*} underlying The address of the underlying token for the option token.
  */
-const newTestRedeem = async (signer, factory, optionToken, underlying) => {
+const newTestRedeem = async (signer, factory, optionToken) => {
     const redeemToken = await deployContract(signer, Redeem, [], {
         gasLimit: 6000000,
     });
-    await redeemToken.initialize(factory, optionToken, underlying);
+    await redeemToken.initialize(factory, optionToken);
     return redeemToken;
 };
 
@@ -436,7 +416,6 @@ Object.assign(module.exports, {
     newTestOption,
     newRegistry,
     newOptionFactory,
-    newInterestBearing,
     newPrimitive,
     approveToken,
     newTrader,

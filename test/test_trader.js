@@ -476,8 +476,7 @@ describe("Trader", () => {
             redeemToken = await setup.newTestRedeem(
                 Admin,
                 Alice,
-                optionToken.address,
-                underlyingToken.address
+                optionToken.address
             );
 
             await optionToken.setRedeemToken(redeemToken.address);
@@ -598,8 +597,7 @@ describe("Trader", () => {
             redeemToken = await setup.newTestRedeem(
                 Admin,
                 Alice,
-                optionToken.address,
-                underlyingToken.address
+                optionToken.address
             );
             await optionToken.setRedeemToken(redeemToken.address);
 
