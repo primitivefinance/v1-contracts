@@ -12,7 +12,6 @@ const Registry = require("../../artifacts/Registry");
 const Flash = require("../../artifacts/Flash");
 const Weth = require("../../artifacts/WETH9");
 const Trader = require("../../artifacts/Trader");
-const CTokenLike = require("../../artifacts/CTokenLike");
 const OptionTemplateLib = require("../../artifacts/OptionTemplateLib");
 const RedeemTemplateLib = require("../../artifacts/RedeemTemplateLib");
 const UniswapTrader = require("../../artifacts/UniswapTrader");
@@ -183,25 +182,6 @@ const newOptionFactory = async (signer, registry) => {
     await registry.setOptionFactory(optionFactory.address);
     await registry.setRedeemFactory(redeemTokenFactory.address);
     return optionFactory;
-};
-
-/**
- *
- * @param {*} signer
- * @param {*} underlying
- * @param {*} name
- * @param {*} symbol
- */
-const newInterestBearing = async (signer, underlying, name, symbol) => {
-    const compound = await deployContract(
-        signer,
-        CTokenLike,
-        [underlying, name, symbol],
-        {
-            gasLimit: 6000000,
-        }
-    );
-    return compound;
 };
 
 /**
@@ -436,7 +416,6 @@ Object.assign(module.exports, {
     newTestOption,
     newRegistry,
     newOptionFactory,
-    newInterestBearing,
     newPrimitive,
     approveToken,
     newTrader,
