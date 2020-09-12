@@ -131,13 +131,6 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
             .mul(optionToken.getQuoteValue())
             .div(optionToken.getBaseValue());
 
-        // Send the option tokens to prepare for calling exerciseOptions().
-        IERC20(address(optionToken)).safeTransferFrom(
-            msg.sender,
-            address(optionToken),
-            exerciseQuantity
-        );
-
         // If the underlying is WETH, then pay normal ERC-20 strike tokens.
         if (underlyingAddress == address(weth)) {
             require(
@@ -154,6 +147,13 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
             require(msg.value >= inputStrikes, "ERR_BAL_STRIKE");
             depositEthSendWeth(address(optionToken), exerciseQuantity);
         }
+
+        // Send the option tokens to prepare for calling exerciseOptions().
+        IERC20(address(optionToken)).safeTransferFrom(
+            msg.sender,
+            address(optionToken),
+            exerciseQuantity
+        );
 
         uint256 inputOptions;
         (inputStrikes, inputOptions) = optionToken.exerciseOptions(
@@ -324,7 +324,7 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
         uint256 inputOptions;
         uint256 outUnderlyings;
         (inputRedeems, inputOptions, outUnderlyings) = optionToken.closeOptions(
-            receiver
+            address(this)
         );
         withdrawEthAndSend(receiver, unwindQuantity);
         emit EthTraderUnwind(msg.sender, address(optionToken), inputOptions);

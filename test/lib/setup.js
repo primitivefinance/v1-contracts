@@ -15,7 +15,6 @@ const Trader = require("../../artifacts/Trader");
 const EthTrader = require("../../artifacts/EthTrader");
 const OptionTemplateLib = require("../../artifacts/OptionTemplateLib");
 const RedeemTemplateLib = require("../../artifacts/RedeemTemplateLib");
-const UniswapTrader = require("../../artifacts/UniswapTrader");
 
 // Constants and Utility functions
 const constants = require("./constants");
@@ -357,21 +356,6 @@ const approveToken = async (token, signer, spender) => {
 };
 
 /**
- * @dev Deploys a new UniswapTrader contract instance and returns it.
- * @param {*} signer
- * @param {*} quoteToken The contract instance of the quote token.
- * @param {*} router The address of the Uniswap Router contract.
- */
-const newUniswapTrader = async (signer, quoteToken, router) => {
-    const uniTrader = await deployContract(signer, UniswapTrader, [], {
-        gasLimit: 6000000,
-    });
-    await uniTrader.setQuoteToken(quoteToken.address);
-    await uniTrader.setRouter(router.address);
-    return uniTrader;
-};
-
-/**
  * @dev Deploys a new Uniswap factory and router instance for testing.
  * @param {*} signer
  * @param {*} feeToSetter The address which receives fees from the uniswap contracts.
@@ -415,7 +399,6 @@ const newUniswapRinkeby = async (signer) => {
 };
 
 Object.assign(module.exports, {
-    newUniswapTrader,
     newUniswap,
     newUniswapRinkeby,
     newWallets,
