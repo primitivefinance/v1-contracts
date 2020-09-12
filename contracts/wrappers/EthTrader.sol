@@ -10,17 +10,20 @@ pragma solidity 0.6.2;
 
 import { IOption } from "../option/interfaces/IOption.sol";
 import { TraderLib } from "../option/libraries/TraderLib.sol";
-import { SafeEthMath } from "@openzeppelin/contracts/math/SafeEthMath.sol";
+import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import {
     ReentrancyGuard
 } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { IEthTrader } from "./IEthTrader.sol";
 import { IWETH } from "./IWETH.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
 contract EthTrader is IEthTrader, ReentrancyGuard {
-    using SafeEthMath for uint256;
+    using SafeMath for uint256;
+    using SafeERC20 for IERC20;
 
-    IWETH payable public weth;
+    IWETH public weth;
 
     event EthTraderMint(
         address indexed from,
@@ -56,7 +59,7 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
     }
 
     receive() external payable {
-        assert(msg.sender == WETH); // only accept ETH via fallback from the WETH contract
+        assert(msg.sender == address(weth)); // only accept ETH via fallback from the WETH contract
     }
 
     /**
@@ -69,13 +72,13 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
         IOption optionToken,
         uint256 mintQuantity,
         address receiver
-    ) external payable nonReentrant returns (uint256, uint256) {
+    ) external override payable nonReentrant returns (uint256, uint256) {
         // Revert if mintQuantity is 0.
         require(mintQuantity > 0, "ERR_ZERO");
 
         // Check to make sure the mintQuantity requested matches the value sent.
         require(msg.value == mintQuantity, "ERR_UNEQUAL_VALUE");
-        
+
         // Check to make sure we are minting a WETH call option.
         address underlyingAddress = optionToken.getUnderlyingTokenAddress();
         require(address(weth) == underlyingAddress, "ERR_NOT_WETH");
@@ -84,8 +87,8 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
 
         // Mint the option and redeem tokens.
         (uint256 outputOptions, uint256 outputRedeems) = optionToken
-            .mintOptions(address(this));
-            emit EthTraderMint(
+            .mintOptions(receiver);
+        emit EthTraderMint(
             msg.sender,
             address(optionToken),
             outputOptions,
@@ -105,11 +108,15 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
         IOption optionToken,
         uint256 exerciseQuantity,
         address receiver
-    ) external payable nonReentrant returns (uint256, uint256) {
+    ) external override payable nonReentrant returns (uint256, uint256) {
         // Require one of the option's assets to be WETH.
         address underlyingAddress = optionToken.getUnderlyingTokenAddress();
         address strikeAddress = optionToken.getStrikeTokenAddress();
-        require(underlyingAddress == address(weth) || strikeAddress == address(weth), "ERR_NOT_WETH");
+        require(
+            underlyingAddress == address(weth) ||
+                strikeAddress == address(weth),
+            "ERR_NOT_WETH"
+        );
 
         // Require exercise quantity to not be zero and for the msg.sender to have the options to exercise.
         require(exerciseQuantity > 0, "ERR_ZERO");
@@ -131,13 +138,11 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
             exerciseQuantity
         );
 
-        
         // If the underlying is WETH, then pay normal ERC-20 strike tokens.
-        if(underlyingAddress == address(weth)) {
+        if (underlyingAddress == address(weth)) {
             require(
-            IERC20(strikeAddress).balanceOf(msg.sender) >=
-                inputStrikes,
-            "ERR_BAL_STRIKE"
+                IERC20(strikeAddress).balanceOf(msg.sender) >= inputStrikes,
+                "ERR_BAL_STRIKE"
             );
             IERC20(strikeAddress).safeTransferFrom(
                 msg.sender,
@@ -148,7 +153,6 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
             // Else, the strike address is WETH. Convert msg.value to WETH to pay strike.
             require(msg.value >= inputStrikes, "ERR_BAL_STRIKE");
             depositEthSendWeth(address(optionToken), exerciseQuantity);
-            
         }
 
         uint256 inputOptions;
@@ -159,7 +163,7 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
         );
 
         // If underlying is WETH, convert WETH to ETH then send ETH.
-        if(underlyingAddress == address(weth)) {
+        if (underlyingAddress == address(weth)) {
             withdrawEthAndSend(receiver, exerciseQuantity);
         }
 
@@ -167,7 +171,7 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
             msg.sender,
             address(optionToken),
             exerciseQuantity,
-            inStrikes
+            inputStrikes
         );
         return (inputStrikes, inputOptions);
     }
@@ -183,7 +187,7 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
         IOption optionToken,
         uint256 redeemQuantity,
         address receiver
-    ) external payable nonReentrant returns (uint256) {
+    ) external override payable nonReentrant returns (uint256) {
         // Require strike token to be WETH.
         address strikeAddress = optionToken.getStrikeTokenAddress();
         require(strikeAddress == address(weth), "ERR_NOT_WETH");
@@ -202,7 +206,7 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
         uint256 inputRedeems = optionToken.redeemStrikeTokens(address(this));
 
         withdrawEthAndSend(receiver, redeemQuantity);
-        emit EthTraderRedeem(msg.sender, address(optionToken), inRedeems);
+        emit EthTraderRedeem(msg.sender, address(optionToken), inputRedeems);
         return inputRedeems;
     }
 
@@ -220,7 +224,10 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
         uint256 closeQuantity,
         address receiver
     )
-        external payable nonReentrant
+        external
+        override
+        payable
+        nonReentrant
         returns (
             uint256,
             uint256,
@@ -262,7 +269,7 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
             address(this)
         );
         withdrawEthAndSend(receiver, closeQuantity);
-        emit EthTraderClose(msg.sender, address(optionToken), inOptions);
+        emit EthTraderClose(msg.sender, address(optionToken), inputOptions);
         return (inputRedeems, inputOptions, outUnderlyings);
     }
 
@@ -277,7 +284,10 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
         uint256 unwindQuantity,
         address receiver
     )
-        external payable nonReentrant
+        external
+        override
+        payable
+        nonReentrant
         returns (
             uint256,
             uint256,
@@ -317,23 +327,24 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
             receiver
         );
         withdrawEthAndSend(receiver, unwindQuantity);
-        emit EthTraderUnwind(msg.sender, address(optionToken), inOptions);
+        emit EthTraderUnwind(msg.sender, address(optionToken), inputOptions);
         return (inputRedeems, inputOptions, outUnderlyings);
     }
 
-    function depositEthSendWeth(address to, uint quantity) internal {
+    function depositEthSendWeth(address to, uint256 quantity) internal {
         // Deposit the ethers received from msg.value into the WETH contract.
-        weth.deposit.value(msg.value)()
+        weth.deposit.value(msg.value)();
 
         // Send WETH to option contract in preparation to call a core function.
         weth.transfer(to, quantity);
     }
 
-    function withdrawEthAndSend(address to, uint quantity) internal {
+    function withdrawEthAndSend(address to, uint256 quantity) internal {
         // Withdraw ethers with weth.
         weth.withdraw(quantity);
 
         // Send ether
-        require(to.call.value(quantity).gas(35000)());
+        (bool success, ) = to.call.value(quantity)("");
+        require(success, "ERR_SENDING_ETHER");
     }
 }
