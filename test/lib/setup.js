@@ -12,6 +12,7 @@ const Registry = require("../../artifacts/Registry");
 const Flash = require("../../artifacts/Flash");
 const Weth = require("../../artifacts/WETH9");
 const Trader = require("../../artifacts/Trader");
+const EthTrader = require("../../artifacts/EthTrader");
 const OptionTemplateLib = require("../../artifacts/OptionTemplateLib");
 const RedeemTemplateLib = require("../../artifacts/RedeemTemplateLib");
 const UniswapTrader = require("../../artifacts/UniswapTrader");
@@ -242,6 +243,18 @@ const newTrader = async (signer, weth) => {
 };
 
 /**
+ * @dev Deploys a new Trader contract instance.
+ * @param {*} signer
+ * @param {*} weth The address of WETH for the respective network.
+ */
+const newEthTrader = async (signer, weth) => {
+    const trader = await deployContract(signer, EthTrader, [weth], {
+        gasLimit: 6000000,
+    });
+    return trader;
+};
+
+/**
  * @dev Deploys a new Option contract instance through the Registry contract instance.
  * @param {*} signer
  * @param {*} registry The instance of the Registry contract.
@@ -419,4 +432,5 @@ Object.assign(module.exports, {
     newPrimitive,
     approveToken,
     newTrader,
+    newEthTrader,
 });
