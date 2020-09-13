@@ -3,8 +3,9 @@
 pragma solidity 0.6.2;
 
 /**
- * @title   EthEthTrader
- * @notice  Abstracts the interfacing with the protocol's option contract for ease-of-use. Converts ether to WETH for WETH option operations.
+ * @title   EthTrader
+ * @notice  Abstracts the interfacing with the protocol's option contract for ease-of-use.
+ *          Converts ether to WETH for WETH option operations.
  * @author  Primitive
  */
 
@@ -55,16 +56,31 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
         uint256 inOptions
     );
 
+    modifier nonZero(uint256 quantity) {
+        require(quantity > 0, "ERR_ZERO");
+        _;
+    }
+
+    /**
+     * @dev Since the EthTrader contract is responsible for converting ether deposits into WETH,
+     * we have to initialize the state of the contract with the address for WETH.
+     */
     constructor(address payable _weth) public {
         weth = IWETH(_weth);
     }
 
+    /**
+     * @dev If ether is sent to this contract through a normal transaction, it will fail, unless
+     * it was the WETH contract who sent it.
+     */
     receive() external payable {
         assert(msg.sender == address(weth)); // only accept ETH via fallback from the WETH contract
     }
 
     /**
      * @dev Conducts important safety checks to safely mint WETH option tokens.
+     * @notice Options with WETH as the underlying asset are WETH call options.
+     * This function will accept ether, convert it to WETH, and mint call options.
      * @param optionToken The address of the option token to mint.
      * @param mintQuantity The quantity of option tokens to mint.
      * @param receiver The address which receives the minted option tokens.
@@ -73,7 +89,14 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
         IOption optionToken,
         uint256 mintQuantity,
         address receiver
-    ) external override payable nonReentrant returns (uint256, uint256) {
+    )
+        external
+        override
+        payable
+        nonReentrant
+        nonZero(mintQuantity)
+        returns (uint256, uint256)
+    {
         // Revert if mintQuantity is 0.
         require(mintQuantity > 0, "ERR_ZERO");
 
@@ -109,7 +132,14 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
         IOption optionToken,
         uint256 exerciseQuantity,
         address receiver
-    ) external override payable nonReentrant returns (uint256, uint256) {
+    )
+        external
+        override
+        payable
+        nonReentrant
+        nonZero(exerciseQuantity)
+        returns (uint256, uint256)
+    {
         // Require one of the option's assets to be WETH.
         address underlyingAddress = optionToken.getUnderlyingTokenAddress();
         address strikeAddress = optionToken.getStrikeTokenAddress();
@@ -188,7 +218,14 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
         IOption optionToken,
         uint256 redeemQuantity,
         address receiver
-    ) external override payable nonReentrant returns (uint256) {
+    )
+        external
+        override
+        payable
+        nonReentrant
+        nonZero(redeemQuantity)
+        returns (uint256)
+    {
         // Require strike token to be WETH.
         address strikeAddress = optionToken.getStrikeTokenAddress();
         address redeemAddress = optionToken.redeemToken();
@@ -229,6 +266,7 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
         override
         payable
         nonReentrant
+        nonZero(closeQuantity)
         returns (
             uint256,
             uint256,
@@ -289,6 +327,7 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
         override
         payable
         nonReentrant
+        nonZero(unwindQuantity)
         returns (
             uint256,
             uint256,
