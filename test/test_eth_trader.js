@@ -5,7 +5,7 @@ const { solidity } = require("ethereum-waffle");
 chai.use(solidity);
 
 // Convert to wei
-const { parseEther } = require("ethers/lib/utils");
+const { parseEther, formatEther } = require("ethers/lib/utils");
 
 // Helper functions and constants
 const utils = require("./lib/utils");
@@ -108,6 +108,15 @@ describe("EthTrader", () => {
             let optionBal = await getTokenBalance(optionToken, Alice);
             let redeemBal = await getTokenBalance(redeemToken, Alice);
 
+            let gasUsed = await Admin.estimateGas(
+                trader.safeEthMint(
+                    optionToken.address,
+                    inputUnderlyings,
+                    Alice,
+                    { value: inputUnderlyings }
+                )
+            );
+
             await expect(
                 trader.safeEthMint(
                     optionToken.address,
@@ -124,9 +133,9 @@ describe("EthTrader", () => {
                     outputRedeems.toString()
                 );
 
-            let underlyingsChange = (await Admin.getBalance()).sub(
-                underlyingBal
-            );
+            let underlyingsChange = (await Admin.getBalance())
+                .sub(underlyingBal)
+                .add(gasUsed);
             let optionsChange = (await getTokenBalance(optionToken, Alice)).sub(
                 optionBal
             );
@@ -395,26 +404,18 @@ describe("EthTrader", () => {
 
             await safeEthClose(ONE_ETHER);
             await safeEthExercise(parseEther("200"));
-            await safeEthRedeem(parseEther("0.1"));
             await safeEthClose(ONE_ETHER);
             await safeEthExercise(ONE_ETHER);
             await safeEthExercise(ONE_ETHER);
             await safeEthExercise(ONE_ETHER);
             await safeEthExercise(ONE_ETHER);
-            await safeEthRedeem(parseEther("0.23"));
-            await safeEthRedeem(parseEther("0.1234"));
-            await safeEthRedeem(parseEther("0.15"));
-            await safeEthRedeem(parseEther("0.2543"));
             await safeEthClose(FIVE_ETHER);
             await safeEthClose(await optionToken.balanceOf(Alice));
-            await safeEthRedeem(await redeemToken.balanceOf(Alice));
 
             // Assert option and redeem token balances are 0
             let optionBal = await optionToken.balanceOf(Alice);
-            let redeemBal = await redeemToken.balanceOf(Alice);
 
             assertWithinError(optionBal, 0);
-            assertWithinError(redeemBal, 0);
         });
     });
 
@@ -539,8 +540,12 @@ describe("EthTrader", () => {
     });
 
     describe("safeEthRedeem", () => {
-        beforeEach(async () => {
+        before(async () => {
+            // Administrative contract instances
+            registry = await setup.newRegistry(Admin);
             // Option Parameters
+            underlyingToken = dai;
+            strikeToken = weth;
             base = parseEther("200").toString();
             quote = parseEther("1").toString();
             expiry = "1690868800";
@@ -558,15 +563,24 @@ describe("EthTrader", () => {
 
             optionToken = Primitive.optionToken;
             redeemToken = Primitive.redeemToken;
-            await dai.transfer(optionToken.address, parseEther("200"));
+            await dai.transfer(optionToken.address, parseEther("2000"));
+            await weth.deposit({ value: parseEther("10") });
             await optionToken.mintOptions(Alice);
+            // Trader contract instance
+            trader = await setup.newEthTrader(Admin, weth.address);
+
+            // Approve tokens for trader to use
+            await weth.approve(trader.address, MILLION_ETHER);
+            await dai.approve(trader.address, MILLION_ETHER);
+            await optionToken.approve(trader.address, MILLION_ETHER);
+            await redeemToken.approve(trader.address, MILLION_ETHER);
         });
 
         safeEthRedeem = async (inputRedeems) => {
             let outputStrikes = inputRedeems;
 
             let redeemBal = await getTokenBalance(redeemToken, Alice);
-            let strikeBal = await getTokenBalance(strikeToken, Alice);
+            let strikeBal = await Admin.getBalance();
 
             await expect(
                 trader.safeEthRedeem(optionToken.address, inputRedeems, Alice)
@@ -577,9 +591,7 @@ describe("EthTrader", () => {
             let redeemsChange = (await getTokenBalance(redeemToken, Alice)).sub(
                 redeemBal
             );
-            let strikesChange = (await getTokenBalance(strikeToken, Alice)).sub(
-                strikeBal
-            );
+            let strikesChange = (await Admin.getBalance()).sub(strikeBal);
 
             assertWithinError(redeemsChange, inputRedeems.mul(-1));
             assertWithinError(strikesChange, outputStrikes);
@@ -611,7 +623,12 @@ describe("EthTrader", () => {
         });
 
         it("should redeemToken consecutively", async () => {
-            await safeEthExercise(parseEther("200"));
+            await trader.safeEthExercise(
+                optionToken.address,
+                parseEther("200"),
+                Alice,
+                { value: ONE_ETHER }
+            );
             await safeEthRedeem(parseEther("0.1"));
             await safeEthRedeem(parseEther("0.32525"));
             await safeEthRedeem(parseEther("0.5"));

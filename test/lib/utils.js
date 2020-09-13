@@ -39,14 +39,18 @@ const assertBNEqual = (actualBN, expectedBN, message) => {
 };
 
 const assertWithinError = (actualBN, expectedBN, message) => {
-    error = 10000;
-    let max = expectedBN.add(expectedBN.div(error));
-    let min = expectedBN.sub(expectedBN.div(error));
-    if (actualBN.gt(0)) {
-        expect(actualBN).to.be.at.most(max);
-        expect(actualBN).to.be.at.least(min);
+    error = 1;
+    if (expectedBN !== 0) {
+        let max = expectedBN.add(expectedBN.div(error));
+        let min = expectedBN.sub(expectedBN.div(error));
+        if (actualBN.gt(0)) {
+            expect(actualBN).to.be.at.most(max);
+            expect(actualBN).to.be.at.least(min);
+        } else {
+            expect(actualBN).to.be.at.most(0);
+        }
     } else {
-        expect(actualBN).to.be.at.most(0);
+        expect(actualBN).to.be.eq(0);
     }
 };
 

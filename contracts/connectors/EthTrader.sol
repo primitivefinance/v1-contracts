@@ -18,6 +18,7 @@ import { IEthTrader } from "./IEthTrader.sol";
 import { IWETH } from "./IWETH.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@nomiclabs/buidler/console.sol";
 
 contract EthTrader is IEthTrader, ReentrancyGuard {
     using SafeMath for uint256;
@@ -145,7 +146,7 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
         } else {
             // Else, the strike address is WETH. Convert msg.value to WETH to pay strike.
             require(msg.value >= inputStrikes, "ERR_BAL_STRIKE");
-            depositEthSendWeth(address(optionToken), exerciseQuantity);
+            depositEthSendWeth(address(optionToken), inputStrikes);
         }
 
         // Send the option tokens to prepare for calling exerciseOptions().
@@ -190,15 +191,15 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
     ) external override payable nonReentrant returns (uint256) {
         // Require strike token to be WETH.
         address strikeAddress = optionToken.getStrikeTokenAddress();
+        address redeemAddress = optionToken.redeemToken();
         require(strikeAddress == address(weth), "ERR_NOT_WETH");
         require(redeemQuantity > 0, "ERR_ZERO");
         require(
-            IERC20(optionToken.redeemToken()).balanceOf(msg.sender) >=
-                redeemQuantity,
+            IERC20(redeemAddress).balanceOf(msg.sender) >= redeemQuantity,
             "ERR_BAL_REDEEM"
         );
         // There can be the case there is no available strikes to redeem, causing a revert.
-        IERC20(optionToken.redeemToken()).safeTransferFrom(
+        IERC20(redeemAddress).safeTransferFrom(
             msg.sender,
             address(optionToken),
             redeemQuantity
