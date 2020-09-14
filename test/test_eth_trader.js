@@ -5,7 +5,7 @@ const { solidity } = require("ethereum-waffle");
 chai.use(solidity);
 
 // Convert to wei
-const { parseEther, formatEther } = require("ethers/lib/utils");
+const { parseEther } = require("ethers/lib/utils");
 
 // Helper functions and constants
 const utils = require("./lib/utils");
@@ -17,13 +17,11 @@ const {
     ONE_ETHER,
     FIVE_ETHER,
     TEN_ETHER,
-    HUNDRED_ETHER,
     THOUSAND_ETHER,
     MILLION_ETHER,
 } = constants.VALUES;
 
 const {
-    ERR_BAL_UNDERLYING,
     ERR_ZERO,
     ERR_BAL_STRIKE,
     ERR_BAL_OPTIONS,
@@ -80,6 +78,7 @@ describe("EthTrader", () => {
             expiry
         );
 
+        // Long and short tokens
         optionToken = Primitive.optionToken;
         redeemToken = Primitive.redeemToken;
 
@@ -104,16 +103,19 @@ describe("EthTrader", () => {
             // Calculate the strike price of each unit of underlying token
             let outputRedeems = inputUnderlyings.mul(quote).div(base);
 
+            // The balance of the user we are checking before and after is their ether balance.
             let underlyingBal = await Admin.getBalance();
             let optionBal = await getTokenBalance(optionToken, Alice);
             let redeemBal = await getTokenBalance(redeemToken, Alice);
 
+            // Since the user is sending ethers, the change in their balance will need to incorporate gas costs.
             let gasUsed = await Admin.estimateGas(
                 trader.safeMintWithETH(optionToken.address, Alice, {
                     value: inputUnderlyings,
                 })
             );
 
+            // Call the mint function and check that the event was emitted.
             await expect(
                 trader.safeMintWithETH(optionToken.address, Alice, {
                     value: inputUnderlyings,
@@ -150,12 +152,14 @@ describe("EthTrader", () => {
         };
 
         it("should revert if amount is 0", async () => {
+            // Without sending any value, the transaction will revert due to the contract's nonZero modifier.
             await expect(
                 trader.safeMintWithETH(optionToken.address, Alice)
             ).to.be.revertedWith(ERR_ZERO);
         });
 
         it("should revert if optionToken.address is not an option ", async () => {
+            // Passing in the address of Alice for the optionToken parameter will revert.
             await expect(trader.safeMintWithETH(Alice, Alice, { value: 10 })).to
                 .be.reverted;
         });
@@ -178,10 +182,12 @@ describe("EthTrader", () => {
         });
 
         it("should mint optionTokens and redeemTokens in correct amounts", async () => {
+            // Use the function above to mint options, check emitted events, and check invariants.
             await safeMintWithETH(ONE_ETHER);
         });
 
         it("should successfully call safe mint a few times in a row", async () => {
+            // Make sure we can mint different values, multiple times in a row.
             await safeMintWithETH(ONE_ETHER);
             await safeMintWithETH(TEN_ETHER);
             await safeMintWithETH(FIVE_ETHER);
@@ -193,6 +199,7 @@ describe("EthTrader", () => {
 
     describe("safeExerciseForETH", () => {
         beforeEach(async () => {
+            // Mint some options to the Alice address so the proceeding test can exercise them.
             await safeMintWithETH(TEN_ETHER);
         });
 
@@ -202,6 +209,7 @@ describe("EthTrader", () => {
             // Calculate the amount of strike tokens necessary to exercise
             let inputStrikes = inputUnderlyings.mul(quote).div(base);
 
+            // The balance of the user we are checking before and after is their ether balance.
             let underlyingBal = await Admin.getBalance();
             let optionBal = await getTokenBalance(optionToken, Alice);
             let strikeBal = await getTokenBalance(strikeToken, Alice);
@@ -244,12 +252,14 @@ describe("EthTrader", () => {
         };
 
         it("should revert if amount is 0", async () => {
+            // If we pass in 0 as the exercise quantity, it will revert due to the contract's nonZero modifier.
             await expect(
                 trader.safeExerciseForETH(optionToken.address, 0, Alice)
             ).to.be.revertedWith(ERR_ZERO);
         });
 
         it("should revert if user does not have enough optionToken tokens", async () => {
+            // Fails early by checking the user's optionToken balance against the quantity of options they wish to exercise.
             await expect(
                 trader.safeExerciseForETH(
                     optionToken.address,
@@ -260,12 +270,17 @@ describe("EthTrader", () => {
         });
 
         it("should revert if user does not have enough strike tokens", async () => {
+            // Mint some option and redeem tokens to Bob.
             await trader.safeMintWithETH(optionToken.address, Bob, {
                 value: ONE_ETHER,
             });
+
+            // Send the strikeTokens that Bob owns to Alice, so that Bob has 0 strikeTokens.
             await strikeToken
                 .connect(User)
                 .transfer(Alice, await strikeToken.balanceOf(Bob));
+
+            // Attempting to exercise an option without having enough strikeTokens will cause a revert.
             await expect(
                 trader
                     .connect(User)
@@ -283,12 +298,14 @@ describe("EthTrader", () => {
 
     describe("safeCloseForETH", () => {
         beforeEach(async () => {
+            // Mint some options to the Alice address so the proceeding test can exercise them.
             await safeMintWithETH(parseEther("1"));
         });
 
         safeCloseForETH = async (inputOptions) => {
             let inputRedeems = inputOptions.mul(quote).div(base);
 
+            // The balance of the user we are checking before and after is their ether balance.
             let underlyingBal = await Admin.getBalance();
             let optionBal = await getTokenBalance(optionToken, Alice);
             let redeemBal = await getTokenBalance(redeemToken, Alice);
@@ -322,18 +339,24 @@ describe("EthTrader", () => {
         };
 
         it("should revert if amount is 0", async () => {
+            // Fails early if quantity of options to close is 0, because of the contract's nonZero modifier.
             await expect(
                 trader.safeCloseForETH(optionToken.address, 0, Alice)
             ).to.be.revertedWith(ERR_ZERO);
         });
 
-        it("should revert if user does not have enough redeemToken tokens", async () => {
+        it("should revert if user does not have enough redeemTokens", async () => {
+            // Mint some option and redeem tokens to Bob.
             await trader.safeMintWithETH(optionToken.address, Bob, {
                 value: ONE_ETHER,
             });
+
+            // Send Bob's redeemTokens to Alice, so that Bob has 0 redeemTokens.
             await redeemToken
                 .connect(User)
                 .transfer(Alice, await redeemToken.balanceOf(Bob));
+
+            // Attempting to close options without enough redeemTokens will cause a revert.
             await expect(
                 trader
                     .connect(User)
@@ -342,12 +365,17 @@ describe("EthTrader", () => {
         });
 
         it("should revert if user does not have enough optionToken tokens", async () => {
+            // Mint some option and redeem tokens to Bob.
             await trader.safeMintWithETH(optionToken.address, Bob, {
                 value: ONE_ETHER,
             });
+
+            // Send Bob's optionTokens to Alice, so that Bob has 0 optionTokens.
             await optionToken
                 .connect(User)
                 .transfer(Alice, await optionToken.balanceOf(Bob));
+
+            // Attempting to close a quantity of options that msg.sender does not have will cause a revert.
             await expect(
                 trader
                     .connect(User)
@@ -356,6 +384,7 @@ describe("EthTrader", () => {
         });
 
         it("should revert if calling unwind and not expired", async () => {
+            // The unwind function is for using redeem tokens to withdraw underlying collateral from expired options.
             await expect(
                 trader.safeUnwindForETH(optionToken.address, ONE_ETHER, Alice)
             ).to.be.revertedWith(ERR_NOT_EXPIRED);
@@ -404,8 +433,10 @@ describe("EthTrader", () => {
 
     describe("safeUnwindForETH", () => {
         beforeEach(async () => {
-            // Sets up contract instances
+            // Sets up a new trader contract to test with.
             trader = await setup.newEthTrader(Admin, weth.address);
+
+            // Creates a new option and redeem to test with. These Test instances can be set to expired arbritrarily.
             optionToken = await setup.newTestOption(
                 Admin,
                 underlyingToken.address,
@@ -414,6 +445,7 @@ describe("EthTrader", () => {
                 quote,
                 expiry
             );
+
             redeemToken = await setup.newTestRedeem(
                 Admin,
                 Alice,
@@ -466,6 +498,7 @@ describe("EthTrader", () => {
         safeUnwindForETH = async (inputOptions) => {
             let inputRedeems = inputOptions.mul(quote).div(base);
 
+            // The balance of the user we are checking before and after is their ether balance.
             let underlyingBal = await Admin.getBalance();
             let optionBal = await getTokenBalance(optionToken, Alice);
             let redeemBal = await getTokenBalance(redeemToken, Alice);
@@ -496,19 +529,17 @@ describe("EthTrader", () => {
         };
 
         it("should revert if amount is 0", async () => {
+            // Fails early if quantity input is 0, due to the contract's nonZero modifier.
             await expect(
                 trader.safeUnwindForETH(optionToken.address, 0, Alice)
             ).to.be.revertedWith(ERR_ZERO);
         });
 
         it("should revert if user does not have enough redeemToken tokens", async () => {
-            await redeemToken.transfer(
-                Bob,
-                await redeemToken.balanceOf(Alice),
-                {
-                    from: Alice,
-                }
-            );
+            // Transfer Alice's redeemTokens to Bob, so that Alice has 0 redeemTokens.
+            await redeemToken.transfer(Bob, await redeemToken.balanceOf(Alice));
+
+            // Attempting to redeem tokens which are not held in msg.sender's balance will cause a revert.
             await expect(
                 trader.safeUnwindForETH(optionToken.address, ONE_ETHER, Alice, {
                     from: Alice,
@@ -528,8 +559,8 @@ describe("EthTrader", () => {
             // Administrative contract instances
             registry = await setup.newRegistry(Admin);
             // Option Parameters
-            underlyingToken = dai;
-            strikeToken = weth;
+            underlyingToken = dai; // Different from the option tested in above tests.
+            strikeToken = weth; // This option is a WETH put option. Above tests use a WETH call option.
             base = parseEther("200").toString();
             quote = parseEther("1").toString();
             expiry = "1690868800";
@@ -547,9 +578,12 @@ describe("EthTrader", () => {
 
             optionToken = Primitive.optionToken;
             redeemToken = Primitive.redeemToken;
+
+            // Mint some option and redeem tokens to use in the tests.
             await dai.transfer(optionToken.address, parseEther("2000"));
             await weth.deposit({ value: parseEther("10") });
             await optionToken.mintOptions(Alice);
+
             // Trader contract instance
             trader = await setup.newEthTrader(Admin, weth.address);
 
@@ -564,6 +598,7 @@ describe("EthTrader", () => {
             let outputStrikes = inputRedeems;
 
             let redeemBal = await getTokenBalance(redeemToken, Alice);
+            // The balance of the user we are checking before and after is their ether balance.
             let strikeBal = await Admin.getBalance();
 
             await expect(
@@ -593,12 +628,14 @@ describe("EthTrader", () => {
         };
 
         it("should revert if amount is 0", async () => {
+            // Fails early if quantity input is 0, due to the contract's nonZero modifier.
             await expect(
                 trader.safeRedeemForETH(optionToken.address, 0, Alice)
             ).to.be.revertedWith(ERR_ZERO);
         });
 
         it("should revert if user does not have enough redeemToken tokens", async () => {
+            // Fails early if the user is attempting to redeem tokens that they don't have.
             await expect(
                 trader.safeRedeemForETH(
                     optionToken.address,
@@ -608,7 +645,10 @@ describe("EthTrader", () => {
             ).to.be.revertedWith(ERR_BAL_REDEEM);
         });
 
-        it("should revert if  contract does not have enough strike tokens", async () => {
+        it("should revert if contract does not have enough strike tokens", async () => {
+            // If option tokens are not exercised, then no strikeTokens are stored in the option contract.
+            // If no strikeTokens are stored in the contract, redeemTokens cannot be utilized until:
+            // options are exercised, or become expired.
             await expect(
                 trader.safeRedeemForETH(optionToken.address, ONE_ETHER, Alice)
             ).to.be.revertedWith(ERR_BAL_STRIKE);
@@ -631,6 +671,7 @@ describe("EthTrader", () => {
             // Calculate the amount of strike tokens necessary to exercise
             let inputStrikes = inputUnderlyings.mul(quote).div(base);
 
+            // The balance of the user we are checking before and after is their ether balance.
             let underlyingBal = await Admin.getBalance();
             let optionBal = await getTokenBalance(optionToken, Alice);
             let strikeBal = await getTokenBalance(strikeToken, Alice);
@@ -671,6 +712,7 @@ describe("EthTrader", () => {
         };
 
         it("should revert if amount is 0", async () => {
+            // Fails early if quantity input is 0, due to the contract's nonZero modifier.
             await expect(
                 trader.safeExerciseWithETH(optionToken.address, Alice)
             ).to.be.revertedWith(ERR_ZERO);
