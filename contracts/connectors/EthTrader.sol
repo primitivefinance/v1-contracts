@@ -5,7 +5,8 @@ pragma solidity 0.6.2;
 /**
  * @title   EthTrader
  * @notice  Abstracts the interfacing with the protocol's option contract for ease-of-use.
- *          Converts ether to WETH for WETH option operations.
+ *          Manages operations involving options with WETH as the underlying or strike asset.
+ *          Accepts deposits in ethers and withdraws ethers.
  * @author  Primitive
  */
 
@@ -56,14 +57,17 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
         uint256 inOptions
     );
 
+    /**
+     * @dev Checks the quantity of an operation to make sure its not zero. Fails early.
+     */
     modifier nonZero(uint256 quantity) {
         require(quantity > 0, "ERR_ZERO");
         _;
     }
 
     /**
-     * @dev Since the EthTrader contract is responsible for converting ether deposits into WETH,
-     * we have to initialize the state of the contract with the address for WETH.
+     * @dev Since the EthTrader contract is responsible for converting between ethers and WETH,
+     * the contract is initialized with the address for WETH.
      */
     constructor(address payable _weth) public {
         weth = IWETH(_weth);
@@ -74,68 +78,126 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
      * it was the WETH contract who sent it.
      */
     receive() external payable {
-        assert(msg.sender == address(weth)); // only accept ETH via fallback from the WETH contract
+        assert(msg.sender == address(weth));
     }
 
     /**
-     * @dev Conducts important safety checks to safely mint WETH option tokens.
-     * @notice Options with WETH as the underlying asset are WETH call options.
-     * This function will accept ether, convert it to WETH, and mint call options.
+     * @dev Mints msg.value quantity of options and "quote" (option parameter) quantity of redeem tokens.
+     * @notice This function is for options that have WETH as the underlying asset.
      * @param optionToken The address of the option token to mint.
-     * @param mintQuantity The quantity of option tokens to mint.
-     * @param receiver The address which receives the minted option tokens.
+     * @param receiver The address which receives the minted option and redeem tokens.
      */
-    function safeEthMint(
-        IOption optionToken,
-        uint256 mintQuantity,
-        address receiver
-    )
+    function safeMintWithETH(IOption optionToken, address receiver)
         external
         override
         payable
         nonReentrant
-        nonZero(mintQuantity)
+        nonZero(msg.value)
         returns (uint256, uint256)
     {
-        // Revert if mintQuantity is 0.
-        require(mintQuantity > 0, "ERR_ZERO");
-
-        // Check to make sure the mintQuantity requested matches the value sent.
-        require(msg.value == mintQuantity, "ERR_UNEQUAL_VALUE");
-
         // Check to make sure we are minting a WETH call option.
         address underlyingAddress = optionToken.getUnderlyingTokenAddress();
         require(address(weth) == underlyingAddress, "ERR_NOT_WETH");
 
-        depositEthSendWeth(address(optionToken), mintQuantity);
+        // Convert ethers into WETH, then send WETH to option contract in preparation of calling mintOptions().
+        depositEthSendWeth(address(optionToken));
 
         // Mint the option and redeem tokens.
         (uint256 outputOptions, uint256 outputRedeems) = optionToken
             .mintOptions(receiver);
+
         emit EthTraderMint(
             msg.sender,
             address(optionToken),
             outputOptions,
             outputRedeems
         );
+
         return (outputOptions, outputRedeems);
     }
 
     /**
-     * @dev Swaps strikeTokens to underlyingTokens using the strike ratio as the exchange rate.
-     * @notice Burns optionTokens, option contract receives strikeTokens, user receives underlyingTokens.
+     * @dev Swaps msg.value of strikeTokens (ethers) to underlyingTokens.
+     * Uses the strike ratio as the exchange rate. Strike ratio = base / quote.
+     * Msg.value (quote units) * base / quote = base units (underlyingTokens) to withdraw.
+     * @notice This function is for options with WETH as the strike asset.
+     * Burns option tokens, accepts ethers, and pushes out underlyingTokens.
      * @param optionToken The address of the option contract.
-     * @param exerciseQuantity Quantity of optionTokens to exercise.
      * @param receiver The underlyingTokens are sent to the receiver address.
      */
-    function safeEthExercise(
+    function safeExerciseWithETH(IOption optionToken, address receiver)
+        external
+        override
+        payable
+        nonReentrant
+        nonZero(msg.value)
+        returns (uint256, uint256)
+    {
+        // Require one of the option's assets to be WETH.
+        address underlyingAddress = optionToken.getUnderlyingTokenAddress();
+        address strikeAddress = optionToken.getStrikeTokenAddress();
+        require(strikeAddress == address(weth), "ERR_NOT_WETH");
+
+        uint256 inputStrikes = msg.value;
+        // Calculate quantity of optionTokens needed to burn.
+        // An ether put option with strike price $300 has a "base" value of 300, and a "quote" value of 1.
+        // To calculate how many options are needed to be burned, we need to cancel out the "quote" units.
+        // The input strike quantity can be multiplied by the strike ratio to cancel out "quote" units.
+        // 1 ether (quote units) * 300 (base units) / 1 (quote units) = 300 inputOptions
+        uint256 inputOptions = inputStrikes.mul(optionToken.getBaseValue()).div(
+            optionToken.getQuoteValue()
+        );
+
+        // Fail early if msg.sender does not have enough optionTokens to burn.
+        require(
+            IERC20(address(optionToken)).balanceOf(msg.sender) >= inputOptions,
+            "ERR_BAL_OPTIONS"
+        );
+
+        // Wrap the ethers into WETH, and send the WETH to the option contract to prepare for calling exerciseOptions().
+        depositEthSendWeth(address(optionToken), msg.value);
+
+        // Send the option tokens required to prepare for calling exerciseOptions().
+        IERC20(address(optionToken)).safeTransferFrom(
+            msg.sender,
+            address(optionToken),
+            inputOptions
+        );
+
+        // Burns the transferred option tokens, stores the strike asset (ether), and pushes underlyingTokens
+        // to the receiver address.
+        (inputStrikes, inputOptions) = optionToken.exerciseOptions(
+            receiver,
+            inputOptions,
+            new bytes(0)
+        );
+
+        emit EthTraderExercise(
+            msg.sender,
+            address(optionToken),
+            inputOptions,
+            inputStrikes
+        );
+
+        return (inputStrikes, inputOptions);
+    }
+
+    /**
+     * @dev Swaps strikeTokens to underlyingTokens, WETH, which is converted to ethers before withdrawn.
+     * Uses the strike ratio as the exchange rate. Strike ratio = base / quote.
+     * @notice This function is for options with WETH as the underlying asset.
+     * Burns option tokens, pulls strikeTokens, and pushes out ethers.
+     * @param optionToken The address of the option contract.
+     * @param exerciseQuantity Quantity of optionTokens to exercise.
+     * @param receiver The underlyingTokens (ethers) are sent to the receiver address.
+     */
+    function safeExerciseForETH(
         IOption optionToken,
         uint256 exerciseQuantity,
         address receiver
     )
         external
         override
-        payable
         nonReentrant
         nonZero(exerciseQuantity)
         returns (uint256, uint256)
@@ -143,14 +205,9 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
         // Require one of the option's assets to be WETH.
         address underlyingAddress = optionToken.getUnderlyingTokenAddress();
         address strikeAddress = optionToken.getStrikeTokenAddress();
-        require(
-            underlyingAddress == address(weth) ||
-                strikeAddress == address(weth),
-            "ERR_NOT_WETH"
-        );
+        require(underlyingAddress == address(weth), "ERR_NOT_WETH");
 
-        // Require exercise quantity to not be zero and for the msg.sender to have the options to exercise.
-        require(exerciseQuantity > 0, "ERR_ZERO");
+        // Fails early if msg.sender does not have enough optionTokens.
         require(
             IERC20(address(optionToken)).balanceOf(msg.sender) >=
                 exerciseQuantity,
@@ -162,22 +219,18 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
             .mul(optionToken.getQuoteValue())
             .div(optionToken.getBaseValue());
 
-        // If the underlying is WETH, then pay normal ERC-20 strike tokens.
-        if (underlyingAddress == address(weth)) {
-            require(
-                IERC20(strikeAddress).balanceOf(msg.sender) >= inputStrikes,
-                "ERR_BAL_STRIKE"
-            );
-            IERC20(strikeAddress).safeTransferFrom(
-                msg.sender,
-                address(optionToken),
-                inputStrikes
-            );
-        } else {
-            // Else, the strike address is WETH. Convert msg.value to WETH to pay strike.
-            require(msg.value >= inputStrikes, "ERR_BAL_STRIKE");
-            depositEthSendWeth(address(optionToken), inputStrikes);
-        }
+        // Fails early if msg.sender does not have enough strikeTokens.
+        require(
+            IERC20(strikeAddress).balanceOf(msg.sender) >= inputStrikes,
+            "ERR_BAL_STRIKE"
+        );
+
+        // Send strikeTokens to option contract to prepare for calling exerciseOptions().
+        IERC20(strikeAddress).safeTransferFrom(
+            msg.sender,
+            address(optionToken),
+            inputStrikes
+        );
 
         // Send the option tokens to prepare for calling exerciseOptions().
         IERC20(address(optionToken)).safeTransferFrom(
@@ -186,6 +239,8 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
             exerciseQuantity
         );
 
+        // Burns the optionTokens sent, stores the strikeTokens sent, and pushes underlyingTokens
+        // to this contract.
         uint256 inputOptions;
         (inputStrikes, inputOptions) = optionToken.exerciseOptions(
             address(this),
@@ -193,10 +248,8 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
             new bytes(0)
         );
 
-        // If underlying is WETH, convert WETH to ETH then send ETH.
-        if (underlyingAddress == address(weth)) {
-            withdrawEthAndSend(receiver, exerciseQuantity);
-        }
+        // Converts the withdrawn WETH to ethers, then sends the ethers to the receiver address.
+        withdrawEthAndSend(receiver, exerciseQuantity);
 
         emit EthTraderExercise(
             msg.sender,
@@ -204,67 +257,70 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
             exerciseQuantity,
             inputStrikes
         );
+
         return (inputStrikes, inputOptions);
     }
 
     /**
-     * @dev Burns redeemTokens to withdraw available strikeTokens.
-     * @notice inputRedeems = outputStrikes.
+     * @dev Burns redeem tokens to withdraw strike tokens (ethers) at a 1:1 ratio.
+     * @notice This function is for options that have WETH as the strike asset.
+     * Converts WETH to ethers, and withdraws ethers to the receiver address.
      * @param optionToken The address of the option contract.
-     * @param redeemQuantity redeemQuantity of redeemTokens to burn.
-     * @param receiver The strikeTokens are sent to the receiver address.
+     * @param redeemQuantity The quantity of redeemTokens to burn.
+     * @param receiver The strikeTokens (ethers) are sent to the receiver address.
      */
-    function safeEthRedeem(
+    function safeRedeemForETH(
         IOption optionToken,
         uint256 redeemQuantity,
         address receiver
-    )
-        external
-        override
-        payable
-        nonReentrant
-        nonZero(redeemQuantity)
-        returns (uint256)
-    {
-        // Require strike token to be WETH.
+    ) external override nonReentrant nonZero(redeemQuantity) returns (uint256) {
+        // Require strikeToken to be WETH.
         address strikeAddress = optionToken.getStrikeTokenAddress();
-        address redeemAddress = optionToken.redeemToken();
         require(strikeAddress == address(weth), "ERR_NOT_WETH");
-        require(redeemQuantity > 0, "ERR_ZERO");
+
+        // Fail early if msg.sender does not have enough redeemTokens.
+        address redeemAddress = optionToken.redeemToken();
         require(
             IERC20(redeemAddress).balanceOf(msg.sender) >= redeemQuantity,
             "ERR_BAL_REDEEM"
         );
-        // There can be the case there is no available strikes to redeem, causing a revert.
+
+        // Send redeemTokens to option contract in preparation for calling redeemStrikeTokens().
         IERC20(redeemAddress).safeTransferFrom(
             msg.sender,
             address(optionToken),
             redeemQuantity
         );
+
+        // If options have not been exercised, there will be no strikeTokens to redeem, causing a revert.
+        // Burns the redeem tokens that were sent to the contract, and withdraws the same quantity of WETH.
+        // Sends the withdrawn WETH to this contract, so that it can be unwrapped prior to being sent to receiver.
         uint256 inputRedeems = optionToken.redeemStrikeTokens(address(this));
 
+        // Unwrap the redeemed WETH and then send the ethers to the receiver.
         withdrawEthAndSend(receiver, redeemQuantity);
+
         emit EthTraderRedeem(msg.sender, address(optionToken), inputRedeems);
         return inputRedeems;
     }
 
     /**
-     * @dev Burn optionTokens and redeemTokens to withdraw underlyingTokens.
-     * @notice The redeemTokens to burn is equal to the optionTokens * strike ratio.
+     * @dev Burn optionTokens and redeemTokens to withdraw underlyingTokens (ethers).
+     * @notice This function is for options with WETH as the underlying asset.
+     * WETH underlyingTokens are converted to ethers before being sent to receiver.
+     * The redeemTokens to burn is equal to the optionTokens * strike ratio.
      * inputOptions = inputRedeems / strike ratio = outUnderlyings
      * @param optionToken The address of the option contract.
-     * @param closeQuantity Quantity of optionTokens to burn.
-     * (Implictly will burn the strike ratio quantity of redeemTokens).
-     * @param receiver The underlyingTokens are sent to the receiver address.
+     * @param closeQuantity Quantity of optionTokens to burn and an input to calculate how many redeems to burn.
+     * @param receiver The underlyingTokens (ethers) are sent to the receiver address.
      */
-    function safeEthClose(
+    function safeCloseForETH(
         IOption optionToken,
         uint256 closeQuantity,
         address receiver
     )
         external
         override
-        payable
         nonReentrant
         nonZero(closeQuantity)
         returns (
@@ -273,24 +329,29 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
             uint256
         )
     {
-        // Check to make sure we are closing a WETH call option.
+        // Require the optionToken to have WETH as the underlying asset.
         address underlyingAddress = optionToken.getUnderlyingTokenAddress();
         require(address(weth) == underlyingAddress, "ERR_NOT_WETH");
-        require(closeQuantity > 0, "ERR_ZERO");
+
+        // Fail early if msg.sender does not have enough optionTokens to burn.
         require(
             IERC20(address(optionToken)).balanceOf(msg.sender) >= closeQuantity,
             "ERR_BAL_OPTIONS"
         );
 
-        // Calculate the quantity of redeemTokens that need to be burned. (What we mean by Implicit).
+        // Calculate the quantity of redeemTokens that need to be burned.
         uint256 inputRedeems = closeQuantity
             .mul(optionToken.getQuoteValue())
             .div(optionToken.getBaseValue());
+
+        // Fail early is msg.sender does not have enough redeemTokens to burn.
         require(
             IERC20(optionToken.redeemToken()).balanceOf(msg.sender) >=
                 inputRedeems,
             "ERR_BAL_REDEEM"
         );
+
+        // Send redeem and option tokens in preparation of calling closeOptions().
         IERC20(optionToken.redeemToken()).safeTransferFrom(
             msg.sender,
             address(optionToken),
@@ -302,30 +363,35 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
             closeQuantity
         );
 
+        // Call the closeOptions() function to burn option and redeem tokens and withdraw underlyingTokens.
         uint256 inputOptions;
         uint256 outUnderlyings;
         (inputRedeems, inputOptions, outUnderlyings) = optionToken.closeOptions(
             address(this)
         );
+
+        // Since underlyngTokens are WETH, unwrap them then send the ethers to the receiver.
         withdrawEthAndSend(receiver, closeQuantity);
+
         emit EthTraderClose(msg.sender, address(optionToken), inputOptions);
         return (inputRedeems, inputOptions, outUnderlyings);
     }
 
     /**
-     * @dev Burn redeemTokens to withdraw underlyingTokens and strikeTokens from expired options.
+     * @dev Burn redeemTokens to withdraw underlyingTokens (ethers) from expired options.
+     * This function is for options with WETH as the underlying asset.
+     * The underlyingTokens are WETH, which are converted to ethers prior to being sent to receiver.
      * @param optionToken The address of the option contract.
-     * @param unwindQuantity Quantity of option tokens used to calculate the amount of redeem tokens to burn.
-     * @param receiver The underlyingTokens are sent to the receiver address and the redeemTokens are burned.
+     * @param unwindQuantity Quantity of underlyingTokens (ethers) to withdraw.
+     * @param receiver The underlyingTokens (ethers) are sent to the receiver address.
      */
-    function safeEthUnwind(
+    function safeUnwindForETH(
         IOption optionToken,
         uint256 unwindQuantity,
         address receiver
     )
         external
         override
-        payable
         nonReentrant
         nonZero(unwindQuantity)
         returns (
@@ -334,57 +400,72 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
             uint256
         )
     {
-        // Check to make sure we are closing a WETH call option.
+        // Require the optionToken to have WETH as the underlying asset.
         address underlyingAddress = optionToken.getUnderlyingTokenAddress();
         require(address(weth) == underlyingAddress, "ERR_NOT_WETH");
 
-        // Checks
-        require(unwindQuantity > 0, "ERR_ZERO");
+        // If the option is not expired, fail early.
         // solhint-disable-next-line not-rely-on-time
-        require(
-            optionToken.getExpiryTime() < block.timestamp,
-            "ERR_NOT_EXPIRED"
-        );
+        require(optionToken.getExpiryTime() < now, "ERR_NOT_EXPIRED");
 
-        // Calculate amount of redeems required
+        // Calculate the quantity of redeemTokens that need to be burned.
         uint256 inputRedeems = unwindQuantity
             .mul(optionToken.getQuoteValue())
             .div(optionToken.getBaseValue());
+
+        // Fail early if msg.sender does not have enough redeemTokens to burn.
         require(
             IERC20(optionToken.redeemToken()).balanceOf(msg.sender) >=
                 inputRedeems,
             "ERR_BAL_REDEEM"
         );
+
+        // Send redeem in preparation of calling closeOptions().
         IERC20(optionToken.redeemToken()).safeTransferFrom(
             msg.sender,
             address(optionToken),
             inputRedeems
         );
 
+        // Call the closeOptions() function to burn redeem tokens and withdraw underlyingTokens.
         uint256 inputOptions;
         uint256 outUnderlyings;
         (inputRedeems, inputOptions, outUnderlyings) = optionToken.closeOptions(
             address(this)
         );
+
+        // Since underlyngTokens are WETH, unwrap them to ethers then send the ethers to the receiver.
         withdrawEthAndSend(receiver, unwindQuantity);
+
         emit EthTraderUnwind(msg.sender, address(optionToken), inputOptions);
         return (inputRedeems, inputOptions, outUnderlyings);
     }
 
-    function depositEthSendWeth(address to, uint256 quantity) internal {
+    /**
+     * @dev Deposits msg.value of ethers into WETH contract. Then sends WETH to "to".
+     * @param to The address to send WETH ERC-20 tokens to.
+     */
+    function depositEthSendWeth(address to) internal {
         // Deposit the ethers received from msg.value into the WETH contract.
         weth.deposit.value(msg.value)();
 
-        // Send WETH to option contract in preparation to call a core function.
-        weth.transfer(to, quantity);
+        // Send WETH.
+        weth.transfer(to, msg.value);
     }
 
+    /**
+     * @dev Unwraps WETH to withrdaw ethers, which are then sent to the "to" address.
+     * @param to The address to send withdrawn ethers to.
+     * @param quantity The quantity of WETH to unwrap.
+     */
     function withdrawEthAndSend(address to, uint256 quantity) internal {
         // Withdraw ethers with weth.
         weth.withdraw(quantity);
 
-        // Send ether
+        // Send ether.
         (bool success, ) = to.call.value(quantity)("");
+
+        // Revert is call is unsuccessful.
         require(success, "ERR_SENDING_ETHER");
     }
 }

@@ -5,44 +5,46 @@ pragma solidity 0.6.2;
 import { IOption } from "../option/interfaces/IOption.sol";
 
 interface IEthTrader {
-    function safeEthMint(
-        IOption optionToken,
-        uint256 mintQuantity,
-        address receiver
-    ) external payable returns (uint256, uint256);
+    function safeMintWithETH(IOption optionToken, address receiver)
+        external
+        payable
+        returns (uint256, uint256);
 
-    function safeEthExercise(
+    function safeExerciseWithETH(IOption optionToken, address receiver)
+        external
+        payable
+        returns (uint256, uint256);
+
+    function safeExerciseForETH(
         IOption optionToken,
         uint256 exerciseQuantity,
         address receiver
-    ) external payable returns (uint256, uint256);
+    ) external returns (uint256, uint256);
 
-    function safeEthRedeem(
+    function safeRedeemForETH(
         IOption optionToken,
         uint256 redeemQuantity,
         address receiver
-    ) external payable returns (uint256);
+    ) external returns (uint256);
 
-    function safeEthClose(
+    function safeCloseForETH(
         IOption optionToken,
         uint256 closeQuantity,
         address receiver
     )
         external
-        payable
         returns (
             uint256,
             uint256,
             uint256
         );
 
-    function safeEthUnwind(
+    function safeUnwindForETH(
         IOption optionToken,
         uint256 unwindQuantity,
         address receiver
     )
         external
-        payable
         returns (
             uint256,
             uint256,
