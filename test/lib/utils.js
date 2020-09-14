@@ -1,4 +1,4 @@
-const { assert } = require("chai");
+const { assert, expect } = require("chai");
 const { ethers } = require("@nomiclabs/buidler");
 const { parseEther } = ethers.utils;
 const { AddressZero } = ethers.constants;
@@ -36,6 +36,22 @@ const checkInitialization = async (registry, optionFactory, redeemFactory) => {
 
 const assertBNEqual = (actualBN, expectedBN, message) => {
     assert.equal(actualBN.toString(), expectedBN.toString(), message);
+};
+
+const assertWithinError = (actualBN, expectedBN, message) => {
+    error = 1;
+    if (expectedBN !== 0) {
+        let max = expectedBN.add(expectedBN.div(error));
+        let min = expectedBN.sub(expectedBN.div(error));
+        if (actualBN.gt(0)) {
+            expect(actualBN).to.be.at.most(max);
+            expect(actualBN).to.be.at.least(min);
+        } else {
+            expect(actualBN).to.be.at.most(0);
+        }
+    } else {
+        expect(actualBN).to.be.eq(0);
+    }
 };
 
 /**
@@ -109,4 +125,5 @@ module.exports = {
     getTokenBalance,
     checkAllowance,
     checkInitialization,
+    assertWithinError,
 };

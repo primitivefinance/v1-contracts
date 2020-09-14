@@ -12,9 +12,9 @@ const Registry = require("../../artifacts/Registry");
 const Flash = require("../../artifacts/Flash");
 const Weth = require("../../artifacts/WETH9");
 const Trader = require("../../artifacts/Trader");
+const EthTrader = require("../../artifacts/EthTrader");
 const OptionTemplateLib = require("../../artifacts/OptionTemplateLib");
 const RedeemTemplateLib = require("../../artifacts/RedeemTemplateLib");
-const UniswapTrader = require("../../artifacts/UniswapTrader");
 
 // Constants and Utility functions
 const constants = require("./constants");
@@ -242,6 +242,18 @@ const newTrader = async (signer, weth) => {
 };
 
 /**
+ * @dev Deploys a new Trader contract instance.
+ * @param {*} signer
+ * @param {*} weth The address of WETH for the respective network.
+ */
+const newEthTrader = async (signer, weth) => {
+    const trader = await deployContract(signer, EthTrader, [weth], {
+        gasLimit: 6000000,
+    });
+    return trader;
+};
+
+/**
  * @dev Deploys a new Option contract instance through the Registry contract instance.
  * @param {*} signer
  * @param {*} registry The instance of the Registry contract.
@@ -344,21 +356,6 @@ const approveToken = async (token, signer, spender) => {
 };
 
 /**
- * @dev Deploys a new UniswapTrader contract instance and returns it.
- * @param {*} signer
- * @param {*} quoteToken The contract instance of the quote token.
- * @param {*} router The address of the Uniswap Router contract.
- */
-const newUniswapTrader = async (signer, quoteToken, router) => {
-    const uniTrader = await deployContract(signer, UniswapTrader, [], {
-        gasLimit: 6000000,
-    });
-    await uniTrader.setQuoteToken(quoteToken.address);
-    await uniTrader.setRouter(router.address);
-    return uniTrader;
-};
-
-/**
  * @dev Deploys a new Uniswap factory and router instance for testing.
  * @param {*} signer
  * @param {*} feeToSetter The address which receives fees from the uniswap contracts.
@@ -402,7 +399,6 @@ const newUniswapRinkeby = async (signer) => {
 };
 
 Object.assign(module.exports, {
-    newUniswapTrader,
     newUniswap,
     newUniswapRinkeby,
     newWallets,
@@ -419,4 +415,5 @@ Object.assign(module.exports, {
     newPrimitive,
     approveToken,
     newTrader,
+    newEthTrader,
 });
