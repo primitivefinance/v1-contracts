@@ -155,7 +155,7 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
         );
 
         // Wrap the ethers into WETH, and send the WETH to the option contract to prepare for calling exerciseOptions().
-        depositEthSendWeth(address(optionToken), msg.value);
+        depositEthSendWeth(address(optionToken));
 
         // Send the option tokens required to prepare for calling exerciseOptions().
         IERC20(address(optionToken)).safeTransferFrom(

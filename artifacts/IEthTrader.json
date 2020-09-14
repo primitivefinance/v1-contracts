@@ -19,7 +19,7 @@
           "type": "address"
         }
       ],
-      "name": "safeEthClose",
+      "name": "safeCloseForETH",
       "outputs": [
         {
           "internalType": "uint256",
@@ -37,7 +37,7 @@
           "type": "uint256"
         }
       ],
-      "stateMutability": "payable",
+      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
@@ -58,7 +58,36 @@
           "type": "address"
         }
       ],
-      "name": "safeEthExercise",
+      "name": "safeExerciseForETH",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract IOption",
+          "name": "optionToken",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "receiver",
+          "type": "address"
+        }
+      ],
+      "name": "safeExerciseWithETH",
       "outputs": [
         {
           "internalType": "uint256",
@@ -82,17 +111,12 @@
           "type": "address"
         },
         {
-          "internalType": "uint256",
-          "name": "mintQuantity",
-          "type": "uint256"
-        },
-        {
           "internalType": "address",
           "name": "receiver",
           "type": "address"
         }
       ],
-      "name": "safeEthMint",
+      "name": "safeMintWithETH",
       "outputs": [
         {
           "internalType": "uint256",
@@ -126,7 +150,7 @@
           "type": "address"
         }
       ],
-      "name": "safeEthRedeem",
+      "name": "safeRedeemForETH",
       "outputs": [
         {
           "internalType": "uint256",
@@ -134,7 +158,7 @@
           "type": "uint256"
         }
       ],
-      "stateMutability": "payable",
+      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
@@ -155,7 +179,7 @@
           "type": "address"
         }
       ],
-      "name": "safeEthUnwind",
+      "name": "safeUnwindForETH",
       "outputs": [
         {
           "internalType": "uint256",
@@ -173,7 +197,7 @@
           "type": "uint256"
         }
       ],
-      "stateMutability": "payable",
+      "stateMutability": "nonpayable",
       "type": "function"
     }
   ],

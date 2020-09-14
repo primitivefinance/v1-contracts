@@ -99,8 +99,8 @@ describe("EthTrader", () => {
         });
     });
 
-    describe("safeEthMint", () => {
-        safeEthMint = async (inputUnderlyings) => {
+    describe("safeMintWithETH", () => {
+        safeMintWithETH = async (inputUnderlyings) => {
             // Calculate the strike price of each unit of underlying token
             let outputRedeems = inputUnderlyings.mul(quote).div(base);
 
@@ -109,21 +109,15 @@ describe("EthTrader", () => {
             let redeemBal = await getTokenBalance(redeemToken, Alice);
 
             let gasUsed = await Admin.estimateGas(
-                trader.safeEthMint(
-                    optionToken.address,
-                    inputUnderlyings,
-                    Alice,
-                    { value: inputUnderlyings }
-                )
+                trader.safeMintWithETH(optionToken.address, Alice, {
+                    value: inputUnderlyings,
+                })
             );
 
             await expect(
-                trader.safeEthMint(
-                    optionToken.address,
-                    inputUnderlyings,
-                    Alice,
-                    { value: inputUnderlyings }
-                )
+                trader.safeMintWithETH(optionToken.address, Alice, {
+                    value: inputUnderlyings,
+                })
             )
                 .to.emit(trader, "EthTraderMint")
                 .withArgs(
@@ -157,33 +151,22 @@ describe("EthTrader", () => {
 
         it("should revert if amount is 0", async () => {
             await expect(
-                trader.safeEthMint(optionToken.address, 0, Alice)
+                trader.safeMintWithETH(optionToken.address, Alice)
             ).to.be.revertedWith(ERR_ZERO);
         });
 
         it("should revert if optionToken.address is not an option ", async () => {
-            await expect(trader.safeEthMint(Alice, 10, Alice, { value: 10 })).to
+            await expect(trader.safeMintWithETH(Alice, Alice, { value: 10 })).to
                 .be.reverted;
-        });
-
-        it("should revert if msg.sender has not sent enough ether for tx", async () => {
-            await expect(
-                trader
-                    .connect(User)
-                    .safeEthMint(optionToken.address, MILLION_ETHER, Alice)
-            ).to.be.revertedWith(ERR_BAL_UNDERLYING);
         });
 
         it("should emit the mint event", async () => {
             let inputUnderlyings = ONE_ETHER;
             let outputRedeems = inputUnderlyings.mul(quote).div(base);
             await expect(
-                trader.safeEthMint(
-                    optionToken.address,
-                    inputUnderlyings,
-                    Alice,
-                    { value: inputUnderlyings }
-                )
+                trader.safeMintWithETH(optionToken.address, Alice, {
+                    value: inputUnderlyings,
+                })
             )
                 .to.emit(trader, "EthTraderMint")
                 .withArgs(
@@ -195,25 +178,25 @@ describe("EthTrader", () => {
         });
 
         it("should mint optionTokens and redeemTokens in correct amounts", async () => {
-            await safeEthMint(ONE_ETHER);
+            await safeMintWithETH(ONE_ETHER);
         });
 
         it("should successfully call safe mint a few times in a row", async () => {
-            await safeEthMint(ONE_ETHER);
-            await safeEthMint(TEN_ETHER);
-            await safeEthMint(FIVE_ETHER);
-            await safeEthMint(parseEther("0.5123542351"));
-            await safeEthMint(parseEther("1.23526231124324"));
-            await safeEthMint(parseEther("2.234345"));
+            await safeMintWithETH(ONE_ETHER);
+            await safeMintWithETH(TEN_ETHER);
+            await safeMintWithETH(FIVE_ETHER);
+            await safeMintWithETH(parseEther("0.5123542351"));
+            await safeMintWithETH(parseEther("1.23526231124324"));
+            await safeMintWithETH(parseEther("2.234345"));
         });
     });
 
-    describe("safeEthExercise", () => {
+    describe("safeExerciseForETH", () => {
         beforeEach(async () => {
-            await safeEthMint(TEN_ETHER);
+            await safeMintWithETH(TEN_ETHER);
         });
 
-        safeEthExercise = async (inputUnderlyings) => {
+        safeExerciseForETH = async (inputUnderlyings) => {
             // Options:Underlyings are always at a 1:1 ratio.
             let inputOptions = inputUnderlyings;
             // Calculate the amount of strike tokens necessary to exercise
@@ -224,7 +207,7 @@ describe("EthTrader", () => {
             let strikeBal = await getTokenBalance(strikeToken, Alice);
 
             await expect(
-                trader.safeEthExercise(
+                trader.safeExerciseForETH(
                     optionToken.address,
                     inputUnderlyings,
                     Alice
@@ -262,13 +245,13 @@ describe("EthTrader", () => {
 
         it("should revert if amount is 0", async () => {
             await expect(
-                trader.safeEthExercise(optionToken.address, 0, Alice)
+                trader.safeExerciseForETH(optionToken.address, 0, Alice)
             ).to.be.revertedWith(ERR_ZERO);
         });
 
         it("should revert if user does not have enough optionToken tokens", async () => {
             await expect(
-                trader.safeEthExercise(
+                trader.safeExerciseForETH(
                     optionToken.address,
                     MILLION_ETHER,
                     Alice
@@ -277,7 +260,7 @@ describe("EthTrader", () => {
         });
 
         it("should revert if user does not have enough strike tokens", async () => {
-            await trader.safeEthMint(optionToken.address, ONE_ETHER, Bob, {
+            await trader.safeMintWithETH(optionToken.address, Bob, {
                 value: ONE_ETHER,
             });
             await strikeToken
@@ -286,24 +269,24 @@ describe("EthTrader", () => {
             await expect(
                 trader
                     .connect(User)
-                    .safeEthExercise(optionToken.address, ONE_ETHER, Bob)
+                    .safeExerciseForETH(optionToken.address, ONE_ETHER, Bob)
             ).to.be.revertedWith(ERR_BAL_STRIKE);
         });
 
         it("should exercise consecutively", async () => {
             await strikeToken.mint(Alice, TEN_ETHER);
-            await safeEthExercise(parseEther("0.1"));
-            await safeEthExercise(parseEther("0.32525"));
-            await safeEthExercise(ONE_ETHER);
+            await safeExerciseForETH(parseEther("0.1"));
+            await safeExerciseForETH(parseEther("0.32525"));
+            await safeExerciseForETH(ONE_ETHER);
         });
     });
 
-    describe("safeEthClose", () => {
+    describe("safeCloseForETH", () => {
         beforeEach(async () => {
-            await safeEthMint(parseEther("1"));
+            await safeMintWithETH(parseEther("1"));
         });
 
-        safeEthClose = async (inputOptions) => {
+        safeCloseForETH = async (inputOptions) => {
             let inputRedeems = inputOptions.mul(quote).div(base);
 
             let underlyingBal = await Admin.getBalance();
@@ -311,7 +294,7 @@ describe("EthTrader", () => {
             let redeemBal = await getTokenBalance(redeemToken, Alice);
 
             await expect(
-                trader.safeEthClose(optionToken.address, inputOptions, Alice)
+                trader.safeCloseForETH(optionToken.address, inputOptions, Alice)
             )
                 .to.emit(trader, "EthTraderClose")
                 .withArgs(Alice, optionToken.address, inputOptions.toString());
@@ -340,12 +323,12 @@ describe("EthTrader", () => {
 
         it("should revert if amount is 0", async () => {
             await expect(
-                trader.safeEthClose(optionToken.address, 0, Alice)
+                trader.safeCloseForETH(optionToken.address, 0, Alice)
             ).to.be.revertedWith(ERR_ZERO);
         });
 
         it("should revert if user does not have enough redeemToken tokens", async () => {
-            await trader.safeEthMint(optionToken.address, ONE_ETHER, Bob, {
+            await trader.safeMintWithETH(optionToken.address, Bob, {
                 value: ONE_ETHER,
             });
             await redeemToken
@@ -354,12 +337,12 @@ describe("EthTrader", () => {
             await expect(
                 trader
                     .connect(User)
-                    .safeEthClose(optionToken.address, ONE_ETHER, Bob)
+                    .safeCloseForETH(optionToken.address, ONE_ETHER, Bob)
             ).to.be.revertedWith(ERR_BAL_REDEEM);
         });
 
         it("should revert if user does not have enough optionToken tokens", async () => {
-            await trader.safeEthMint(optionToken.address, ONE_ETHER, Bob, {
+            await trader.safeMintWithETH(optionToken.address, Bob, {
                 value: ONE_ETHER,
             });
             await optionToken
@@ -368,21 +351,21 @@ describe("EthTrader", () => {
             await expect(
                 trader
                     .connect(User)
-                    .safeEthClose(optionToken.address, ONE_ETHER, Bob)
+                    .safeCloseForETH(optionToken.address, ONE_ETHER, Bob)
             ).to.be.revertedWith(ERR_BAL_OPTIONS);
         });
 
         it("should revert if calling unwind and not expired", async () => {
             await expect(
-                trader.safeEthUnwind(optionToken.address, ONE_ETHER, Alice)
+                trader.safeUnwindForETH(optionToken.address, ONE_ETHER, Alice)
             ).to.be.revertedWith(ERR_NOT_EXPIRED);
         });
 
         it("should close consecutively", async () => {
-            await safeEthMint(TEN_ETHER);
-            await safeEthClose(ONE_ETHER);
-            await safeEthClose(FIVE_ETHER);
-            await safeEthClose(parseEther("2.5433451"));
+            await safeMintWithETH(TEN_ETHER);
+            await safeCloseForETH(ONE_ETHER);
+            await safeCloseForETH(FIVE_ETHER);
+            await safeCloseForETH(parseEther("2.5433451"));
         });
     });
 
@@ -400,17 +383,17 @@ describe("EthTrader", () => {
         it("should handle multiple transactions", async () => {
             // Start with 1000 options
             await underlyingToken.deposit({ value: THOUSAND_ETHER });
-            await safeEthMint(THOUSAND_ETHER);
+            await safeMintWithETH(THOUSAND_ETHER);
 
-            await safeEthClose(ONE_ETHER);
-            await safeEthExercise(parseEther("200"));
-            await safeEthClose(ONE_ETHER);
-            await safeEthExercise(ONE_ETHER);
-            await safeEthExercise(ONE_ETHER);
-            await safeEthExercise(ONE_ETHER);
-            await safeEthExercise(ONE_ETHER);
-            await safeEthClose(FIVE_ETHER);
-            await safeEthClose(await optionToken.balanceOf(Alice));
+            await safeCloseForETH(ONE_ETHER);
+            await safeExerciseForETH(parseEther("200"));
+            await safeCloseForETH(ONE_ETHER);
+            await safeExerciseForETH(ONE_ETHER);
+            await safeExerciseForETH(ONE_ETHER);
+            await safeExerciseForETH(ONE_ETHER);
+            await safeExerciseForETH(ONE_ETHER);
+            await safeCloseForETH(FIVE_ETHER);
+            await safeCloseForETH(await optionToken.balanceOf(Alice));
 
             // Assert option and redeem token balances are 0
             let optionBal = await optionToken.balanceOf(Alice);
@@ -419,7 +402,7 @@ describe("EthTrader", () => {
         });
     });
 
-    describe("safeEthUnwind", () => {
+    describe("safeUnwindForETH", () => {
         beforeEach(async () => {
             // Sets up contract instances
             trader = await setup.newEthTrader(Admin, weth.address);
@@ -463,17 +446,14 @@ describe("EthTrader", () => {
 
             // Mint underlying tokens so we can use them to mint options
             await underlyingToken.deposit({ value: inputUnderlyings });
-            await trader.safeEthMint(
-                optionToken.address,
-                inputUnderlyings,
-                Alice,
-                { value: inputUnderlyings }
-            );
+            await trader.safeMintWithETH(optionToken.address, Alice, {
+                value: inputUnderlyings,
+            });
             // Do the same for the other signer account
             await underlyingToken.deposit({ value: ONE_ETHER });
             await trader
                 .connect(User)
-                .safeEthMint(optionToken.address, ONE_ETHER, Bob, {
+                .safeMintWithETH(optionToken.address, Bob, {
                     value: ONE_ETHER,
                 });
 
@@ -483,7 +463,7 @@ describe("EthTrader", () => {
             assert.equal(await optionToken.getExpiryTime(), expired);
         });
 
-        safeEthUnwind = async (inputOptions) => {
+        safeUnwindForETH = async (inputOptions) => {
             let inputRedeems = inputOptions.mul(quote).div(base);
 
             let underlyingBal = await Admin.getBalance();
@@ -491,7 +471,11 @@ describe("EthTrader", () => {
             let redeemBal = await getTokenBalance(redeemToken, Alice);
 
             await expect(
-                trader.safeEthUnwind(optionToken.address, inputOptions, Alice)
+                trader.safeUnwindForETH(
+                    optionToken.address,
+                    inputOptions,
+                    Alice
+                )
             )
                 .to.emit(trader, "EthTraderUnwind")
                 .withArgs(Alice, optionToken.address, inputOptions.toString());
@@ -513,7 +497,7 @@ describe("EthTrader", () => {
 
         it("should revert if amount is 0", async () => {
             await expect(
-                trader.safeEthUnwind(optionToken.address, 0, Alice)
+                trader.safeUnwindForETH(optionToken.address, 0, Alice)
             ).to.be.revertedWith(ERR_ZERO);
         });
 
@@ -526,20 +510,20 @@ describe("EthTrader", () => {
                 }
             );
             await expect(
-                trader.safeEthUnwind(optionToken.address, ONE_ETHER, Alice, {
+                trader.safeUnwindForETH(optionToken.address, ONE_ETHER, Alice, {
                     from: Alice,
                 })
             ).to.be.revertedWith(ERR_BAL_REDEEM);
         });
 
         it("should unwind consecutively", async () => {
-            await safeEthUnwind(parseEther("0.4351"));
-            await safeEthUnwind(ONE_ETHER);
-            await safeEthUnwind(parseEther("2.5433"));
+            await safeUnwindForETH(parseEther("0.4351"));
+            await safeUnwindForETH(ONE_ETHER);
+            await safeUnwindForETH(parseEther("2.5433"));
         });
     });
 
-    describe("safeEthRedeem", () => {
+    describe("safeRedeemForETH", () => {
         before(async () => {
             // Administrative contract instances
             registry = await setup.newRegistry(Admin);
@@ -576,14 +560,18 @@ describe("EthTrader", () => {
             await redeemToken.approve(trader.address, MILLION_ETHER);
         });
 
-        safeEthRedeem = async (inputRedeems) => {
+        safeRedeemForETH = async (inputRedeems) => {
             let outputStrikes = inputRedeems;
 
             let redeemBal = await getTokenBalance(redeemToken, Alice);
             let strikeBal = await Admin.getBalance();
 
             await expect(
-                trader.safeEthRedeem(optionToken.address, inputRedeems, Alice)
+                trader.safeRedeemForETH(
+                    optionToken.address,
+                    inputRedeems,
+                    Alice
+                )
             )
                 .to.emit(trader, "EthTraderRedeem")
                 .withArgs(Alice, optionToken.address, inputRedeems.toString());
@@ -606,32 +594,93 @@ describe("EthTrader", () => {
 
         it("should revert if amount is 0", async () => {
             await expect(
-                trader.safeEthRedeem(optionToken.address, 0, Alice)
+                trader.safeRedeemForETH(optionToken.address, 0, Alice)
             ).to.be.revertedWith(ERR_ZERO);
         });
 
         it("should revert if user does not have enough redeemToken tokens", async () => {
             await expect(
-                trader.safeEthRedeem(optionToken.address, MILLION_ETHER, Alice)
+                trader.safeRedeemForETH(
+                    optionToken.address,
+                    MILLION_ETHER,
+                    Alice
+                )
             ).to.be.revertedWith(ERR_BAL_REDEEM);
         });
 
         it("should revert if  contract does not have enough strike tokens", async () => {
             await expect(
-                trader.safeEthRedeem(optionToken.address, ONE_ETHER, Alice)
+                trader.safeRedeemForETH(optionToken.address, ONE_ETHER, Alice)
             ).to.be.revertedWith(ERR_BAL_STRIKE);
         });
 
         it("should redeemToken consecutively", async () => {
-            await trader.safeEthExercise(
-                optionToken.address,
-                parseEther("200"),
-                Alice,
-                { value: ONE_ETHER }
+            await trader.safeExerciseWithETH(optionToken.address, Alice, {
+                value: ONE_ETHER,
+            });
+            await safeRedeemForETH(parseEther("0.1"));
+            await safeRedeemForETH(parseEther("0.32525"));
+            await safeRedeemForETH(parseEther("0.5"));
+        });
+    });
+
+    describe("safeExerciseWithETH", () => {
+        safeExerciseWithETH = async (inputUnderlyings) => {
+            // Options:Underlyings are always at a 1:1 ratio.
+            let inputOptions = inputUnderlyings;
+            // Calculate the amount of strike tokens necessary to exercise
+            let inputStrikes = inputUnderlyings.mul(quote).div(base);
+
+            let underlyingBal = await Admin.getBalance();
+            let optionBal = await getTokenBalance(optionToken, Alice);
+            let strikeBal = await getTokenBalance(strikeToken, Alice);
+
+            await expect(
+                trader.safeExerciseWithETH(optionToken.address, Alice, {
+                    value: inputStrikes,
+                })
+            )
+                .to.emit(trader, "EthTraderExercise")
+                .withArgs(
+                    Alice,
+                    optionToken.address,
+                    inputUnderlyings.toString(),
+                    inputStrikes.toString()
+                );
+
+            let underlyingsChange = (await Admin.getBalance()).sub(
+                underlyingBal
             );
-            await safeEthRedeem(parseEther("0.1"));
-            await safeEthRedeem(parseEther("0.32525"));
-            await safeEthRedeem(parseEther("0.5"));
+            let optionsChange = (await getTokenBalance(optionToken, Alice)).sub(
+                optionBal
+            );
+            let strikesChange = (await getTokenBalance(strikeToken, Alice)).sub(
+                strikeBal
+            );
+
+            assertWithinError(underlyingsChange, inputUnderlyings);
+            assertWithinError(optionsChange, inputOptions.mul(-1));
+            assertWithinError(strikesChange, inputStrikes.mul(-1));
+
+            await verifyOptionInvariants(
+                underlyingToken,
+                strikeToken,
+                optionToken,
+                redeemToken
+            );
+        };
+
+        it("should revert if amount is 0", async () => {
+            await expect(
+                trader.safeExerciseWithETH(optionToken.address, Alice)
+            ).to.be.revertedWith(ERR_ZERO);
+        });
+
+        it("should exercise consecutively", async () => {
+            await strikeToken.deposit({ value: TEN_ETHER });
+            await safeExerciseWithETH(parseEther("0.1"));
+            await safeExerciseWithETH(parseEther("0.32525"));
+            await safeExerciseWithETH(ONE_ETHER);
         });
     });
 });
