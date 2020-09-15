@@ -29,7 +29,7 @@ const {
     ERR_NOT_EXPIRED,
 } = constants.ERR_CODES;
 
-describe("EthTrader", () => {
+describe("WethConnector", () => {
     // Accounts
     let Admin, User, Alice, Bob;
 
@@ -83,7 +83,7 @@ describe("EthTrader", () => {
         redeemToken = Primitive.redeemToken;
 
         // Trader contract instance
-        trader = await setup.newEthTrader(Admin, weth.address);
+        trader = await setup.newWethConnector(Admin, weth.address);
 
         // Approve tokens for trader to use
         await underlyingToken.approve(trader.address, MILLION_ETHER);
@@ -121,7 +121,7 @@ describe("EthTrader", () => {
                     value: inputUnderlyings,
                 })
             )
-                .to.emit(trader, "EthTraderMint")
+                .to.emit(trader, "WethConnectorMint")
                 .withArgs(
                     Alice,
                     optionToken.address,
@@ -172,7 +172,7 @@ describe("EthTrader", () => {
                     value: inputUnderlyings,
                 })
             )
-                .to.emit(trader, "EthTraderMint")
+                .to.emit(trader, "WethConnectorMint")
                 .withArgs(
                     Alice,
                     optionToken.address,
@@ -221,7 +221,7 @@ describe("EthTrader", () => {
                     Alice
                 )
             )
-                .to.emit(trader, "EthTraderExercise")
+                .to.emit(trader, "WethConnectorExercise")
                 .withArgs(
                     Alice,
                     optionToken.address,
@@ -313,7 +313,7 @@ describe("EthTrader", () => {
             await expect(
                 trader.safeCloseForETH(optionToken.address, inputOptions, Alice)
             )
-                .to.emit(trader, "EthTraderClose")
+                .to.emit(trader, "WethConnectorClose")
                 .withArgs(Alice, optionToken.address, inputOptions.toString());
 
             let underlyingsChange = (await Admin.getBalance()).sub(
@@ -401,7 +401,7 @@ describe("EthTrader", () => {
     describe("full test", () => {
         beforeEach(async () => {
             // Deploy a new trader instance
-            trader = await setup.newEthTrader(Admin, weth.address);
+            trader = await setup.newWethConnector(Admin, weth.address);
             // Approve the tokens that are being used
             await underlyingToken.approve(trader.address, MILLION_ETHER);
             await strikeToken.approve(trader.address, MILLION_ETHER);
@@ -434,7 +434,7 @@ describe("EthTrader", () => {
     describe("safeUnwindForETH", () => {
         beforeEach(async () => {
             // Sets up a new trader contract to test with.
-            trader = await setup.newEthTrader(Admin, weth.address);
+            trader = await setup.newWethConnector(Admin, weth.address);
 
             // Creates a new option and redeem to test with. These Test instances can be set to expired arbritrarily.
             optionToken = await setup.newTestOption(
@@ -510,7 +510,7 @@ describe("EthTrader", () => {
                     Alice
                 )
             )
-                .to.emit(trader, "EthTraderUnwind")
+                .to.emit(trader, "WethConnectorUnwind")
                 .withArgs(Alice, optionToken.address, inputOptions.toString());
 
             let underlyingsChange = (await Admin.getBalance()).sub(
@@ -585,7 +585,7 @@ describe("EthTrader", () => {
             await optionToken.mintOptions(Alice);
 
             // Trader contract instance
-            trader = await setup.newEthTrader(Admin, weth.address);
+            trader = await setup.newWethConnector(Admin, weth.address);
 
             // Approve tokens for trader to use
             await weth.approve(trader.address, MILLION_ETHER);
@@ -608,7 +608,7 @@ describe("EthTrader", () => {
                     Alice
                 )
             )
-                .to.emit(trader, "EthTraderRedeem")
+                .to.emit(trader, "WethConnectorRedeem")
                 .withArgs(Alice, optionToken.address, inputRedeems.toString());
 
             let redeemsChange = (await getTokenBalance(redeemToken, Alice)).sub(
@@ -681,7 +681,7 @@ describe("EthTrader", () => {
                     value: inputStrikes,
                 })
             )
-                .to.emit(trader, "EthTraderExercise")
+                .to.emit(trader, "WethConnectorExercise")
                 .withArgs(
                     Alice,
                     optionToken.address,

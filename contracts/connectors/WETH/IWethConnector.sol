@@ -2,9 +2,10 @@
 
 pragma solidity 0.6.2;
 
+// Primitive
 import { IOption } from "../option/interfaces/IOption.sol";
 
-interface IEthTrader {
+interface IWethConnector {
     function safeMintWithETH(IOption optionToken, address receiver)
         external
         payable

@@ -3,55 +3,57 @@
 pragma solidity 0.6.2;
 
 /**
- * @title   EthTrader
+ * @title   Weth Connector for bridging ether to WETH Primitive options.
  * @notice  Abstracts the interfacing with the protocol's option contract for ease-of-use.
  *          Manages operations involving options with WETH as the underlying or strike asset.
  *          Accepts deposits in ethers and withdraws ethers.
  * @author  Primitive
  */
 
+// WETH Interface
+import { IWETH } from "./IWETH.sol";
+// Primitive
 import { IOption } from "../option/interfaces/IOption.sol";
 import { TraderLib } from "../option/libraries/TraderLib.sol";
+import { IWethConnector } from "./IWethConnector.sol";
+// Open Zeppelin
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import {
     ReentrancyGuard
 } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import { IEthTrader } from "./IEthTrader.sol";
-import { IWETH } from "./IWETH.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@nomiclabs/buidler/console.sol";
 
-contract EthTrader is IEthTrader, ReentrancyGuard {
+contract WethConnector is IWethConnector, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
     IWETH public weth;
 
-    event EthTraderMint(
+    event WethConnectorMint(
         address indexed from,
         address indexed option,
         uint256 outputOptions,
         uint256 outputRedeems
     );
-    event EthTraderExercise(
+    event WethConnectorExercise(
         address indexed from,
         address indexed option,
         uint256 outUnderlyings,
         uint256 inStrikes
     );
-    event EthTraderRedeem(
+    event WethConnectorRedeem(
         address indexed from,
         address indexed option,
         uint256 inRedeems
     );
-    event EthTraderClose(
+    event WethConnectorClose(
         address indexed from,
         address indexed option,
         uint256 inOptions
     );
 
-    event EthTraderUnwind(
+    event WethConnectorUnwind(
         address indexed from,
         address indexed option,
         uint256 inOptions
@@ -66,7 +68,7 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
     }
 
     /**
-     * @dev Since the EthTrader contract is responsible for converting between ethers and WETH,
+     * @dev Since the WethConnector contract is responsible for converting between ethers and WETH,
      * the contract is initialized with the address for WETH.
      */
     constructor(address payable _weth) public {
@@ -106,7 +108,7 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
         (uint256 outputOptions, uint256 outputRedeems) = optionToken
             .mintOptions(receiver);
 
-        emit EthTraderMint(
+        emit WethConnectorMint(
             msg.sender,
             address(optionToken),
             outputOptions,
@@ -172,7 +174,7 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
             new bytes(0)
         );
 
-        emit EthTraderExercise(
+        emit WethConnectorExercise(
             msg.sender,
             address(optionToken),
             inputOptions,
@@ -251,7 +253,7 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
         // Converts the withdrawn WETH to ethers, then sends the ethers to the receiver address.
         withdrawEthAndSend(receiver, exerciseQuantity);
 
-        emit EthTraderExercise(
+        emit WethConnectorExercise(
             msg.sender,
             address(optionToken),
             exerciseQuantity,
@@ -300,7 +302,11 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
         // Unwrap the redeemed WETH and then send the ethers to the receiver.
         withdrawEthAndSend(receiver, redeemQuantity);
 
-        emit EthTraderRedeem(msg.sender, address(optionToken), inputRedeems);
+        emit WethConnectorRedeem(
+            msg.sender,
+            address(optionToken),
+            inputRedeems
+        );
         return inputRedeems;
     }
 
@@ -373,7 +379,7 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
         // Since underlyngTokens are WETH, unwrap them then send the ethers to the receiver.
         withdrawEthAndSend(receiver, closeQuantity);
 
-        emit EthTraderClose(msg.sender, address(optionToken), inputOptions);
+        emit WethConnectorClose(msg.sender, address(optionToken), inputOptions);
         return (inputRedeems, inputOptions, outUnderlyings);
     }
 
@@ -437,7 +443,11 @@ contract EthTrader is IEthTrader, ReentrancyGuard {
         // Since underlyngTokens are WETH, unwrap them to ethers then send the ethers to the receiver.
         withdrawEthAndSend(receiver, unwindQuantity);
 
-        emit EthTraderUnwind(msg.sender, address(optionToken), inputOptions);
+        emit WethConnectorUnwind(
+            msg.sender,
+            address(optionToken),
+            inputOptions
+        );
         return (inputRedeems, inputOptions, outUnderlyings);
     }
 
