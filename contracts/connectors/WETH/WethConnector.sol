@@ -83,6 +83,8 @@ contract WethConnector is IWethConnector, ReentrancyGuard {
         assert(msg.sender == address(weth));
     }
 
+    // ==== Operation Functions ====
+
     /**
      * @dev Mints msg.value quantity of options and "quote" (option parameter) quantity of redeem tokens.
      * @notice This function is for options that have WETH as the underlying asset.
@@ -450,6 +452,8 @@ contract WethConnector is IWethConnector, ReentrancyGuard {
         );
         return (inputRedeems, inputOptions, outUnderlyings);
     }
+
+    // ==== WETH Operations ====
 
     /**
      * @dev Deposits msg.value of ethers into WETH contract. Then sends WETH to "to".

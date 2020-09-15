@@ -14,11 +14,11 @@ import {
     IUniswapV2Factory
 } from "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 // Primitive
-import { IOption } from "../option/interfaces/IOption.sol";
-import { IRegistry } from "../option/interfaces/IRegistry.sol";
-import { ITrader } from "../option/interfaces/ITrader.sol";
-import { TraderLib } from "../option/libraries/TraderLib.sol";
-import { IEthTrader } from "./IEthTrader.sol";
+import { IOption } from "../../option/interfaces/IOption.sol";
+import { IRegistry } from "../../option/interfaces/IRegistry.sol";
+import { ITrader } from "../../option/interfaces/ITrader.sol";
+import { TraderLib } from "../../option/libraries/TraderLib.sol";
+import { IWethConnector } from "../WETH/IWethConnector.sol";
 // Open Zeppelin
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
