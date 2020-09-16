@@ -58,8 +58,6 @@ contract UniswapConnector is Ownable {
         address indexed newRegistry,
         bool isActivelyTraded
     );
-
-    event DeployedUniswapMarket(address indexed from, address indexed market);
     event UpdatedQuoteToken(
         address indexed from,
         address indexed newQuoteToken
@@ -133,7 +131,7 @@ contract UniswapConnector is Ownable {
     // ==== Trading Functions ====
 
     /**
-     * @dev Mints options using underlyingTokens provided by user, then sells on Uniswap V2.
+     * @dev Mints options using underlyingTokens provided by user, then swaps on Uniswap V2.
      * Combines Primitive "mintOptions" function with Uniswap V2 Router "swapExactTokensForTokens" function.
      * @notice If the first address in the path is not the optionToken address, the tx will fail.
      * @param optionToken The address of the Oracle-less Primitive option.
@@ -144,7 +142,7 @@ contract UniswapConnector is Ownable {
      * @param deadline The timestamp for a trade to fail at if not successful.
      * @return bool Whether the transaction was successful or not.
      */
-    function mintOptionsAndSwapToTokens(
+    function mintOptionsThenSwapToTokens(
         IOption optionToken,
         uint256 amountIn,
         uint256 amountOutMin,
@@ -228,14 +226,14 @@ contract UniswapConnector is Ownable {
      * @param to The address that receives quoteTokens from burned UNI-V2, and underlyingTokens from closed options.
      * @param deadline The timestamp to expire a pending transaction.
      */
-    function closeOptionsFromUniTokens(
+    function removeLiquidityThenCloseOptions(
         address optionAddress,
         uint256 liquidity,
         uint256 amountAMin,
         uint256 amountBMin,
         address to,
         uint256 deadline
-    ) external nonReentrant returns (bool) {
+    ) public nonReentrant returns (uint256, uint256) {
         // Store in memory for gas savings.
         IUniswapV2Router02 router = _uniswap.router;
         address quoteToken_ = quoteToken;
@@ -280,7 +278,61 @@ contract UniswapConnector is Ownable {
         // Send the quoteTokens received from burning liquidity shares to the "to" address.
         IERC20(quoteToken_).safeTransfer(to, amountQuote);
 
-        return true;
+        return (amountOptions, amountQuote);
+    }
+
+    /**
+     * @dev Combines "removeLiquidityThenCloseOptions" function with "addLiquidityWithUnderlying" fuction.
+     * @notice Rolls UNI-V2 liquidity in an option<>quote pair to a different option<>quote pair.
+     * @param rollFromOption The optionToken address to close a UNI-V2 position.
+     * @param rollToOption The optionToken address to open a UNI-V2 position.
+     * @param liquidity The quantity of UNI-V2 shares to roll from the first Uniswap pool.
+     * @param amountAMin
+     * @param amountBMin
+     * @param to The address that receives the UNI-V2 shares that have been rolled.
+     * @param deadline The timestamp to expire a pending transaction.
+     */
+    function rollOptionLiquidity(
+        address rollFromOption,
+        address rollToOption,
+        uint256 liquidity,
+        uint256 amountAMin,
+        uint256 amountBMin,
+        address to,
+        uint256 deadline
+    ) external returns (bool) {
+        (
+            uint256 outUnderlyings,
+            uint256 outQuote
+        ) = removeLiquidityThenCloseOptions(
+            rollFromOption,
+            liquidity,
+            amountAMin,
+            amountBMin,
+            to,
+            deadline
+        );
+
+        bool success = addLiquidityWithUnderlying(
+            rollToOption,
+            outUnderlyings,
+            outQuote,
+            amountAMin,
+            amountBMin,
+            to,
+            deadline
+        );
+
+        require(success, "ERR_ADD_LIQUIDITY_FAIL");
+
+        emit RolledOptionLiquidity(
+            msg.sender,
+            rollFromOption,
+            rollToOption,
+            outUnderlyings
+        );
+
+        return success;
     }
 
     /**
@@ -450,7 +502,7 @@ contract UniswapConnector is Ownable {
         uint256 minQuantityQuoteTokens,
         address to,
         uint256 deadline
-    ) external nonReentrant returns (bool) {
+    ) public nonReentrant returns (bool) {
         // Store in memory for gas savings.
         IUniswapV2Router02 router = _uniswap.router;
         address quoteToken_ = quoteToken;
@@ -510,7 +562,6 @@ contract UniswapConnector is Ownable {
             optionAddress,
             quoteToken
         );
-        emit DeployedUniswapMarket(msg.sender, optionAddress);
         return uniswapPair;
     }
 
