@@ -122,10 +122,11 @@ contract UniswapConnector is Ownable {
 
     /**
      * @dev The stablecoin "cash" token.
+     * @param quoteToken_ The address of an ERC-20 token to set the quoteToken to.
      */
-    function setQuoteToken(address _quoteToken) external onlyOwner {
-        quoteToken = _quoteToken;
-        emit UpdatedQuoteToken(msg.sender, _quoteToken);
+    function setQuoteToken(address quoteToken_) external onlyOwner {
+        quoteToken = quoteToken_;
+        emit UpdatedQuoteToken(msg.sender, quoteToken_);
     }
 
     // ==== Trading Functions ====
@@ -134,6 +135,7 @@ contract UniswapConnector is Ownable {
      * @dev Mints options using underlyingTokens provided by user, then swaps on Uniswap V2.
      * Combines Primitive "mintOptions" function with Uniswap V2 Router "swapExactTokensForTokens" function.
      * @notice If the first address in the path is not the optionToken address, the tx will fail.
+     * underlyingToken -> optionToken -> quoteToken.
      * @param optionToken The address of the Oracle-less Primitive option.
      * @param amountIn The quantity of options to mint and then sell.
      * @param amountOutMin The minimum quantity of tokens to receive in exchange for the optionTokens.
@@ -219,6 +221,7 @@ contract UniswapConnector is Ownable {
      * @notice Pulls UNI-V2 liquidity shares with option<>quote token and redeemToken from msg.sender.
      * Then closes the optionTokens and withdraws underlyingTokens to the "to" address.
      * Sends quoteTokens from the burned UNI-V2 liquidity shares to the "to" address.
+     * UNI-V2 -> optionToken -> underlyingToken.
      * @param optionAddress The address of the option that will be closed from burned UNI-V2 liquidity shares.
      * @param liquidity The quantity of liquidity tokens to pull from msg.sender and burn.
      * @param amountAMin
@@ -284,6 +287,7 @@ contract UniswapConnector is Ownable {
     /**
      * @dev Combines "removeLiquidityThenCloseOptions" function with "addLiquidityWithUnderlying" fuction.
      * @notice Rolls UNI-V2 liquidity in an option<>quote pair to a different option<>quote pair.
+     * UNI-V2 -> rollFromOption -> underlyingToken -> rollToOption -> UNI-V2.
      * @param rollFromOption The optionToken address to close a UNI-V2 position.
      * @param rollToOption The optionToken address to open a UNI-V2 position.
      * @param liquidity The quantity of UNI-V2 shares to roll from the first Uniswap pool.
@@ -336,114 +340,19 @@ contract UniswapConnector is Ownable {
     }
 
     /**
-     * @dev Rolls liquidity in an option series UNI-V2 to an option series UNI-V2 with a further expiry date.
-     * @notice Pulls UNI-V2 liquidity shares from msg.sender.
-     * @param rollFromOption The optionToken address to close a UNI-V2 position.
-     * @param rollToOption The optionToken address to open a UNI-V2 position.
-     * @param liquidity The quantity of UNI-V2 shares to roll from the first Uniswap pool.
-     * @param amountAMin
-     * @param amountBMin
-     * @param to The address that receives the UNI-V2 shares that have been rolled.
-     * @param deadline The timestamp to expire a pending transaction.
-     */
-    function rollOptionLiquidity(
-        address rollFromOption,
-        address rollToOption,
-        uint256 liquidity,
-        uint256 amountAMin,
-        uint256 amountBMin,
-        address to,
-        uint256 deadline
-    ) external returns (bool) {
-        // Store router in memory for gas savings.
-        IUniswapV2Router02 router = _uniswap.router;
-
-        // Pull UNI-V2 liquidity shares from the rollFromOption series from the msg.sender to this contract.
-        IERC20(getUniswapMarketForOption(rollFromOption)).safeTransferFrom(
-            msg.sender,
-            address(this),
-            liquidity
-        );
-
-        // Remove liquidity from Uniswap V2 pool to receive option + quote tokens.
-        (uint256 amountOptions, ) = router.removeLiquidity(
-            rollFromOption,
-            quoteToken,
-            liquidity,
-            amountAMin,
-            amountBMin,
-            address(this),
-            deadline
-        );
-
-        // Calculate quantity of redeemTokens needed to close the rollFromOptions.
-        uint256 quantityRedeemsRequired = amountOptions.mul(
-            IOption(rollFromOption).getQuoteValue().div(
-                IOption(rollFromOption).getBaseValue()
-            )
-        );
-
-        // Pull the necessary redeem tokens from the user
-        IERC20(IOption(rollFromOption).redeemToken()).safeTransferFrom(
-            msg.sender,
-            address(this),
-            quantityRedeemsRequired
-        );
-
-        // Close the options with shorter expiry using options + redeem tokens, receive underlyingTokens.
-        (, , uint256 outUnderlyings) = _primitive.trader.safeClose(
-            IOption(rollFromOption),
-            amountOptions,
-            address(this)
-        );
-
-        // Mint options with further expiry using the underlyingTokens received from closing the rollFromOptions.
-        {
-            (, uint256 outputRedeems) = _primitive.trader.safeMint(
-                IOption(rollToOption),
-                outUnderlyings,
-                address(this)
-            );
-            address tokenA = rollToOption;
-            address tokenB = quoteToken;
-            // Mint UNI-V2 liquidity shares by providing options + quote tokens to the further expiry uniswap market.
-            router.addLiquidity(
-                tokenA,
-                tokenB,
-                amountOptions,
-                0,
-                0,
-                0,
-                to,
-                deadline
-            );
-
-            // Send the redeemTokens (short options) to the msg.sender.
-            IERC20(IOption(rollToOption).redeemToken()).safeTransfer(
-                msg.sender,
-                outputRedeems
-            );
-        }
-
-        emit RolledOptionLiquidity(
-            msg.sender,
-            rollFromOption,
-            rollToOption,
-            amountOptions
-        );
-
-        return true;
-    }
-
-    /**
      * @dev Closes an option position and opens a new one using the freed underlyingTokens.
-     * @notice Pulls option and redeem tokens from msg.sender.
+     * @notice Pulls option and redeem tokens from msg.sender, then sends minted option + redeems to receiver.
+     * rollFromOption -> underlyingToken -> rollToOption.
+     * @param rollFromOption The optionToken to close.
+     * @param rollToOption The optionToken to mint.
+     * @param rollQuantity The quantity of underlyingTokens to receive from closed options then use to mint new options.
+     * @param receiver The address that receives newly minted option and redeem tokens.
      */
     function rollOption(
         address rollFromOption,
         address rollToOption,
-        address receiver,
-        uint256 rollQuantity
+        uint256 rollQuantity,
+        address receiver
     ) external returns (bool) {
         // Close the rollFromOption to receive underlyingTokens.
         // Sends the underlyingTokens to this contract.
@@ -471,7 +380,7 @@ contract UniswapConnector is Ownable {
             receiver
         );
 
-        // An event is emitted because a position was atomically rolled without additional capital; state-change.
+        // An event is emitted because a position was atomically rolled without additional capital.
         emit RolledOptions(
             msg.sender,
             rollFromOption,
@@ -486,6 +395,7 @@ contract UniswapConnector is Ownable {
     /**
      * @dev Adds liquidity to an option<>quote token pair by minting optionTokens with underlyingTokens.
      * @notice Pulls underlying tokens from msg.sender and pushes UNI-V2 liquidity tokens to the "to" address.
+     * underlyingToken -> optionToken -> UNI-V2.
      * @param optionAddress The address of the optionToken to mint then provide liquidity for.
      * @param quantityOptions The quantity of underlyingTokens to use to mint optionTokens.
      * @param quantityQuoteTokens The quantity of quoteTokens to add with optionTokens to the Uniswap V2 Pair.
@@ -553,6 +463,7 @@ contract UniswapConnector is Ownable {
 
     /**
      * @dev Creats a Uniswap pair for option<>quote tokens.
+     * @param optionAddress The address of the option to deploy a Uniswap V2 Pair for with the quoteToken.
      */
     function deployUniswapMarket(address optionAddress)
         external
@@ -577,6 +488,7 @@ contract UniswapConnector is Ownable {
 
     /**
      * @dev Gets a Uniswap Pair address for an option token and quote token.
+     * @param optionAddress The address of the option to get a Uniswap V2 Pair address for (with quoteToken).
      */
     function getUniswapMarketForOption(address optionAddress)
         public
