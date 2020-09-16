@@ -104,7 +104,7 @@ contract WethConnector is IWethConnector, ReentrancyGuard {
         require(address(weth) == underlyingAddress, "ERR_NOT_WETH");
 
         // Convert ethers into WETH, then send WETH to option contract in preparation of calling mintOptions().
-        depositEthSendWeth(address(optionToken));
+        _depositEthSendWeth(address(optionToken));
 
         // Mint the option and redeem tokens.
         (uint256 outputOptions, uint256 outputRedeems) = optionToken
@@ -159,7 +159,7 @@ contract WethConnector is IWethConnector, ReentrancyGuard {
         );
 
         // Wrap the ethers into WETH, and send the WETH to the option contract to prepare for calling exerciseOptions().
-        depositEthSendWeth(address(optionToken));
+        _depositEthSendWeth(address(optionToken));
 
         // Send the option tokens required to prepare for calling exerciseOptions().
         IERC20(address(optionToken)).safeTransferFrom(
@@ -253,7 +253,7 @@ contract WethConnector is IWethConnector, ReentrancyGuard {
         );
 
         // Converts the withdrawn WETH to ethers, then sends the ethers to the receiver address.
-        withdrawEthAndSend(receiver, exerciseQuantity);
+        _withdrawEthAndSend(receiver, exerciseQuantity);
 
         emit WethConnectorExercise(
             msg.sender,
@@ -302,7 +302,7 @@ contract WethConnector is IWethConnector, ReentrancyGuard {
         uint256 inputRedeems = optionToken.redeemStrikeTokens(address(this));
 
         // Unwrap the redeemed WETH and then send the ethers to the receiver.
-        withdrawEthAndSend(receiver, redeemQuantity);
+        _withdrawEthAndSend(receiver, redeemQuantity);
 
         emit WethConnectorRedeem(
             msg.sender,
@@ -379,7 +379,7 @@ contract WethConnector is IWethConnector, ReentrancyGuard {
         );
 
         // Since underlyngTokens are WETH, unwrap them then send the ethers to the receiver.
-        withdrawEthAndSend(receiver, closeQuantity);
+        _withdrawEthAndSend(receiver, closeQuantity);
 
         emit WethConnectorClose(msg.sender, address(optionToken), inputOptions);
         return (inputRedeems, inputOptions, outUnderlyings);
@@ -443,7 +443,7 @@ contract WethConnector is IWethConnector, ReentrancyGuard {
         );
 
         // Since underlyngTokens are WETH, unwrap them to ethers then send the ethers to the receiver.
-        withdrawEthAndSend(receiver, unwindQuantity);
+        _withdrawEthAndSend(receiver, unwindQuantity);
 
         emit WethConnectorUnwind(
             msg.sender,
@@ -459,7 +459,7 @@ contract WethConnector is IWethConnector, ReentrancyGuard {
      * @dev Deposits msg.value of ethers into WETH contract. Then sends WETH to "to".
      * @param to The address to send WETH ERC-20 tokens to.
      */
-    function depositEthSendWeth(address to) internal {
+    function _depositEthSendWeth(address to) internal {
         // Deposit the ethers received from msg.value into the WETH contract.
         weth.deposit.value(msg.value)();
 
@@ -472,7 +472,7 @@ contract WethConnector is IWethConnector, ReentrancyGuard {
      * @param to The address to send withdrawn ethers to.
      * @param quantity The quantity of WETH to unwrap.
      */
-    function withdrawEthAndSend(address to, uint256 quantity) internal {
+    function _withdrawEthAndSend(address to, uint256 quantity) internal {
         // Withdraw ethers with weth.
         weth.withdraw(quantity);
 
