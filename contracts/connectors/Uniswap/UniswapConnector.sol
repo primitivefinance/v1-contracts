@@ -60,20 +60,9 @@ contract UniswapConnector is Ownable {
     );
 
     event DeployedUniswapMarket(address indexed from, address indexed market);
-    event AddedLiquidity(
-        address indexed from,
-        address indexed option,
-        uint256 quantityUniTokens
-    );
     event UpdatedQuoteToken(
         address indexed from,
         address indexed newQuoteToken
-    );
-    event UniswapTraderSell(
-        address indexed from,
-        address indexed to,
-        address indexed option,
-        uint256 sellQuantity
     );
     event RolledOptions(
         address indexed from,
@@ -144,137 +133,259 @@ contract UniswapConnector is Ownable {
     // ==== Trading Functions ====
 
     /**
-     * @dev Mints options using underlyingTokens provided by user, then sells on uniswap.
+     * @dev Mints options using underlyingTokens provided by user, then sells on Uniswap V2.
+     * Combines Primitive "mintOptions" function with Uniswap V2 Router "swapExactTokensForTokens" function.
+     * @notice If the first address in the path is not the optionToken address, the tx will fail.
+     * @param optionToken The address of the Oracle-less Primitive option.
+     * @param amountIn The quantity of options to mint and then sell.
+     * @param amountOutMin The minimum quantity of tokens to receive in exchange for the optionTokens.
+     * @param path The token addresses to trade through using their Uniswap V2 pools. Assumes path[0] = option.
+     * @param to The address to send the optionToken proceeds and redeem tokens to.
+     * @param deadline The timestamp for a trade to fail at if not successful.
+     * @return bool Whether the transaction was successful or not.
      */
-    function mintAndMarketSell(
-        IOption option,
-        uint256 sellQuantity,
-        uint256 minQuote
+    function mintOptionsAndSwapToTokens(
+        IOption optionToken,
+        uint256 amountIn,
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        uint256 deadline
     ) external returns (bool) {
-        // sends underlyings to option contract and mint options
+        // Pulls underlyingTokens from msg.sender, then pushes underlyingTokens to option contract.
+        // Mints option and redeem tokens to this contract.
         (uint256 outputOptions, uint256 outputRedeems) = TraderLib.safeMint(
-            option,
-            sellQuantity,
+            optionToken,
+            amountIn,
             address(this)
         );
 
-        // market sells options on uniswap
-        (, bool success) = marketSell(
-            msg.sender,
-            address(option),
-            outputOptions,
-            minQuote
+        // Swaps option tokens to the token specified at the end of the path, then sends to msg.sender.
+        // Reverts if the first address in the path is not the optionToken address.
+        (, bool success) = _swapExactOptionsForTokens(
+            address(optionToken),
+            amountIn,
+            amountOutMin,
+            path,
+            to,
+            deadline
         );
+        // Fail early if the swap failed.
+        require(success, "ERR_SWAP_FAILED");
 
-        // send redeem to user
-        IERC20(option.redeemToken()).safeTransfer(msg.sender, outputRedeems);
+        // Send redeemTokens (short options) to the "to" address.
+        IERC20(optionToken.redeemToken()).safeTransfer(to, outputRedeems);
         return success;
     }
 
     /**
-     * @dev Market sells option tokens into the uniswap pool for quote "cash" tokens.
+     * @dev Calls the "swapExactTokensForTokens" function on the Uniswap V2 Router 02 Contract.
+     * @notice Fails early if the address in the beginning of the path is not the optionToken address.
+     * @param optionAddress The address of the optionToken to swap from.
+     * @param amountIn The quantity of optionTokens to swap with.
+     * @param amountOutMin The minimum quantity of tokens to receive in exchange for the optionTokens swapped.
+     * @param path The token addresses to trade through using their Uniswap V2 pools. Assumes path[0] = option.
+     * @param to The address to send the optionToken proceeds and redeem tokens to.
+     * @param deadline The timestamp for a trade to fail at if not successful.
      */
-    function marketSell(
+    function _swapExactOptionsForTokens(
+        address optionAdress,
+        uint256 amountIn,
+        uint256 amountOutMin,
+        address[] calldata path,
         address to,
-        address option,
-        uint256 sellQuantity,
-        uint256 minQuote
+        uint256 deadline
     ) internal returns (uint256[] memory amounts, bool success) {
+        // Fails early if the token being swapped from is not the optionToken.
+        require(path[0] == optionAddress, "ERR_PATH_OPTION_START");
+
+        // Store router in memory for gas savings.
         IUniswapV2Router02 router = _uniswap.router;
-        address[] memory path = new address[](2);
-        path[0] = option;
-        path[1] = quoteToken;
-        IERC20(option).approve(address(router), uint256(-1));
+
+        // Approve the uniswap router to be able to transfer options from this contract.
+        IERC20(optionAddress).approve(address(router), uint256(-1));
+
+        // Call the Uniswap V2 function to swap optionTokens to quoteTokens.
         (amounts) = router.swapExactTokensForTokens(
-            sellQuantity,
-            minQuote,
+            amountIn,
+            amountOutMin,
             path,
             to,
-            getMaxDeadline()
+            deadline
         );
-        emit UniswapTraderSell(msg.sender, to, option, sellQuantity);
         success = true;
     }
 
     /**
-     * @dev Rolls liquidity in an option series to an option series with a further expiry date.
+     * @dev Combines Uniswap V2 Router "removeLiquidity" function with Primitive "closeOptions" function.
+     * @notice Pulls UNI-V2 liquidity shares with option<>quote token and redeemToken from msg.sender.
+     * Then closes the optionTokens and withdraws underlyingTokens to the "to" address.
+     * Sends quoteTokens from the burned UNI-V2 liquidity shares to the "to" address.
+     * @param optionAddress The address of the option that will be closed from burned UNI-V2 liquidity shares.
+     * @param liquidity The quantity of liquidity tokens to pull from msg.sender and burn.
+     * @param amountAMin
+     * @param amountBMin
+     * @param to The address that receives quoteTokens from burned UNI-V2, and underlyingTokens from closed options.
+     * @param deadline The timestamp to expire a pending transaction.
+     */
+    function closeOptionsFromUniTokens(
+        address optionAddress,
+        uint256 liquidity,
+        uint256 amountAMin,
+        uint256 amountBMin,
+        address to,
+        uint256 deadline
+    ) external nonReentrant returns (bool) {
+        // Store in memory for gas savings.
+        IUniswapV2Router02 router = _uniswap.router;
+        address quoteToken_ = quoteToken;
+
+        // Gets the Uniswap V2 Pair address for optionAddress and quoteToken.
+        // Transfers the LP tokens for the pair to this contract.
+        // Warning: external call to a non-trusted address `msg.sender`.
+        IERC20(getUniswapMarketForOption(optionAddress)).safeTransferFrom(
+            msg.sender,
+            address(this),
+            liquidity
+        );
+
+        // Remove liquidity from Uniswap V2 pool to receive pool tokens (option + quote tokens).
+        (uint256 amountOptions, uint256 amountQuote) = router.removeLiquidity(
+            optionAddress,
+            quoteToken_,
+            liquidity,
+            amountAMin,
+            amountBMin,
+            address(this),
+            deadline
+        );
+
+        // Calculate equivalent quantity of redeem (short option) tokens to close the option position.
+        // Need to cancel base units and have quote units remaining.
+        uint256 baseValue = IOption(optionAddress).getBaseValue();
+        uint256 quoteValue = IOption(optionAddress).getQuoteValue();
+        uint256 requiredRedeems = amountOptions.mul(quoteValue).div(baseValue);
+
+        // Pull the required redeemTokens from msg.sender to this contract.
+        IERC20(IOption(optionAddress).redeemToken()).safeTransferFrom(
+            msg.sender,
+            address(this),
+            requiredRedeems
+        );
+
+        // Pushes option and redeem tokens to the option contract and calls "closeOption".
+        // Receives underlyingTokens and sends them to the "to" address.
+        _primitive.trader.safeClose(IOption(optionAddress), amountOptions, to);
+
+        // Send the quoteTokens received from burning liquidity shares to the "to" address.
+        IERC20(quoteToken_).safeTransfer(to, amountQuote);
+
+        return true;
+    }
+
+    /**
+     * @dev Rolls liquidity in an option series UNI-V2 to an option series UNI-V2 with a further expiry date.
      * @notice Pulls UNI-V2 liquidity shares from msg.sender.
+     * @param rollFromOption The optionToken address to close a UNI-V2 position.
+     * @param rollToOption The optionToken address to open a UNI-V2 position.
+     * @param liquidity The quantity of UNI-V2 shares to roll from the first Uniswap pool.
+     * @param amountAMin
+     * @param amountBMin
+     * @param to The address that receives the UNI-V2 shares that have been rolled.
+     * @param deadline The timestamp to expire a pending transaction.
      */
     function rollOptionLiquidity(
         address rollFromOption,
         address rollToOption,
-        address receiver,
-        uint256 liquidityQuantityFrom
+        uint256 liquidity,
+        uint256 amountAMin,
+        uint256 amountBMin,
+        address to,
+        uint256 deadline
     ) external returns (bool) {
+        // Store router in memory for gas savings.
         IUniswapV2Router02 router = _uniswap.router;
-        // take liquidity tokens from user
+
+        // Pull UNI-V2 liquidity shares from the rollFromOption series from the msg.sender to this contract.
         IERC20(getUniswapMarketForOption(rollFromOption)).safeTransferFrom(
             msg.sender,
             address(this),
-            liquidityQuantityFrom
+            liquidity
         );
-        // redeem liquidity tokens from uniswap market to receive option + quote tokens
+
+        // Remove liquidity from Uniswap V2 pool to receive option + quote tokens.
         (uint256 amountOptions, ) = router.removeLiquidity(
             rollFromOption,
             quoteToken,
-            liquidityQuantityFrom,
-            0,
-            0,
+            liquidity,
+            amountAMin,
+            amountBMin,
             address(this),
-            getMaxDeadline()
+            deadline
         );
-        // calculate amount of redeem tokens needed to close the rollFromOptions
+
+        // Calculate quantity of redeemTokens needed to close the rollFromOptions.
         uint256 quantityRedeemsRequired = amountOptions.mul(
-            IOption(rollFromOption).quote().div(IOption(rollFromOption).base())
+            IOption(rollFromOption).getQuoteValue().div(
+                IOption(rollFromOption).getBaseValue()
+            )
         );
-        // pull the necessary redeem tokens from the user
+
+        // Pull the necessary redeem tokens from the user
         IERC20(IOption(rollFromOption).redeemToken()).safeTransferFrom(
             msg.sender,
             address(this),
             quantityRedeemsRequired
         );
-        // close the options with shorter expiry using options + redeem tokens, receive underlying tokens
+
+        // Close the options with shorter expiry using options + redeem tokens, receive underlyingTokens.
         (, , uint256 outUnderlyings) = _primitive.trader.safeClose(
             IOption(rollFromOption),
             amountOptions,
             address(this)
         );
-        // mint options with further expiry using the underlying tokens received from closing the options
+
+        // Mint options with further expiry using the underlyingTokens received from closing the rollFromOptions.
         {
             (, uint256 outputRedeems) = _primitive.trader.safeMint(
                 IOption(rollToOption),
                 outUnderlyings,
                 address(this)
             );
-            // provide options + quote tokens to the further expiry uniswap market
+            address tokenA = rollToOption;
+            address tokenB = quoteToken;
+            // Mint UNI-V2 liquidity shares by providing options + quote tokens to the further expiry uniswap market.
             router.addLiquidity(
-                rollToOption,
-                quoteToken,
+                tokenA,
+                tokenB,
                 amountOptions,
                 0,
                 0,
                 0,
-                receiver,
-                getMaxDeadline()
+                to,
+                deadline
             );
+
+            // Send the redeemTokens (short options) to the msg.sender.
             IERC20(IOption(rollToOption).redeemToken()).safeTransfer(
                 msg.sender,
                 outputRedeems
             );
         }
-        // send redeems to msg.sender
+
         emit RolledOptionLiquidity(
             msg.sender,
             rollFromOption,
             rollToOption,
             amountOptions
         );
+
         return true;
     }
 
     /**
-     * @dev Closes a shorter dated option and mints a longer dated option.
-     * @notice Pulls option and redeem tokens from msg.sender
+     * @dev Closes an option position and opens a new one using the freed underlyingTokens.
+     * @notice Pulls option and redeem tokens from msg.sender.
      */
     function rollOption(
         address rollFromOption,
@@ -282,26 +393,33 @@ contract UniswapConnector is Ownable {
         address receiver,
         uint256 rollQuantity
     ) external returns (bool) {
-        // close the options with shorter expiry using redeemed options + redeem tokens.
-        // sends the underlying tokens to this contract
+        // Close the rollFromOption to receive underlyingTokens.
+        // Sends the underlyingTokens to this contract.
         (, , uint256 outUnderlyings) = TraderLib.safeClose(
             IOption(rollFromOption),
             rollQuantity,
             address(this)
         );
-        // mint options with further expiry using the underlying tokens received from closing the options
-        // sends minted option and redeem tokens to the "receiver" address
+
+        // Store in memory for gas savings.
         ITrader trader = _primitive.trader;
-        // approve underlying to be sent to the trader
+
+        // Approve underlyingTokens to be sent to the Primitive Trader contract.
         IERC20(IOption(rollFromOption).underlyingToken()).approve(
             address(trader),
             uint256(-1)
         );
+
+        // Mint rollToOptions using the underlyingTokens received from closing the rollFromOptions.
+        // Pulls underlyingTokens from this contract and sends them to the rollToOption contract.
+        // Sends minted option and redeem tokens to the "receiver" address.
         (uint256 outputOptions, ) = trader.safeMint(
             IOption(rollToOption),
             outUnderlyings,
             receiver
         );
+
+        // An event is emitted because a position was atomically rolled without additional capital; state-change.
         emit RolledOptions(
             msg.sender,
             rollFromOption,
@@ -314,8 +432,15 @@ contract UniswapConnector is Ownable {
     // ==== Liquidity Functions ====
 
     /**
-     * @dev Adds liquidity to an option<>quote token pair. Takes a deposit in quote tokens.
-     * Takes a deposit in underlying tokens, which are used to mint new option tokens to add liquidity with.
+     * @dev Adds liquidity to an option<>quote token pair by minting optionTokens with underlyingTokens.
+     * @notice Pulls underlying tokens from msg.sender and pushes UNI-V2 liquidity tokens to the "to" address.
+     * @param optionAddress The address of the optionToken to mint then provide liquidity for.
+     * @param quantityOptions The quantity of underlyingTokens to use to mint optionTokens.
+     * @param quantityQuoteTokens The quantity of quoteTokens to add with optionTokens to the Uniswap V2 Pair.
+     * @param minQuantityOptions The minimum quantity of optionTokens expected to provide liquidity with.
+     * @param minQuantityQuoteTokens The minimum quantity of quoteTokens expected to provide liquidity with.
+     * @param to The address that receives UNI-V2 shares.
+     * @param deadline The timestamp to expire a pending transaction.
      */
     function addLiquidityWithUnderlying(
         address optionAddress,
@@ -323,28 +448,35 @@ contract UniswapConnector is Ownable {
         uint256 quantityQuoteTokens,
         uint256 minQuantityOptions,
         uint256 minQuantityQuoteTokens,
-        address to
-    ) external returns (bool) {
-        // gas savings
+        address to,
+        uint256 deadline
+    ) external nonReentrant returns (bool) {
+        // Store in memory for gas savings.
         IUniswapV2Router02 router = _uniswap.router;
         address quoteToken_ = quoteToken;
-        // warning: calls into msg.sender using `safeTransferFrom`
+
+        // Pull quote tokens from msg.sender to add to Uniswap V2 Pair.
+        // Warning: calls into msg.sender using `safeTransferFrom`. Msg.sender is not trusted.
         IERC20(quoteToken_).safeTransferFrom(
             msg.sender,
             address(this),
             quantityQuoteTokens
         );
-        // sends underlyings to option contract and mints option tokens.
-        // warning: calls into msg.sender using `safeTransferFrom`
+
+        // Pulls underlyingTokens from msg.sender to this contract.
+        // Pushes underlyingTokens to option contract and mints option + redeem tokens to this contract.
+        // Warning: calls into msg.sender using `safeTransferFrom`. Msg.sender is not trusted.
         (uint256 outputOptions, uint256 outputRedeems) = TraderLib.safeMint(
             IOption(optionAddress),
             quantityOptions,
             address(this)
         );
-        // approves uniswap pair to transferFrom this contract
+
+        // Approves Uniswap V2 Pair to transfer option and quote tokens from this contract.
         IERC20(optionAddress).approve(address(router), uint256(-1));
         IERC20(quoteToken_).approve(address(router), uint256(-1));
-        // adds liquidity to uniswap pair and returns liquidity shares to the "to" address
+
+        // Adds liquidity to Uniswap V2 Pair and returns liquidity shares to the "to" address.
         (, , uint256 liquidity) = _uniswap.router.addLiquidity(
             optionAddress,
             quoteToken,
@@ -353,60 +485,15 @@ contract UniswapConnector is Ownable {
             minQuantityOptions,
             minQuantityQuoteTokens,
             to,
-            getMaxDeadline()
+            deadline
         );
 
-        // send redeem tokens from minted options to user
+        // Send redeemTokens (short option tokens) from minting option operation to msg.sender.
         IERC20(IOption(optionAddress).redeemToken()).safeTransfer(
             msg.sender,
             outputRedeems
         );
-        emit AddedLiquidity(msg.sender, optionAddress, liquidity);
-        return true;
-    }
 
-    /**
-     * @dev Adds liquidity to an option<>quote token pair. Takes a deposit in quote tokens.
-     * Takes a deposit in option tokens.
-     */
-    function addLiquidityWithOptions(
-        address optionAddress,
-        uint256 quantityOptions,
-        uint256 quantityQuoteTokens,
-        uint256 minQuantityOptions,
-        uint256 minQuantityQuoteTokens,
-        address to
-    ) external returns (bool) {
-        // gas savings
-        IUniswapV2Router02 router = _uniswap.router;
-        address quoteToken_ = quoteToken;
-        // warning: calls into msg.sender using `safeTransferFrom`
-        IERC20(quoteToken_).safeTransferFrom(
-            msg.sender,
-            address(this),
-            quantityQuoteTokens
-        );
-        // warning: calls into msg.sender using `safeTransferFrom`
-        IERC20(optionAddress).safeTransferFrom(
-            msg.sender,
-            address(this),
-            quantityOptions
-        );
-        // approves uniswap pair to transferFrom this contract
-        IERC20(optionAddress).approve(address(router), uint256(-1));
-        IERC20(quoteToken_).approve(address(router), uint256(-1));
-        // adds liquidity to uniswap pair and returns liquidity shares to the "to" address
-        (, , uint256 liquidity) = _uniswap.router.addLiquidity(
-            optionAddress,
-            quoteToken,
-            quantityOptions,
-            quantityQuoteTokens,
-            minQuantityOptions,
-            minQuantityQuoteTokens,
-            to,
-            getMaxDeadline()
-        );
-        emit AddedLiquidity(msg.sender, optionAddress, liquidity);
         return true;
     }
 
