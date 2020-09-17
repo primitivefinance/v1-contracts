@@ -12,7 +12,8 @@ const Registry = require("../../artifacts/Registry");
 const Flash = require("../../artifacts/Flash");
 const Weth = require("../../artifacts/WETH9");
 const Trader = require("../../artifacts/Trader");
-const EthTrader = require("../../artifacts/EthTrader");
+const WethConnector = require("../../artifacts/WethConnector");
+const UniswapConnector = require("../../artifacts/UniswapConnector.json");
 const OptionTemplateLib = require("../../artifacts/OptionTemplateLib");
 const RedeemTemplateLib = require("../../artifacts/RedeemTemplateLib");
 
@@ -246,8 +247,8 @@ const newTrader = async (signer, weth) => {
  * @param {*} signer
  * @param {*} weth The address of WETH for the respective network.
  */
-const newEthTrader = async (signer, weth) => {
-    const trader = await deployContract(signer, EthTrader, [weth], {
+const newWethConnector = async (signer, weth) => {
+    const trader = await deployContract(signer, WethConnector, [weth], {
         gasLimit: 6000000,
     });
     return trader;
@@ -356,6 +357,16 @@ const approveToken = async (token, signer, spender) => {
 };
 
 /**
+ * @dev Gets the UniswapConnector instance.
+ */
+const newUniswapConnector = async (signer) => {
+    const connector = await deployContract(signer, UniswapConnector, [], {
+        gasLimit: 6000000,
+    });
+    return connector;
+};
+
+/**
  * @dev Deploys a new Uniswap factory and router instance for testing.
  * @param {*} signer
  * @param {*} feeToSetter The address which receives fees from the uniswap contracts.
@@ -399,6 +410,7 @@ const newUniswapRinkeby = async (signer) => {
 };
 
 Object.assign(module.exports, {
+    newUniswapConnector,
     newUniswap,
     newUniswapRinkeby,
     newWallets,
@@ -415,5 +427,5 @@ Object.assign(module.exports, {
     newPrimitive,
     approveToken,
     newTrader,
-    newEthTrader,
+    newWethConnector,
 });

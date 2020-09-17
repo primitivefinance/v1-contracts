@@ -37,6 +37,7 @@ contract UniswapConnector is Ownable, ReentrancyGuard {
     IRegistry public registry;
     address public quoteToken; // Designated stablecoin for Primitive.
 
+    event Initialized(address indexed from, address indexed quoteToken);
     event UpdatedRouter(address indexed from, address indexed newRouter);
     event UpdatedFactory(address indexed from, address indexed newFactory);
     event UpdatedTrader(address indexed from, address indexed newTrader);
@@ -60,6 +61,26 @@ contract UniswapConnector is Ownable, ReentrancyGuard {
     constructor() public {}
 
     // ==== Setup Functions ====
+
+    function initialize(
+        address router_,
+        address factory_,
+        address trader_,
+        address registry_,
+        address quoteToken_
+    ) external onlyOwner {
+        require(router == address(0x0), "ERR_INITIALIZED");
+        require(factory == address(0x0), "ERR_INITIALIZED");
+        require(trader == address(0x0), "ERR_INITIALIZED");
+        require(registry == address(0x0), "ERR_INITIALIZED");
+        require(quoteToken == address(0x0), "ERR_INITIALIZED");
+        router = IUniswapV2Router02(router_);
+        factory = IUniswapV2Factory(factory_);
+        trader = ITrader(trader_);
+        registry = IRegistry(registry_);
+        quoteToken = quoteToken_;
+        emit Initialized(msg.sender, quoteToken_);
+    }
 
     /**
      * @dev Sets the Uniswap V2 Router address to use.
