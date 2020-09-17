@@ -54,7 +54,7 @@ contract UniswapConnector is Ownable, ReentrancyGuard {
         address indexed from,
         address indexed optionMarketFrom,
         address indexed optionMarketTo,
-        uint256 quantity
+        uint256 liquidity
     );
 
     // solhint-disable-next-line no-empty-blocks
@@ -69,10 +69,10 @@ contract UniswapConnector is Ownable, ReentrancyGuard {
         address registry_,
         address quoteToken_
     ) external onlyOwner {
-        require(router == address(0x0), "ERR_INITIALIZED");
-        require(factory == address(0x0), "ERR_INITIALIZED");
-        require(trader == address(0x0), "ERR_INITIALIZED");
-        require(registry == address(0x0), "ERR_INITIALIZED");
+        require(address(router) == address(0x0), "ERR_INITIALIZED");
+        require(address(factory) == address(0x0), "ERR_INITIALIZED");
+        require(address(trader) == address(0x0), "ERR_INITIALIZED");
+        require(address(registry) == address(0x0), "ERR_INITIALIZED");
         require(quoteToken == address(0x0), "ERR_INITIALIZED");
         router = IUniswapV2Router02(router_);
         factory = IUniswapV2Factory(factory_);
@@ -194,15 +194,17 @@ contract UniswapConnector is Ownable, ReentrancyGuard {
     ) public nonReentrant returns (uint256, uint256) {
         // Store in memory for gas savings.
         address quoteToken_ = quoteToken;
+        IOption optionToken = IOption(optionAddress);
+        //IUniswapV2Router02 router_ = router;
 
-        // Gets the Uniswap V2 Pair address for optionAddress and quoteToken.
-        // Transfers the LP tokens for the pair to this contract.
-        // Warning: external call to a non-trusted address `msg.sender`.
-        IERC20(getUniswapMarketForOption(optionAddress)).safeTransferFrom(
-            msg.sender,
-            address(this),
-            liquidity
-        );
+        {
+            // Gets the Uniswap V2 Pair address for optionAddress and quoteToken.
+            // Transfers the LP tokens for the pair to this contract.
+            // Warning: external call to a non-trusted address `msg.sender`.
+            address pair = getUniswapMarketForOption(optionAddress);
+            IERC20(pair).safeTransferFrom(msg.sender, address(this), liquidity);
+            IERC20(pair).approve(address(router), uint256(-1));
+        }
 
         // Remove liquidity from Uniswap V2 pool to receive pool tokens (option + quote tokens).
         (uint256 amountOptions, uint256 amountQuote) = router.removeLiquidity(
@@ -215,22 +217,33 @@ contract UniswapConnector is Ownable, ReentrancyGuard {
             deadline
         );
 
-        // Calculate equivalent quantity of redeem (short option) tokens to close the option position.
-        // Need to cancel base units and have quote units remaining.
-        uint256 requiredRedeems = amountOptions
-            .mul(IOption(optionAddress).getQuoteValue())
-            .div(IOption(optionAddress).getBaseValue());
+        // Approves trader to pull option and redeem tokens from this contract to close options.
+        ITrader trader_ = trader;
+        {
+            //address redeemToken = optionToken.redeemToken();
+            IERC20(optionAddress).approve(address(trader_), uint256(-1));
+            IERC20(optionToken.redeemToken()).approve(
+                address(trader_),
+                uint256(-1)
+            );
 
-        // Pull the required redeemTokens from msg.sender to this contract.
-        IERC20(IOption(optionAddress).redeemToken()).safeTransferFrom(
-            msg.sender,
-            address(this),
-            requiredRedeems
-        );
+            // Calculate equivalent quantity of redeem (short option) tokens to close the option position.
+            // Need to cancel base units and have quote units remaining.
+            uint256 requiredRedeems = amountOptions
+                .mul(optionToken.getQuoteValue())
+                .div(optionToken.getBaseValue());
+
+            // Pull the required redeemTokens from msg.sender to this contract.
+            IERC20(optionToken.redeemToken()).safeTransferFrom(
+                msg.sender,
+                address(this),
+                requiredRedeems
+            );
+        }
 
         // Pushes option and redeem tokens to the option contract and calls "closeOption".
         // Receives underlyingTokens and sends them to the "to" address.
-        trader.safeClose(IOption(optionAddress), amountOptions, to);
+        trader_.safeClose(optionToken, amountOptions, to);
 
         // Send the quoteTokens received from burning liquidity shares to the "to" address.
         IERC20(quoteToken_).safeTransfer(to, amountQuote);
@@ -287,7 +300,7 @@ contract UniswapConnector is Ownable, ReentrancyGuard {
             msg.sender,
             rollFromOption,
             rollToOption,
-            outUnderlyings
+            liquidity
         );
 
         return success;
