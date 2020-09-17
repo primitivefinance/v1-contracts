@@ -29,39 +29,17 @@ contract UniswapConnector is Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    struct UniswapProtocol {
-        IUniswapV2Router02 router;
-        IUniswapV2Factory factory;
-        bool isActivelyTrading;
-    }
+    IUniswapV2Router02 public router;
+    IUniswapV2Factory public factory;
+    ITrader public trader;
+    IRegistry public registry;
+    address public quoteToken; // Designated stablecoin for Primitive.
 
-    struct PrimitiveProtocol {
-        ITrader trader;
-        IRegistry registry;
-        bool isActivelyTrading;
-    }
-
-    UniswapProtocol internal _uniswap;
-    PrimitiveProtocol internal _primitive;
-
-    address public quoteToken; // the paired token with the option token in the uniswap pair.
-
-    event UpdatedUniswapAddresses(
-        address indexed from,
-        address indexed newRouter,
-        address indexed newFactory,
-        bool isActivelyTraded
-    );
-    event UpdatedPrimitiveAddresses(
-        address indexed from,
-        address indexed newTrader,
-        address indexed newRegistry,
-        bool isActivelyTraded
-    );
-    event UpdatedQuoteToken(
-        address indexed from,
-        address indexed newQuoteToken
-    );
+    event UpdatedRouter(address indexed from, address indexed newRouter);
+    event UpdatedFactory(address indexed from, address indexed newFactory);
+    event UpdatedTrader(address indexed from, address indexed newTrader);
+    event UpdatedRegistry(address indexed from, address indexed newRegistry);
+    event UpdatedQuoteToken(address indexed from, address indexed newQuote);
     event RolledOptions(
         address indexed from,
         address indexed optionFrom,
@@ -81,52 +59,43 @@ contract UniswapConnector is Ownable {
     // ==== Setup Functions ====
 
     /**
-     * @dev Sets the state for the Uniswap protocol's contracts.
+     * @dev Sets the Uniswap V2 Router address to use.
      */
-    function setUniswapProtocol(
-        address router,
-        address factory,
-        bool isActivelyTrading
-    ) external onlyOwner {
-        UniswapProtocol storage uniswap_ = _uniswap;
-        uniswap_.router = IUniswapV2Router02(router);
-        uniswap_.factory = IUniswapV2Factory(factory);
-        uniswap_.isActivelyTrading = isActivelyTrading;
-        emit UpdatedUniswapAddresses(
-            msg.sender,
-            router,
-            factory,
-            isActivelyTrading
-        );
+    function setRouter(address router_) external onlyOwner {
+        router = IUniswapV2Router02(router_);
+        emit UpdatedRouter(msg.sender, router_);
     }
 
     /**
-     * @dev Sets the state for the Primitive protocol's contracts.
+     * @dev Sets the Uniswap V2 Factory address to use.
      */
-    function setPrimitiveProtocol(
-        address trader,
-        address registry,
-        bool isActivelyTrading
-    ) external onlyOwner {
-        PrimitiveProtocol storage primitive_ = _primitive;
-        primitive_.trader = ITrader(trader);
-        primitive_.registry = IRegistry(registry);
-        primitive_.isActivelyTrading = isActivelyTrading;
-        emit UpdatedPrimitiveAddresses(
-            msg.sender,
-            trader,
-            registry,
-            isActivelyTrading
-        );
+    function setFactory(address factory_) external onlyOwner {
+        factory = IUniswapV2Factory(factory_);
+        emit UpdatedFactory(msg.sender, factory_);
     }
 
     /**
-     * @dev The stablecoin "cash" token.
-     * @param quoteToken_ The address of an ERC-20 token to set the quoteToken to.
+     * @dev Sets the Primitive V1 Trader address to use.
+     */
+    function setTrader(address trader_) external onlyOwner {
+        trader = ITrader(trader_);
+        emit UpdatedTrader(msg.sender, trader_);
+    }
+
+    /**
+     * @dev Sets the Primitive V1 Registry address to use.
+     */
+    function setRegistry(address registry_) external onlyOwner {
+        registry = IRegistry(registry_);
+        emit UpdatedRegistry(msg.sender, registry_);
+    }
+
+    /**
+     * @dev Sets the designated stablecoin to use (paired token in Uniswap pools).
      */
     function setQuoteToken(address quoteToken_) external onlyOwner {
         quoteToken = quoteToken_;
-        emit UpdatedQuoteToken(msg.sender, quoteToken_);
+        emit UpdatedQuote(msg.sender, quoteToken_);
     }
 
     // ==== Trading Functions ====
