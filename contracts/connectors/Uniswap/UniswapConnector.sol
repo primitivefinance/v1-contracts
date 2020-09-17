@@ -148,44 +148,6 @@ contract UniswapConnector is Ownable {
     }
 
     /**
-     * @dev Calls the "swapExactTokensForTokens" function on the Uniswap V2 Router 02 Contract.
-     * @notice Fails early if the address in the beginning of the path is not the optionToken address.
-     * @param optionAddress The address of the optionToken to swap from.
-     * @param amountIn The quantity of optionTokens to swap with.
-     * @param amountOutMin The minimum quantity of tokens to receive in exchange for the optionTokens swapped.
-     * @param path The token addresses to trade through using their Uniswap V2 pools. Assumes path[0] = option.
-     * @param to The address to send the optionToken proceeds and redeem tokens to.
-     * @param deadline The timestamp for a trade to fail at if not successful.
-     */
-    function _swapExactOptionsForTokens(
-        address optionAdress,
-        uint256 amountIn,
-        uint256 amountOutMin,
-        address[] calldata path,
-        address to,
-        uint256 deadline
-    ) internal returns (uint256[] memory amounts, bool success) {
-        // Fails early if the token being swapped from is not the optionToken.
-        require(path[0] == optionAddress, "ERR_PATH_OPTION_START");
-
-        // Store router in memory for gas savings.
-        IUniswapV2Router02 router = _uniswap.router;
-
-        // Approve the uniswap router to be able to transfer options from this contract.
-        IERC20(optionAddress).approve(address(router), uint256(-1));
-
-        // Call the Uniswap V2 function to swap optionTokens to quoteTokens.
-        (amounts) = router.swapExactTokensForTokens(
-            amountIn,
-            amountOutMin,
-            path,
-            to,
-            deadline
-        );
-        success = true;
-    }
-
-    /**
      * @dev Combines Uniswap V2 Router "removeLiquidity" function with Primitive "closeOptions" function.
      * @notice Pulls UNI-V2 liquidity shares with option<>quote token and redeemToken from msg.sender.
      * Then closes the optionTokens and withdraws underlyingTokens to the "to" address.
@@ -207,7 +169,6 @@ contract UniswapConnector is Ownable {
         uint256 deadline
     ) public nonReentrant returns (uint256, uint256) {
         // Store in memory for gas savings.
-        IUniswapV2Router02 router = _uniswap.router;
         address quoteToken_ = quoteToken;
 
         // Gets the Uniswap V2 Pair address for optionAddress and quoteToken.
@@ -245,7 +206,7 @@ contract UniswapConnector is Ownable {
 
         // Pushes option and redeem tokens to the option contract and calls "closeOption".
         // Receives underlyingTokens and sends them to the "to" address.
-        _primitive.trader.safeClose(IOption(optionAddress), amountOptions, to);
+        trader.safeClose(IOption(optionAddress), amountOptions, to);
 
         // Send the quoteTokens received from burning liquidity shares to the "to" address.
         IERC20(quoteToken_).safeTransfer(to, amountQuote);
@@ -332,18 +293,18 @@ contract UniswapConnector is Ownable {
         );
 
         // Store in memory for gas savings.
-        ITrader trader = _primitive.trader;
+        ITrader trader_ = trader;
 
         // Approve underlyingTokens to be sent to the Primitive Trader contract.
         IERC20(IOption(rollFromOption).underlyingToken()).approve(
-            address(trader),
+            address(trader_),
             uint256(-1)
         );
 
         // Mint rollToOptions using the underlyingTokens received from closing the rollFromOptions.
         // Pulls underlyingTokens from this contract and sends them to the rollToOption contract.
         // Sends minted option and redeem tokens to the "receiver" address.
-        (uint256 outputOptions, ) = trader.safeMint(
+        (uint256 outputOptions, ) = trader_.safeMint(
             IOption(rollToOption),
             outUnderlyings,
             receiver
@@ -383,7 +344,7 @@ contract UniswapConnector is Ownable {
         uint256 deadline
     ) public nonReentrant returns (bool) {
         // Store in memory for gas savings.
-        IUniswapV2Router02 router = _uniswap.router;
+        IUniswapV2Router02 router_ = router;
         address quoteToken_ = quoteToken;
 
         // Pull quote tokens from msg.sender to add to Uniswap V2 Pair.
@@ -404,11 +365,11 @@ contract UniswapConnector is Ownable {
         );
 
         // Approves Uniswap V2 Pair to transfer option and quote tokens from this contract.
-        IERC20(optionAddress).approve(address(router), uint256(-1));
-        IERC20(quoteToken_).approve(address(router), uint256(-1));
+        IERC20(optionAddress).approve(address(router_), uint256(-1));
+        IERC20(quoteToken_).approve(address(router_), uint256(-1));
 
         // Adds liquidity to Uniswap V2 Pair and returns liquidity shares to the "to" address.
-        (, , uint256 liquidity) = _uniswap.router.addLiquidity(
+        (, , uint256 liquidity) = router_.addLiquidity(
             optionAddress,
             quoteToken,
             outputOptions,
@@ -428,6 +389,46 @@ contract UniswapConnector is Ownable {
         return true;
     }
 
+    // ==== Internal Functions ====
+
+    /**
+     * @dev Calls the "swapExactTokensForTokens" function on the Uniswap V2 Router 02 Contract.
+     * @notice Fails early if the address in the beginning of the path is not the optionToken address.
+     * @param optionAddress The address of the optionToken to swap from.
+     * @param amountIn The quantity of optionTokens to swap with.
+     * @param amountOutMin The minimum quantity of tokens to receive in exchange for the optionTokens swapped.
+     * @param path The token addresses to trade through using their Uniswap V2 pools. Assumes path[0] = option.
+     * @param to The address to send the optionToken proceeds and redeem tokens to.
+     * @param deadline The timestamp for a trade to fail at if not successful.
+     */
+    function _swapExactOptionsForTokens(
+        address optionAdress,
+        uint256 amountIn,
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) internal returns (uint256[] memory amounts, bool success) {
+        // Fails early if the token being swapped from is not the optionToken.
+        require(path[0] == optionAddress, "ERR_PATH_OPTION_START");
+
+        // Store router in memory for gas savings.
+        IUniswapV2Router02 router_ = router;
+
+        // Approve the uniswap router to be able to transfer options from this contract.
+        IERC20(optionAddress).approve(address(router_), uint256(-1));
+
+        // Call the Uniswap V2 function to swap optionTokens to quoteTokens.
+        (amounts) = router_.swapExactTokensForTokens(
+            amountIn,
+            amountOutMin,
+            path,
+            to,
+            deadline
+        );
+        success = true;
+    }
+
     // ==== Management Functions ====
 
     /**
@@ -438,10 +439,7 @@ contract UniswapConnector is Ownable {
         external
         returns (address)
     {
-        address uniswapPair = _uniswap.factory.createPair(
-            optionAddress,
-            quoteToken
-        );
+        address uniswapPair = factory.createPair(optionAddress, quoteToken);
         return uniswapPair;
     }
 
@@ -450,9 +448,10 @@ contract UniswapConnector is Ownable {
     /**
      * @dev The maxmium deadline available for each trade.
      */
-    function getMaxDeadline() public view returns (uint256 deadline) {
+    function getMaxDeadline() public view returns (uint256) {
         // solhint-disable-next-line not-rely-on-time
-        deadline = now + 15 minutes;
+        uint256 deadline = now + 15 minutes;
+        return deadline;
     }
 
     /**
@@ -464,10 +463,7 @@ contract UniswapConnector is Ownable {
         view
         returns (address)
     {
-        address uniswapPair = _uniswap.factory.getPair(
-            optionAddress,
-            quoteToken
-        );
+        address uniswapPair = factory.getPair(optionAddress, quoteToken);
         require(uniswapPair != address(0x0), "ERR_PAIR_DOES_NOT_EXIST");
         return uniswapPair;
     }
@@ -482,7 +478,7 @@ contract UniswapConnector is Ownable {
         uint256 quote,
         uint256 expiry
     ) public view returns (address) {
-        address optionAddress = _primitive.registry.getOption(
+        address optionAddress = registry.getOption(
             underlyingToken,
             strikeToken,
             base,
@@ -491,39 +487,5 @@ contract UniswapConnector is Ownable {
         );
         require(optionAddress != address(0x0), "ERR_OPTION_DOES_NOT_EXIST");
         return getUniswapMarketForOption(optionAddress);
-    }
-
-    function getUniswapProtocolAddresses()
-        external
-        view
-        returns (
-            address router,
-            address factory,
-            bool isActivelyTrading
-        )
-    {
-        UniswapProtocol memory uniswap_ = _uniswap;
-        return (
-            address(uniswap_.router),
-            address(uniswap_.factory),
-            uniswap_.isActivelyTrading
-        );
-    }
-
-    function getPrimitiveProtocolAddresses()
-        external
-        view
-        returns (
-            address trader,
-            address registry,
-            bool isActivelyTrading
-        )
-    {
-        PrimitiveProtocol memory primitive_ = _primitive;
-        return (
-            address(primitive_.trader),
-            address(primitive_.registry),
-            primitive_.isActivelyTrading
-        );
     }
 }
