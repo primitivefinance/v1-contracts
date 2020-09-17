@@ -13,8 +13,8 @@ pragma solidity 0.6.2;
 // WETH Interface
 import { IWETH } from "./IWETH.sol";
 // Primitive
-import { IOption } from "../option/interfaces/IOption.sol";
-import { TraderLib } from "../option/libraries/TraderLib.sol";
+import { IOption } from "../../option/interfaces/IOption.sol";
+import { TraderLib } from "../../option/libraries/TraderLib.sol";
 import { IWethConnector } from "./IWethConnector.sol";
 // Open Zeppelin
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -138,7 +138,6 @@ contract WethConnector is IWethConnector, ReentrancyGuard {
         returns (uint256, uint256)
     {
         // Require one of the option's assets to be WETH.
-        address underlyingAddress = optionToken.getUnderlyingTokenAddress();
         address strikeAddress = optionToken.getStrikeTokenAddress();
         require(strikeAddress == address(weth), "ERR_NOT_WETH");
 

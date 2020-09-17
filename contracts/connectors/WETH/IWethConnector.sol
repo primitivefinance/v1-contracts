@@ -3,7 +3,7 @@
 pragma solidity 0.6.2;
 
 // Primitive
-import { IOption } from "../option/interfaces/IOption.sol";
+import { IOption } from "../../option/interfaces/IOption.sol";
 
 interface IWethConnector {
     function safeMintWithETH(IOption optionToken, address receiver)

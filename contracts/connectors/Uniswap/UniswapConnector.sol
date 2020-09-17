@@ -1,8 +1,7 @@
 pragma solidity >=0.6.0;
 
 /**
- * @title   A manager contract for Uniswap markets with Option tokens.
- * @notice  Holds state for related Primitive contracts.
+ * @title   Combines Uniswap V2 Protocol functions with Primitive V1.
  * @author  Primitive
  */
 
@@ -24,8 +23,11 @@ import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import {
+    ReentrancyGuard
+} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract UniswapConnector is Ownable {
+contract UniswapConnector is Ownable, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -40,6 +42,7 @@ contract UniswapConnector is Ownable {
     event UpdatedTrader(address indexed from, address indexed newTrader);
     event UpdatedRegistry(address indexed from, address indexed newRegistry);
     event UpdatedQuoteToken(address indexed from, address indexed newQuote);
+
     event RolledOptions(
         address indexed from,
         address indexed optionFrom,
@@ -95,7 +98,7 @@ contract UniswapConnector is Ownable {
      */
     function setQuoteToken(address quoteToken_) external onlyOwner {
         quoteToken = quoteToken_;
-        emit UpdatedQuote(msg.sender, quoteToken_);
+        emit UpdatedQuoteToken(msg.sender, quoteToken_);
     }
 
     // ==== Trading Functions ====
@@ -133,7 +136,7 @@ contract UniswapConnector is Ownable {
         // Reverts if the first address in the path is not the optionToken address.
         (, bool success) = _swapExactOptionsForTokens(
             address(optionToken),
-            amountIn,
+            outputOptions,
             amountOutMin,
             path,
             to,
@@ -155,8 +158,8 @@ contract UniswapConnector is Ownable {
      * UNI-V2 -> optionToken -> underlyingToken.
      * @param optionAddress The address of the option that will be closed from burned UNI-V2 liquidity shares.
      * @param liquidity The quantity of liquidity tokens to pull from msg.sender and burn.
-     * @param amountAMin
-     * @param amountBMin
+     * @param amountAMin The minimum quantity of optionTokens to receive from removing liquidity.
+     * @param amountBMin The minimum quantity of quoteTokens to receive from removing liquidity.
      * @param to The address that receives quoteTokens from burned UNI-V2, and underlyingTokens from closed options.
      * @param deadline The timestamp to expire a pending transaction.
      */
@@ -193,9 +196,9 @@ contract UniswapConnector is Ownable {
 
         // Calculate equivalent quantity of redeem (short option) tokens to close the option position.
         // Need to cancel base units and have quote units remaining.
-        uint256 baseValue = IOption(optionAddress).getBaseValue();
-        uint256 quoteValue = IOption(optionAddress).getQuoteValue();
-        uint256 requiredRedeems = amountOptions.mul(quoteValue).div(baseValue);
+        uint256 requiredRedeems = amountOptions
+            .mul(IOption(optionAddress).getQuoteValue())
+            .div(IOption(optionAddress).getBaseValue());
 
         // Pull the required redeemTokens from msg.sender to this contract.
         IERC20(IOption(optionAddress).redeemToken()).safeTransferFrom(
@@ -221,8 +224,8 @@ contract UniswapConnector is Ownable {
      * @param rollFromOption The optionToken address to close a UNI-V2 position.
      * @param rollToOption The optionToken address to open a UNI-V2 position.
      * @param liquidity The quantity of UNI-V2 shares to roll from the first Uniswap pool.
-     * @param amountAMin
-     * @param amountBMin
+     * @param amountAMin The minimum quantity of optionTokens to receive from removing liquidity.
+     * @param amountBMin The minimum quantity of quoteTokens to receive from removing liquidity.
      * @param to The address that receives the UNI-V2 shares that have been rolled.
      * @param deadline The timestamp to expire a pending transaction.
      */
@@ -296,7 +299,7 @@ contract UniswapConnector is Ownable {
         ITrader trader_ = trader;
 
         // Approve underlyingTokens to be sent to the Primitive Trader contract.
-        IERC20(IOption(rollFromOption).underlyingToken()).approve(
+        IERC20(IOption(rollFromOption).getUnderlyingTokenAddress()).approve(
             address(trader_),
             uint256(-1)
         );
@@ -369,7 +372,7 @@ contract UniswapConnector is Ownable {
         IERC20(quoteToken_).approve(address(router_), uint256(-1));
 
         // Adds liquidity to Uniswap V2 Pair and returns liquidity shares to the "to" address.
-        (, , uint256 liquidity) = router_.addLiquidity(
+        router_.addLiquidity(
             optionAddress,
             quoteToken,
             outputOptions,
@@ -402,10 +405,10 @@ contract UniswapConnector is Ownable {
      * @param deadline The timestamp for a trade to fail at if not successful.
      */
     function _swapExactOptionsForTokens(
-        address optionAdress,
+        address optionAddress,
         uint256 amountIn,
         uint256 amountOutMin,
-        address[] calldata path,
+        address[] memory path,
         address to,
         uint256 deadline
     ) internal returns (uint256[] memory amounts, bool success) {
@@ -478,7 +481,7 @@ contract UniswapConnector is Ownable {
         uint256 quote,
         uint256 expiry
     ) public view returns (address) {
-        address optionAddress = registry.getOption(
+        address optionAddress = registry.getOptionAddress(
             underlyingToken,
             strikeToken,
             base,
