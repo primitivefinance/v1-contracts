@@ -409,6 +409,40 @@ const newUniswapRinkeby = async (signer) => {
     return { uniswapRouter, uniswapFactory };
 };
 
+const setupMultipleContracts = async (arrayOfContractNames) => {
+    let contracts = [];
+    for (let i = 0; i < arrayOfContractNames.length; i++) {
+        let contractName = arrayOfContractNames[i];
+        console.log(contractName);
+        let factory = await ethers.getContractFactory(contractName);
+        let contract = await factory.deploy();
+        contracts.push(contract);
+    }
+    console.log("Set up all contracts!");
+    return contracts;
+};
+
+const batchApproval = async (
+    arrayOfContractsToApprove,
+    arrayOfTokens,
+    arrayOfOwners
+) => {
+    // for each contract
+    for (let c = 0; c < arrayOfContractsToApprove.length; c++) {
+        let contract = arrayOfContractsToApprove[c];
+        // for each token
+        for (let t = 0; t < arrayOfTokens.length; t++) {
+            let token = arrayOfTokens[t];
+            // for each owner
+            for (let u = 0; u < arrayOfOwners.length; u++) {
+                let user = arrayOfOwners[u];
+
+                await token.connect(user).approve(contract.address, MAX_UINT);
+            }
+        }
+    }
+};
+
 Object.assign(module.exports, {
     newUniswapConnector,
     newUniswap,
@@ -428,4 +462,6 @@ Object.assign(module.exports, {
     approveToken,
     newTrader,
     newWethConnector,
+    setupMultipleContracts,
+    batchApproval,
 });
