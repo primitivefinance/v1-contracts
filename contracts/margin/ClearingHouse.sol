@@ -20,6 +20,12 @@ contract ClearingHouse {
     using SafeERC20 for IOption;
     using SafeMath for uint256;
 
+    event SyntheticMinted(
+        address indexed from,
+        address indexed optionAddress,
+        uint256 quantity
+    );
+
     IERC20 public baseToken;
     IERC20 public quoteToken;
 
@@ -129,6 +135,8 @@ contract ClearingHouse {
         // Pull real tokens to this contract.
         address underlying = IOption(optionAddress).getUnderlyingTokenAddress();
         _pullTokens(underlying, quantity);
+
+        emit SyntheticMinted(msg.sender, optionAddress, quantity);
     }
 
     function syntheticExercise(
@@ -147,8 +155,32 @@ contract ClearingHouse {
         );
 
         // Calculate strike tokens needed to exercise.
+        uint256 amountStrikeTokens = calculateStrikePayment(
+            optionAddress,
+            quantity
+        );
 
         // Mint required strike tokens to the synthetic option in preparation of calling exerciseOptions().
+        quoteToken.mint(syntheticOption, amountStrikeTokens);
+
+        // Call exerciseOptions and send underlying tokens to this contract.
+        IOption(syntheticOption).exericseOptions(address(this));
+
+        // Burn the synthetic underlying tokens.
+        baseToken.burn(address(this), quantity);
+
+        // Push real underlying tokens to receiver.
+        IERC20(IOption(optionAddress).getUnderlyingTokenAddress()).safeTransfer(
+            receiver,
+            quantity
+        );
+
+        // Pull real strike tokens to this contract.
+        IERC20(IOption(optionAddress).getStrikeTokenAddress()).safeTransferFrom(
+            msg.sender,
+            address(this),
+            amountStrikeTokens
+        );
     }
 
     function calculateStrikePayment(address optionAddress, uint256 quantity)
@@ -158,6 +190,7 @@ contract ClearingHouse {
     {
         uint256 baseValue = IOption(optionAddress).getBaseValue();
         uint256 quoteValue = IOption(optionAddress).getQuoteValue();
+
         // Parameter `quantity` is in units of baseValue. Convert it into units of quoteValue.
         uint256 calculatedValue = quantity.mul(quoteValue).div(baseValue);
         return calculatedValue;

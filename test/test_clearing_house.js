@@ -47,9 +47,9 @@ describe("ClearingHouse", () => {
         // Option Parameters
         underlyingToken = dai;
         strikeToken = weth;
-        base = parseEther("200").toString();
-        quote = parseEther("1").toString();
-        expiry = "1690868800";
+        base = parseEther("1").toString();
+        quote = parseEther("300").toString();
+        expiry = "1790868800";
 
         // Option and Redeem token instances for parameters
         Primitive = await setup.newPrimitive(
@@ -64,10 +64,51 @@ describe("ClearingHouse", () => {
 
         optionToken = Primitive.optionToken;
         redeemToken = Primitive.redeemToken;
-        flash = await setup.newFlash(Admin, optionToken.address);
+
+        // Setup clearing house contract
+        let contractNames = ["ClearingHouse"];
+        [clearingHouse] = await setup.setupMultipleContracts(contractNames);
+        await clearingHouse.initializeSelf(registry.address);
+
+        // Approve all the tokens for the clearing house
+        let arrayOfContracts = [clearingHouse];
+        let arrayOfTokens = [
+            underlyingToken,
+            strikeToken,
+            optionToken,
+            redeemToken,
+        ];
+        let arrayOfOwners = [Alice, Bob];
+        await setup.batchApproval(
+            arrayOfContracts,
+            arrayOfTokens,
+            arrayOfOwners
+        );
+
+        // Deploy a synthetic option on the main test option
+        syntheticOption = await setup.newSyntheticOption(
+            Admin,
+            optionToken.address,
+            clearingHouse
+        );
     });
 
-    describe("primitiveFlash", () => {
-        it("execute a flash loan and return them", async () => {});
+    describe("syntheticMint()", () => {
+        it("mints a synthetic option using real underlying tokens", async () => {
+            let option = optionToken.address;
+            let quantity = ONE_ETHER;
+            let receiver = Alice;
+
+            await expect(() =>
+                clearingHouse.syntheticMint(option, quantity, receiver)
+            )
+                .to.changeTokenBalance(
+                    underlyingToken.address,
+                    Alice,
+                    quantity.mul(-1)
+                )
+                .and.to.emit(clearingHouse, "SyntheticMinted")
+                .withArgs(receiver, option, quantity);
+        });
     });
 });

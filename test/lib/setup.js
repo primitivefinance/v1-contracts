@@ -443,8 +443,22 @@ const batchApproval = async (
     }
 };
 
+const newSyntheticOption = async (signer, optionAddress, clearingHouse) => {
+    await clearingHouse.deploySytheticOption(optionAddress);
+    let syntheticOptionAddress = await clearingHouse.syntheticOptions(
+        optionAddress
+    );
+    let syntheticOption = new ethers.Contract(
+        syntheticOptionAddress,
+        Option.abi,
+        signer
+    );
+    return syntheticOption;
+};
+
 Object.assign(module.exports, {
     newUniswapConnector,
+    newSyntheticOption,
     newUniswap,
     newUniswapRinkeby,
     newWallets,
