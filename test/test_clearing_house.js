@@ -9,8 +9,12 @@ const { parseEther, formatEther } = require("ethers/lib/utils");
 // Helper functions and constants
 const setup = require("./lib/setup");
 const constants = require("./lib/constants");
+const BalanceTable = require("./lib/balanceTable");
 const { ONE_ETHER, TEN_ETHER, MILLION_ETHER } = constants.VALUES;
 const { ERR_ZERO } = constants.ERR_CODES;
+
+const config = {};
+const table = new BalanceTable(config);
 
 describe("ClearingHouse", () => {
     // Accounts
@@ -187,6 +191,10 @@ describe("ClearingHouse", () => {
                 shortOptionToken.address,
                 clearingHouse
             );
+            syntheticShortOptionRedeemToken = await setup.newRedeem(
+                Admin,
+                syntheticShortOption
+            );
 
             let longOption = optionToken.address;
             let shortOption = shortOptionToken.address;
@@ -220,8 +228,38 @@ describe("ClearingHouse", () => {
                 formatEther(underlyingTokenBal),
                 await syntheticOption.symbol(),
                 "with a strike price of",
-                formatEther(await syntheticOption.getQuoteValue())
+                formatEther(await syntheticOption.getQuoteValue()),
+                `and ${formatEther(
+                    await syntheticShortOptionRedeemToken.balanceOf(Alice)
+                )} ${await syntheticShortOptionRedeemToken.symbol()}, while the clearing house has 
+                ${formatEther(
+                    await syntheticShortOptionRedeemToken.balanceOf(
+                        clearingHouse.address
+                    )
+                )} ${await syntheticShortOptionRedeemToken.symbol()}
+                `
             );
+
+            const contractNamesArray = ["Alice", "Clearing House"];
+            const contractsArray = [Alice, clearingHouse.address];
+            const tokensArray = [
+                underlyingToken,
+                strikeToken,
+                optionToken,
+                redeemToken,
+                syntheticOption,
+                syntheticShortOption,
+                syntheticShortOptionRedeemToken,
+            ];
+
+            const info = await setup.formatConfigForBalanceReporter(
+                contractNamesArray,
+                contractsArray,
+                tokensArray
+            );
+
+            console.log(info);
+            table.generate(info);
         });
     });
 });

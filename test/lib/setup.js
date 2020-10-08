@@ -22,7 +22,7 @@ const constants = require("./constants");
 const { MILLION_ETHER } = constants.VALUES;
 const { OPTION_TEMPLATE_LIB, REDEEM_TEMPLATE_LIB } = constants.LIBRARIES;
 const { deployContract, link } = require("ethereum-waffle");
-const { parseEther } = bre.ethers.utils;
+const { parseEther, formatEther } = bre.ethers.utils;
 const ethers = bre.ethers;
 
 // Uniswap related artifacts and addresses
@@ -462,7 +462,48 @@ const newSyntheticOption = async (signer, optionAddress, clearingHouse) => {
     return syntheticOption;
 };
 
+const formatConfigForBalanceReporter = async (
+    contractNamesArray,
+    contractsArray,
+    tokensArray
+) => {
+    const info = {
+        balances: [
+            {
+                contract: "Test contract",
+                tokenName: "Test Token",
+                tokenBalance: "Test Balance",
+            },
+        ],
+    };
+
+    let balances = info.balances;
+    // for each contract, get each token balance
+    for (let i = 0; i < contractsArray.length; i++) {
+        let name = contractNamesArray[i];
+        let contract = contractsArray[i];
+        console.log(`For: ${name} with address: ${contract}`);
+        for (let x = 0; x < tokensArray.length; x++) {
+            let token = tokensArray[x];
+            console.log(`tokenId: ${x}`);
+            let balance = await token.balanceOf(contract);
+            let formattedBalance = formatEther(balance);
+            let tokenName = await token.name();
+            let data = {
+                contract: name,
+                tokenName: tokenName,
+                tokenBalance: formattedBalance,
+            };
+            console.log(`For: ${tokenName} with balance: ${formattedBalance}`);
+            info.balances.push(data);
+        }
+    }
+
+    return info;
+};
+
 Object.assign(module.exports, {
+    formatConfigForBalanceReporter,
     newUniswapConnector,
     newSyntheticOption,
     newUniswap,
