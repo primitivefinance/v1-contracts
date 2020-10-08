@@ -26,7 +26,10 @@ class BalanceTable {
             section.push(colors.grey(data.contract));
             section.push(data.tokenName);
             section.push({ hAlign: "right", content: data.tokenBalance });
-
+            section.push({ hAlign: "right", content: data.base });
+            section.push({ hAlign: "right", content: data.quote });
+            section.push({ hAlign: "right", content: data.underlying });
+            section.push({ hAlign: "right", content: data.strike });
             tokenRows.push(section);
         });
 
@@ -85,6 +88,10 @@ class BalanceTable {
             colors.bold("Contract"),
             colors.bold("Token"),
             colors.green("Balance"),
+            colors.green("Base"),
+            colors.green("Quote"),
+            colors.green("Underlying"),
+            colors.green("Strike"),
         ];
 
         // ---------------------------------------------------------------------------------------------

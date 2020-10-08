@@ -51,7 +51,7 @@ contract ClearingHouse {
     }
 
     function addSyntheticToken(address asset, address syntheticAsset) external {
-        ISERC20(syntheticAsset).initialize(address(this));
+        ISERC20(syntheticAsset).initialize(asset, address(this));
         ReserveData storage reserve = _reserves[asset];
         reserve.syntheticToken = ISERC20(syntheticAsset);
     }

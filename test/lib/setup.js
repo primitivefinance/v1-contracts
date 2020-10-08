@@ -482,19 +482,40 @@ const formatConfigForBalanceReporter = async (
     for (let i = 0; i < contractsArray.length; i++) {
         let name = contractNamesArray[i];
         let contract = contractsArray[i];
-        console.log(`For: ${name} with address: ${contract}`);
         for (let x = 0; x < tokensArray.length; x++) {
             let token = tokensArray[x];
-            console.log(`tokenId: ${x}`);
             let balance = await token.balanceOf(contract);
             let formattedBalance = formatEther(balance);
             let tokenName = await token.name();
+            let base, quote, underlying, strike;
+            if (tokenName == "Primitive V1 Option") {
+                let signer = (await ethers.getSigners())[0];
+                base = formatEther(await token.getBaseValue());
+                quote = formatEther(await token.getQuoteValue());
+                strikeToken = new ethers.Contract(
+                    await token.getStrikeTokenAddress(),
+                    TestERC20.abi,
+                    signer
+                );
+
+                underlyingToken = new ethers.Contract(
+                    await token.getUnderlyingTokenAddress(),
+                    TestERC20.abi,
+                    signer
+                );
+
+                strike = await strikeToken.symbol();
+                underlying = await underlyingToken.symbol();
+            }
             let data = {
                 contract: name,
                 tokenName: tokenName,
                 tokenBalance: formattedBalance,
+                base: base || "-",
+                quote: quote || "-",
+                underlying: underlying || "-",
+                strike: strike || "-",
             };
-            console.log(`For: ${tokenName} with balance: ${formattedBalance}`);
             info.balances.push(data);
         }
     }
