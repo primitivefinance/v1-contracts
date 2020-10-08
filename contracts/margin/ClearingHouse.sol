@@ -7,18 +7,23 @@ pragma solidity >=0.6.2;
  */
 
 // Primitive
-import { SERC20, IERC20 } from "./SERC20.sol";
+import { ISERC20 } from "./interfaces/ISERC20.sol";
 import { IOption } from "../option/interfaces/IOption.sol";
 import { IRegistry } from "../option/interfaces/IRegistry.sol";
 
 // Open Zeppelin
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract ClearingHouse {
     using SafeERC20 for IERC20;
     using SafeERC20 for IOption;
     using SafeMath for uint256;
+
+    struct ReserveData {
+        ISERC20 syntheticToken;
+    }
 
     event SyntheticMinted(
         address indexed from,
@@ -26,22 +31,29 @@ contract ClearingHouse {
         uint256 quantity
     );
 
-    IERC20 public baseToken;
-    IERC20 public quoteToken;
+    event OpenedDebitSpread(
+        address indexed from,
+        address indexed longOption,
+        address indexed shortOption,
+        uint256 quantity
+    );
 
     IRegistry public registry;
 
     mapping(address => address) public syntheticOptions;
+    mapping(address => ReserveData) internal _reserves;
 
     constructor() public {}
 
     // Initialize self
-    function intializeSelf(address registry_) external {
+    function initializeSelf(address registry_) external {
         registry = IRegistry(registry_);
-        baseToken = new SERC20();
-        baseToken.initialize(address(this));
-        quoteToken = new SERC20();
-        quoteToken.initialize(address(this));
+    }
+
+    function addSyntheticToken(address asset, address syntheticAsset) external {
+        ISERC20(syntheticAsset).initialize(address(this));
+        ReserveData storage reserve = _reserves[asset];
+        reserve.syntheticToken = ISERC20(syntheticAsset);
     }
 
     // Initialize a synthetic option
@@ -49,13 +61,17 @@ contract ClearingHouse {
         public
         returns (address)
     {
-        (, , uint256 baseValue, uint256 quoteValue, uint256 expiry) = IOption(
-            optionAddress
-        )
-            .getParameters();
+        (
+            address underlying,
+            address strike,
+            ,
+            uint256 baseValue,
+            uint256 quoteValue,
+            uint256 expiry
+        ) = IOption(optionAddress).getParameters();
         address syntheticOption = registry.deployOption(
-            address(baseToken),
-            address(quoteToken),
+            address(_reserves[underlying].syntheticToken),
+            address(_reserves[strike].syntheticToken),
             baseValue,
             quoteValue,
             expiry
@@ -87,8 +103,12 @@ contract ClearingHouse {
         // e.g. short a 500 call and long a 400 call. 100 strike difference.
         uint256 strikeDifference = shortStrike.sub(longStrike);
 
+        // Get synthetic token from reserve.
+        ReserveData storage reserve = _reserves[IOption(shortOption)
+            .getUnderlyingTokenAddress()];
+
         // Mint synthetic tokens to the synthetic short option.
-        baseToken.mint(address(syntheticShort), quantity);
+        reserve.syntheticToken.mint(address(syntheticShort), quantity);
 
         // Mint synthetic option and redeem tokens to this contract.
         syntheticShort.mintOptions(address(this));
@@ -104,6 +124,8 @@ contract ClearingHouse {
 
         // Pull in the original long option.
         syntheticLong.safeTransferFrom(msg.sender, address(this), quantity);
+
+        emit OpenedDebitSpread(msg.sender, longOption, shortOption, quantity);
 
         // Final balance sheet:
         //
@@ -126,14 +148,19 @@ contract ClearingHouse {
         address syntheticOption = syntheticOptions[optionAddress];
         require(syntheticOption != address(0x0), "ERR_NOT_DEPLOYED");
 
+        // Store in memory for gas savings.
+        address underlying = IOption(optionAddress).getUnderlyingTokenAddress();
+
+        // Get synthetic token from reserve.
+        ReserveData storage reserve = _reserves[underlying];
+
         // Mint synthetic tokens to the synthetic option contract.
-        baseToken.mint(syntheticOption, quantity);
+        reserve.syntheticToken.mint(syntheticOption, quantity);
 
         // Call mintOptions and send options to the receiver address.
         IOption(syntheticOption).mintOptions(receiver);
 
         // Pull real tokens to this contract.
-        address underlying = IOption(optionAddress).getUnderlyingTokenAddress();
         _pullTokens(underlying, quantity);
 
         emit SyntheticMinted(msg.sender, optionAddress, quantity);
@@ -146,6 +173,10 @@ contract ClearingHouse {
     ) external {
         address syntheticOption = syntheticOptions[optionAddress];
         require(syntheticOption != address(0x0), "ERR_NOT_DEPLOYED");
+
+        // Store in memory for gas savings.
+        address underlying = IOption(optionAddress).getUnderlyingTokenAddress();
+        address strike = IOption(optionAddress).getStrikeTokenAddress();
 
         // Move synthetic options from msg.sender to synthetic option contract itself.
         IERC20(syntheticOption).safeTransferFrom(
@@ -161,22 +192,26 @@ contract ClearingHouse {
         );
 
         // Mint required strike tokens to the synthetic option in preparation of calling exerciseOptions().
-        quoteToken.mint(syntheticOption, amountStrikeTokens);
-
-        // Call exerciseOptions and send underlying tokens to this contract.
-        IOption(syntheticOption).exericseOptions(address(this));
-
-        // Burn the synthetic underlying tokens.
-        baseToken.burn(address(this), quantity);
-
-        // Push real underlying tokens to receiver.
-        IERC20(IOption(optionAddress).getUnderlyingTokenAddress()).safeTransfer(
-            receiver,
-            quantity
+        _reserves[strike].syntheticToken.mint(
+            syntheticOption,
+            amountStrikeTokens
         );
 
+        // Call exerciseOptions and send underlying tokens to this contract.
+        IOption(syntheticOption).exerciseOptions(
+            address(this),
+            quantity,
+            new bytes(0)
+        );
+
+        // Burn the synthetic underlying tokens.
+        _reserves[underlying].syntheticToken.burn(address(this), quantity);
+
+        // Push real underlying tokens to receiver.
+        IERC20(underlying).safeTransfer(receiver, quantity);
+
         // Pull real strike tokens to this contract.
-        IERC20(IOption(optionAddress).getStrikeTokenAddress()).safeTransferFrom(
+        IERC20(strike).safeTransferFrom(
             msg.sender,
             address(this),
             amountStrikeTokens

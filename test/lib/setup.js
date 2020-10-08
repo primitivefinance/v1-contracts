@@ -1,4 +1,4 @@
-const { ethers } = require("@nomiclabs/buidler");
+const bre = require("@nomiclabs/buidler");
 
 // Artifacts
 const TestERC20 = require("../../artifacts/TestERC20");
@@ -22,11 +22,15 @@ const constants = require("./constants");
 const { MILLION_ETHER } = constants.VALUES;
 const { OPTION_TEMPLATE_LIB, REDEEM_TEMPLATE_LIB } = constants.LIBRARIES;
 const { deployContract, link } = require("ethereum-waffle");
+const { parseEther } = bre.ethers.utils;
+const ethers = bre.ethers;
 
 // Uniswap related artifacts and addresses
 const UniswapV2Router02 = require("@uniswap/v2-periphery/build/UniswapV2Router02.json");
 const UniswapV2Factory = require("@uniswap/v2-core/build/UniswapV2Factory.json");
 const { RINKEBY_UNI_ROUTER02, RINKEBY_UNI_FACTORY } = constants.ADDRESSES;
+
+const MAX_UINT = parseEther("10000000000000000000000000000000000000");
 
 /**
  * @dev Gets signers from ethers.
@@ -415,7 +419,9 @@ const setupMultipleContracts = async (arrayOfContractNames) => {
         let contractName = arrayOfContractNames[i];
         console.log(contractName);
         let factory = await ethers.getContractFactory(contractName);
-        let contract = await factory.deploy();
+        let contract = await factory.deploy({ gasLimit: 10000000 });
+        await contract.deployed();
+        contract.deployTransaction.wait();
         contracts.push(contract);
     }
     console.log("Set up all contracts!");
@@ -444,7 +450,7 @@ const batchApproval = async (
 };
 
 const newSyntheticOption = async (signer, optionAddress, clearingHouse) => {
-    await clearingHouse.deploySytheticOption(optionAddress);
+    await clearingHouse.deploySyntheticOption(optionAddress);
     let syntheticOptionAddress = await clearingHouse.syntheticOptions(
         optionAddress
     );

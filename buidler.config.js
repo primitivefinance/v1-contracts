@@ -29,6 +29,10 @@ const live = process.env.MNEMONIC || mnemonic;
 // == Buidler Config ==
 Object.assign(module.exports, {
     networks: {
+        buidlerevm: {
+            gas: 10000000,
+            blockGasLimit: 11000000,
+        },
         local: {
             url: "http://127.0.0.1:8545",
             gasPrice: 80000000000,
@@ -71,6 +75,10 @@ Object.assign(module.exports, {
     },
     solc: {
         version: "0.6.2",
+        optimizer: {
+            enabled: true,
+            runs: 200,
+        },
     },
     namedAccounts: {
         deployer: {

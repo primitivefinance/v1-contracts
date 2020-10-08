@@ -65,7 +65,7 @@
         "chai": "^4.2.0",
         "chai-bn": "^0.2.1",
         "dotenv": "^8.2.0",
-        "ethereum-waffle": "^3.0.1",
+        "ethereum-waffle": "3.1.1",
         "ethers": "^5.0.4",
         "mocha": "^7.1.2",
         "solc": "^0.6.8",
