@@ -157,6 +157,69 @@ describe("ClearingHouse", () => {
     });
 
     describe("openDebitSpread()", () => {
+        beforeEach(async () => {
+            // Administrative contract instances
+            registry = await setup.newRegistry(Admin);
+
+            // Option and Redeem token instances for parameters
+            Primitive = await setup.newPrimitive(
+                Admin,
+                registry,
+                underlyingToken,
+                strikeToken,
+                base,
+                quote,
+                expiry
+            );
+
+            optionToken = Primitive.optionToken;
+            redeemToken = Primitive.redeemToken;
+
+            // Setup clearing house contract
+            [clearingHouse] = await setup.setupMultipleContracts([
+                "ClearingHouse",
+            ]);
+            await clearingHouse.initializeSelf(registry.address);
+
+            // Setup synthetic tokens
+            [
+                syntheticUnderlying,
+                syntheticStrike,
+            ] = await setup.setupMultipleContracts(["SERC20", "SERC20"]);
+
+            // Add synthetic tokens to clearing house
+            await clearingHouse.addSyntheticToken(
+                underlyingToken.address,
+                syntheticUnderlying.address
+            );
+            await clearingHouse.addSyntheticToken(
+                strikeToken.address,
+                syntheticStrike.address
+            );
+
+            // Deploy a synthetic option on the main test option
+            syntheticOption = await setup.newSyntheticOption(
+                Admin,
+                optionToken.address,
+                clearingHouse
+            );
+
+            // Approve all the tokens for the clearing house
+            let arrayOfContracts = [clearingHouse];
+            let arrayOfTokens = [
+                underlyingToken,
+                strikeToken,
+                optionToken,
+                redeemToken,
+                syntheticOption,
+            ];
+            let arrayOfOwners = [Admin, User];
+            await setup.batchApproval(
+                arrayOfContracts,
+                arrayOfTokens,
+                arrayOfOwners
+            );
+        });
         it("mints an option using an option as collateral", async () => {
             // mint some long synthetic option tokens
             await clearingHouse.syntheticMint(
@@ -211,35 +274,6 @@ describe("ClearingHouse", () => {
                 .to.emit(clearingHouse, "OpenedDebitSpread")
                 .withArgs(receiver, longOption, shortOption, quantity);
 
-            let syntheticOptionBal = await syntheticShortOption.balanceOf(
-                receiver
-            );
-            let underlyingTokenBal = await syntheticOption.balanceOf(
-                clearingHouse.address
-            );
-
-            console.log(
-                "You have: ",
-                formatEther(syntheticOptionBal),
-                await syntheticShortOption.symbol(),
-                "with a strike price of",
-                formatEther(await syntheticShortOption.getQuoteValue()),
-                "and the clearing house has: ",
-                formatEther(underlyingTokenBal),
-                await syntheticOption.symbol(),
-                "with a strike price of",
-                formatEther(await syntheticOption.getQuoteValue()),
-                `and ${formatEther(
-                    await syntheticShortOptionRedeemToken.balanceOf(Alice)
-                )} ${await syntheticShortOptionRedeemToken.symbol()}, while the clearing house has 
-                ${formatEther(
-                    await syntheticShortOptionRedeemToken.balanceOf(
-                        clearingHouse.address
-                    )
-                )} ${await syntheticShortOptionRedeemToken.symbol()}
-                `
-            );
-
             const contractNamesArray = ["Alice", "Clearing House"];
             const contractsArray = [Alice, clearingHouse.address];
             const tokensArray = [
@@ -247,6 +281,8 @@ describe("ClearingHouse", () => {
                 strikeToken,
                 optionToken,
                 redeemToken,
+                shortOptionToken,
+                shortRedeemToken,
                 syntheticOption,
                 syntheticShortOption,
                 syntheticShortOptionRedeemToken,
@@ -258,7 +294,6 @@ describe("ClearingHouse", () => {
                 tokensArray
             );
 
-            console.log(info);
             table.generate(info);
         });
     });

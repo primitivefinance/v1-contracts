@@ -477,7 +477,6 @@ const formatConfigForBalanceReporter = async (
         ],
     };
 
-    let balances = info.balances;
     // for each contract, get each token balance
     for (let i = 0; i < contractsArray.length; i++) {
         let name = contractNamesArray[i];
