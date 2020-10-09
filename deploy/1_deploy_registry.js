@@ -6,10 +6,10 @@ const bre = require("@nomiclabs/buidler");
 const { ethers } = require("@nomiclabs/buidler");
 
 module.exports = async ({ getNamedAccounts, deployments }) => {
-    const [signer] = await ethers.getSigners();
     const { log, deploy } = deployments;
     const { deployer } = await getNamedAccounts();
     const chain = await bre.getChainId();
+    const signer = ethers.provider.getSigner(deployer);
 
     // Deploy the libraries, factories, and Registry.
     const optionTemplateLib = await deploy("OptionTemplateLib", {

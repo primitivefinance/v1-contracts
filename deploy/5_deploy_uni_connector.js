@@ -7,7 +7,7 @@ const { ADDRESSES } = require("../test/lib/constants");
 const { UNI_FACTORY, UNI_ROUTER02 } = ADDRESSES;
 
 module.exports = async ({ getNamedAccounts, deployments }) => {
-    const [signer] = await ethers.getSigners();
+    const signer = ethers.provider.getSigner(deployer);
     const { log, deploy } = deployments;
     const { deployer } = await getNamedAccounts();
     const chain = await bre.getChainId();

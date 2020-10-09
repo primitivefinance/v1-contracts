@@ -62,6 +62,7 @@ const verifyRegistry = async () => {
  */
 const verifyFactories = async () => {
     let OptionFactory = await deployments.get("OptionFactory");
+    console.log(await bre.getChainId(), OptionFactory.address);
     let OptionTemplateLib = await deployments.get("OptionTemplateLib");
     try {
         await verifyContract(
