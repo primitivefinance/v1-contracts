@@ -7,11 +7,18 @@ pragma solidity >=0.6.0;
 
 // Uniswap
 import {
+    IUniswapV2Callee
+} from "@uniswap/v2-core/contracts/interfaces/IUniswapV2Callee.sol";
+import {
     IUniswapV2Router02
 } from "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import {
     IUniswapV2Factory
 } from "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
+import {
+    UniswapV2Library,
+    IUniswapV2Pair
+} from "@uniswap/v2-periphery/contracts/libraries/UniswapV2Library.sol";
 // Primitive
 import { IOption } from "../../option/interfaces/IOption.sol";
 import { IRegistry } from "../../option/interfaces/IRegistry.sol";
@@ -27,7 +34,7 @@ import {
     ReentrancyGuard
 } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract UniswapConnector is Ownable, ReentrancyGuard {
+contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -35,7 +42,9 @@ contract UniswapConnector is Ownable, ReentrancyGuard {
     IUniswapV2Factory public factory;
     ITrader public trader;
     IRegistry public registry;
+
     address public quoteToken; // Designated stablecoin for Primitive.
+    address public constant WETH = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 
     event Initialized(address indexed from, address indexed quoteToken);
     event UpdatedRouter(address indexed from, address indexed newRouter);
@@ -169,6 +178,210 @@ contract UniswapConnector is Ownable, ReentrancyGuard {
         // Send redeemTokens (short options) to the "to" address.
         IERC20(optionToken.redeemToken()).safeTransfer(to, outputRedeems);
         return success;
+    }
+
+    /**
+     * @dev Mints long and short option tokens, then swaps the shortTokens (redeemTokens) for tokens.
+     * @notice If the first address in the path is not the redeemToken address, the tx will fail.
+     * underlyingToken -> redeemToken -> quoteToken. ShortTokens = redeemTokens
+     * @param optionToken The address of the Option contract.
+     * @param amountIn The quantity of options to mint.
+     * @param amountOutMin The minimum quantity of tokens to receive in exchange for the redeemTokens.
+     * @param path The token addresses to trade through using their Uniswap V2 pools. Assumes path[0] = redeemToken.
+     * @param to The address to send the redeemToken proceeds and optionTokens to.
+     * @param deadline The timestamp for a trade to fail at if not successful.
+     * @return bool Whether the transaction was successful or not.
+     */
+    function mintShortOptionsThenSwapToTokens(
+        IOption optionToken,
+        uint256 amountIn,
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) public returns (bool) {
+        // Pulls underlyingTokens from msg.sender, then pushes underlyingTokens to option contract.
+        // Mints option and redeem tokens to this contract.
+        (uint256 outputOptions, uint256 outputRedeems) = TraderLib.safeMint(
+            optionToken,
+            amountIn,
+            address(this)
+        );
+
+        // Swaps option tokens to the token specified at the end of the path, then sends to msg.sender.
+        // Reverts if the first address in the path is not the optionToken address.
+        address redeemToken = optionToken.redeemToken();
+        (, bool success) = _swapExactOptionsForTokens(
+            redeemToken,
+            outputRedeems, // shortOptionTokens = redeemTokens
+            amountOutMin,
+            path,
+            to,
+            deadline
+        );
+        // Fail early if the swap failed.
+        require(success, "ERR_SWAP_FAILED");
+
+        // Send optionTokens (long options) to the "to" address.
+        IERC20(optionToken).safeTransfer(to, outputOptions); // longOptionTokens
+        return success;
+    }
+
+    /**
+     * @dev Mints long and short option tokens using a flash loan from UniswapV2. Then sells short tokens, and pays the difference.
+     * @notice If the first address in the path is not the redeemToken address, the tx will fail.
+     * underlyingToken -> redeemToken -> quoteToken. ShortTokens = redeemTokens
+     * @param optionToken The address of the Option contract.
+     * @param amountIn The quantity of options to mint.
+     * @param amountOutMin The minimum quantity of underlyingTokens to receive in exchange for the redeemTokens.
+     * @param path The token addresses to trade through using their Uniswap V2 pools. Assumes path[0] = redeemToken.
+     * @param to The address to send the redeemToken proceeds and optionTokens to.
+     * @param deadline The timestamp for a trade to fail at if not successful.
+     * @return bool Whether the transaction was successful or not.
+     */
+    function flashloanMintShortOptionsThenSwap(
+        IOption optionToken,
+        uint256 flashLoanQuantity,
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        uint256 deadline
+    ) public returns (bool) {
+        require(flashLoanQuantity > 0, "ERR_ZERO");
+        // IMPORTANT: Assume this contract has already received `flashLoanQuantity` of underlyingTokens.
+
+        // Mints option and redeem tokens to this contract.
+        // Store in memory for gas savings.
+        ITrader trader_ = trader;
+        address underlyingToken = optionToken.getUnderlyingTokenAddress();
+        address redeemToken = optionToken.redeemToken();
+
+        // Approve underlyingTokens to be sent to the Primitive Trader contract.
+        IERC20(underlyingToken).approve(address(trader_), uint256(-1));
+
+        // Mint optionTokens using the underlyingTokens received from UniswapV2 flashloan.
+        // Sends underlyingTokens from this contract and to the optionToken contract, then calls mintOptions.
+        // This contract receives the newly minted option and redeem tokens.
+        IERC20(underlyingToken).safeTransfer(
+            address(optionToken),
+            flashLoanQuantity
+        );
+        (uint256 outputOptions, uint256 outputRedeems) = optionToken
+            .mintOptions(address(this));
+
+        // Need to pay back the UniswapV2 flash loan by selling the redeemToken, then paying the remainder.
+
+        // Swaps redeemTokens to the token specified at the end of the path, then sends to UniswapV2Pair.
+        // Reverts if the first address in the path is not the redeemToken address.
+        // Reverts if the last address in the path is not the underlyingToken address.
+        // path[0] = redeemToken, path[1] = dai, path[2] = underlyingToken
+        require(path[2] == underlyingToken, "ERR_END_PATH_NOT_UNDERLYING");
+        (uint256[] memory amounts, bool success) = _swapExactOptionsForTokens(
+            redeemToken,
+            outputRedeems, // shortOptionTokens = redeemTokens
+            amountOutMin,
+            path,
+            msg.sender,
+            deadline
+        );
+        // Fail early if the swap failed.
+        require(success, "ERR_SWAP_FAILED");
+
+        // The remainder is the flash loan amount - amount from selling redeemTokens.
+        uint256 remainder = flashLoanQuantity > amounts[1]
+            ? flashLoanQuantity.sub(amounts[1])
+            : 0;
+
+        // Pull underlyingTokens from the original spender to pay the remainder of the flash loan.
+        IERC20(underlyingToken).safeTransferFrom(to, msg.sender, remainder);
+
+        // Send optionTokens (long options) to the "spender" address.
+        IERC20(optionToken).safeTransfer(to, outputOptions); // longOptionTokens
+        return success;
+    }
+
+    function executeFlashMint(
+        uint256 amountOptions,
+        uint256 amountOutMin,
+        IOption optionToken
+    ) public {
+        address redeemToken = optionToken.redeemToken();
+        address underlyingToken = optionToken.getUnderlyingTokenAddress();
+        address pairAddress = factory.getPair(quoteToken, underlyingToken);
+        address[] memory path = new address[](3);
+        path[0] = redeemToken;
+        path[1] = quoteToken;
+        path[2] = underlyingToken;
+        IUniswapV2Pair pair = IUniswapV2Pair(pairAddress);
+
+        bytes4 selector = bytes4(
+            keccak256(
+                bytes(
+                    "flashloanMintShortOptionsThenSwap(address,uint256,uint256,address[],address,uint256)"
+                )
+            )
+        );
+        bytes memory params = abi.encodeWithSelector(
+            selector, // function to call in this contract
+            optionToken, // option token to mint with flash loaned tokens
+            amountOptions, // quantity of tokens from flash loan
+            amountOutMin, // total price paid for selling redeemTokens from the minted optionTokens
+            path, // redeemToken -> stablecoin -> underlyingToken
+            msg.sender, // address to pull the remainder loan amount to pay, and send optionTokens to.
+            now + 15 minutes // deadline of this function call
+        );
+
+        // Receives 0 quoteTokens and `amountOptions` of underlyingTokens to `this` contract address.
+        // Then executes `flashLoanMintShortOptionsThenSwap`.
+        pair.swap(0, amountOptions, address(this), params); // redeemToken <> stablecoin pair swap
+    }
+
+    // gets tokens/WETH via a V2 flash swap, mints options, swaps short tokens for tokens, pulls in difference, repays!
+    function uniswapV2Call(
+        address sender,
+        uint256 amount0,
+        uint256 amount1,
+        bytes calldata data
+    ) external override {
+        address[] memory path = new address[](2);
+        uint256 amountToken;
+        uint256 amountWETH;
+        {
+            // scope for token{0,1}, avoids stack too deep errors
+            address token0 = IUniswapV2Pair(msg.sender).token0();
+            address token1 = IUniswapV2Pair(msg.sender).token1();
+            assert(
+                msg.sender == UniswapV2Library.pairFor(factory, token0, token1)
+            ); // ensure that msg.sender is actually a V2 pair
+            assert(amount0 == 0 || amount1 == 0); // this strategy is unidirectional
+            path[0] = amount0 == 0 ? token0 : token1; // if amount[0] is input, path[0] is input
+            path[1] = amount0 == 0 ? token1 : token0; // if amount[0] is input, path[1] is input
+            amountToken = token0 == address(WETH) ? amount1 : amount0; // if token0 = weth, amountToken = amount1
+            amountWETH = token0 == address(WETH) ? amount0 : amount1; // if token0 = weth, amountWeth = amount0
+        }
+
+        // if we get tokens
+        if (amountToken > 0) {
+            uint256 minETH = abi.decode(data, (uint256)); // slippage parameter for V1, passed in by caller
+            token.approve(address(exchangeV1), amountToken);
+            uint256 amountReceived = exchangeV1.tokenToEthSwapInput(
+                amountToken,
+                minETH,
+                uint256(-1)
+            );
+            uint256 amountRequired = UniswapV2Library.getAmountsIn(
+                factory,
+                amountToken,
+                path
+            )[0];
+            assert(amountReceived > amountRequired); // fail if we didn't get enough ETH back to repay our flash loan
+            WETH.deposit{ value: amountRequired }();
+            assert(WETH.transfer(msg.sender, amountRequired)); // return WETH to V2 pair
+            (bool success, ) = sender.call{
+                value: amountReceived - amountRequired
+            }(new bytes(0)); // keep the rest! (ETH)
+            assert(success);
+        }
     }
 
     /**
