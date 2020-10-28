@@ -30,14 +30,14 @@ const checkTemplates = async (optionFactory, redeemFactory) => {
 };
 
 /**
- * @dev Generalized verification function using the verify-contract task from the buidlers-etherscan plugin.
+ * @dev Generalized verification function using the verify task from the buidlers-etherscan plugin.
  * @param {*} fullName The full name of the contract in the format: /path/to/contract:contractName.
  * @param {*} address The address of the contract to verify.
  * @param {*} constructorArgs Any constructor arguments for the contract, in an array.
  * @param {*} library Library that the contract has linked.
  */
 const verifyContract = async (fullName, address, constructorArgs, library) => {
-    await run("verify-contract", {
+    await run("verify", {
         address: address,
         contractName: fullName,
         libraries: JSON.stringify(library),
@@ -62,6 +62,7 @@ const verifyRegistry = async () => {
  */
 const verifyFactories = async () => {
     let OptionFactory = await deployments.get("OptionFactory");
+    console.log(await bre.getChainId(), OptionFactory.address);
     let OptionTemplateLib = await deployments.get("OptionTemplateLib");
     try {
         await verifyContract(
@@ -96,11 +97,38 @@ const verifyFactories = async () => {
 /**
  * @dev Verifies the Trader and UniswapTrader contracts.
  */
-const verifyTraders = async () => {
+const verifyTrader = async () => {
     let Trader = await deployments.get("Trader");
-    let UniswapTrader = await deployments.get("UniswapTrader");
     try {
         await verifyContract(TRADER, Trader.address, Trader.args, {});
+    } catch (err) {
+        console.error(err);
+    }
+};
+
+/**
+ * @dev Verifies the Trader and UniswapTrader contracts.
+ */
+const verifyWethConnnector = async () => {
+    let WethConnector = await deployments.get("WethConnector");
+    try {
+        await verifyContract(
+            UNISWAP_TRADER,
+            WethConnector.address,
+            WethConnector.args,
+            {}
+        );
+    } catch (err) {
+        console.error(err);
+    }
+};
+
+/**
+ * @dev Verifies the Trader and UniswapTrader contracts.
+ */
+const verifyUniswapConnector = async () => {
+    let UniswapTrader = await deployments.get("UniswapTrader");
+    try {
         await verifyContract(
             UNISWAP_TRADER,
             UniswapTrader.address,
@@ -150,8 +178,9 @@ const verifyTemplates = async () => {
 async function main() {
     await verifyFactories();
     await verifyRegistry();
-    await verifyTraders();
+    await verifyTrader();
     await verifyTemplates();
+    await verifyUniswapConnector();
 }
 
 main()
