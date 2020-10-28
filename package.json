@@ -1,6 +1,6 @@
 {
     "name": "@primitivefi/contracts",
-    "version": "0.3.1",
+    "version": "0.4.0",
     "description": "Primitive options protocol contracts.",
     "files": [
         "artifacts",
