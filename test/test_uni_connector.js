@@ -7,7 +7,13 @@ const setup = require("./lib/setup");
 const constants = require("./lib/constants");
 const { parseEther, formatEther } = require("ethers/lib/utils");
 const { assertBNEqual } = utils;
-const { ONE_ETHER, TEN_ETHER, HUNDRED_ETHER, MILLION_ETHER } = constants.VALUES;
+const {
+    ONE_ETHER,
+    TEN_ETHER,
+    HUNDRED_ETHER,
+    THOUSAND_ETHER,
+    MILLION_ETHER,
+} = constants.VALUES;
 const UniswapV2Pair = require("@uniswap/v2-core/build/UniswapV2Pair.json");
 
 describe("UniswapConnector", () => {
@@ -51,7 +57,7 @@ describe("UniswapConnector", () => {
         underlyingToken = weth;
         strikeToken = dai;
         base = parseEther("1");
-        quote = parseEther("200");
+        quote = parseEther("100");
         expiry = "1690868800"; // May 30, 2020, 8PM UTC
 
         // Option and redeem instances
@@ -71,22 +77,24 @@ describe("UniswapConnector", () => {
         // Trader Instance
         trader = await setup.newTrader(Admin, weth.address);
 
-        // Initialize the uniswap connector
-        await uniswapConnector.setRouter(uniswapRouter.address);
-        await uniswapConnector.setFactory(uniswapFactory.address);
-        await uniswapConnector.setTrader(trader.address);
-        await uniswapConnector.setRegistry(registry.address);
-        await uniswapConnector.setQuoteToken(quoteToken.address);
+        // Initialize the uniswap connector with addresses
+        await uniswapConnector.initialize(
+            uniswapRouter.address,
+            uniswapFactory.address,
+            trader.address,
+            registry.address,
+            quoteToken.address
+        );
 
-        // Mint some initial weth and approve instances to pull tokens.
-        await weth.deposit({ from: Alice, value: HUNDRED_ETHER });
-
+        // Approve tokens to be sent to trader contract
         await underlyingToken
             .connect(Admin)
             .approve(trader.address, MILLION_ETHER);
         await strikeToken.connect(Admin).approve(trader.address, MILLION_ETHER);
         await optionToken.connect(Admin).approve(trader.address, MILLION_ETHER);
+        await redeemToken.connect(Admin).approve(trader.address, MILLION_ETHER);
 
+        // Approve tokens to be sent to uniswapConnector
         await underlyingToken
             .connect(Admin)
             .approve(uniswapConnector.address, MILLION_ETHER);
@@ -96,7 +104,11 @@ describe("UniswapConnector", () => {
         await optionToken
             .connect(Admin)
             .approve(uniswapConnector.address, MILLION_ETHER);
+        await redeemToken
+            .connect(Admin)
+            .approve(uniswapConnector.address, MILLION_ETHER);
 
+        // Approve tokens to be sent to uniswapRouter
         await underlyingToken
             .connect(Admin)
             .approve(uniswapRouter.address, MILLION_ETHER);
@@ -106,16 +118,67 @@ describe("UniswapConnector", () => {
         await optionToken
             .connect(Admin)
             .approve(uniswapRouter.address, MILLION_ETHER);
+        await redeemToken
+            .connect(Admin)
+            .approve(uniswapRouter.address, MILLION_ETHER);
 
-        // Create a Uniswap V2 Pair and add liquidity.
-        await trader.safeMint(optionToken.address, TEN_ETHER, Alice);
-        //await uniswapFactory.createPair(optionToken.address, dai.address);
+        // Create UNISWAP PAIRS
+        // option <> dai: 1:10 ($10 option) 1,000 options and 10,000 dai (1,000 weth)
+        // weth <> dai: 1:100 ($100 weth) 1,000 weth and 100,000 dai
+        // redeem <> dai: 1:1 ($1 redeem) 100,000 redeems and 100,000 dai
+
+        const totalOptions = parseEther("1000");
+        const daiForOptionsPair = parseEther("100000");
+        const totalDai = parseEther("210000");
+        const totalWethForPair = parseEther("1000");
+        const totalDaiForPair = parseEther("100000");
+        const totalRedeemForPair = parseEther("100000");
+
+        // MINT 2,010 WETH
+        await weth.deposit({ from: Alice, value: parseEther("2500") });
+
+        // MINT 1,000 OPTIONS
+        await trader.safeMint(optionToken.address, totalOptions, Alice);
+
+        // Mint some options for tests
+        await trader.safeMint(optionToken.address, parseEther("10"), Alice);
+
+        // MINT 210,000 DAI
+        await dai.mint(Alice, totalDai);
+
+        // regular deadline
         const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
+
+        // Add liquidity to option <> dai pair
         await uniswapRouter.addLiquidity(
             optionToken.address,
             dai.address,
-            TEN_ETHER,
-            HUNDRED_ETHER,
+            totalOptions,
+            daiForOptionsPair,
+            0,
+            0,
+            Alice,
+            deadline
+        );
+
+        // Add liquidity to weth <> dai pair
+        await uniswapRouter.addLiquidity(
+            weth.address,
+            dai.address,
+            totalWethForPair,
+            totalDaiForPair,
+            0,
+            0,
+            Alice,
+            deadline
+        );
+
+        // Add liquidity to redeem <> dai pair
+        await uniswapRouter.addLiquidity(
+            redeemToken.address,
+            dai.address,
+            totalRedeemForPair,
+            totalDaiForPair,
             0,
             0,
             Alice,
@@ -210,15 +273,13 @@ describe("UniswapConnector", () => {
             let deadline = Math.floor(Date.now() / 1000) + 60 * 20;
 
             // Call the function
-            await expect(
-                uniswapConnector.mintOptionsThenSwapToTokens(
-                    optionTokenAddress,
-                    amountIn,
-                    amountOutMin,
-                    path,
-                    to,
-                    deadline
-                )
+            await uniswapConnector.mintOptionsThenSwapToTokens(
+                optionTokenAddress,
+                amountIn,
+                amountOutMin,
+                path,
+                to,
+                deadline
             );
 
             let underlyingBalanceAfter = await underlyingToken.balanceOf(Alice);
@@ -379,8 +440,7 @@ describe("UniswapConnector", () => {
             // Function parameters
             let rollFromOption = rollFromOptionToken.address;
             let rollToOption = rollToOptionToken.address;
-            let liquidity = await rollFromPair.balanceOf(Alice);
-            console.log(formatEther(liquidity));
+            let liquidity = ONE_ETHER;
             let amountAMin = 0;
             let amountBMin = 0;
             let to = Alice;
@@ -469,16 +529,14 @@ describe("UniswapConnector", () => {
             let minQuantityQuoteTokens = 0;
             let to = Alice;
             let deadline = Math.floor(Date.now() / 1000) + 60 * 20;
-            await expect(
-                uniswapConnector.addLiquidityWithUnderlying(
-                    optionAddress,
-                    quantityOptions,
-                    quantityQuoteTokens,
-                    minQuantityOptions,
-                    minQuantityQuoteTokens,
-                    to,
-                    deadline
-                )
+            await uniswapConnector.addLiquidityWithUnderlying(
+                optionAddress,
+                quantityOptions,
+                quantityQuoteTokens,
+                minQuantityOptions,
+                minQuantityQuoteTokens,
+                to,
+                deadline
             );
         });
     });
@@ -498,19 +556,71 @@ describe("UniswapConnector", () => {
 
             let optionAddress = optionToken.address;
             let liquidity = ONE_ETHER;
+            let pairAddress = await uniswapConnector.getUniswapMarketForOption(
+                optionToken.address
+            );
+            let pair = new ethers.Contract(
+                pairAddress,
+                UniswapV2Pair.abi,
+                Admin
+            );
+            console.log(formatEther(await pair.balanceOf(Alice)));
+            await pair
+                .connect(Admin)
+                .approve(uniswapConnector.address, MILLION_ETHER);
+            assert.equal(
+                (await pair.balanceOf(Alice)) >= liquidity,
+                true,
+                "err not enough pair tokens"
+            );
+            assert.equal(
+                pairAddress != constants.ADDRESSES.ZERO_ADDRESS,
+                true,
+                "err pair not deployed"
+            );
             let amountAMin = 0;
             let amountBMin = 0;
             let to = Alice;
             let deadline = Math.floor(Date.now() / 1000) + 60 * 20;
-            await expect(
-                uniswapConnector.removeLiquidityThenCloseOptions(
-                    optionAddress,
-                    liquidity,
-                    amountAMin,
-                    amountBMin,
-                    to,
-                    deadline
-                )
+            await uniswapConnector.removeLiquidityThenCloseOptions(
+                optionAddress,
+                liquidity,
+                amountAMin,
+                amountBMin,
+                to,
+                deadline
+            );
+        });
+    });
+
+    describe("openFlashShort", () => {
+        it("gets a flash loan for underlyings, mints options, swaps redeem to underlyings to pay back", async () => {
+            // Create a Uniswap V2 Pair and add liquidity.
+
+            console.log(
+                `Redeem balance: ${formatEther(
+                    await redeemToken.balanceOf(Alice)
+                )}`
+            );
+
+            console.log(
+                `Option balance: ${formatEther(
+                    await optionToken.balanceOf(Alice)
+                )}`
+            );
+
+            // Get the pair instance to approve it to the uniswapConnector
+            assert.equal(
+                quoteToken.address,
+                await uniswapConnector.quoteToken(),
+                "QuoteToken mismatch"
+            );
+            let amountOptions = ONE_ETHER;
+            let amountOutMin = "0";
+            await uniswapConnector.openFlashShort(
+                amountOptions,
+                amountOutMin,
+                optionToken.address
             );
         });
     });
