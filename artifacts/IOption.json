@@ -130,17 +130,17 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "inRedeems",
+          "name": "",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "inOptions",
+          "name": "",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "outUnderlyings",
+          "name": "",
           "type": "uint256"
         }
       ],
@@ -169,12 +169,12 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "inStrikes",
+          "name": "",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "inOptions",
+          "name": "",
           "type": "uint256"
         }
       ],
@@ -200,17 +200,17 @@
       "outputs": [
         {
           "internalType": "address",
-          "name": "_underlyingToken",
+          "name": "",
           "type": "address"
         },
         {
           "internalType": "address",
-          "name": "_strikeToken",
+          "name": "",
           "type": "address"
         },
         {
           "internalType": "address",
-          "name": "_redeemToken",
+          "name": "",
           "type": "address"
         }
       ],
@@ -236,12 +236,12 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "_underlyingCache",
+          "name": "",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "_strikeCache",
+          "name": "",
           "type": "uint256"
         }
       ],
@@ -363,12 +363,12 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "inUnderlyings",
+          "name": "",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "outRedeems",
+          "name": "",
           "type": "uint256"
         }
       ],
@@ -387,7 +387,7 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "inRedeems",
+          "name": "",
           "type": "uint256"
         }
       ],

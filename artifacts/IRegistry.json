@@ -5,13 +5,39 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "token",
+          "name": "underlyingToken",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "strikeToken",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "base",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "quote",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "expiry",
+          "type": "uint256"
+        }
+      ],
+      "name": "calculateOptionAddress",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
           "type": "address"
         }
       ],
-      "name": "addSupported",
-      "outputs": [],
-      "stateMutability": "nonpayable",
+      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -81,11 +107,11 @@
           "type": "uint256"
         }
       ],
-      "name": "getOption",
+      "name": "getOptionAddress",
       "outputs": [
         {
           "internalType": "address",
-          "name": "option",
+          "name": "",
           "type": "address"
         }
       ],
@@ -96,18 +122,19 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "_factory",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "_factoryRedeem",
+          "name": "optionAddress",
           "type": "address"
         }
       ],
-      "name": "initialize",
-      "outputs": [],
-      "stateMutability": "nonpayable",
+      "name": "isVerifiedOption",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -125,15 +152,9 @@
     },
     {
       "inputs": [],
-      "name": "optionsLength",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "len",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
+      "name": "pauseDeployments",
+      "outputs": [],
+      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
@@ -146,6 +167,91 @@
           "type": "address"
         }
       ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "optionFactory_",
+          "type": "address"
+        }
+      ],
+      "name": "setOptionFactory",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "redeemFactory_",
+          "type": "address"
+        }
+      ],
+      "name": "setRedeemFactory",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "unpauseDeployments",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "expiry",
+          "type": "uint256"
+        }
+      ],
+      "name": "unverifyExpiry",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "tokenAddress",
+          "type": "address"
+        }
+      ],
+      "name": "unverifyToken",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "expiry",
+          "type": "uint256"
+        }
+      ],
+      "name": "verifyExpiry",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "tokenAddress",
+          "type": "address"
+        }
+      ],
+      "name": "verifyToken",
+      "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
     }

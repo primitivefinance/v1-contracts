@@ -1,30 +1,26 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.2;
+pragma solidity 0.6.2;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 interface IOption is IERC20 {
-    function mintOptions(address receiver)
-        external
-        returns (uint256 inUnderlyings, uint256 outRedeems);
+    function mintOptions(address receiver) external returns (uint256, uint256);
 
     function exerciseOptions(
         address receiver,
         uint256 outUnderlyings,
         bytes calldata data
-    ) external returns (uint256 inStrikes, uint256 inOptions);
+    ) external returns (uint256, uint256);
 
-    function redeemStrikeTokens(address receiver)
-        external
-        returns (uint256 inRedeems);
+    function redeemStrikeTokens(address receiver) external returns (uint256);
 
     function closeOptions(address receiver)
         external
         returns (
-            uint256 inRedeems,
-            uint256 inOptions,
-            uint256 outUnderlyings
+            uint256,
+            uint256,
+            uint256
         );
 
     function redeemToken() external view returns (address);
@@ -45,18 +41,15 @@ interface IOption is IERC20 {
 
     function factory() external view returns (address);
 
-    function getCacheBalances()
-        external
-        view
-        returns (uint256 _underlyingCache, uint256 _strikeCache);
+    function getCacheBalances() external view returns (uint256, uint256);
 
     function getAssetAddresses()
         external
         view
         returns (
-            address _underlyingToken,
-            address _strikeToken,
-            address _redeemToken
+            address,
+            address,
+            address
         );
 
     function getParameters()

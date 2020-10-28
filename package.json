@@ -1,6 +1,6 @@
 {
     "name": "@primitivefi/contracts",
-    "version": "0.2.9",
+    "version": "0.4.0",
     "description": "Primitive options protocol contracts.",
     "files": [
         "artifacts",
@@ -22,20 +22,22 @@
         "venv": "virtualenv .venv",
         "slither": "pip install slither-analyzer && slither .",
         "bevm": "buidler node",
-        "test": "cross-env buidler test ./test/trader.js ./test/option.js ./test/uni-trader.js",
-        "test:local": "cross-env buidler test --network local ./test/trader.js ./test/option.js ./test/uni-trader.js",
+        "test": "cross-env buidler test ./test/test_trader.js ./test/test_option.js ./test/test_flash.js ./test/test_weth_connector.js ./test/test_uni_connector",
+        "test:local": "cross-env buidler test --network local ./test/test_trader.js ./test/test_option.js ./test/test_flash.js",
         "deploy:local": "cross-env buidler deploy --network local",
         "deploy:rinkeby": "cross-env buidler deploy --network rinkeby",
-        "deploy:mainnet": "cross-env buidler deploy --network live",
+        "deploy:mainnet": "cross-env buidler deploy --network live --tags Core",
         "deploy-options:rinkeby": "cross-env buidler run ./scripts/deploy_options.js --network rinkeby",
         "deploy-options:mainnet": "cross-env buidler run ./scripts/deploy_options.js --network live",
+        "deploy-pairs:rinkeby": "cross-env buidler run ./scripts/deploy_uniswap_pairs.js --network rinkeby",
         "verify:rinkeby": "cross-env buidler run ./scripts/verify.js --network rinkeby",
         "verify:mainnet": "cross-env buidler run ./scripts/verify.js --network live",
-        "deploy-testnet": "npm-run-all deploy:rinkeby verify:rinkeby deploy-options:rinkeby"
+        "deploy-testnet": "npm-run-all deploy:rinkeby verify:rinkeby deploy-options:rinkeby deploy-pairs:rinkeby",
+        "deploy-mainnet": "npm-run-all deploy:mainnet verify:mainnet"
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/primitivefinance/primitive-protocol.git"
+        "url": "git+https://github.com/primitivefinance/primitive-contracts.git"
     },
     "keywords": [
         "defi",
@@ -47,13 +49,13 @@
     "author": "Primitive",
     "license": "MIT",
     "bugs": {
-        "url": "https://github.com/primitivefinance/primitive-protocol/issues"
+        "url": "https://github.com/primitivefinance/primitive-contracts/issues"
     },
     "homepage": "https://primitive.finance",
     "devDependencies": {
         "@nomiclabs/buidler": "^1.3.2",
         "@nomiclabs/buidler-ethers": "^2.0.0",
-        "@nomiclabs/buidler-etherscan": "^1.3.1",
+        "@nomiclabs/buidler-etherscan": "2.1.0",
         "@nomiclabs/buidler-solhint": "^1.3.3",
         "@nomiclabs/buidler-waffle": "^2.0.0",
         "@truffle/hdwallet-provider": "^1.0.35",
@@ -73,7 +75,7 @@
         "web3": "^1.2.7"
     },
     "dependencies": {
-        "@openzeppelin/contracts": "^3.0.1",
+        "@openzeppelin/contracts": "3.0.1",
         "@uniswap/v2-core": "^1.0.1",
         "@uniswap/v2-periphery": "^1.1.0-beta.0",
         "bip39": "^3.0.2",

@@ -23,17 +23,17 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "inRedeems",
+          "name": "",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "inOptions",
+          "name": "",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "outUnderlyings",
+          "name": "",
           "type": "uint256"
         }
       ],
@@ -62,12 +62,12 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "inStrikes",
+          "name": "",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "inOptions",
+          "name": "",
           "type": "uint256"
         }
       ],
@@ -96,12 +96,12 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "outputOptions",
+          "name": "",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "outputRedeems",
+          "name": "",
           "type": "uint256"
         }
       ],
@@ -130,7 +130,7 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "inRedeems",
+          "name": "",
           "type": "uint256"
         }
       ],
@@ -159,17 +159,17 @@
       "outputs": [
         {
           "internalType": "uint256",
-          "name": "inRedeems",
+          "name": "",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "inOptions",
+          "name": "",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "outUnderlyings",
+          "name": "",
           "type": "uint256"
         }
       ],

@@ -1,154 +1,273 @@
-const bre = require("@nomiclabs/buidler/config");
-const { checkSupported } = require("./setup");
-const { parseEther } = require("ethers/lib/utils");
+const { parseEther, formatEther } = require("ethers/lib/utils");
 const { checkInitialization } = require("../test/lib/utils");
-const OptionFactory = require("@primitivefi/contracts/deployments/rinkeby/OptionFactory");
-const RedeemFactory = require("@primitivefi/contracts/deployments/rinkeby/RedeemFactory");
-const UniswapTrader = require("@primitivefi/contracts/deployments/rinkeby/UniswapTrader");
-const Option = require("@primitivefi/contracts/artifacts/Option");
-const Trader = require("@primitivefi/contracts/deployments/rinkeby/Trader");
-const Registry = require("@primitivefi/contracts/deployments/rinkeby/Registry");
-const USDC = require("@primitivefi/contracts/deployments/rinkeby/USDC");
-const ETH = require("@primitivefi/contracts/deployments/rinkeby/ETH");
-const UniswapV2Router02 = require("@uniswap/v2-periphery/build/UniswapV2Router02.json");
-const UniswapV2Pair = require("@uniswap/v2-core/build/UniswapV2Pair.json");
-const UniswapV2Factory = require("@uniswap/v2-core/build/UniswapV2Factory.json");
-const ERC20 = require("@primitivefi/contracts/artifacts/ERC20");
-const { ADDRESSES, VALUES } = require("../test/lib/constants");
-const { RINKEBY_UNI_ROUTER02, RINKEBY_UNI_FACTORY, ZERO_ADDRESS } = ADDRESSES;
+const USDC = require("../deployments/rinkeby/USDC");
+const { ADDRESSES } = require("../test/lib/constants");
+const { ZERO_ADDRESS } = ADDRESSES;
+const fs = require("fs");
 
-async function checkAllowance(owner, spender, token) {
-    const amount = parseEther("10000000000");
-    let allowance = await token.allowance(owner, spender.address);
-    if (allowance <= amount) {
-        try {
-            await token.approve(spender.address, amount, { from: owner });
-        } catch (err) {
-            console.log(err);
-        }
+/**
+ * @dev Checks the optionTemplate and redeemTemplate. If they are address zero, it will call deployTemplate().
+ * @param {*} optionFactory The OptionFactory contract instance.
+ * @param {*} redeemFactory The RedeemFactory contract instance.
+ */
+const checkTemplates = async (optionFactory, redeemFactory) => {
+    const optionTemplate = await optionFactory.optionTemplate();
+    const redeemTemplate = await redeemFactory.redeemTemplate();
+    if (optionTemplate.toString() == ethers.constants.AddressZero.toString()) {
+        await optionFactory.deployOptionTemplate();
     }
-}
+    if (redeemTemplate.toString() == ethers.constants.AddressZero.toString()) {
+        await redeemFactory.deployRedeemTemplate();
+    }
+    return { optionTemplate, redeemTemplate };
+};
 
+const writeOptionJson = (optionJsonObject) => {
+    let data = JSON.stringify(optionJsonObject, null, 2);
+    fs.writeFileSync("./options_deployments.json", data);
+};
+
+/**
+ * @dev Gets the contract instance of a contract using its name.
+ * @param {*} contractName The contract name `contract NAME {}`.
+ * @param {*} signer The ethers js Signer object to call the transaction.
+ * @return Contract instance.
+ */
 const getInstance = async (contractName, signer) => {
     const contract = await deployments.get(contractName);
-    const instance = new ethers.Contract(contract.address, contract.abi, signer);
+    const instance = new ethers.Contract(
+        contract.address,
+        contract.abi,
+        signer
+    );
     return instance;
 };
 
-const deployOption = async () => {
+const getERC20Instance = async (contractAddress, signer) => {
+    const instance = new ethers.Contract(contractAddress, USDC.abi, signer);
+    return instance;
+};
+
+/**
+ * @dev Function to validate argument data and create the correct data object.
+ * @return optionParametersObject Returns an optionParametersObject.
+ */
+const getOptionParametersObject = (
+    underlyingToken,
+    strikeToken,
+    base,
+    quote,
+    expiry
+) => {
+    const optionParametersObject = {
+        underlyingToken: underlyingToken,
+        strikeToken: strikeToken,
+        base: parseEther(base),
+        quote: parseEther(quote),
+        expiry: expiry,
+    };
+    return optionParametersObject;
+};
+
+/**
+ * @dev Concatenates a string of the option's symbol in the format:
+ *      ASSET + YY + MM + DD + TYPE + STRIKE
+ * @param {*} optionParametersObject The object with the option's parameters.
+ * @returns An option's symbol according to its parameters.
+ */
+const getOptionSymbol = async (optionParametersObject) => {
     const [signer] = await ethers.getSigners();
-    const account = await signer.getAddress();
+    let underlyingInstance = await getERC20Instance(
+        optionParametersObject.underlyingToken,
+        signer
+    );
+    let underlyingSymbol = await underlyingInstance.symbol();
+    let strikeInstance = await getERC20Instance(
+        optionParametersObject.strikeToken,
+        signer
+    );
+    let strikeSymbol = await strikeInstance.symbol();
+    let base = formatEther(optionParametersObject.base);
+    let quote = formatEther(optionParametersObject.quote);
+    let expiry = optionParametersObject.expiry;
+    let type;
+    let strike;
+    let asset;
+    if (base == 1) {
+        type = "C";
+        strike = +quote;
+        asset = underlyingSymbol.toString();
+    }
+    if (quote == 1) {
+        type = "P";
+        strike = +base;
+        asset = strikeSymbol.toString();
+    }
+
+    const date = new Date(expiry * 1000);
+    let month = date.getMonth().toString();
+    let day = date.getDay().toString();
+    let year = date.getFullYear().toString();
+    let formattedSymbol =
+        asset +
+        year +
+        month +
+        day +
+        type +
+        strike.toString().padStart(6, "0").padEnd(2, "0");
+    return formattedSymbol;
+};
+
+/**
+ * @dev Deploys an option contract clone through the Registry contract.
+ * @notice Deploys a Uniswap V2 Pair and adds liquidity to it (if its testnet).
+ * @param optionParametersObject An object with the option parameters that will be deployed.
+ * @return Address of the deployed option clone.
+ */
+const deployOption = async (optionParametersObject) => {
+    // Get the Registry admin.
+    const [signer] = await ethers.getSigners();
+
+    // Get the contract instances.
     const registry = await getInstance("Registry", signer);
     const optionFactory = await getInstance("OptionFactory", signer);
     const redeemFactory = await getInstance("RedeemFactory", signer);
-    const trader = await getInstance("Trader", signer);
-    const uniswapTrader = await getInstance("UniswapTrader", signer);
-    const usdcToken = await getInstance("USDC", signer);
-    const ethToken = await getInstance("ETH", signer);
 
-    const uniswapFactory = new ethers.Contract(RINKEBY_UNI_FACTORY, UniswapV2Factory.abi, signer);
-    const uniswapRouter = new ethers.Contract(RINKEBY_UNI_ROUTER02, UniswapV2Router02.abi, signer);
+    // Check to see if Registry is in a ready-to-deploy-clone state.
+    await checkInitialization(registry, optionFactory, redeemFactory);
+    await checkTemplates(optionFactory, redeemFactory);
 
-    // approve the router
-    await checkAllowance(account, uniswapRouter, usdcToken);
-    await checkAllowance(account, uniswapRouter, ethToken);
-    // approve the trader
-    await checkAllowance(account, trader, usdcToken);
-    await checkAllowance(account, trader, ethToken);
-    // option = [underlying, quotetoken, base, quote, expiry]
-    let ETH_CALL_240 = [ETH.address, USDC.address, "1", "240", "1609286400"];
-    let ETH_CALL_300 = [ETH.address, USDC.address, "1", "300", "1609286400"];
-    let ETH_CALL_340 = [ETH.address, USDC.address, "1", "340", "1609286400"];
-    let ETH_PUT_240 = [USDC.address, ETH.address, "240", "1", "1609286400"];
-    let ETH_PUT_300 = [USDC.address, ETH.address, "300", "1", "1609286400"];
-    let ETH_PUT_340 = [USDC.address, ETH.address, "340", "1", "1609286400"];
-    let optionsArray = [
-        ETH_CALL_240,
-        /* ETH_CALL_300,
-        ETH_CALL_340,
-        ETH_PUT_240,
-        ETH_PUT_300,
-        ETH_PUT_340, */
-    ];
+    // Get the option parameters from the object.
+    let underlyingToken = optionParametersObject.underlyingToken;
+    let strikeToken = optionParametersObject.strikeToken;
+    let base = optionParametersObject.base;
+    let quote = optionParametersObject.quote;
+    let expiry = optionParametersObject.expiry;
 
-    let transactionsArray = [];
-    for (let i = 0; i < optionsArray.length; i++) {
-        let index = i;
-        let option = optionsArray[i];
-        let underlying = option[0];
-        let quoteToken = option[1];
-        let base = parseEther(option[2]);
-        let quote = parseEther(option[3]);
-        let expiry = option[4];
-        // check initialized and supported
-        await checkSupported(registry, ethToken, usdcToken);
-        await checkInitialization(registry, optionFactory, redeemFactory);
-        // check if option has been deployed, and if not, deploy it
-        let deployedOption = await registry.getOption(underlying, quoteToken, base, quote, expiry);
-        // deploy an option
-        let tx;
-        if (deployedOption == ZERO_ADDRESS) {
-            try {
-                tx = await registry.deployOption(underlying, quoteToken, base, quote, expiry, { gasLimit: 1000000 });
-            } catch (err) {
-                console.log(err);
-            }
-            // get deployed option address
-            deployedOption = await registry.getOption(underlying, quoteToken, base, quote, expiry);
+    // Check to see if the option exists by trying to get its address. Returns zero address if not deployed.
+    let optionAddress = await registry.getOptionAddress(
+        underlyingToken,
+        strikeToken,
+        base,
+        quote,
+        expiry
+    );
+
+    // Deploy the option if it is the zero address.
+    let deployCloneTx;
+    if (optionAddress == ZERO_ADDRESS) {
+        try {
+            deployCloneTx = await registry.deployOption(
+                underlyingToken,
+                strikeToken,
+                base,
+                quote,
+                expiry,
+                { gasLimit: 1000000 }
+            );
+        } catch (err) {
+            console.log(err);
         }
-
-        // create a new pair
-        let pairAddress = await uniswapFactory.getPair(deployedOption, usdcToken.address);
-        if (pairAddress == ZERO_ADDRESS) {
-            try {
-                await uniswapFactory.createPair(deployedOption, USDC.address);
-            } catch (err) {
-                console.log(err);
-            }
-            pairAddress = await uniswapFactory.getPair(deployedOption, usdcToken.address);
-        }
-
-        let uniswapPair = new ethers.Contract(pairAddress, UniswapV2Pair.abi, signer);
-        let liquidity = await uniswapPair.getReserves();
-        let reserve0 = liquidity._reserve0;
-        if (reserve0 == 0) {
-            // approve the router to take the option liquidity
-            let optionTokenInstance = new ethers.Contract(deployedOption, ERC20.abi, signer);
-            await checkAllowance(account, uniswapRouter, optionTokenInstance);
-
-            // mint new options
-            try {
-                await trader.safeMint(deployedOption, parseEther("100"), await signer.getAddress());
-            } catch (err) {
-                console.log(err);
-            }
-
-            // seed liquidity
-            try {
-                await uniswapRouter.addLiquidity(
-                    deployedOption, // token 0
-                    usdcToken.address, // token 1
-                    parseEther("100"), // quantity of token 0
-                    parseEther("500"), // quantity of token 1
-                    0, // min quantity of lp tokens
-                    0, // min quantity of lp tokens
-                    await signer.getAddress(), // lp token receiver
-                    await uniswapTrader.getMaxDeadline() // deadline until trade expires
-                );
-            } catch (err) {
-                console.log(err);
-            }
-        }
-
-        transactionsArray.push({ index, deployedOption, pairAddress });
+        // get deployed option address
+        optionAddress = await registry.getOptionAddress(
+            underlyingToken,
+            strikeToken,
+            base,
+            quote,
+            expiry
+        );
     }
 
-    return transactionsArray;
+    return optionAddress;
 };
 
 async function main() {
-    let txs = await deployOption();
-    console.log(txs);
+    // Get the signer and tokens.
+    const [signer] = await ethers.getSigners();
+    let ether = await getInstance("ETH", signer);
+    let stablecoin = await getInstance("USDC", signer);
+    // option = [underlying, strike, base, quote, expiry]
+    let ETH_CALL_340 = [
+        ether.address,
+        stablecoin.address,
+        "1",
+        "340",
+        "1609286400",
+    ];
+    let ETH_CALL_400 = [
+        ether.address,
+        stablecoin.address,
+        "1",
+        "400",
+        "1609286400",
+    ];
+    let ETH_CALL_440 = [
+        ether.address,
+        stablecoin.address,
+        "1",
+        "440",
+        "1609286400",
+    ];
+    let ETH_PUT_340 = [
+        stablecoin.address,
+        ether.address,
+        "340",
+        "1",
+        "1609286400",
+    ];
+    let ETH_PUT_400 = [
+        stablecoin.address,
+        ether.address,
+        "400",
+        "1",
+        "1609286400",
+    ];
+    let ETH_PUT_440 = [
+        stablecoin.address,
+        ether.address,
+        "440",
+        "1",
+        "1609286400",
+    ];
+    let optionsArray = [
+        ETH_CALL_340,
+        ETH_CALL_400,
+        ETH_CALL_440,
+        ETH_PUT_340,
+        ETH_PUT_400,
+        ETH_PUT_440,
+    ];
+
+    let optionJsonObject = {};
+    let optionAddressArray = [];
+    // For each option object, parse its parameters, deploy it, and save it to options.json.
+    for (let i = 0; i < optionsArray.length; i++) {
+        let option = optionsArray[i];
+        let underlyingToken = option[0];
+        let strikeToken = option[1];
+        let base = option[2];
+        let quote = option[3];
+        let expiry = option[4];
+        let optionParametersObject = getOptionParametersObject(
+            underlyingToken,
+            strikeToken,
+            base,
+            quote,
+            expiry
+        );
+        let optionAddress = await deployOption(optionParametersObject);
+        optionAddressArray.push(optionAddress);
+        let symbol = await getOptionSymbol(optionParametersObject);
+        Object.assign(optionJsonObject, {
+            [symbol]: {
+                optionParameters: option,
+                address: optionAddress,
+            },
+        });
+    }
+
+    writeOptionJson(optionJsonObject);
+    console.log(optionAddressArray);
 }
 
 main()

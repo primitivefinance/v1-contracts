@@ -1,4 +1,6 @@
 const { ethers } = require("@nomiclabs/buidler");
+
+// Artifacts
 const TestERC20 = require("../../artifacts/TestERC20");
 const BadERC20 = require("../../artifacts/BadERC20");
 const OptionFactory = require("../../artifacts/OptionFactory");
@@ -10,23 +12,37 @@ const Registry = require("../../artifacts/Registry");
 const Flash = require("../../artifacts/Flash");
 const Weth = require("../../artifacts/WETH9");
 const Trader = require("../../artifacts/Trader");
-const CTokenLike = require("../../artifacts/CTokenLike");
+const WethConnector = require("../../artifacts/WethConnector");
+const UniswapConnector = require("../../artifacts/UniswapConnector.json");
 const OptionTemplateLib = require("../../artifacts/OptionTemplateLib");
 const RedeemTemplateLib = require("../../artifacts/RedeemTemplateLib");
-const UniswapTrader = require("../../artifacts/UniswapTrader");
+
+// Constants and Utility functions
 const constants = require("./constants");
 const { MILLION_ETHER } = constants.VALUES;
 const { OPTION_TEMPLATE_LIB, REDEEM_TEMPLATE_LIB } = constants.LIBRARIES;
 const { deployContract, link } = require("ethereum-waffle");
+
+// Uniswap related artifacts and addresses
 const UniswapV2Router02 = require("@uniswap/v2-periphery/build/UniswapV2Router02.json");
 const UniswapV2Factory = require("@uniswap/v2-core/build/UniswapV2Factory.json");
 const { RINKEBY_UNI_ROUTER02, RINKEBY_UNI_FACTORY } = constants.ADDRESSES;
 
+/**
+ * @dev Gets signers from ethers.
+ */
 const newWallets = async () => {
     const wallets = await ethers.getSigners();
     return wallets;
 };
 
+/**
+ * @dev Deploys a new ERC-20 token contract.
+ * @param {*} signer An ethers js Signer object
+ * @param {*} name The name for the ERC-20 token.
+ * @param {*} symbol The symbol for the ERC-20 token.
+ * @param {*} totalSupply The initial supply for the token.
+ */
 const newERC20 = async (signer, name, symbol, totalSupply) => {
     const ERC20 = await deployContract(
         signer,
@@ -39,6 +55,12 @@ const newERC20 = async (signer, name, symbol, totalSupply) => {
     return ERC20;
 };
 
+/**
+ * @dev Deploys a non-standard ERC-20 token that does not return a boolean.
+ * @param {*} signer An ethers js Signer object.
+ * @param {*} name The name for the ERC-20 token.
+ * @param {*} symbol The symbol for the ERC-20 token.
+ */
 const newBadERC20 = async (signer, name, symbol) => {
     const bad = await deployContract(signer, BadERC20, [name, symbol], {
         gasLimit: 6000000,
@@ -46,6 +68,10 @@ const newBadERC20 = async (signer, name, symbol) => {
     return bad;
 };
 
+/**
+ * @dev Deploys a new WETH contract using the canonical-weth package.
+ * @param {*} signer An ethers js Signer object.
+ */
 const newWeth = async (signer) => {
     const weth = await deployContract(signer, Weth, [], {
         gasLimit: 6000000,
@@ -53,6 +79,11 @@ const newWeth = async (signer) => {
     return weth;
 };
 
+/**
+ * @dev Deploys a test contract Flash.sol.
+ * @param {*} signer
+ * @param {*} optionToken The address of an Option contract
+ */
 const newFlash = async (signer, optionToken) => {
     const flash = await deployContract(signer, Flash, [optionToken], {
         gasLimit: 6000000,
@@ -60,13 +91,59 @@ const newFlash = async (signer, optionToken) => {
     return flash;
 };
 
+/**
+ * @dev Deploys a Registry instance and initializes it with the correct factories.
+ * @param signer A Signer object from ethers js.
+ */
 const newRegistry = async (signer) => {
     const registry = await deployContract(signer, Registry, [], {
         gasLimit: 6500000,
     });
+    let oLib = await deployContract(signer, OptionTemplateLib, [], {
+        gasLimit: 6000000,
+    });
+    let opFacContract = Object.assign(OptionFactory, {
+        evm: { bytecode: { object: OptionFactory.bytecode } },
+    });
+    link(opFacContract, OPTION_TEMPLATE_LIB, oLib.address);
+
+    let optionFactory = await deployContract(
+        signer,
+        opFacContract,
+        [registry.address],
+        {
+            gasLimit: 6000000,
+        }
+    );
+    let rLib = await deployContract(signer, RedeemTemplateLib, [], {
+        gasLimit: 6000000,
+    });
+
+    let reFacContract = Object.assign(RedeemFactory, {
+        evm: { bytecode: { object: RedeemFactory.bytecode } },
+    });
+    link(reFacContract, REDEEM_TEMPLATE_LIB, rLib.address);
+
+    let redeemTokenFactory = await deployContract(
+        signer,
+        reFacContract,
+        [registry.address],
+        {
+            gasLimit: 6000000,
+        }
+    );
+    await optionFactory.deployOptionTemplate();
+    await redeemTokenFactory.deployRedeemTemplate();
+    await registry.setOptionFactory(optionFactory.address);
+    await registry.setRedeemFactory(redeemTokenFactory.address);
     return registry;
 };
 
+/**
+ * @dev Deploys new option and redeem factory instances and links the necessary libraries.
+ * @param {*} signer
+ * @param {*} registry The registry contract instance.
+ */
 const newOptionFactory = async (signer, registry) => {
     let oLib = await deployContract(signer, OptionTemplateLib, [], {
         gasLimit: 6000000,
@@ -103,25 +180,20 @@ const newOptionFactory = async (signer, registry) => {
     );
     await optionFactory.deployOptionTemplate();
     await redeemTokenFactory.deployRedeemTemplate();
-    await registry.initialize(
-        optionFactory.address,
-        redeemTokenFactory.address
-    );
+    await registry.setOptionFactory(optionFactory.address);
+    await registry.setRedeemFactory(redeemTokenFactory.address);
     return optionFactory;
 };
 
-const newInterestBearing = async (signer, underlying, name, symbol) => {
-    const compound = await deployContract(
-        signer,
-        CTokenLike,
-        [underlying, name, symbol],
-        {
-            gasLimit: 6000000,
-        }
-    );
-    return compound;
-};
-
+/**
+ * @dev Deploys a TestOption contract instance and returns it.
+ * @param {*} signer
+ * @param {*} underlyingToken The address of the underlying token.
+ * @param {*} strikeToken The address of the strike token.
+ * @param {*} base The quantity of underlying tokens per unit of quote strike tokens.
+ * @param {*} quote The quantity of strike tokens per unit of base underlying tokens.
+ * @param {*} expiry The unix timestamp for when the option token expires.
+ */
 const newTestOption = async (
     signer,
     underlyingToken,
@@ -143,14 +215,26 @@ const newTestOption = async (
     return optionToken;
 };
 
-const newTestRedeem = async (signer, factory, optionToken, underlying) => {
+/**
+ *
+ * @param {*} signer
+ * @param {*} factory The address of the redeem factory contract.
+ * @param {*} optionToken The address of the option token linked to the redeem token.
+ * @param {*} underlying The address of the underlying token for the option token.
+ */
+const newTestRedeem = async (signer, factory, optionToken) => {
     const redeemToken = await deployContract(signer, Redeem, [], {
         gasLimit: 6000000,
     });
-    await redeemToken.initialize(factory, optionToken, underlying);
+    await redeemToken.initialize(factory, optionToken);
     return redeemToken;
 };
 
+/**
+ * @dev Deploys a new Trader contract instance.
+ * @param {*} signer
+ * @param {*} weth The address of WETH for the respective network.
+ */
 const newTrader = async (signer, weth) => {
     const trader = await deployContract(signer, Trader, [weth], {
         gasLimit: 6000000,
@@ -158,6 +242,28 @@ const newTrader = async (signer, weth) => {
     return trader;
 };
 
+/**
+ * @dev Deploys a new Trader contract instance.
+ * @param {*} signer
+ * @param {*} weth The address of WETH for the respective network.
+ */
+const newWethConnector = async (signer, weth) => {
+    const trader = await deployContract(signer, WethConnector, [weth], {
+        gasLimit: 6000000,
+    });
+    return trader;
+};
+
+/**
+ * @dev Deploys a new Option contract instance through the Registry contract instance.
+ * @param {*} signer
+ * @param {*} registry The instance of the Registry contract.
+ * @param {*} underlyingToken The address of the underlying token.
+ * @param {*} strikeToken The address of the strike token.
+ * @param {*} base The quantity of underlying tokens per unit of quote strike tokens.
+ * @param {*} quote The quantity of strike tokens per unit of base underlying tokens.
+ * @param {*} expiry The unix timestamp for when the option expires.
+ */
 const newOption = async (
     signer,
     registry,
@@ -167,8 +273,8 @@ const newOption = async (
     quote,
     expiry
 ) => {
-    await registry.addSupported(underlyingToken);
-    await registry.addSupported(strikeToken);
+    await registry.verifyToken(underlyingToken);
+    await registry.verifyToken(strikeToken);
     await registry.deployOption(
         underlyingToken,
         strikeToken,
@@ -177,8 +283,8 @@ const newOption = async (
         expiry
     );
     let optionToken = new ethers.Contract(
-        await registry.activeOptions(
-            ((await registry.optionsLength()) - 1).toString()
+        await registry.allOptionClones(
+            ((await registry.getAllOptionClonesLength()) - 1).toString()
         ),
         Option.abi,
         signer
@@ -186,6 +292,11 @@ const newOption = async (
     return optionToken;
 };
 
+/**
+ * @dev Gets the Redeem token contract instance by getting the address through the option token.
+ * @param {*} signer
+ * @param {*} optionToken The instance of the option token contract.
+ */
 const newRedeem = async (signer, optionToken) => {
     let redeemTokenAddress = await optionToken.redeemToken();
     let redeemToken = new ethers.Contract(
@@ -196,6 +307,16 @@ const newRedeem = async (signer, optionToken) => {
     return redeemToken;
 };
 
+/**
+ * @dev Deploys new Option and Redeem contract instances and returns them.
+ * @param {*} signer
+ * @param {*} registry The instance contract of the Registry.
+ * @param {*} underlyingToken The instance contract for the underlying token.
+ * @param {*} strikeToken The instance contract for the strike token.
+ * @param {*} base The quantity of underlying tokens per unit of quote stike tokens.
+ * @param {*} quote The quantity of strike tokens per unit of base underlying tokens.
+ * @param {*} expiry The unix timestamp for when the option expires.
+ */
 const newPrimitive = async (
     signer,
     registry,
@@ -225,19 +346,32 @@ const newPrimitive = async (
     return Primitive;
 };
 
+/**
+ * @dev A generalized function to update approval state for any ERC-20 token.
+ * @param {*} token The contract instance of the token that should update its approval.
+ * @param {*} signer The address which is approving.
+ * @param {*} spender The address which should be approved.
+ */
 const approveToken = async (token, signer, spender) => {
     await token.approve(spender, MILLION_ETHER, { from: signer });
 };
 
-const newUniswapTrader = async (signer, quoteToken, router) => {
-    const uniTrader = await deployContract(signer, UniswapTrader, [], {
+/**
+ * @dev Gets the UniswapConnector instance.
+ */
+const newUniswapConnector = async (signer) => {
+    const connector = await deployContract(signer, UniswapConnector, [], {
         gasLimit: 6000000,
     });
-    await uniTrader.setQuoteToken(quoteToken.address);
-    await uniTrader.setRouter(router.address);
-    return uniTrader;
+    return connector;
 };
 
+/**
+ * @dev Deploys a new Uniswap factory and router instance for testing.
+ * @param {*} signer
+ * @param {*} feeToSetter The address which receives fees from the uniswap contracts.
+ * @param {*} WETH The address of WETH for the respective chain ID.
+ */
 const newUniswap = async (signer, feeToSetter, WETH) => {
     const uniswapFactory = await deployContract(
         signer,
@@ -258,6 +392,9 @@ const newUniswap = async (signer, feeToSetter, WETH) => {
     return { uniswapRouter, uniswapFactory };
 };
 
+/**
+ * @dev Gets the contract instances for Uniswap's Router and Factory for Rinkeby.
+ */
 const newUniswapRinkeby = async (signer) => {
     const uniswapRouter = new ethers.Contract(
         RINKEBY_UNI_ROUTER02,
@@ -273,7 +410,7 @@ const newUniswapRinkeby = async (signer) => {
 };
 
 Object.assign(module.exports, {
-    newUniswapTrader,
+    newUniswapConnector,
     newUniswap,
     newUniswapRinkeby,
     newWallets,
@@ -287,8 +424,8 @@ Object.assign(module.exports, {
     newTestOption,
     newRegistry,
     newOptionFactory,
-    newInterestBearing,
     newPrimitive,
     approveToken,
     newTrader,
+    newWethConnector,
 });

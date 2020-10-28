@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.2;
+pragma solidity 0.6.2;
 
 /**
  * @title   Trader
@@ -66,13 +66,8 @@ contract Trader is ITrader, ReentrancyGuard {
         IOption optionToken,
         uint256 mintQuantity,
         address receiver
-    )
-        external
-        override
-        nonReentrant
-        returns (uint256 outputOptions, uint256 outputRedeems)
-    {
-        (outputOptions, outputRedeems) = TraderLib.safeMint(
+    ) external override nonReentrant returns (uint256, uint256) {
+        (uint256 outputOptions, uint256 outputRedeems) = TraderLib.safeMint(
             optionToken,
             mintQuantity,
             receiver
@@ -83,6 +78,7 @@ contract Trader is ITrader, ReentrancyGuard {
             outputOptions,
             outputRedeems
         );
+        return (outputOptions, outputRedeems);
     }
 
     /**
@@ -96,13 +92,8 @@ contract Trader is ITrader, ReentrancyGuard {
         IOption optionToken,
         uint256 exerciseQuantity,
         address receiver
-    )
-        external
-        override
-        nonReentrant
-        returns (uint256 inStrikes, uint256 inOptions)
-    {
-        (inStrikes, inOptions) = TraderLib.safeExercise(
+    ) external override nonReentrant returns (uint256, uint256) {
+        (uint256 inStrikes, uint256 inOptions) = TraderLib.safeExercise(
             optionToken,
             exerciseQuantity,
             receiver
@@ -113,6 +104,8 @@ contract Trader is ITrader, ReentrancyGuard {
             exerciseQuantity,
             inStrikes
         );
+
+        return (inStrikes, inOptions);
     }
 
     /**
@@ -126,13 +119,14 @@ contract Trader is ITrader, ReentrancyGuard {
         IOption optionToken,
         uint256 redeemQuantity,
         address receiver
-    ) external override nonReentrant returns (uint256 inRedeems) {
-        (inRedeems) = TraderLib.safeRedeem(
+    ) external override nonReentrant returns (uint256) {
+        uint256 inRedeems = TraderLib.safeRedeem(
             optionToken,
             redeemQuantity,
             receiver
         );
         emit TraderRedeem(msg.sender, address(optionToken), inRedeems);
+        return inRedeems;
     }
 
     /**
@@ -153,17 +147,18 @@ contract Trader is ITrader, ReentrancyGuard {
         override
         nonReentrant
         returns (
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        (
             uint256 inRedeems,
             uint256 inOptions,
             uint256 outUnderlyings
-        )
-    {
-        (inRedeems, inOptions, outUnderlyings) = TraderLib.safeClose(
-            optionToken,
-            closeQuantity,
-            receiver
-        );
+        ) = TraderLib.safeClose(optionToken, closeQuantity, receiver);
         emit TraderClose(msg.sender, address(optionToken), inOptions);
+        return (inRedeems, inOptions, outUnderlyings);
     }
 
     /**
@@ -181,16 +176,17 @@ contract Trader is ITrader, ReentrancyGuard {
         override
         nonReentrant
         returns (
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        (
             uint256 inRedeems,
             uint256 inOptions,
             uint256 outUnderlyings
-        )
-    {
-        (inRedeems, inOptions, outUnderlyings) = TraderLib.safeUnwind(
-            optionToken,
-            unwindQuantity,
-            receiver
-        );
+        ) = TraderLib.safeUnwind(optionToken, unwindQuantity, receiver);
         emit TraderUnwind(msg.sender, address(optionToken), inOptions);
+        return (inRedeems, inOptions, outUnderlyings);
     }
 }

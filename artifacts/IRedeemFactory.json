@@ -7,18 +7,13 @@
           "internalType": "address",
           "name": "optionToken",
           "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "redeemableToken",
-          "type": "address"
         }
       ],
-      "name": "deploy",
+      "name": "deployClone",
       "outputs": [
         {
           "internalType": "address",
-          "name": "redeem",
+          "name": "",
           "type": "address"
         }
       ],

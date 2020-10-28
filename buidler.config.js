@@ -3,8 +3,6 @@ const path = require("path");
 const bip39 = require("bip39");
 const crypto = require("crypto");
 const ethers = require("ethers");
-const modifyEnvironmentIfMonorepo = require("./internal/monorepo");
-const unhook = modifyEnvironmentIfMonorepo();
 require("dotenv").config();
 
 // == Plugins ==
@@ -15,8 +13,6 @@ usePlugin("buidler-gas-reporter");
 usePlugin("buidler-spdx-license-identifier");
 usePlugin("buidler-deploy");
 usePlugin("solidity-coverage");
-
-unhook();
 
 // == Environment ==
 const ETHERSCAN_API_KEY =
@@ -44,8 +40,8 @@ Object.assign(module.exports, {
                 mnemonic: live,
             },
             chainId: 1,
-            from: "0x619F9Fb924c7e5fd6D21680b9bAc146FffB2D5C3",
-            gasPrice: 15000000000,
+            from: "0xaF31D3C2972F62Eb08F96a1Fe29f579d61b4294D",
+            gasPrice: 60000000000,
         },
         rinkeby: {
             url: rinkeby,
@@ -79,7 +75,7 @@ Object.assign(module.exports, {
     namedAccounts: {
         deployer: {
             default: 0, // here this will by default take the first account as deployer
-            1: "0x619F9Fb924c7e5fd6D21680b9bAc146FffB2D5C3",
+            1: "0xaF31D3C2972F62Eb08F96a1Fe29f579d61b4294D",
             4: "0xE7D58d8554Eb0D5B5438848Af32Bf33EbdE477E7",
         },
     },

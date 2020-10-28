@@ -6,10 +6,12 @@ const bre = require("@nomiclabs/buidler");
 const { ethers } = require("@nomiclabs/buidler");
 
 module.exports = async ({ getNamedAccounts, deployments }) => {
-    const [signer] = await ethers.getSigners();
     const { log, deploy } = deployments;
     const { deployer } = await getNamedAccounts();
     const chain = await bre.getChainId();
+    const signer = ethers.provider.getSigner(deployer);
+
+    // Deploy the libraries, factories, and Registry.
     const optionTemplateLib = await deploy("OptionTemplateLib", {
         from: deployer,
         contractName: "OptionTemplateLib",
@@ -45,9 +47,33 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         },
     });
 
-    const opFacInstance = new ethers.Contract(optionFactory.address, optionFactory.abi, signer);
-    const reFacInstance = new ethers.Contract(redeemFactory.address, redeemFactory.abi, signer);
+    // Get the instances for the option and redeem factories, and Registry so we can initialize them.
+    const opFacInstance = new ethers.Contract(
+        optionFactory.address,
+        optionFactory.abi,
+        signer
+    );
+    const reFacInstance = new ethers.Contract(
+        redeemFactory.address,
+        redeemFactory.abi,
+        signer
+    );
+    const registryInstance = new ethers.Contract(
+        registry.address,
+        registry.abi,
+        signer
+    );
 
+    // Set the option and redeem factory addresses in the Registry
+    if (optionFactory.address == ethers.constants.AddressZero) {
+        await registryInstance.setOptionFactory(optionFactory.address);
+    }
+    if (redeemFactory.address == ethers.constants.AddressZero) {
+        await registryInstance.setRedeemFactory(redeemFactory.address);
+    }
+
+    // If the option and redeem template addresses are the zero address,
+    // deploy them (which sets them to non-zero).
     const optionImpAddress = await opFacInstance.optionTemplate();
     const redeemImpAddress = await reFacInstance.redeemTemplate();
     if (optionImpAddress == ethers.constants.AddressZero) {
@@ -57,9 +83,14 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         await reFacInstance.deployRedeemTemplate();
     }
 
+    // Log the contract address deployments.
     let deployed = [registry, optionFactory, redeemFactory];
     for (let i = 0; i < deployed.length; i++) {
         if (deployed[i].newlyDeployed)
-            log(`Contract deployed at ${deployed[i].address} using ${deployed[i].receipt.gasUsed} gas on chain ${chain}`);
+            log(
+                `Contract deployed at ${deployed[i].address} using ${deployed[i].receipt.gasUsed} gas on chain ${chain}`
+            );
     }
 };
+
+module.exports.tags = ["Core"];

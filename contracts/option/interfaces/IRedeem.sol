@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.2;
+pragma solidity 0.6.2;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 interface IRedeem is IERC20 {
     function optionToken() external view returns (address);
-
-    function redeemableToken() external view returns (address);
 
     function factory() external view returns (address);
 
@@ -15,9 +13,5 @@ interface IRedeem is IERC20 {
 
     function burn(address user, uint256 amount) external;
 
-    function initialize(
-        address _factory,
-        address _optionToken,
-        address _redeemableToken
-    ) external;
+    function initialize(address _factory, address _optionToken) external;
 }
