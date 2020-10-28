@@ -241,7 +241,7 @@ async function main() {
 
         // For each of the options of the asset, deploy it using the parameters
         let optionJsonObject = {};
-        for (let x = 0; x < 1; x++) {
+        for (let x = 0; x < assetOptions.length; x++) {
             let option = assetOptions[x];
             let underlyingToken = option[0];
             let strikeToken = option[1];
