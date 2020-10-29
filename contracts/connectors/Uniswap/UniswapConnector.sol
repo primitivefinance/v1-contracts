@@ -20,7 +20,6 @@ import {
 } from "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 // Primitive
 import { IOption } from "../../option/interfaces/IOption.sol";
-import { IRegistry } from "../../option/interfaces/IRegistry.sol";
 import { ITrader } from "../../option/interfaces/ITrader.sol";
 import { TraderLib } from "../../option/libraries/TraderLib.sol";
 import { IWethConnector } from "../WETH/IWethConnector.sol";
@@ -40,12 +39,11 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
     IUniswapV2Router02 public router;
     IUniswapV2Factory public factory;
     ITrader public trader;
-    IRegistry public registry;
+    IWethConnector public wethConnector;
 
-    address public quoteToken; // Designated stablecoin for Primitive.
     uint8 public constant VERSION = 2;
 
-    event Initialized(address indexed from, address indexed quoteToken);
+    event Initialized(address indexed from);
     event FlashedShortOption(
         address indexed from,
         uint256 quantity,
@@ -67,20 +65,17 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
         address router_,
         address factory_,
         address trader_,
-        address registry_,
-        address quoteToken_
+        address wethConnector_
     ) external onlyOwner {
         require(address(router) == address(0x0), "ERR_INITIALIZED");
         require(address(factory) == address(0x0), "ERR_INITIALIZED");
         require(address(trader) == address(0x0), "ERR_INITIALIZED");
-        require(address(registry) == address(0x0), "ERR_INITIALIZED");
-        require(quoteToken == address(0x0), "ERR_INITIALIZED");
+        require(address(wethConnector) == address(0x0), "ERR_INITIALIZED");
         router = IUniswapV2Router02(router_);
         factory = IUniswapV2Factory(factory_);
         trader = ITrader(trader_);
-        registry = IRegistry(registry_);
-        quoteToken = quoteToken_;
-        emit Initialized(msg.sender, quoteToken_);
+        wethConnector = IWethConnector(wethConnector_);
+        emit Initialized(msg.sender);
     }
 
     // ==== Combo Operations ====
@@ -370,6 +365,70 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
             optionAddress,
             otherTokenAddress,
             quantityOptions,
+            quantityOtherTokens,
+            minOptionTokens,
+            minOtherTokens,
+            to,
+            deadline
+        );
+
+        // Send shortOptionTokens (redeem) from minting option operation to msg.sender.
+        IERC20(IOption(optionAddress).redeemToken()).safeTransfer(
+            msg.sender,
+            outputRedeems
+        );
+        return true;
+    }
+
+    /**
+     * @dev Adds liquidity to an option<>token pair by minting longOptionTokens with underlyingTokens.
+     * @notice Pulls underlying tokens from msg.sender and pushes UNI-V2 liquidity tokens to the "to" address.
+     * underlyingToken -> optionToken -> UNI-V2.
+     * @param optionAddress The address of the optionToken to mint then provide liquidity for.
+     * @param otherTokenAddress The address of the otherToken in the pair with the optionToken.
+     * @param quantityOtherTokens The quantity of otherTokens to add with longOptionTokens to the Uniswap V2 Pair.
+     * @param minOptionTokens The minimum quantity of longOptionTokens expected to provide liquidity with.
+     * @param minOtherTokens The minimum quantity of otherTokens expected to provide liquidity with.
+     * @param to The address that receives UNI-V2 shares.
+     * @param deadline The timestamp to expire a pending transaction.
+     */
+    function addLongLiquidityWithETHUnderlying(
+        address optionAddress,
+        address otherTokenAddress,
+        uint256 quantityOtherTokens,
+        uint256 minOptionTokens,
+        uint256 minOtherTokens,
+        address to,
+        uint256 deadline
+    ) public payable nonReentrant returns (bool) {
+        // Store in memory for gas savings.
+        IUniswapV2Router02 router_ = router;
+
+        // Pull otherTokens from msg.sender to add to Uniswap V2 Pair.
+        // Warning: calls into msg.sender using `safeTransferFrom`. Msg.sender is not trusted.
+        IERC20(otherTokenAddress).safeTransferFrom(
+            msg.sender,
+            address(this),
+            quantityOtherTokens
+        );
+
+        // Pulls underlyingTokens from msg.sender to this contract.
+        // Pushes underlyingTokens to option contract and mints option + redeem tokens to this contract.
+        // Warning: calls into msg.sender using `safeTransferFrom`. Msg.sender is not trusted.
+        (uint256 outputOptions, uint256 outputRedeems) = wethConnector
+            .safeMintWithETH
+            .value(msg.value)(IOption(optionAddress), address(this));
+        assert(outputOptions == msg.value);
+
+        // Approves Uniswap V2 Pair to transfer option and quote tokens from this contract.
+        IERC20(optionAddress).approve(address(router_), uint256(-1));
+        IERC20(otherTokenAddress).approve(address(router_), uint256(-1));
+
+        // Adds liquidity to Uniswap V2 Pair and returns liquidity shares to the "to" address.
+        router_.addLiquidity(
+            optionAddress,
+            otherTokenAddress,
+            msg.value,
             quantityOtherTokens,
             minOptionTokens,
             minOtherTokens,
@@ -732,51 +791,16 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
     // ==== Management Functions ====
 
     /**
-     * @dev Creats a Uniswap pair for option<>quote tokens.
+     * @dev Creats a Uniswap pair for option<>other tokens.
      * @param optionAddress The address of the option to deploy a Uniswap V2 Pair for with the quoteToken.
      */
-    function deployUniswapMarket(address optionAddress)
+    function deployUniswapMarket(address optionAddress, address otherToken)
         external
         returns (address)
     {
-        address uniswapPair = factory.createPair(optionAddress, quoteToken);
+        address uniswapPair = factory.createPair(optionAddress, otherToken);
         return uniswapPair;
     }
 
     // ==== View ====
-
-    /**
-     * @dev Gets a Uniswap Pair address for a token and quote token.
-     * @param tokenAddress The address of the token to get a Uniswap V2 Pair address for (with quoteToken).
-     */
-    function getUniswapMarketForToken(address tokenAddress)
-        public
-        view
-        returns (address)
-    {
-        address uniswapPair = factory.getPair(tokenAddress, quoteToken);
-        require(uniswapPair != address(0x0), "ERR_PAIR_DOES_NOT_EXIST");
-        return uniswapPair;
-    }
-
-    /**
-     * @dev Gets a Uniswap Pair address for the corresponding option parameters.
-     */
-    function getUniswapMarketForSeries(
-        address underlyingToken,
-        address strikeToken,
-        uint256 base,
-        uint256 quote,
-        uint256 expiry
-    ) public view returns (address) {
-        address optionAddress = registry.getOptionAddress(
-            underlyingToken,
-            strikeToken,
-            base,
-            quote,
-            expiry
-        );
-        require(optionAddress != address(0x0), "ERR_OPTION_DOES_NOT_EXIST");
-        return getUniswapMarketForToken(optionAddress);
-    }
 }

@@ -248,10 +248,10 @@ const newTrader = async (signer, weth) => {
  * @param {*} weth The address of WETH for the respective network.
  */
 const newWethConnector = async (signer, weth) => {
-    const trader = await deployContract(signer, WethConnector, [weth], {
+    const wethConnector = await deployContract(signer, WethConnector, [weth], {
         gasLimit: 6000000,
     });
-    return trader;
+    return wethConnector;
 };
 
 /**

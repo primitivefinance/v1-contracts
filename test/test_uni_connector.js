@@ -24,7 +24,7 @@ describe("UniswapConnector", () => {
     let underlyingToken, strikeToken;
     let base, quote, expiry;
     let Primitive, registry;
-    let uniswapFactory, uniswapRouter, uniswapConnector;
+    let uniswapFactory, uniswapRouter, uniswapConnector, wethConnector;
 
     before(async () => {
         let signers = await setup.newWallets();
@@ -76,6 +76,9 @@ describe("UniswapConnector", () => {
 
         // Trader Instance
         trader = await setup.newTrader(Admin, weth.address);
+
+        // Weth connector instance
+        wethConnector = await setup.newWethConnector(Admin, weth.address);
 
         // Initialize the uniswap connector with addresses
         /* await uniswapConnector.initialize(
@@ -208,7 +211,8 @@ describe("UniswapConnector", () => {
                     uniswapFactory.address,
                     trader.address,
                     registry.address,
-                    quoteToken.address
+                    quoteToken.address,
+                    wethConnector.address
                 )
             )
                 .to.emit(uniswapConnector, "Initialized")
@@ -694,7 +698,8 @@ describe("UniswapConnector", () => {
                 uniswapFactory.address,
                 trader.address,
                 registry.address,
-                quoteToken.address
+                quoteToken.address,
+                wethConnector.address
             );
 
             // Approve tokens to be sent to trader contract
