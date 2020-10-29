@@ -43,7 +43,6 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
     IRegistry public registry;
 
     address public quoteToken; // Designated stablecoin for Primitive.
-    address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     uint8 public constant VERSION = 2;
 
     event Initialized(address indexed from, address indexed quoteToken);
@@ -51,12 +50,6 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
         address indexed from,
         uint256 quantity,
         uint256 premium
-    );
-    event RolledOptions(
-        address indexed from,
-        address indexed optionFrom,
-        address indexed optionTo,
-        uint256 quantity
     );
     event RolledOptionLiquidity(
         address indexed from,
@@ -319,57 +312,6 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
 
         // Borrow the amountOptions quantity of underlyingTokens and execute the callback function using params.
         pair.swap(amount0Out, amount1Out, address(this), params);
-        return true;
-    }
-
-    /**
-     * @dev Closes an option position and opens a new one using the freed underlyingTokens.
-     * @notice Pulls option and redeem tokens from msg.sender, then sends minted option + redeems to receiver.
-     * rollFromOption -> underlyingToken -> rollToOption.
-     * @param rollFromOption The optionToken to close.
-     * @param rollToOption The optionToken to mint.
-     * @param rollQuantity The quantity of underlyingTokens to receive from closed options then use to mint new options.
-     * @param receiver The address that receives newly minted option and redeem tokens.
-     */
-    function rollOption(
-        address rollFromOption,
-        address rollToOption,
-        uint256 rollQuantity,
-        address receiver
-    ) external returns (bool) {
-        // Close the rollFromOption to receive underlyingTokens.
-        // Sends the underlyingTokens to this contract.
-        (, , uint256 outUnderlyings) = TraderLib.safeClose(
-            IOption(rollFromOption),
-            rollQuantity,
-            address(this)
-        );
-
-        // Store in memory for gas savings.
-        ITrader trader_ = trader;
-
-        // Approve underlyingTokens to be sent to the Primitive Trader contract.
-        IERC20(IOption(rollFromOption).getUnderlyingTokenAddress()).approve(
-            address(trader_),
-            uint256(-1)
-        );
-
-        // Mint rollToOptions using the underlyingTokens received from closing the rollFromOptions.
-        // Pulls underlyingTokens from this contract and sends them to the rollToOption contract.
-        // Sends minted long + short tokens to the "receiver" address.
-        (uint256 outputOptions, ) = trader_.safeMint(
-            IOption(rollToOption),
-            outUnderlyings,
-            receiver
-        );
-
-        // An event is emitted because a position was atomically rolled without additional capital.
-        emit RolledOptions(
-            msg.sender,
-            rollFromOption,
-            rollToOption,
-            outputOptions
-        );
         return true;
     }
 
