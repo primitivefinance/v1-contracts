@@ -134,6 +134,8 @@ library UniswapConnectorLib {
         return success;
     }
 
+    // ==== Flash Open Functions ====
+
     /**
      * @dev Receives underlyingTokens from a UniswapV2Pair.swap() call from a pair with
      * reserve0 = shortOptionTokens and reserve1 = underlyingTokens.
@@ -620,66 +622,6 @@ library UniswapConnectorLib {
         // Send the otherTokens received from burning liquidity shares to the "to" address.
         IERC20(otherTokenAddress).safeTransfer(to, amountOtherTokens);
         return (amountShortOptions, amountOtherTokens);
-    }
-
-    /**
-     * @dev Combines "removeLongLiquidityThenCloseOptions" function with "addLongLiquidityWithUnderlying" fuction.
-     * @notice Rolls UNI-V2 liquidity in an option<>otherToken pair to a different option<>otherToken pair.
-     * UNI-V2 -> rollFromOption -> underlyingToken -> rollToOption -> UNI-V2.
-     * @param rollFromOption The optionToken address to close a UNI-V2 position.
-     * @param tokenInFromPair The address of the otherToken in the pair liquidity is being removed from.
-     * @param rollToOption The optionToken address to open a UNI-V2 position.
-     * @param tokenInToPair The address of the otherToken in the pair liquidity is being added to.
-     * @param quantityOtherToken The quantity of the otherToken to add to the new liquidity pair.
-     * @param liquidity The quantity of UNI-V2 shares to roll from the first Uniswap pool.
-     * @param amountAMin The minimum quantity of longOptionTokens to receive from removing liquidity.
-     * @param amountBMin The minimum quantity of quoteTokens to receive from removing liquidity.
-     * @param to The address that receives the UNI-V2 shares that have been rolled.
-     * @param deadline The timestamp to expire a pending transaction.
-     */
-    function rollOptionLiquidity(
-        IUniswapV2Factory factory,
-        IUniswapV2Router02 router,
-        ITrader trader,
-        address rollFromOption,
-        address tokenInFromPair,
-        address rollToOption,
-        address tokenInToPair,
-        uint256 quantityOtherToken,
-        uint256 liquidity,
-        uint256 amountAMin,
-        uint256 amountBMin,
-        address to,
-        uint256 deadline
-    ) internal returns (bool) {
-        (uint256 outUnderlyings, ) = removeLongLiquidityThenCloseOptions(
-            factory,
-            router,
-            trader,
-            rollFromOption,
-            tokenInFromPair,
-            liquidity,
-            amountAMin,
-            amountBMin,
-            to,
-            deadline
-        );
-
-        bool success = addLongLiquidityWithUnderlying(
-            router,
-            rollToOption,
-            tokenInToPair,
-            outUnderlyings,
-            quantityOtherToken,
-            amountAMin,
-            amountBMin,
-            to,
-            deadline
-        );
-
-        require(success, "ERR_ADD_LIQUIDITY_FAIL");
-
-        return success;
     }
 
     // ==== Internal Functions ====

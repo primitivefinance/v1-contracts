@@ -41,18 +41,13 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
     ITrader public trader;
 
     uint8 public constant VERSION = 2;
+    string public constant name = "Primitive V1 Uniswap Connector 2";
 
     event Initialized(address indexed from);
     event FlashedShortOption(
         address indexed from,
         uint256 quantity,
         uint256 premium
-    );
-    event RolledOptionLiquidity(
-        address indexed from,
-        address indexed optionMarketFrom,
-        address indexed optionMarketTo,
-        uint256 liquidity
     );
 
     // solhint-disable-next-line no-empty-blocks
