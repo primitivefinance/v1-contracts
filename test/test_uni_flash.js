@@ -186,7 +186,7 @@ describe("UniswapConnector Flash", () => {
             .approve(uniswapConnector.address, MILLION_ETHER);
     });
 
-    /* describe("flashloanMintShortOptionsThenSwap", () => {
+    /* describe("flashMintShortOptionsThenSwap", () => {
         it("sends to mimic a flash loan", async () => {
             let pairAddress = await uniswapFactory.getPair(
                 quoteToken.address,
@@ -200,21 +200,19 @@ describe("UniswapConnector Flash", () => {
                 underlyingToken.address,
             ];
             let to = Alice;
-            const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
             // send in underlyingTokens as if was flash swap
             await underlyingToken.transfer(
                 uniswapConnector.address,
                 flashLoanQuantity
             );
             await expect(
-                uniswapConnector.flashloanMintShortOptionsThenSwap(
+                uniswapConnector.flashMintShortOptionsThenSwap(
                     pairAddress,
                     optionToken.address,
                     flashLoanQuantity,
                     amountOutMin,
                     path,
-                    to,
-                    deadline
+                    to
                 )
             )
                 .to.emit(uniswapConnector, "FlashedShortOption")
@@ -222,7 +220,7 @@ describe("UniswapConnector Flash", () => {
         });
     }); */
 
-    describe("openFlashShort", () => {
+    describe("openFlashLong", () => {
         it("gets a flash loan for underlyings, mints options, swaps redeem to underlyings to pay back", async () => {
             // Create a Uniswap V2 Pair and add liquidity.
             console.log(
@@ -259,10 +257,10 @@ describe("UniswapConnector Flash", () => {
                 .div(1000)
                 .sub(amounts[1]);
             await expect(
-                uniswapConnector.openFlashShort(
+                uniswapConnector.openFlashLong(
+                    optionToken.address,
                     amountOptions,
-                    amountOutMin,
-                    optionToken.address
+                    amountOutMin
                 )
             )
                 .to.emit(uniswapConnector, "FlashedShortOption")

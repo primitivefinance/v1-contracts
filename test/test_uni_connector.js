@@ -78,13 +78,13 @@ describe("UniswapConnector", () => {
         trader = await setup.newTrader(Admin, weth.address);
 
         // Initialize the uniswap connector with addresses
-        await uniswapConnector.initialize(
+        /* await uniswapConnector.initialize(
             uniswapRouter.address,
             uniswapFactory.address,
             trader.address,
             registry.address,
             quoteToken.address
-        );
+        ); */
 
         // Approve tokens to be sent to trader contract
         await underlyingToken
@@ -200,42 +200,18 @@ describe("UniswapConnector", () => {
             .approve(uniswapConnector.address, MILLION_ETHER);
     });
 
-    describe("setRouter", () => {
-        it("should set the Router address and emit an event.", async () => {
-            await expect(uniswapConnector.setRouter(uniswapRouter.address))
-                .to.emit(uniswapConnector, "UpdatedRouter")
-                .withArgs(Alice, uniswapRouter.address);
-        });
-    });
-
-    describe("setFactory", () => {
-        it("should set the Factory address and emit an event.", async () => {
-            await expect(uniswapConnector.setFactory(uniswapFactory.address))
-                .to.emit(uniswapConnector, "UpdatedFactory")
-                .withArgs(Alice, uniswapFactory.address);
-        });
-    });
-
-    describe("setTrader", () => {
-        it("should set the Trader address and emit an event.", async () => {
-            await expect(uniswapConnector.setTrader(trader.address))
-                .to.emit(uniswapConnector, "UpdatedTrader")
-                .withArgs(Alice, trader.address);
-        });
-    });
-
-    describe("setRegistry", () => {
-        it("should set the Registry address and emit an event.", async () => {
-            await expect(uniswapConnector.setRegistry(registry.address))
-                .to.emit(uniswapConnector, "UpdatedRegistry")
-                .withArgs(Alice, registry.address);
-        });
-    });
-
-    describe("setQuoteToken", () => {
-        it("should set the QuoteToken address and emit an event.", async () => {
-            await expect(uniswapConnector.setQuoteToken(quoteToken.address))
-                .to.emit(uniswapConnector, "UpdatedQuoteToken")
+    describe("initialize", () => {
+        it("should set the initial contract addresses", async () => {
+            await expect(
+                uniswapConnector.initialize(
+                    uniswapRouter.address,
+                    uniswapFactory.address,
+                    trader.address,
+                    registry.address,
+                    quoteToken.address
+                )
+            )
+                .to.emit(uniswapConnector, "Initialized")
                 .withArgs(Alice, quoteToken.address);
         });
     });
