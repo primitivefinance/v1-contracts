@@ -45,9 +45,6 @@ describe("UniswapConnector", () => {
         uniswapFactory = uniswap.uniswapFactory;
         uniswapRouter = uniswap.uniswapRouter;
 
-        // Uniswap Connector contract
-        uniswapConnector = await setup.newUniswapConnector(Admin);
-
         // Option parameters
         underlyingToken = weth;
         strikeToken = dai;
@@ -70,6 +67,13 @@ describe("UniswapConnector", () => {
 
         // Trader Instance
         trader = await setup.newTrader(Admin, weth.address);
+
+        // Uniswap Connector contract
+        uniswapConnector = await setup.newUniswapConnector(Admin, [
+            uniswapRouter.address,
+            uniswapFactory.address,
+            trader.address,
+        ]);
 
         // Approve all tokens and contracts
         await batchApproval(
@@ -148,20 +152,6 @@ describe("UniswapConnector", () => {
         );
         let pair = new ethers.Contract(pairAddress, UniswapV2Pair.abi, Admin);
         await batchApproval([uniswapConnector.address], [pair], [Admin, User]);
-    });
-
-    describe("initialize", () => {
-        it("should set the initial contract addresses", async () => {
-            await expect(
-                uniswapConnector.initialize(
-                    uniswapRouter.address,
-                    uniswapFactory.address,
-                    trader.address
-                )
-            )
-                .to.emit(uniswapConnector, "Initialized")
-                .withArgs(Alice);
-        });
     });
 
     describe("mintLongOptionsThenSwapToTokens", () => {
@@ -494,9 +484,6 @@ describe("UniswapConnector", () => {
             uniswapFactory = uniswap.uniswapFactory;
             uniswapRouter = uniswap.uniswapRouter;
 
-            // Uniswap Connector contract
-            uniswapConnector = await setup.newUniswapConnector(Admin);
-
             // Option parameters
             underlyingToken = weth;
             strikeToken = dai;
@@ -521,14 +508,14 @@ describe("UniswapConnector", () => {
             // Trader Instance
             trader = await setup.newTrader(Admin, weth.address);
 
-            // Initialize the uniswap connector with addresses
-            await uniswapConnector.initialize(
+            // Uniswap Connector contract
+            uniswapConnector = await setup.newUniswapConnector(Admin, [
                 uniswapRouter.address,
                 uniswapFactory.address,
-                trader.address
-            );
+                trader.address,
+            ]);
 
-            // Approve tokens to be sent to trader contract
+            // Approve all tokens and contracts
             await batchApproval(
                 [
                     trader.address,
@@ -644,7 +631,7 @@ describe("UniswapConnector", () => {
                     amountOutMin
                 )
             )
-                .to.emit(uniswapConnector, "FlashedShortOption")
+                .to.emit(uniswapConnector, "FlashOpened")
                 .withArgs(uniswapConnector.address, amountOptions, remainder);
 
             console.log(

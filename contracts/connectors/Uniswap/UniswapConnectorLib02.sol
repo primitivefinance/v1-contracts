@@ -1,7 +1,8 @@
 pragma solidity >=0.6.0;
 
 /**
- * @title   Combines Uniswap V2 Protocol functions with Primitive V1.
+ * @title   Library for business logic for connecting Uniswap V2 Protocol functions with Primitive V1.
+ * @notice  Primitive V1 Uniswap Connector Lib 2 - @primitivefi/contracts@v0.4.1
  * @author  Primitive
  */
 
@@ -29,7 +30,7 @@ import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
-library UniswapConnectorLib {
+library UniswapConnectorLib02 {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
