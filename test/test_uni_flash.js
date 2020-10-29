@@ -226,6 +226,9 @@ describe("UniswapConnector Flash", () => {
         it("gets a flash loan for underlyings, mints options, swaps redeem to underlyings to pay back", async () => {
             // Create a Uniswap V2 Pair and add liquidity.
             console.log(
+                `Weth balance: ${formatEther(await weth.balanceOf(Alice))}`
+            );
+            console.log(
                 `Redeem balance: ${formatEther(
                     await redeemToken.balanceOf(Alice)
                 )}`
@@ -237,20 +240,6 @@ describe("UniswapConnector Flash", () => {
                 )}`
             );
 
-            console.log(
-                `redeem dai pair: ${await uniswapFactory.getPair(
-                    redeemToken.address,
-                    dai.address
-                )}`
-            );
-
-            console.log(
-                `dai weth pair: ${await uniswapFactory.getPair(
-                    weth.address,
-                    dai.address
-                )}`
-            );
-
             // Get the pair instance to approve it to the uniswapConnector
             assert.equal(
                 quoteToken.address,
@@ -258,11 +247,41 @@ describe("UniswapConnector Flash", () => {
                 "QuoteToken mismatch"
             );
             let amountOptions = ONE_ETHER;
+            let amountRedeems = amountOptions.mul(quote).div(base);
             let amountOutMin = "0";
-            await uniswapConnector.openFlashShort(
-                amountOptions,
-                amountOutMin,
-                optionToken.address
+            let amounts = await uniswapRouter.getAmountsOut(amountRedeems, [
+                redeemToken.address,
+                weth.address,
+            ]);
+            let remainder = amountOptions
+                .mul(1000)
+                .add(amountOptions.mul(3))
+                .div(1000)
+                .sub(amounts[1]);
+            await expect(
+                uniswapConnector.openFlashShort(
+                    amountOptions,
+                    amountOutMin,
+                    optionToken.address
+                )
+            )
+                .to.emit(uniswapConnector, "FlashedShortOption")
+                .withArgs(uniswapConnector.address, amountOptions, remainder);
+
+            console.log(
+                `Weth balance: ${formatEther(await weth.balanceOf(Alice))}`
+            );
+
+            console.log(
+                `Redeem balance: ${formatEther(
+                    await redeemToken.balanceOf(Alice)
+                )}`
+            );
+
+            console.log(
+                `Option balance: ${formatEther(
+                    await optionToken.balanceOf(Alice)
+                )}`
             );
         });
     });

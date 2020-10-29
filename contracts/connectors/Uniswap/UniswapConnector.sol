@@ -53,7 +53,11 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
     event UpdatedTrader(address indexed from, address indexed newTrader);
     event UpdatedRegistry(address indexed from, address indexed newRegistry);
     event UpdatedQuoteToken(address indexed from, address indexed newQuote);
-    event FlashedShortOption(address indexed from, uint256 quantity);
+    event FlashedShortOption(
+        address indexed from,
+        uint256 quantity,
+        uint256 premium
+    );
 
     event RolledOptions(
         address indexed from,
@@ -249,60 +253,43 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
         address[] memory path,
         address to,
         uint256 deadline
-    ) public returns (bool success) {
+    ) public returns (bool) {
         require(flashLoanQuantity > 0, "ERR_ZERO");
         // IMPORTANT: Assume this contract has already received `flashLoanQuantity` of underlyingTokens.
+        // We are flash swapping from an asset <> redeem pair, paying back a portion using minted redeemTokens
+        // and any remainder of asset.
 
         // Mints option and redeem tokens to this contract.
         address underlyingToken = IOption(optionAddress)
             .getUnderlyingTokenAddress();
         require(path[1] == underlyingToken, "ERR_END_PATH_NOT_UNDERLYING");
 
-        // Mint optionTokens using the underlyingTokens received from UniswapV2 flashloan.
-        // Sends underlyingTokens from this contract and to the optionToken contract, then calls mintOptions.
+        // Mint optionTokens using the underlyingTokens received from UniswapV2 flash swap.
+        // Send underlyingTokens from this contract to the optionToken contract, then call mintOptions.
         // This contract receives the newly minted option and redeem tokens.
         IERC20(underlyingToken).safeTransfer(optionAddress, flashLoanQuantity);
         (uint256 outputOptions, uint256 outputRedeems) = IOption(optionAddress)
             .mintOptions(address(this));
-        console.log("minted options");
 
-        // Need to pay back the UniswapV2 flash loan by selling the redeemToken, then paying the remainder.
-
+        // Need to return tokens from the flash swap by returning redeemTokens and any remainder of underlyingTokens.
         // Swaps redeemTokens to the token specified at the end of the path, then sends to UniswapV2Pair.
         // Reverts if the first address in the path is not the redeemToken address.
         // Reverts if the last address in the path is not the underlyingToken address.
-        // path[0] = redeemToken, path[1] = dai, path[2] = underlyingToken
+        // path[0] = redeemToken, path[1] = underlyingToken
         {
-            //address pair = pairAddress;
             address underlyingToken_ = underlyingToken;
+            // Gets the amount of underlyingTokens paid (amounts[1]) based on an input quantity of redeemTokens.
             uint256[] memory amounts = router.getAmountsOut(
                 outputRedeems,
                 path
             );
-            console.log("swapping");
-            /*
-            (
-                uint256[] memory amounts,
-                bool isSuccess
-            ) = _swapExactOptionsForTokens(
-                IOption(optionAddress).redeemToken(),
-                outputRedeems, // shortOptionTokens = redeemTokens
-                amountOutMin,
-                path,
-                pair,
-                deadline
-            );
-            success = isSuccess;
-            // Fail early if the swap failed.
-            console.log(success);
-            require(success, "ERR_SWAP_FAILED");
-             */
 
-            // The remainder is the flash loan amount - amount from selling redeemTokens.
-            uint256 remainder; // underlyingTokens borrowed - underlyingTokens paid back by selling redeemTokens
+            // The remainder is the flash loan amount - amount paid for from redeemTokens.
+            uint256 remainder; // underlyingTokens borrowed - underlyingTokens paid back by returning redeemTokens.
             {
                 uint256 quantity = flashLoanQuantity; // quantity of underlying tokens borrowed
-                uint256 paid = amounts[1]; // quantity of underlying tokens paid
+                uint256 paid = amounts[1]; // quantity of underlyingTokens paid by redeemTokens
+                // consider the swap fee
                 remainder = quantity
                     .mul(1000)
                     .add(quantity.mul(3))
@@ -310,23 +297,23 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
                     .sub(paid);
             }
 
-            console.log(remainder);
+            // Pay back the pair in redeemTokens
             IERC20(IOption(optionAddress).redeemToken()).safeTransfer(
                 pairAddress,
                 outputRedeems
             );
 
-            // Pull underlyingTokens from the original spender to pay the remainder of the flash loan.
+            // Pull underlyingTokens from the original spender to pay the remainder of the flash swap.
             IERC20(underlyingToken_).safeTransferFrom(
                 to,
                 pairAddress,
                 remainder
             );
+            emit FlashedShortOption(msg.sender, outputOptions, remainder);
         }
 
         // Send optionTokens (long options) to the "original" address.
-        IERC20(optionAddress).safeTransfer(to, outputOptions); // longOptionTokens
-        emit FlashedShortOption(msg.sender, outputOptions);
+        IERC20(optionAddress).safeTransfer(to, outputOptions); // option = longOptionTokens
         return true;
     }
 
@@ -380,8 +367,6 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
         bytes calldata data
     ) external override {
         (bool success, bytes memory returnData) = address(this).call(data);
-        console.log("Is Successful?");
-        console.logBool(success);
         require(success, "ERR_UNISWAPV2_CALL_FAIL");
     }
 
