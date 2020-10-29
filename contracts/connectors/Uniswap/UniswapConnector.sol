@@ -53,6 +53,7 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
     event UpdatedTrader(address indexed from, address indexed newTrader);
     event UpdatedRegistry(address indexed from, address indexed newRegistry);
     event UpdatedQuoteToken(address indexed from, address indexed newQuote);
+    event FlashedShortOption(address indexed from, uint256 quantity);
 
     event RolledOptions(
         address indexed from,
@@ -193,7 +194,7 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
      * @param deadline The timestamp for a trade to fail at if not successful.
      * @return bool Whether the transaction was successful or not.
      */
-    function mintShortOptionsThenSwapToTokens(
+    /* function mintShortOptionsThenSwapToTokens(
         IOption optionToken,
         uint256 amountIn,
         uint256 amountOutMin,
@@ -226,44 +227,44 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
         // Send optionTokens (long options) to the "to" address.
         IERC20(optionToken).safeTransfer(to, outputOptions); // longOptionTokens
         return success;
-    }
+    } */
 
     /**
      * @dev Mints long and short option tokens using a flash loan from UniswapV2. Then sells short tokens, and pays the difference.
      * @notice If the first address in the path is not the redeemToken address, the tx will fail.
      * underlyingToken -> redeemToken -> quoteToken. ShortTokens = redeemTokens
-     * @param optionToken The address of the Option contract.
+     * @param optionAddress The address of the Option contract.
      * @param flashLoanQuantity The quantity of options to mint.
      * @param amountOutMin The minimum quantity of underlyingTokens to receive in exchange for the redeemTokens.
      * @param path The token addresses to trade through using their Uniswap V2 pools. Assumes path[0] = redeemToken.
      * @param to The address to send the redeemToken proceeds and optionTokens to.
      * @param deadline The timestamp for a trade to fail at if not successful.
-     * @return bool Whether the transaction was successful or not.
+     * @return success bool Whether the transaction was successful or not.
      */
     function flashloanMintShortOptionsThenSwap(
         address pairAddress,
-        IOption optionToken,
+        address optionAddress,
         uint256 flashLoanQuantity,
         uint256 amountOutMin,
         address[] memory path,
         address to,
         uint256 deadline
-    ) public returns (bool) {
+    ) public returns (bool success) {
         require(flashLoanQuantity > 0, "ERR_ZERO");
         // IMPORTANT: Assume this contract has already received `flashLoanQuantity` of underlyingTokens.
 
         // Mints option and redeem tokens to this contract.
-        /* address underlyingToken = optionToken.getUnderlyingTokenAddress();
+        address underlyingToken = IOption(optionAddress)
+            .getUnderlyingTokenAddress();
+        require(path[2] == underlyingToken, "ERR_END_PATH_NOT_UNDERLYING");
 
         // Mint optionTokens using the underlyingTokens received from UniswapV2 flashloan.
         // Sends underlyingTokens from this contract and to the optionToken contract, then calls mintOptions.
         // This contract receives the newly minted option and redeem tokens.
-        IERC20(underlyingToken).safeTransfer(
-            address(optionToken),
-            flashLoanQuantity
-        );
-        (uint256 outputOptions, uint256 outputRedeems) = optionToken
+        IERC20(underlyingToken).safeTransfer(optionAddress, flashLoanQuantity);
+        (uint256 outputOptions, uint256 outputRedeems) = IOption(optionAddress)
             .mintOptions(address(this));
+        console.log("minted options");
 
         // Need to pay back the UniswapV2 flash loan by selling the redeemToken, then paying the remainder.
 
@@ -272,50 +273,50 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
         // Reverts if the last address in the path is not the underlyingToken address.
         // path[0] = redeemToken, path[1] = dai, path[2] = underlyingToken
         {
-            require(path[2] == underlyingToken, "ERR_END_PATH_NOT_UNDERLYING");
+            address original = to;
+            address pair = pairAddress;
+            address underlyingToken_ = underlyingToken;
+            console.log("swapping");
             (
                 uint256[] memory amounts,
-                bool success
+                bool isSuccess
             ) = _swapExactOptionsForTokens(
-                optionToken.redeemToken(),
+                IOption(optionAddress).redeemToken(),
                 outputRedeems, // shortOptionTokens = redeemTokens
                 amountOutMin,
                 path,
-                msg.sender,
+                pair,
                 deadline
             );
+            success = isSuccess;
             // Fail early if the swap failed.
+            console.log(success);
             require(success, "ERR_SWAP_FAILED");
-
             // The remainder is the flash loan amount - amount from selling redeemTokens.
-            uint256 remainder = flashLoanQuantity > amounts[1]
-                ? flashLoanQuantity.sub(amounts[1])
-                : 0;
+            uint256 remainder; // underlyingTokens borrowed - underlyingTokens paid back by selling redeemTokens
+            {
+                uint256 quantity = flashLoanQuantity; // quantity of underlying tokens borrowed
+                uint256 paid = amounts[2]; // quantity of underlying tokens paid
+                remainder = quantity
+                    .mul(1000)
+                    .add(quantity.mul(3))
+                    .div(1000)
+                    .sub(paid);
+            }
+
+            console.log(remainder);
 
             // Pull underlyingTokens from the original spender to pay the remainder of the flash loan.
-            IERC20(underlyingToken).safeTransferFrom(to, msg.sender, remainder);
+            IERC20(underlyingToken_).safeTransferFrom(
+                original,
+                pair,
+                remainder
+            );
+        }
 
-            // Send optionTokens (long options) to the "spender" address.
-            IERC20(optionToken).safeTransfer(to, outputOptions); // longOptionTokens
-        } */
-        uint256 quantityWithFee = flashLoanQuantity.mul(1000).add(
-            flashLoanQuantity.mul(3)
-        );
-        /* uint256 remainder = quantityWithFee > amounts[1]
-            ? quantityWithFee.sub(amounts[1])
-            : 0; */
-
-        address underlyingToken = optionToken.getUnderlyingTokenAddress();
-        // Pull underlyingTokens from the original spender to pay the remainder of the flash loan.
-        IERC20(underlyingToken).safeTransferFrom(
-            to,
-            pairAddress,
-            quantityWithFee.div(1000)
-        );
-        console.log(IERC20(underlyingToken).balanceOf(address(this)));
-        IERC20(underlyingToken).safeTransfer(pairAddress, flashLoanQuantity);
-        console.log(IERC20(underlyingToken).balanceOf(pairAddress));
-        return true;
+        // Send optionTokens (long options) to the "original" address.
+        IERC20(optionAddress).safeTransfer(to, outputOptions); // longOptionTokens
+        emit FlashedShortOption(msg.sender, outputOptions);
     }
 
     function openFlashShort(
@@ -369,6 +370,8 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
         bytes calldata data
     ) external override {
         (bool success, bytes memory returnData) = address(this).call(data);
+        console.log("Is Successful?");
+        console.logBool(success);
         require(success, "ERR_UNISWAPV2_CALL_FAIL");
     }
 
@@ -647,6 +650,7 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
         address to,
         uint256 deadline
     ) internal returns (uint256[] memory amounts, bool success) {
+        console.log("swapping internal");
         // Fails early if the token being swapped from is not the optionToken.
         require(path[0] == optionAddress, "ERR_PATH_OPTION_START");
 
@@ -654,9 +658,11 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
         IUniswapV2Router02 router_ = router;
 
         // Approve the uniswap router to be able to transfer options from this contract.
+        console.log("approving router");
         IERC20(optionAddress).approve(address(router_), uint256(-1));
-
         // Call the Uniswap V2 function to swap optionTokens to quoteTokens.
+        //console.log("swapping now");
+        console.log(amountOutMin);
         (amounts) = router_.swapExactTokensForTokens(
             amountIn,
             amountOutMin,
@@ -664,6 +670,7 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
             to,
             deadline
         );
+        console.log("Swap success");
         success = true;
     }
 

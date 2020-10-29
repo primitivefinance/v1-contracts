@@ -564,7 +564,6 @@ describe("UniswapConnector", () => {
                 UniswapV2Pair.abi,
                 Admin
             );
-            console.log(formatEther(await pair.balanceOf(Alice)));
             await pair
                 .connect(Admin)
                 .approve(uniswapConnector.address, MILLION_ETHER);
@@ -596,7 +595,6 @@ describe("UniswapConnector", () => {
     describe("openFlashShort", () => {
         it("gets a flash loan for underlyings, mints options, swaps redeem to underlyings to pay back", async () => {
             // Create a Uniswap V2 Pair and add liquidity.
-
             console.log(
                 `Redeem balance: ${formatEther(
                     await redeemToken.balanceOf(Alice)
@@ -606,6 +604,20 @@ describe("UniswapConnector", () => {
             console.log(
                 `Option balance: ${formatEther(
                     await optionToken.balanceOf(Alice)
+                )}`
+            );
+
+            console.log(
+                `redeem dai pair: ${await uniswapFactory.getPair(
+                    redeemToken.address,
+                    dai.address
+                )}`
+            );
+
+            console.log(
+                `dai weth pair: ${await uniswapFactory.getPair(
+                    weth.address,
+                    dai.address
                 )}`
             );
 
