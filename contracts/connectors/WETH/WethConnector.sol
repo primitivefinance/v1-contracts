@@ -28,7 +28,7 @@ contract WethConnector is IWethConnector, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    IWETH public weth;
+    IWETH public override weth;
 
     event WethConnectorMint(
         address indexed from,

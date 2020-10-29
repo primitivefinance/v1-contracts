@@ -209,14 +209,11 @@ describe("UniswapConnector", () => {
                 uniswapConnector.initialize(
                     uniswapRouter.address,
                     uniswapFactory.address,
-                    trader.address,
-                    registry.address,
-                    quoteToken.address,
-                    wethConnector.address
+                    trader.address
                 )
             )
                 .to.emit(uniswapConnector, "Initialized")
-                .withArgs(Alice, quoteToken.address);
+                .withArgs(Alice);
         });
     });
 
@@ -403,7 +400,10 @@ describe("UniswapConnector", () => {
             let deadline = Math.floor(Date.now() / 1000) + 60 * 20;
 
             // Create a pair for rolling liquidity to
-            await uniswapConnector.deployUniswapMarket(rollToOption);
+            await uniswapConnector.deployUniswapMarket(
+                rollToOption,
+                quoteToken.address
+            );
 
             // Get the pair with liquidity being rolled to
             let rollToPairAddress = await uniswapFactory.getPair(
@@ -433,7 +433,6 @@ describe("UniswapConnector", () => {
             */
 
             // Call the function
-            let amountDesired = await uniswapRouter.quote();
             await expect(
                 uniswapConnector.rollOptionLiquidity(
                     rollFromOption,
@@ -551,8 +550,9 @@ describe("UniswapConnector", () => {
 
             let optionAddress = optionToken.address;
             let liquidity = ONE_ETHER;
-            let pairAddress = await uniswapConnector.getUniswapMarketForToken(
-                optionToken.address
+            let pairAddress = await uniswapConnector.getUniswapMarketForTokens(
+                optionToken.address,
+                quoteToken.address
             );
             let pair = new ethers.Contract(
                 pairAddress,
@@ -603,8 +603,9 @@ describe("UniswapConnector", () => {
 
             let optionAddress = optionToken.address;
             let liquidity = ONE_ETHER;
-            let pairAddress = await uniswapConnector.getUniswapMarketForToken(
-                optionToken.address
+            let pairAddress = await uniswapConnector.getUniswapMarketForTokens(
+                redeemToken.address,
+                weth.address
             );
             let pair = new ethers.Contract(
                 pairAddress,
@@ -630,7 +631,7 @@ describe("UniswapConnector", () => {
             let deadline = Math.floor(Date.now() / 1000) + 60 * 20;
             await uniswapConnector.removeShortLiquidityThenCloseOptions(
                 optionAddress,
-                quoteToken.address,
+                weth.address,
                 liquidity,
                 amountAMin,
                 amountBMin,
@@ -696,10 +697,7 @@ describe("UniswapConnector", () => {
             await uniswapConnector.initialize(
                 uniswapRouter.address,
                 uniswapFactory.address,
-                trader.address,
-                registry.address,
-                quoteToken.address,
-                wethConnector.address
+                trader.address
             );
 
             // Approve tokens to be sent to trader contract
@@ -830,11 +828,6 @@ describe("UniswapConnector", () => {
             );
 
             // Get the pair instance to approve it to the uniswapConnector
-            assert.equal(
-                quoteToken.address,
-                await uniswapConnector.quoteToken(),
-                "QuoteToken mismatch"
-            );
             let amountOptions = ONE_ETHER;
             let amountRedeems = amountOptions.mul(quote).div(base);
             let amountOutMin = "0";
