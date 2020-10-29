@@ -14,7 +14,6 @@ pragma solidity 0.6.2;
 import { IWETH } from "./IWETH.sol";
 // Primitive
 import { IOption } from "../../option/interfaces/IOption.sol";
-import { TraderLib } from "../../option/libraries/TraderLib.sol";
 import { IWethConnector } from "./IWethConnector.sol";
 import { WethRouterLib } from "./WethRouterLib.sol";
 // Open Zeppelin
