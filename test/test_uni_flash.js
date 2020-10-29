@@ -2,23 +2,15 @@ const { assert, expect } = require("chai");
 const chai = require("chai");
 const { solidity } = require("ethereum-waffle");
 chai.use(solidity);
-const utils = require("./lib/utils");
 const setup = require("./lib/setup");
 const constants = require("./lib/constants");
 const { parseEther, formatEther } = require("ethers/lib/utils");
-const { assertBNEqual } = utils;
-const {
-    ONE_ETHER,
-    TEN_ETHER,
-    HUNDRED_ETHER,
-    THOUSAND_ETHER,
-    MILLION_ETHER,
-} = constants.VALUES;
+const { ONE_ETHER, MILLION_ETHER } = constants.VALUES;
 const UniswapV2Pair = require("@uniswap/v2-core/build/UniswapV2Pair.json");
 
 describe("UniswapConnector Flash", () => {
     // ACCOUNTS
-    let Admin, User, Alice, Bob;
+    let Admin, User, Alice;
 
     let trader, weth, dai, optionToken, redeemToken, quoteToken;
     let underlyingToken, strikeToken;
@@ -185,40 +177,6 @@ describe("UniswapConnector Flash", () => {
             .connect(User)
             .approve(uniswapConnector.address, MILLION_ETHER);
     });
-
-    /* describe("flashMintShortOptionsThenSwap", () => {
-        it("sends to mimic a flash loan", async () => {
-            let pairAddress = await uniswapFactory.getPair(
-                quoteToken.address,
-                underlyingToken.address
-            );
-            let flashLoanQuantity = ONE_ETHER;
-            let amountOutMin = "0";
-            let path = [
-                redeemToken.address,
-                dai.address,
-                underlyingToken.address,
-            ];
-            let to = Alice;
-            // send in underlyingTokens as if was flash swap
-            await underlyingToken.transfer(
-                uniswapConnector.address,
-                flashLoanQuantity
-            );
-            await expect(
-                uniswapConnector.flashMintShortOptionsThenSwap(
-                    pairAddress,
-                    optionToken.address,
-                    flashLoanQuantity,
-                    amountOutMin,
-                    path,
-                    to
-                )
-            )
-                .to.emit(uniswapConnector, "FlashedShortOption")
-                .withArgs(Alice, flashLoanQuantity);
-        });
-    }); */
 
     describe("openFlashLong", () => {
         it("gets a flash loan for underlyings, mints options, swaps redeem to underlyings to pay back", async () => {
