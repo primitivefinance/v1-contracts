@@ -95,13 +95,13 @@ interface IUniswapConnector02 {
         view
         returns (address);
 
-    function getName() external pure returns (string memory);
-
-    function getVersion() external pure returns (uint8);
-
     function router() external view returns (IUniswapV2Router02);
 
     function factory() external view returns (IUniswapV2Factory);
 
     function trader() external view returns (ITrader);
+
+    function getName() external pure returns (string memory);
+
+    function getVersion() external pure returns (uint8);
 }

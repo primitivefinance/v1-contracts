@@ -2,31 +2,30 @@
 
 pragma solidity 0.6.2;
 
-/**
- * @title   Weth Connector for bridging ether to WETH Primitive options.
- * @notice  Abstracts the interfacing with the protocol's option contract for ease-of-use.
- *          Manages operations involving options with WETH as the underlying or strike asset.
- *          Accepts deposits in ethers and withdraws ethers.
- * @author  Primitive
- */
+///
+/// @title   Weth Connector for bridging ether to WETH Primitive options.
+/// @notice  Abstracts the interfacing with the protocol's option contract for ease-of-use.
+///          Manages operations involving options with WETH as the underlying or strike asset.
+///          Accepts deposits in ethers and withdraws ethers.
+///          Primitive V1 WethConnectorLib01 - @primitivefi/contracts@v0.4.1
+/// @author  Primitive
+///
 
 // WETH Interface
 import { IWETH } from "./IWETH.sol";
 // Primitive
-import { IOption } from "../../option/interfaces/IOption.sol";
-import { IWethConnector } from "./IWethConnector.sol";
+import { IOption, IERC20 } from "../../option/interfaces/IOption.sol";
 // Open Zeppelin
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
-library WethRouterLib {
-    using SafeMath for uint256;
-    using SafeERC20 for IERC20;
+library WethConnectorLib01 {
+    using SafeERC20 for IERC20; // Reverts when `transfer` or `transferFrom` erc20 calls don't return proper data
+    using SafeMath for uint256; // Reverts on math underflows/overflows
 
-    /**
-     * @dev Checks the quantity of an operation to make sure its not zero. Fails early.
-     */
+    ///
+    /// @dev Checks the quantity of an operation to make sure its not zero. Fails early.
+    ///
     modifier nonZero(uint256 quantity) {
         require(quantity > 0, "ERR_ZERO");
         _;
@@ -34,12 +33,12 @@ library WethRouterLib {
 
     // ==== Operation Functions ====
 
-    /**
-     * @dev Mints msg.value quantity of options and "quote" (option parameter) quantity of redeem tokens.
-     * @notice This function is for options that have WETH as the underlying asset.
-     * @param optionToken The address of the option token to mint.
-     * @param receiver The address which receives the minted option and redeem tokens.
-     */
+    ///
+    ///@dev Mints msg.value quantity of options and "quote" (option parameter) quantity of redeem tokens.
+    ///@notice This function is for options that have WETH as the underlying asset.
+    ///@param optionToken The address of the option token to mint.
+    ///@param receiver The address which receives the minted option and redeem tokens.
+    ///
     function safeMintWithETH(
         IWETH weth,
         IOption optionToken,
@@ -59,15 +58,15 @@ library WethRouterLib {
         return (outputOptions, outputRedeems);
     }
 
-    /**
-     * @dev Swaps msg.value of strikeTokens (ethers) to underlyingTokens.
-     * Uses the strike ratio as the exchange rate. Strike ratio = base / quote.
-     * Msg.value (quote units) * base / quote = base units (underlyingTokens) to withdraw.
-     * @notice This function is for options with WETH as the strike asset.
-     * Burns option tokens, accepts ethers, and pushes out underlyingTokens.
-     * @param optionToken The address of the option contract.
-     * @param receiver The underlyingTokens are sent to the receiver address.
-     */
+    ///
+    /// @dev Swaps msg.value of strikeTokens (ethers) to underlyingTokens.
+    /// Uses the strike ratio as the exchange rate. Strike ratio = base / quote.
+    /// Msg.value (quote units) * base / quote = base units (underlyingTokens) to withdraw.
+    /// @notice This function is for options with WETH as the strike asset.
+    /// Burns option tokens, accepts ethers, and pushes out underlyingTokens.
+    /// @param optionToken The address of the option contract.
+    /// @param receiver The underlyingTokens are sent to the receiver address.
+    ///
     function safeExerciseWithETH(
         IWETH weth,
         IOption optionToken,
@@ -114,15 +113,15 @@ library WethRouterLib {
         return (inputStrikes, inputOptions);
     }
 
-    /**
-     * @dev Swaps strikeTokens to underlyingTokens, WETH, which is converted to ethers before withdrawn.
-     * Uses the strike ratio as the exchange rate. Strike ratio = base / quote.
-     * @notice This function is for options with WETH as the underlying asset.
-     * Burns option tokens, pulls strikeTokens, and pushes out ethers.
-     * @param optionToken The address of the option contract.
-     * @param exerciseQuantity Quantity of optionTokens to exercise.
-     * @param receiver The underlyingTokens (ethers) are sent to the receiver address.
-     */
+    ///
+    /// @dev Swaps strikeTokens to underlyingTokens, WETH, which is converted to ethers before withdrawn.
+    /// Uses the strike ratio as the exchange rate. Strike ratio = base / quote.
+    /// @notice This function is for options with WETH as the underlying asset.
+    /// Burns option tokens, pulls strikeTokens, and pushes out ethers.
+    /// @param optionToken The address of the option contract.
+    /// @param exerciseQuantity Quantity of optionTokens to exercise.
+    /// @param receiver The underlyingTokens (ethers) are sent to the receiver address.
+    ///
     function safeExerciseForETH(
         IWETH weth,
         IOption optionToken,
@@ -181,14 +180,14 @@ library WethRouterLib {
         return (inputStrikes, inputOptions);
     }
 
-    /**
-     * @dev Burns redeem tokens to withdraw strike tokens (ethers) at a 1:1 ratio.
-     * @notice This function is for options that have WETH as the strike asset.
-     * Converts WETH to ethers, and withdraws ethers to the receiver address.
-     * @param optionToken The address of the option contract.
-     * @param redeemQuantity The quantity of redeemTokens to burn.
-     * @param receiver The strikeTokens (ethers) are sent to the receiver address.
-     */
+    ///
+    /// @dev Burns redeem tokens to withdraw strike tokens (ethers) at a 1:1 ratio.
+    /// @notice This function is for options that have WETH as the strike asset.
+    /// Converts WETH to ethers, and withdraws ethers to the receiver address.
+    /// @param optionToken The address of the option contract.
+    /// @param redeemQuantity The quantity of redeemTokens to burn.
+    /// @param receiver The strikeTokens (ethers) are sent to the receiver address.
+    ///
     function safeRedeemForETH(
         IWETH weth,
         IOption optionToken,
@@ -224,16 +223,16 @@ library WethRouterLib {
         return inputRedeems;
     }
 
-    /**
-     * @dev Burn optionTokens and redeemTokens to withdraw underlyingTokens (ethers).
-     * @notice This function is for options with WETH as the underlying asset.
-     * WETH underlyingTokens are converted to ethers before being sent to receiver.
-     * The redeemTokens to burn is equal to the optionTokens * strike ratio.
-     * inputOptions = inputRedeems / strike ratio = outUnderlyings
-     * @param optionToken The address of the option contract.
-     * @param closeQuantity Quantity of optionTokens to burn and an input to calculate how many redeems to burn.
-     * @param receiver The underlyingTokens (ethers) are sent to the receiver address.
-     */
+    ///
+    /// @dev Burn optionTokens and redeemTokens to withdraw underlyingTokens (ethers).
+    /// @notice This function is for options with WETH as the underlying asset.
+    /// WETH underlyingTokens are converted to ethers before being sent to receiver.
+    /// The redeemTokens to burn is equal to the optionTokens * strike ratio.
+    /// inputOptions = inputRedeems / strike ratio = outUnderlyings
+    /// @param optionToken The address of the option contract.
+    /// @param closeQuantity Quantity of optionTokens to burn and an input to calculate how many redeems to burn.
+    /// @param receiver The underlyingTokens (ethers) are sent to the receiver address.
+    ///
     function safeCloseForETH(
         IWETH weth,
         IOption optionToken,
@@ -295,14 +294,14 @@ library WethRouterLib {
         return (inputRedeems, inputOptions, outUnderlyings);
     }
 
-    /**
-     * @dev Burn redeemTokens to withdraw underlyingTokens (ethers) from expired options.
-     * This function is for options with WETH as the underlying asset.
-     * The underlyingTokens are WETH, which are converted to ethers prior to being sent to receiver.
-     * @param optionToken The address of the option contract.
-     * @param unwindQuantity Quantity of underlyingTokens (ethers) to withdraw.
-     * @param receiver The underlyingTokens (ethers) are sent to the receiver address.
-     */
+    ///
+    /// @dev Burn redeemTokens to withdraw underlyingTokens (ethers) from expired options.
+    /// This function is for options with WETH as the underlying asset.
+    /// The underlyingTokens are WETH, which are converted to ethers prior to being sent to receiver.
+    /// @param optionToken The address of the option contract.
+    /// @param unwindQuantity Quantity of underlyingTokens (ethers) to withdraw.
+    /// @param receiver The underlyingTokens (ethers) are sent to the receiver address.
+    ///
     function safeUnwindForETH(
         IWETH weth,
         IOption optionToken,
@@ -358,10 +357,10 @@ library WethRouterLib {
 
     // ==== WETH Operations ====
 
-    /**
-     * @dev Deposits msg.value of ethers into WETH contract. Then sends WETH to "to".
-     * @param to The address to send WETH ERC-20 tokens to.
-     */
+    ///
+    /// @dev Deposits msg.value of ethers into WETH contract. Then sends WETH to "to".
+    /// @param to The address to send WETH ERC-20 tokens to.
+    ///
     function _depositEthSendWeth(IWETH weth, address to) internal {
         // Deposit the ethers received from msg.value into the WETH contract.
         weth.deposit.value(msg.value)();
@@ -370,11 +369,11 @@ library WethRouterLib {
         weth.transfer(to, msg.value);
     }
 
-    /**
-     * @dev Unwraps WETH to withrdaw ethers, which are then sent to the "to" address.
-     * @param to The address to send withdrawn ethers to.
-     * @param quantity The quantity of WETH to unwrap.
-     */
+    ///
+    /// @dev Unwraps WETH to withrdaw ethers, which are then sent to the "to" address.
+    /// @param to The address to send withdrawn ethers to.
+    /// @param quantity The quantity of WETH to unwrap.
+    ///
     function _withdrawEthAndSend(
         IWETH weth,
         address to,

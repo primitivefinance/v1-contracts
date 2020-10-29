@@ -1,12 +1,12 @@
 pragma solidity >=0.6.0;
 
-/**
- * @title   Combines Uniswap V2 Protocol functions with Primitive V1.
- * @notice  Primitive V1 Uniswap Connector 2 - @primitivefi/contracts@v0.4.1
- * @author  Primitive
- */
+///
+/// @title   Combines Uniswap V2 Protocol functions with Primitive V1.
+/// @notice  Primitive V1 UniswapConnector02 - @primitivefi/contracts@v0.4.1
+/// @author  Primitive
+///
 
-/// Uniswap V2 & Primitive V1
+// Uniswap V2 & Primitive V1
 import {
     IUniswapV2Callee
 } from "@uniswap/v2-core/contracts/interfaces/IUniswapV2Callee.sol";
@@ -22,7 +22,7 @@ import {
     IERC20
 } from "./IUniswapConnector02.sol";
 import { UniswapConnectorLib02 } from "./UniswapConnectorLib02.sol";
-/// Open Zeppelin
+// Open Zeppelin
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import {
@@ -34,17 +34,17 @@ contract UniswapConnector02 is
     IUniswapV2Callee,
     ReentrancyGuard
 {
-    using SafeERC20 for IERC20; /// Reverts when `transfer` or `transferFrom` erc20 calls don't return proper data
-    using SafeMath for uint256; /// Reverts on math underflows/overflows
+    using SafeERC20 for IERC20; // Reverts when `transfer` or `transferFrom` erc20 calls don't return proper data
+    using SafeMath for uint256; // Reverts on math underflows/overflows
 
-    ITrader public override trader; /// The Primitive contract used to interact with the protocol
-    IUniswapV2Factory public override factory; /// The Uniswap V2 factory contract to get pair addresses from
-    IUniswapV2Router02 public override router; /// The Uniswap contract used to interact with the protocol
+    ITrader public override trader; // The Primitive contract used to interact with the protocol
+    IUniswapV2Factory public override factory; // The Uniswap V2 factory contract to get pair addresses from
+    IUniswapV2Router02 public override router; // The Uniswap contract used to interact with the protocol
 
-    event Initialized(address indexed from); /// Emmitted on deployment
-    event FlashOpened(address indexed from, uint256 quantity, uint256 premium); /// Emmitted on flash opening a long position
+    event Initialized(address indexed from); // Emmitted on deployment
+    event FlashOpened(address indexed from, uint256 quantity, uint256 premium); // Emmitted on flash opening a long position
 
-    /// ==== Constructor ====
+    // ==== Constructor ====
 
     constructor(
         address router_,
@@ -60,7 +60,7 @@ contract UniswapConnector02 is
         emit Initialized(msg.sender);
     }
 
-    /// ==== Combo Operations ====
+    // ==== Combo Operations ====
 
     ///
     /// @dev Mints long + short option tokens, then swaps the longOptionTokens (option) for tokens.
@@ -128,7 +128,7 @@ contract UniswapConnector02 is
         return success;
     }
 
-    /// ==== Flash Open Functions ====
+    // ==== Flash Open Functions ====
 
     ///
     /// @dev Receives underlyingTokens from a UniswapV2Pair.swap() call from a pair with
@@ -154,35 +154,35 @@ contract UniswapConnector02 is
     ) public returns (bool) {
         require(msg.sender == address(this), "ERR_NOT_SELF");
         require(flashLoanQuantity > 0, "ERR_ZERO");
-        /// IMPORTANT: Assume this contract has already received `flashLoanQuantity` of underlyingTokens.
-        /// We are flash swapping from an underlying <> shortOptionToken pair, paying back a portion using minted shortOptionTokens
-        /// and any remainder of underlyingToken.
+        // IMPORTANT: Assume this contract has already received `flashLoanQuantity` of underlyingTokens.
+        // We are flash swapping from an underlying <> shortOptionToken pair, paying back a portion using minted shortOptionTokens
+        // and any remainder of underlyingToken.
 
         address underlyingToken = IOption(optionAddress)
             .getUnderlyingTokenAddress();
         require(path[1] == underlyingToken, "ERR_END_PATH_NOT_UNDERLYING");
 
-        /// Mint longOptionTokens using the underlyingTokens received from UniswapV2 flash swap to this contract.
-        /// Send underlyingTokens from this contract to the optionToken contract, then call mintOptions.
+        // Mint longOptionTokens using the underlyingTokens received from UniswapV2 flash swap to this contract.
+        // Send underlyingTokens from this contract to the optionToken contract, then call mintOptions.
         IERC20(underlyingToken).safeTransfer(optionAddress, flashLoanQuantity);
         (uint256 outputOptions, uint256 outputRedeems) = IOption(optionAddress)
             .mintOptions(address(this));
 
-        /// Need to return tokens from the flash swap by returning shortOptionTokens and any remainder of underlyingTokens.
+        // Need to return tokens from the flash swap by returning shortOptionTokens and any remainder of underlyingTokens.
         {
             address underlyingToken_ = underlyingToken;
-            /// Gets the amount of underlyingTokens paid (amounts[1]) based on an input quantity of shortOptionTokens.
+            // Gets the amount of underlyingTokens paid (amounts[1]) based on an input quantity of shortOptionTokens.
             uint256[] memory amounts = router.getAmountsOut(
                 outputRedeems,
                 path
             );
 
-            /// The remainder is the flash loan amount - amount paid for from shortOptionTokens.
-            uint256 remainder; /// underlyingTokens borrowed - underlyingTokens paid back by returning shortOptionTokens.
+            // The remainder is the flash loan amount - amount paid for from shortOptionTokens.
+            uint256 remainder; // underlyingTokens borrowed - underlyingTokens paid back by returning shortOptionTokens.
             {
-                uint256 quantity = flashLoanQuantity; /// quantity of underlying tokens borrowed
-                uint256 paid = amounts[1]; /// quantity of underlyingTokens paid by shortOptionTokens
-                /// consider the swap fee
+                uint256 quantity = flashLoanQuantity; // quantity of underlying tokens borrowed
+                uint256 paid = amounts[1]; // quantity of underlyingTokens paid by shortOptionTokens
+                // consider the swap fee
                 remainder = quantity
                     .mul(1000)
                     .add(quantity.mul(3))
@@ -190,13 +190,13 @@ contract UniswapConnector02 is
                     .sub(paid);
             }
 
-            /// Pay back the pair in shortOptionTokens
+            // Pay back the pair in shortOptionTokens
             IERC20(IOption(optionAddress).redeemToken()).safeTransfer(
                 pairAddress,
                 outputRedeems
             );
 
-            /// Pull underlyingTokens from the original msg.sender to pay the remainder of the flash swap.
+            // Pull underlyingTokens from the original msg.sender to pay the remainder of the flash swap.
             IERC20(underlyingToken_).safeTransferFrom(
                 to,
                 pairAddress,
@@ -205,7 +205,7 @@ contract UniswapConnector02 is
             emit FlashOpened(msg.sender, outputOptions, remainder);
         }
 
-        /// Send longOptionTokens (option) to the original msg.sender.
+        // Send longOptionTokens (option) to the original msg.sender.
         IERC20(optionAddress).safeTransfer(to, outputOptions);
         return true;
     }
@@ -227,9 +227,9 @@ contract UniswapConnector02 is
         address underlyingToken = optionToken.getUnderlyingTokenAddress();
         address pairAddress = factory.getPair(redeemToken, underlyingToken);
 
-        /// Build the path to get the appropriate reserves to borrow from, and then pay back.
-        /// We are borrowing from reserve1 then paying it back mostly in reserve0.
-        /// Borrowing underlyingTokens, paying back in shortOptionTokens (normal swap). Pay any remainder in underlyingTokens.
+        // Build the path to get the appropriate reserves to borrow from, and then pay back.
+        // We are borrowing from reserve1 then paying it back mostly in reserve0.
+        // Borrowing underlyingTokens, paying back in shortOptionTokens (normal swap). Pay any remainder in underlyingTokens.
         address[] memory path = new address[](2);
         path[0] = redeemToken;
         path[1] = underlyingToken;
@@ -243,17 +243,17 @@ contract UniswapConnector02 is
             )
         );
         bytes memory params = abi.encodeWithSelector(
-            selector, /// function to call in this contract
-            pairAddress, /// pair contract we are borrowing from
-            optionToken, /// option token to mint with flash loaned tokens
-            amountOptions, /// quantity of underlyingTokens from flash loan to use to mint options
-            amountOutMin, /// total price paid (in underlyingTokens) for selling shortOptionTokens
-            path, /// redeemToken -> underlyingToken
-            msg.sender /// address to pull the remainder loan amount to pay, and send longOptionTokens to.
+            selector, // function to call in this contract
+            pairAddress, // pair contract we are borrowing from
+            optionToken, // option token to mint with flash loaned tokens
+            amountOptions, // quantity of underlyingTokens from flash loan to use to mint options
+            amountOutMin, // total price paid (in underlyingTokens) for selling shortOptionTokens
+            path, // redeemToken -> underlyingToken
+            msg.sender // address to pull the remainder loan amount to pay, and send longOptionTokens to.
         );
 
-        /// Receives 0 quoteTokens and `amountOptions` of underlyingTokens to `this` contract address.
-        /// Then executes `flashMintShortOptionsThenSwap`.
+        // Receives 0 quoteTokens and `amountOptions` of underlyingTokens to `this` contract address.
+        // Then executes `flashMintShortOptionsThenSwap`.
         uint256 amount0Out = pair.token0() == underlyingToken
             ? amountOptions
             : 0;
@@ -261,12 +261,12 @@ contract UniswapConnector02 is
             ? 0
             : amountOptions;
 
-        /// Borrow the amountOptions quantity of underlyingTokens and execute the callback function using params.
+        // Borrow the amountOptions quantity of underlyingTokens and execute the callback function using params.
         pair.swap(amount0Out, amount1Out, address(this), params);
         return true;
     }
 
-    /// ==== Liquidity Functions ====
+    // ==== Liquidity Functions ====
 
     ///
     /// @dev Adds liquidity to an option<>token pair by minting longOptionTokens with underlyingTokens.
@@ -426,7 +426,7 @@ contract UniswapConnector02 is
         return (amountOptions, amountOtherTokens);
     }
 
-    /// ==== Callback Implementation ====
+    // ==== Callback Implementation ====
 
     ///
     /// @dev The callback function triggered in a UniswapV2Pair.swap() call when the `data` parameter has data.
@@ -452,7 +452,7 @@ contract UniswapConnector02 is
         );
     }
 
-    /// ==== Management Functions ====
+    // ==== Management Functions ====
 
     /// @dev Creates a UniswapV2Pair by calling `createPair` on the UniswapV2Factory.
     function deployUniswapMarket(address optionAddress, address otherToken)
@@ -464,7 +464,7 @@ contract UniswapConnector02 is
         return uniswapPair;
     }
 
-    /// ==== View ====
+    // ==== View ====
 
     /// @dev Gets a UniswapV2Pair address for two tokens by calling the UniswapV2Factory.
     function getUniswapMarketForTokens(address token0, address token1)
