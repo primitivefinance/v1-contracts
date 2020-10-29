@@ -86,7 +86,7 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
     // ==== Combo Operations ====
 
     /**
-     * @dev Mints longOptionTokens using underlyingTokens provided by user, then swaps on Uniswap V2.
+     * @dev Mints long + short option tokens, then swaps the longOptionTokens (option) for tokens.
      * Combines Primitive "mintOptions" function with Uniswap V2 Router "swapExactTokensForTokens" function.
      * @notice If the first address in the path is not the optionToken address, the tx will fail.
      * underlyingToken -> optionToken -> quoteToken.
@@ -318,36 +318,37 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
     // ==== Liquidity Functions ====
 
     /**
-     * @dev Adds liquidity to an option<>quote token pair by minting longOptionTokens with underlyingTokens.
+     * @dev Adds liquidity to an option<>token pair by minting longOptionTokens with underlyingTokens.
      * @notice Pulls underlying tokens from msg.sender and pushes UNI-V2 liquidity tokens to the "to" address.
      * underlyingToken -> optionToken -> UNI-V2.
      * @param optionAddress The address of the optionToken to mint then provide liquidity for.
+     * @param otherTokenAddress The address of the otherToken in the pair with the optionToken.
      * @param quantityOptions The quantity of underlyingTokens to use to mint longOptionTokens.
-     * @param quantityQuoteTokens The quantity of quoteTokens to add with longOptionTokens to the Uniswap V2 Pair.
-     * @param minQuantityOptions The minimum quantity of longOptionTokens expected to provide liquidity with.
-     * @param minQuantityQuoteTokens The minimum quantity of quoteTokens expected to provide liquidity with.
+     * @param quantityOtherTokens The quantity of otherTokens to add with longOptionTokens to the Uniswap V2 Pair.
+     * @param minOptionTokens The minimum quantity of longOptionTokens expected to provide liquidity with.
+     * @param minOtherTokens The minimum quantity of otherTokens expected to provide liquidity with.
      * @param to The address that receives UNI-V2 shares.
      * @param deadline The timestamp to expire a pending transaction.
      */
     function addLongLiquidityWithUnderlying(
         address optionAddress,
+        address otherTokenAddress,
         uint256 quantityOptions,
-        uint256 quantityQuoteTokens,
-        uint256 minQuantityOptions,
-        uint256 minQuantityQuoteTokens,
+        uint256 quantityOtherTokens,
+        uint256 minOptionTokens,
+        uint256 minOtherTokens,
         address to,
         uint256 deadline
     ) public nonReentrant returns (bool) {
         // Store in memory for gas savings.
         IUniswapV2Router02 router_ = router;
-        address quoteToken_ = quoteToken;
 
-        // Pull quote tokens from msg.sender to add to Uniswap V2 Pair.
+        // Pull otherTokens from msg.sender to add to Uniswap V2 Pair.
         // Warning: calls into msg.sender using `safeTransferFrom`. Msg.sender is not trusted.
-        IERC20(quoteToken_).safeTransferFrom(
+        IERC20(otherTokenAddress).safeTransferFrom(
             msg.sender,
             address(this),
-            quantityQuoteTokens
+            quantityOtherTokens
         );
 
         // Pulls underlyingTokens from msg.sender to this contract.
@@ -358,19 +359,20 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
             quantityOptions,
             address(this)
         );
+        assert(outputOptions == quantityOptions);
 
         // Approves Uniswap V2 Pair to transfer option and quote tokens from this contract.
         IERC20(optionAddress).approve(address(router_), uint256(-1));
-        IERC20(quoteToken_).approve(address(router_), uint256(-1));
+        IERC20(otherTokenAddress).approve(address(router_), uint256(-1));
 
         // Adds liquidity to Uniswap V2 Pair and returns liquidity shares to the "to" address.
         router_.addLiquidity(
             optionAddress,
-            quoteToken,
-            outputOptions,
-            quantityQuoteTokens,
-            minQuantityOptions,
-            minQuantityQuoteTokens,
+            otherTokenAddress,
+            quantityOptions,
+            quantityOtherTokens,
+            minOptionTokens,
+            minOtherTokens,
             to,
             deadline
         );
@@ -388,32 +390,33 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
      * @notice Pulls underlying tokens from msg.sender and pushes UNI-V2 liquidity tokens to the "to" address.
      * underlyingToken -> redeemToken -> UNI-V2.
      * @param optionAddress The address of the optionToken to get the redeemToken to mint then provide liquidity for.
+     * @param otherTokenAddress The address of the otherToken in the pair with the optionToken.
      * @param quantityOptions The quantity of underlyingTokens to use to mint option + redeem tokens.
-     * @param quantityQuoteTokens The quantity of quoteTokens to add with shortOptionTokens to the Uniswap V2 Pair.
+     * @param quantityOtherTokens The quantity of otherTokens to add with shortOptionTokens to the Uniswap V2 Pair.
      * @param minShortTokens The minimum quantity of shortOptionTokens expected to provide liquidity with.
-     * @param minQuantityQuoteTokens The minimum quantity of quoteTokens expected to provide liquidity with.
+     * @param minOtherTokens The minimum quantity of otherTokens expected to provide liquidity with.
      * @param to The address that receives UNI-V2 shares.
      * @param deadline The timestamp to expire a pending transaction.
      */
     function addShortLiquidityWithUnderlying(
         address optionAddress,
+        address otherTokenAddress,
         uint256 quantityOptions,
-        uint256 quantityQuoteTokens,
+        uint256 quantityOtherTokens,
         uint256 minShortTokens,
-        uint256 minQuantityQuoteTokens,
+        uint256 minOtherTokens,
         address to,
         uint256 deadline
     ) public nonReentrant returns (bool) {
         // Store in memory for gas savings.
         IUniswapV2Router02 router_ = router;
-        address quoteToken_ = quoteToken;
 
         // Pull quote tokens from msg.sender to add to Uniswap V2 Pair.
         // Warning: calls into msg.sender using `safeTransferFrom`. Msg.sender is not trusted.
-        IERC20(quoteToken_).safeTransferFrom(
+        IERC20(otherTokenAddress).safeTransferFrom(
             msg.sender,
             address(this),
-            quantityQuoteTokens
+            quantityOtherTokens
         );
 
         // Pulls underlyingTokens from msg.sender to this contract.
@@ -424,21 +427,20 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
             quantityOptions,
             address(this)
         );
-
         address redeemToken = IOption(optionAddress).redeemToken();
 
         // Approves Uniswap V2 Pair to transfer option and quote tokens from this contract.
         IERC20(redeemToken).approve(address(router_), uint256(-1));
-        IERC20(quoteToken_).approve(address(router_), uint256(-1));
+        IERC20(otherTokenAddress).approve(address(router_), uint256(-1));
 
         // Adds liquidity to Uniswap V2 Pair and returns liquidity shares to the "to" address.
         router_.addLiquidity(
             redeemToken,
-            quoteToken,
+            otherTokenAddress,
             outputRedeems,
-            quantityQuoteTokens,
+            quantityOtherTokens,
             minShortTokens,
-            minQuantityQuoteTokens,
+            minOtherTokens,
             to,
             deadline
         );
@@ -450,19 +452,21 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
 
     /**
      * @dev Combines Uniswap V2 Router "removeLiquidity" function with Primitive "closeOptions" function.
-     * @notice Pulls UNI-V2 liquidity shares with option<>quote token, and redeemTokens from msg.sender.
+     * @notice Pulls UNI-V2 liquidity shares with option<>other token, and redeemTokens from msg.sender.
      * Then closes the longOptionTokens and withdraws underlyingTokens to the "to" address.
-     * Sends quoteTokens from the burned UNI-V2 liquidity shares to the "to" address.
+     * Sends otherTokens from the burned UNI-V2 liquidity shares to the "to" address.
      * UNI-V2 -> optionToken -> underlyingToken.
      * @param optionAddress The address of the option that will be closed from burned UNI-V2 liquidity shares.
+     * @param otherTokenAddress The address of the other token in the pair with the options.
      * @param liquidity The quantity of liquidity tokens to pull from msg.sender and burn.
      * @param amountAMin The minimum quantity of longOptionTokens to receive from removing liquidity.
-     * @param amountBMin The minimum quantity of quoteTokens to receive from removing liquidity.
-     * @param to The address that receives quoteTokens from burned UNI-V2, and underlyingTokens from closed options.
+     * @param amountBMin The minimum quantity of otherTokens to receive from removing liquidity.
+     * @param to The address that receives otherTokens from burned UNI-V2, and underlyingTokens from closed options.
      * @param deadline The timestamp to expire a pending transaction.
      */
     function removeLongLiquidityThenCloseOptions(
         address optionAddress,
+        address otherTokenAddress,
         uint256 liquidity,
         uint256 amountAMin,
         uint256 amountBMin,
@@ -470,23 +474,23 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
         uint256 deadline
     ) public nonReentrant returns (uint256, uint256) {
         // Store in memory for gas savings.
-        address quoteToken_ = quoteToken;
         IOption optionToken = IOption(optionAddress);
         IUniswapV2Router02 router_ = router;
 
         {
-            // Gets the Uniswap V2 Pair address for optionAddress and quoteToken.
+            // Gets the Uniswap V2 Pair address for optionAddress and otherToken.
             // Transfers the LP tokens for the pair to this contract.
             // Warning: external call to a non-trusted address `msg.sender`.
-            address pair = getUniswapMarketForToken(optionAddress);
+            address pair = factory.getPair(optionAddress, otherTokenAddress);
             IERC20(pair).safeTransferFrom(msg.sender, address(this), liquidity);
             IERC20(pair).approve(address(router_), uint256(-1));
         }
 
         // Remove liquidity from Uniswap V2 pool to receive pool tokens (option + quote tokens).
-        (uint256 amountOptions, uint256 amountQuote) = router_.removeLiquidity(
+        (uint256 amountOptions, uint256 amountOtherTokens) = router_
+            .removeLiquidity(
             optionAddress,
-            quoteToken_,
+            otherTokenAddress,
             liquidity,
             amountAMin,
             amountBMin,
@@ -519,9 +523,9 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
         // Receives underlyingTokens and sends them to the "to" address.
         trader_.safeClose(optionToken, amountOptions, to);
 
-        // Send the quoteTokens received from burning liquidity shares to the "to" address.
-        IERC20(quoteToken_).safeTransfer(to, amountQuote);
-        return (amountOptions, amountQuote);
+        // Send the otherTokens received from burning liquidity shares to the "to" address.
+        IERC20(otherTokenAddress).safeTransfer(to, amountOtherTokens);
+        return (amountOptions, amountOtherTokens);
     }
 
     /**
@@ -531,6 +535,7 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
      * Sends quoteTokens from the burned UNI-V2 liquidity shares to the "to" address.
      * UNI-V2 -> optionToken -> underlyingToken.
      * @param optionAddress The address of the option that will be closed from burned UNI-V2 liquidity shares.
+     * @param otherTokenAddress The address of the other token in the option pair.
      * @param liquidity The quantity of liquidity tokens to pull from msg.sender and burn.
      * @param amountAMin The minimum quantity of shortOptionTokens to receive from removing liquidity.
      * @param amountBMin The minimum quantity of quoteTokens to receive from removing liquidity.
@@ -539,6 +544,7 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
      */
     function removeShortLiquidityThenCloseOptions(
         address optionAddress,
+        address otherTokenAddress,
         uint256 liquidity,
         uint256 amountAMin,
         uint256 amountBMin,
@@ -546,24 +552,23 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
         uint256 deadline
     ) public nonReentrant returns (uint256, uint256) {
         // Store in memory for gas savings.
-        address quoteToken_ = quoteToken;
         address redeemToken = IOption(optionAddress).redeemToken();
         IUniswapV2Router02 router_ = router;
 
         {
-            // Gets the Uniswap V2 Pair address for shortOptionToken and quoteToken.
+            // Gets the Uniswap V2 Pair address for shortOptionToken and otherTokens.
             // Transfers the LP tokens for the pair to this contract.
             // Warning: external call to a non-trusted address `msg.sender`.
-            address pair = getUniswapMarketForToken(redeemToken);
+            address pair = factory.getPair(redeemToken, otherTokenAddress);
             IERC20(pair).safeTransferFrom(msg.sender, address(this), liquidity);
             IERC20(pair).approve(address(router_), uint256(-1));
         }
 
-        // Remove liquidity from Uniswap V2 pool to receive pool tokens (shortOptionTokens + quoteTokens).
-        (uint256 amountShortOptions, uint256 amountQuote) = router_
+        // Remove liquidity from Uniswap V2 pool to receive pool tokens (shortOptionTokens + otherTokens).
+        (uint256 amountShortOptions, uint256 amountOtherTokens) = router_
             .removeLiquidity(
             redeemToken,
-            quoteToken_,
+            otherTokenAddress,
             liquidity,
             amountAMin,
             amountBMin,
@@ -597,17 +602,20 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
             trader_.safeClose(optionToken, requiredLongOptionTokens, to);
         }
 
-        // Send the quoteTokens received from burning liquidity shares to the "to" address.
-        IERC20(quoteToken_).safeTransfer(to, amountQuote);
-        return (amountShortOptions, amountQuote);
+        // Send the otherTokens received from burning liquidity shares to the "to" address.
+        IERC20(otherTokenAddress).safeTransfer(to, amountOtherTokens);
+        return (amountShortOptions, amountOtherTokens);
     }
 
     /**
      * @dev Combines "removeLongLiquidityThenCloseOptions" function with "addLongLiquidityWithUnderlying" fuction.
-     * @notice Rolls UNI-V2 liquidity in an option<>quote pair to a different option<>quote pair.
+     * @notice Rolls UNI-V2 liquidity in an option<>otherToken pair to a different option<>otherToken pair.
      * UNI-V2 -> rollFromOption -> underlyingToken -> rollToOption -> UNI-V2.
      * @param rollFromOption The optionToken address to close a UNI-V2 position.
+     * @param tokenInFromPair The address of the otherToken in the pair liquidity is being removed from.
      * @param rollToOption The optionToken address to open a UNI-V2 position.
+     * @param tokenInToPair The address of the otherToken in the pair liquidity is being added to.
+     * @param quantityOtherToken The quantity of the otherToken to add to the new liquidity pair.
      * @param liquidity The quantity of UNI-V2 shares to roll from the first Uniswap pool.
      * @param amountAMin The minimum quantity of longOptionTokens to receive from removing liquidity.
      * @param amountBMin The minimum quantity of quoteTokens to receive from removing liquidity.
@@ -616,18 +624,19 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
      */
     function rollOptionLiquidity(
         address rollFromOption,
+        address tokenInFromPair,
         address rollToOption,
+        address tokenInToPair,
+        uint256 quantityOtherToken,
         uint256 liquidity,
         uint256 amountAMin,
         uint256 amountBMin,
         address to,
         uint256 deadline
     ) external returns (bool) {
-        (
-            uint256 outUnderlyings,
-            uint256 outQuote
-        ) = removeLongLiquidityThenCloseOptions(
+        (uint256 outUnderlyings, ) = removeLongLiquidityThenCloseOptions(
             rollFromOption,
+            tokenInFromPair,
             liquidity,
             amountAMin,
             amountBMin,
@@ -637,8 +646,9 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
 
         bool success = addLongLiquidityWithUnderlying(
             rollToOption,
+            tokenInToPair,
             outUnderlyings,
-            outQuote,
+            quantityOtherToken,
             amountAMin,
             amountBMin,
             to,
