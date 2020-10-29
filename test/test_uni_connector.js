@@ -7,24 +7,19 @@ const setup = require("./lib/setup");
 const constants = require("./lib/constants");
 const { parseEther, formatEther } = require("ethers/lib/utils");
 const { assertBNEqual } = utils;
-const {
-    ONE_ETHER,
-    TEN_ETHER,
-    HUNDRED_ETHER,
-    THOUSAND_ETHER,
-    MILLION_ETHER,
-} = constants.VALUES;
+const { ONE_ETHER, MILLION_ETHER } = constants.VALUES;
 const UniswapV2Pair = require("@uniswap/v2-core/build/UniswapV2Pair.json");
+const batchApproval = require("./lib/batchApproval");
 
 describe("UniswapConnector", () => {
     // ACCOUNTS
-    let Admin, User, Alice, Bob;
+    let Admin, User, Alice;
 
     let trader, weth, dai, optionToken, redeemToken, quoteToken;
     let underlyingToken, strikeToken;
     let base, quote, expiry;
     let Primitive, registry;
-    let uniswapFactory, uniswapRouter, uniswapConnector, wethConnector;
+    let uniswapFactory, uniswapRouter, uniswapConnector;
 
     before(async () => {
         let signers = await setup.newWallets();
@@ -70,60 +65,18 @@ describe("UniswapConnector", () => {
             quote,
             expiry
         );
-
         optionToken = Primitive.optionToken;
         redeemToken = Primitive.redeemToken;
 
         // Trader Instance
         trader = await setup.newTrader(Admin, weth.address);
 
-        // Weth connector instance
-        wethConnector = await setup.newWethConnector(Admin, weth.address);
-
-        // Initialize the uniswap connector with addresses
-        /* await uniswapConnector.initialize(
-            uniswapRouter.address,
-            uniswapFactory.address,
-            trader.address,
-            registry.address,
-            quoteToken.address
-        ); */
-
-        // Approve tokens to be sent to trader contract
-        await underlyingToken
-            .connect(Admin)
-            .approve(trader.address, MILLION_ETHER);
-        await strikeToken.connect(Admin).approve(trader.address, MILLION_ETHER);
-        await optionToken.connect(Admin).approve(trader.address, MILLION_ETHER);
-        await redeemToken.connect(Admin).approve(trader.address, MILLION_ETHER);
-
-        // Approve tokens to be sent to uniswapConnector
-        await underlyingToken
-            .connect(Admin)
-            .approve(uniswapConnector.address, MILLION_ETHER);
-        await strikeToken
-            .connect(Admin)
-            .approve(uniswapConnector.address, MILLION_ETHER);
-        await optionToken
-            .connect(Admin)
-            .approve(uniswapConnector.address, MILLION_ETHER);
-        await redeemToken
-            .connect(Admin)
-            .approve(uniswapConnector.address, MILLION_ETHER);
-
-        // Approve tokens to be sent to uniswapRouter
-        await underlyingToken
-            .connect(Admin)
-            .approve(uniswapRouter.address, MILLION_ETHER);
-        await strikeToken
-            .connect(Admin)
-            .approve(uniswapRouter.address, MILLION_ETHER);
-        await optionToken
-            .connect(Admin)
-            .approve(uniswapRouter.address, MILLION_ETHER);
-        await redeemToken
-            .connect(Admin)
-            .approve(uniswapRouter.address, MILLION_ETHER);
+        // Approve all tokens and contracts
+        await batchApproval(
+            [trader.address, uniswapConnector.address, uniswapRouter.address],
+            [underlyingToken, strikeToken, optionToken, redeemToken],
+            [Admin]
+        );
 
         // Create UNISWAP PAIRS
         // option <> dai: 1:10 ($10 option) 1,000 options and 10,000 dai (1,000 weth)
@@ -194,13 +147,7 @@ describe("UniswapConnector", () => {
             dai.address
         );
         let pair = new ethers.Contract(pairAddress, UniswapV2Pair.abi, Admin);
-        await pair
-            .connect(Admin)
-            .approve(uniswapConnector.address, MILLION_ETHER);
-
-        await pair
-            .connect(User)
-            .approve(uniswapConnector.address, MILLION_ETHER);
+        await batchApproval([uniswapConnector.address], [pair], [Admin, User]);
     });
 
     describe("initialize", () => {
@@ -701,46 +648,15 @@ describe("UniswapConnector", () => {
             );
 
             // Approve tokens to be sent to trader contract
-            await underlyingToken
-                .connect(Admin)
-                .approve(trader.address, MILLION_ETHER);
-            await strikeToken
-                .connect(Admin)
-                .approve(trader.address, MILLION_ETHER);
-            await optionToken
-                .connect(Admin)
-                .approve(trader.address, MILLION_ETHER);
-            await redeemToken
-                .connect(Admin)
-                .approve(trader.address, MILLION_ETHER);
-
-            // Approve tokens to be sent to uniswapConnector
-            await underlyingToken
-                .connect(Admin)
-                .approve(uniswapConnector.address, MILLION_ETHER);
-            await strikeToken
-                .connect(Admin)
-                .approve(uniswapConnector.address, MILLION_ETHER);
-            await optionToken
-                .connect(Admin)
-                .approve(uniswapConnector.address, MILLION_ETHER);
-            await redeemToken
-                .connect(Admin)
-                .approve(uniswapConnector.address, MILLION_ETHER);
-
-            // Approve tokens to be sent to uniswapRouter
-            await underlyingToken
-                .connect(Admin)
-                .approve(uniswapRouter.address, MILLION_ETHER);
-            await strikeToken
-                .connect(Admin)
-                .approve(uniswapRouter.address, MILLION_ETHER);
-            await optionToken
-                .connect(Admin)
-                .approve(uniswapRouter.address, MILLION_ETHER);
-            await redeemToken
-                .connect(Admin)
-                .approve(uniswapRouter.address, MILLION_ETHER);
+            await batchApproval(
+                [
+                    trader.address,
+                    uniswapConnector.address,
+                    uniswapRouter.address,
+                ],
+                [underlyingToken, strikeToken, optionToken, redeemToken],
+                [Admin]
+            );
 
             // Create UNISWAP PAIRS
             // option <> dai: 1:10 ($10 option) 1,000 options and 10,000 dai (1,000 weth)

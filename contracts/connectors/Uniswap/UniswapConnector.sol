@@ -142,6 +142,8 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
         return success;
     }
 
+    // ==== Flash Open Functions ====
+
     /**
      * @dev Receives underlyingTokens from a UniswapV2Pair.swap() call from a pair with
      * reserve0 = shortOptionTokens and reserve1 = underlyingTokens.
@@ -318,11 +320,11 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
     }
 
     /**
-     * @dev Adds redeemToken liquidity to a redeem<>quote token pair by minting shortOptionTokens with underlyingTokens.
+     * @dev Adds redeemToken liquidity to a redeem<>token pair by minting shortOptionTokens with underlyingTokens.
      * @notice Pulls underlying tokens from msg.sender and pushes UNI-V2 liquidity tokens to the "to" address.
      * underlyingToken -> redeemToken -> UNI-V2.
      * @param optionAddress The address of the optionToken to get the redeemToken to mint then provide liquidity for.
-     * @param otherTokenAddress The address of the otherToken in the pair with the optionToken.
+     * @param otherTokenAddress IMPORTANT: Should be the underlyingToken of the optionToken. Address of other reserve asset.
      * @param quantityOptions The quantity of underlyingTokens to use to mint option + redeem tokens.
      * @param quantityOtherTokens The quantity of otherTokens to add with shortOptionTokens to the Uniswap V2 Pair.
      * @param minShortTokens The minimum quantity of shortOptionTokens expected to provide liquidity with.
@@ -432,61 +434,6 @@ contract UniswapConnector is Ownable, ReentrancyGuard, IUniswapV2Callee {
         );
 
         return (amountOptions, amountOtherTokens);
-    }
-
-    /**
-     * @dev Combines "removeLongLiquidityThenCloseOptions" function with "addLongLiquidityWithUnderlying" fuction.
-     * @notice Rolls UNI-V2 liquidity in an option<>otherToken pair to a different option<>otherToken pair.
-     * UNI-V2 -> rollFromOption -> underlyingToken -> rollToOption -> UNI-V2.
-     * @param rollFromOption The optionToken address to close a UNI-V2 position.
-     * @param tokenInFromPair The address of the otherToken in the pair liquidity is being removed from.
-     * @param rollToOption The optionToken address to open a UNI-V2 position.
-     * @param tokenInToPair The address of the otherToken in the pair liquidity is being added to.
-     * @param quantityOtherToken The quantity of the otherToken to add to the new liquidity pair.
-     * @param liquidity The quantity of UNI-V2 shares to roll from the first Uniswap pool.
-     * @param amountAMin The minimum quantity of longOptionTokens to receive from removing liquidity.
-     * @param amountBMin The minimum quantity of quoteTokens to receive from removing liquidity.
-     * @param to The address that receives the UNI-V2 shares that have been rolled.
-     * @param deadline The timestamp to expire a pending transaction.
-     */
-    function rollOptionLiquidity(
-        address rollFromOption,
-        address tokenInFromPair,
-        address rollToOption,
-        address tokenInToPair,
-        uint256 quantityOtherToken,
-        uint256 liquidity,
-        uint256 amountAMin,
-        uint256 amountBMin,
-        address to,
-        uint256 deadline
-    ) external returns (bool) {
-        bool success = UniswapConnectorLib.rollOptionLiquidity(
-            factory,
-            router,
-            trader,
-            rollFromOption,
-            tokenInFromPair,
-            rollToOption,
-            tokenInToPair,
-            quantityOtherToken,
-            liquidity,
-            amountAMin,
-            amountBMin,
-            to,
-            deadline
-        );
-
-        require(success, "ERR_ADD_LIQUIDITY_FAIL");
-
-        emit RolledOptionLiquidity(
-            msg.sender,
-            rollFromOption,
-            rollToOption,
-            liquidity
-        );
-
-        return success;
     }
 
     // ==== Callback Implementation ====
