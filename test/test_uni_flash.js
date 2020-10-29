@@ -124,14 +124,12 @@ describe("UniswapConnector Flash", () => {
 
         // Create UNISWAP PAIRS
         // option <> dai: 1:10 ($10 option) 1,000 options and 10,000 dai (1,000 weth)
-        // weth <> dai: 1:100 ($100 weth) 1,000 weth and 100,000 dai
-        // redeem <> dai: 1:1 ($1 redeem) 100,000 redeems and 100,000 dai
+        // redeem <> weth: 100:1 ($1 redeem) 100,000 redeems and 1,000 weth
 
         const totalOptions = parseEther("1000");
         const daiForOptionsPair = parseEther("100000");
         const totalDai = parseEther("210000");
         const totalWethForPair = parseEther("1000");
-        const totalDaiForPair = parseEther("100000");
         const totalRedeemForPair = parseEther("100000");
 
         // MINT 2,010 WETH
@@ -161,24 +159,12 @@ describe("UniswapConnector Flash", () => {
             deadline
         );
 
-        // Add liquidity to weth <> dai pair
-        await uniswapRouter.addLiquidity(
-            weth.address,
-            dai.address,
-            totalWethForPair,
-            totalDaiForPair,
-            0,
-            0,
-            Alice,
-            deadline
-        );
-
-        // Add liquidity to redeem <> dai pair
+        // Add liquidity to redeem <> weth   pair
         await uniswapRouter.addLiquidity(
             redeemToken.address,
-            dai.address,
+            weth.address,
             totalRedeemForPair,
-            totalDaiForPair,
+            totalWethForPair,
             0,
             0,
             Alice,
