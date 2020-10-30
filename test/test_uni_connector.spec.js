@@ -394,7 +394,6 @@ describe("UniswapConnector", () => {
                 quoteToken.address
             );
             reserves = [reserveA, reserveB];
-
             let amountBOptimal = await uniswapRouter.quote(
                 amountADesired,
                 reserves[0],
@@ -920,6 +919,24 @@ describe("UniswapConnector", () => {
             console.log(`Dai balance: ${formatEther(quoteBalanceAfter)}`);
             console.log(`Redeem balance: ${formatEther(redeemBalanceAfter)}`);
             console.log(`Option balance: ${formatEther(optionBalanceAfter)}`);
+        });
+
+        it("should revert on swapping an amount lower than amountOutMin", async () => {
+            // Get the pair instance to approve it to the uniswapConnector
+            let amountOptions = ONE_ETHER;
+            let amountRedeems = amountOptions.mul(quote).div(base);
+            let amounts = await uniswapRouter.getAmountsOut(amountRedeems, [
+                redeemToken.address,
+                weth.address,
+            ]);
+            let amountOutMin = amounts[1].add(1); // 1 more than the best swap amount
+            await expect(
+                uniswapConnector.openFlashLong(
+                    optionToken.address,
+                    amountOptions,
+                    amountOutMin
+                )
+            ).to.be.revertedWith("ERR_UNISWAPV2_CALL_FAIL");
         });
     });
 });

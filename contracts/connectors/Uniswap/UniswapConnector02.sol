@@ -182,6 +182,7 @@ contract UniswapConnector02 is
             {
                 uint256 quantity = flashLoanQuantity; // quantity of underlying tokens borrowed
                 uint256 paid = amounts[1]; // quantity of underlyingTokens paid by shortOptionTokens
+                require(paid >= amountOutMin, "ERR_AMOUNT_TOO_LOW");
                 // consider the swap fee
                 remainder = quantity
                     .mul(1000)
