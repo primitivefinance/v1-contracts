@@ -79,6 +79,24 @@ describe("UniswapConnector", () => {
     let uniswapFactory, uniswapRouter, uniswapConnector;
     let premium;
 
+    assertInvariant = async () => {
+        assertBNEqual(
+            await optionToken.balanceOf(uniswapConnector.address),
+            "0"
+        );
+        assertBNEqual(
+            await redeemToken.balanceOf(uniswapConnector.address),
+            "0"
+        );
+        assertBNEqual(await weth.balanceOf(uniswapConnector.address), "0");
+        assertBNEqual(await dai.balanceOf(uniswapConnector.address), "0");
+        console.log("Asserted Invariant");
+    };
+
+    afterEach(async () => {
+        await assertInvariant();
+    });
+
     before(async () => {
         let signers = await setup.newWallets();
 
@@ -144,9 +162,10 @@ describe("UniswapConnector", () => {
         // option <> dai: 1:10 ($10 option) 1,000 options and 10,000 dai (1,000 weth)
         // weth <> dai: 1:100 ($100 weth) 1,000 weth and 100,000 dai
         // redeem <> dai: 1:1 ($1 redeem) 100,000 redeems and 100,000 dai
+        // redeem <> weth: 100:1 ($1 redeem) 100,000 redeems and 1,000 weth
 
-        const totalOptions = parseEther("1000");
-        const daiForOptionsPair = parseEther("100000");
+        const totalOptions = parseEther("2000");
+        const daiForOptionsPair = parseEther("10000");
         const totalDai = parseEther("210000");
         const totalWethForPair = parseEther("1000");
         const totalDaiForPair = parseEther("100000");
@@ -154,7 +173,7 @@ describe("UniswapConnector", () => {
         premium = 10;
 
         // MINT 2,010 WETH
-        await weth.deposit({ from: Alice, value: parseEther("2500") });
+        await weth.deposit({ from: Alice, value: parseEther("5000") });
 
         // MINT 1,000 OPTIONS
         await trader.safeMint(optionToken.address, totalOptions, Alice);
@@ -172,7 +191,7 @@ describe("UniswapConnector", () => {
         await uniswapRouter.addLiquidity(
             optionToken.address,
             dai.address,
-            totalOptions,
+            parseEther("1000"),
             daiForOptionsPair,
             0,
             0,
@@ -198,6 +217,18 @@ describe("UniswapConnector", () => {
             dai.address,
             totalRedeemForPair,
             totalDaiForPair,
+            0,
+            0,
+            Alice,
+            deadline
+        );
+
+        // Add liquidity to redeem <> weth pair
+        await uniswapRouter.addLiquidity(
+            redeemToken.address,
+            weth.address,
+            totalRedeemForPair,
+            totalRedeemForPair.mul(base).div(quote),
             0,
             0,
             Alice,
@@ -332,36 +363,15 @@ describe("UniswapConnector", () => {
                     quoteChange
                 )} != amountOutMin ${formatEther(amountOutMin)}`
             );
+            assertBNEqual(
+                await optionToken.balanceOf(uniswapConnector.address),
+                "0"
+            );
         });
     });
 
     describe("addLongLiquidityWithUnderlying", () => {
         it("use underlyings to mint options, then provide options and quote tokens as liquidity", async () => {
-            console.log(
-                `Weth balance: ${formatEther(await weth.balanceOf(Alice))}`
-            );
-
-            console.log(
-                `Quote balance: ${formatEther(
-                    await quoteToken.balanceOf(Alice)
-                )}`
-            );
-            console.log(
-                `Redeem balance: ${formatEther(
-                    await redeemToken.balanceOf(Alice)
-                )}`
-            );
-            console.log(
-                `Option balance: ${formatEther(
-                    await optionToken.balanceOf(Alice)
-                )}`
-            );
-            console.log(
-                `Option balance of connector: ${formatEther(
-                    await optionToken.balanceOf(uniswapConnector.address)
-                )}`
-            );
-
             let underlyingBalanceBefore = await underlyingToken.balanceOf(
                 Alice
             );
@@ -369,27 +379,13 @@ describe("UniswapConnector", () => {
 
             let optionAddress = optionToken.address;
             let quantityOptions = ONE_ETHER;
-            let quantityQuoteTokens = quantityOptions.mul(quote).div(base);
+            let quantityQuoteTokens = quantityOptions.mul(premium);
             let amountADesired = quantityOptions;
             let amountBDesired = quantityQuoteTokens;
             let amountAMin = amountADesired;
             let amountBMin = 0;
             let to = Alice;
             let deadline = Math.floor(Date.now() / 1000) + 60 * 20;
-
-            let sortedTokens = utils.sortTokens(
-                optionToken.address,
-                quoteToken.address
-            );
-            let pairAddress = await uniswapFactory.getPair(
-                sortedTokens[0],
-                sortedTokens[1]
-            );
-            let pair = new ethers.Contract(
-                pairAddress,
-                UniswapV2Pair.abi,
-                Admin
-            );
 
             let [reserveA, reserveB] = await getReserves(
                 Admin,
@@ -405,7 +401,6 @@ describe("UniswapConnector", () => {
                 reserves[1]
             );
 
-            console.log(formatEther(reserves[1]), formatEther(reserves[0]));
             let amountAOptimal = await uniswapRouter.quote(
                 amountBDesired,
                 reserves[1],
@@ -420,13 +415,7 @@ describe("UniswapConnector", () => {
                 amountAOptimal,
                 amountBOptimal
             );
-            //amountAMin = amounts[0].mul(995).div(1000).toString();
-            //amountBMin = amounts[1].mul(995).div(1000).toString();
-            console.log(
-                `${formatEther(amountAMin)}, ${formatEther(
-                    amountAOptimal
-                )}, ${formatEther(amountBOptimal)},${formatEther(amountBMin)}`
-            );
+
             await uniswapConnector.addLongLiquidityWithUnderlying(
                 optionAddress,
                 quoteToken.address,
@@ -450,7 +439,11 @@ describe("UniswapConnector", () => {
             let quoteChange = quoteBalanceAfter.sub(quoteBalanceBefore);
 
             assertBNEqual(underlyingChange.toString(), amountADesired.mul(-1));
-            assertBNEqual(quoteChange.toString(), amountBDesired.mul(-1));
+            assert.equal(
+                quoteChange >= amountBDesired.mul(-1),
+                true,
+                `${formatEther(quoteChange)} !<= ${formatEther(amountBDesired)}`
+            );
             assert.equal(
                 underlyingChange.mul(-1) <= amountAMin,
                 true,
@@ -465,97 +458,110 @@ describe("UniswapConnector", () => {
                     quoteChange
                 )} != amountBMin ${formatEther(amountBMin)}`
             );
-
-            console.log(
-                `Underlying: ${formatEther(
-                    underlyingChange
-                )}, Quote: ${formatEther(quoteChange)}, amounts0 ${formatEther(
-                    amountAMin
-                )}, amounts1 ${formatEther(amountBMin)}`
-            );
-
-            console.log(
-                `Weth balance: ${formatEther(await weth.balanceOf(Alice))}`
-            );
-
-            console.log(
-                `Quote balance: ${formatEther(
-                    await quoteToken.balanceOf(Alice)
-                )}`
-            );
-
-            console.log(
-                `Redeem balance: ${formatEther(
-                    await redeemToken.balanceOf(Alice)
-                )}`
-            );
-
-            console.log(
-                `Option balance: ${formatEther(
-                    await optionToken.balanceOf(Alice)
-                )}`
-            );
-
-            console.log(
-                `Option balance of connector: ${formatEther(
-                    await optionToken.balanceOf(uniswapConnector.address)
-                )}`
-            );
         });
     });
 
     describe("addShortLiquidityWithUnderlying", () => {
-        it("use underlyings to mint options, then provide options and quote tokens as liquidity", async () => {
-            /* Function ABI
-                function addShortLiquidityWithUnderlying(
-                    address optionAddress,
-                    uint256 quantityOptions,
-                    uint256 quantityQuoteTokens,
-                    uint256 minQuantityOptions,
-                    uint256 minQuantityQuoteTokens,
-                    address to,
-                    uint256 deadline
-                ) public nonReentrant returns (bool) {
-            */
+        it("use underlyings to mint options, then provide short options and underlying tokens as liquidity", async () => {
+            let underlyingBalanceBefore = await underlyingToken.balanceOf(
+                Alice
+            );
+            let quoteBalanceBefore = await quoteToken.balanceOf(Alice);
+            let redeemBalanceBefore = await redeemToken.balanceOf(Alice);
+            let optionBalanceBefore = await optionToken.balanceOf(Alice);
 
             let optionAddress = optionToken.address;
-            let quantityOptions = ONE_ETHER;
-            let quantityQuoteTokens = ONE_ETHER;
-            let minQuantityOptions = 0;
-            let minQuantityQuoteTokens = 0;
+            let amountADesired = ONE_ETHER; // amount of options to mint 1:100
+            let amountBDesired = amountADesired.mul(105).div(100); // amount of otherTokens to provide =  1.05:1 redem:weth
+            let amountAMin = amountADesired;
+            let amountBMin = 0;
             let to = Alice;
             let deadline = Math.floor(Date.now() / 1000) + 60 * 20;
+
+            let path = [redeemToken.address, underlyingToken.address];
+
+            let [reserveA, reserveB] = await getReserves(
+                Admin,
+                uniswapFactory,
+                path[0],
+                path[1]
+            );
+            reserves = [reserveA, reserveB];
+
+            let amountBOptimal = await uniswapRouter.quote(
+                amountADesired,
+                reserves[0],
+                reserves[1]
+            );
+
+            let amountAOptimal = await uniswapRouter.quote(
+                amountBDesired,
+                reserves[1],
+                reserves[0]
+            );
+
+            [, amountBMin] = await _addLiquidity(
+                uniswapRouter,
+                reserves,
+                amountADesired,
+                amountBDesired,
+                amountAOptimal,
+                amountBOptimal
+            );
+
             await uniswapConnector.addShortLiquidityWithUnderlying(
                 optionAddress,
-                weth.address,
-                quantityOptions,
-                quantityQuoteTokens,
-                minQuantityOptions,
-                minQuantityQuoteTokens,
+                underlyingToken.address,
+                amountADesired,
+                amountBDesired,
+                amountAMin,
+                amountBMin,
                 to,
                 deadline
+            );
+
+            let underlyingBalanceAfter = await underlyingToken.balanceOf(Alice);
+            let quoteBalanceAfter = await quoteToken.balanceOf(Alice);
+            let redeemBalanceAfter = await redeemToken.balanceOf(Alice);
+            let optionBalanceAfter = await optionToken.balanceOf(Alice);
+
+            // Used underlyings to mint options (Alice)
+            let underlyingChange = underlyingBalanceAfter.sub(
+                underlyingBalanceBefore
+            );
+            // Purchased quoteTokens with our options (Alice)
+            let quoteChange = quoteBalanceAfter.sub(quoteBalanceBefore);
+            // Sold options for quoteTokens to the pair, pair has more options (Pair)
+            let optionChange = optionBalanceAfter.sub(optionBalanceBefore);
+            let redeemChange = redeemBalanceAfter.sub(redeemBalanceBefore);
+
+            assertBNEqual(optionChange.toString(), amountADesired); // kept options
+            assertBNEqual(redeemChange.toString(), "0"); // kept options
+            assert.equal(
+                quoteChange.toString() == "0",
+                true,
+                `quoteDelta ${formatEther(
+                    quoteChange
+                )} != amountBMin ${formatEther(amountBMin)}`
             );
         });
     });
 
     describe("removeLongLiquidityThenCloseOptions", () => {
         it("burns UNI-V2 lp shares, then closes the withdrawn optionTokens", async () => {
-            /* Function ABI
-                function removeLongLiquidityThenCloseOptions(
-                    address optionAddress,
-                    uint256 liquidity,
-                    uint256 amountAMin,
-                    uint256 amountBMin,
-                    address to,
-                    uint256 deadline
-                ) public nonReentrant returns (uint256, uint256) {
-            */
+            let underlyingBalanceBefore = await underlyingToken.balanceOf(
+                Alice
+            );
+            let quoteBalanceBefore = await quoteToken.balanceOf(Alice);
+            let redeemBalanceBefore = await redeemToken.balanceOf(Alice);
+            let optionBalanceBefore = await optionToken.balanceOf(Alice);
 
             let optionAddress = optionToken.address;
             let liquidity = ONE_ETHER;
+            let path = [optionToken.address, quoteToken.address];
             let pairAddress = await uniswapConnector.getUniswapMarketForTokens(
-                optionToken.address,
-                quoteToken.address
+                path[0],
+                path[1]
             );
             let pair = new ethers.Contract(
                 pairAddress,
@@ -575,10 +581,20 @@ describe("UniswapConnector", () => {
                 true,
                 "err pair not deployed"
             );
-            let amountAMin = 0;
-            let amountBMin = 0;
+
+            let totalSupply = await pair.totalSupply();
+            let amount0 = liquidity
+                .mul(await optionToken.balanceOf(pairAddress))
+                .div(totalSupply);
+            let amount1 = liquidity
+                .mul(await quoteToken.balanceOf(pairAddress))
+                .div(totalSupply);
+
+            let amountAMin = amount0;
+            let amountBMin = amount1;
             let to = Alice;
             let deadline = Math.floor(Date.now() / 1000) + 60 * 20;
+
             await uniswapConnector.removeLongLiquidityThenCloseOptions(
                 optionAddress,
                 quoteToken.address,
@@ -588,27 +604,47 @@ describe("UniswapConnector", () => {
                 to,
                 deadline
             );
+
+            let underlyingBalanceAfter = await underlyingToken.balanceOf(Alice);
+            let quoteBalanceAfter = await quoteToken.balanceOf(Alice);
+            let redeemBalanceAfter = await redeemToken.balanceOf(Alice);
+            let optionBalanceAfter = await optionToken.balanceOf(Alice);
+
+            // Used underlyings to mint options (Alice)
+            let underlyingChange = underlyingBalanceAfter.sub(
+                underlyingBalanceBefore
+            );
+            // Purchased quoteTokens with our options (Alice)
+            let quoteChange = quoteBalanceAfter.sub(quoteBalanceBefore);
+            // Sold options for quoteTokens to the pair, pair has more options (Pair)
+            let optionChange = optionBalanceAfter.sub(optionBalanceBefore);
+            let redeemChange = redeemBalanceAfter.sub(redeemBalanceBefore);
+
+            assertBNEqual(underlyingChange.toString(), amountAMin);
+            assertBNEqual(optionChange.toString(), "0");
+            assertBNEqual(quoteChange.toString(), amountBMin);
+            assertBNEqual(
+                redeemChange.mul(-1).toString(),
+                amountAMin.mul(quote).div(base)
+            );
         });
     });
 
     describe("removeShortLiquidityThenCloseOptions", () => {
-        it("burns UNI-V2 lp shares, then closes the withdrawn optionTokens", async () => {
-            /* Function ABI
-                function removeShortLiquidityThenCloseOptions(
-                    address optionAddress,
-                    uint256 liquidity,
-                    uint256 amountAMin,
-                    uint256 amountBMin,
-                    address to,
-                    uint256 deadline
-                ) public nonReentrant returns (uint256, uint256) {
-            */
+        it("burns UNI-V2 lp shares, then closes the withdrawn shortTokens", async () => {
+            let underlyingBalanceBefore = await underlyingToken.balanceOf(
+                Alice
+            );
+            let quoteBalanceBefore = await quoteToken.balanceOf(Alice);
+            let redeemBalanceBefore = await redeemToken.balanceOf(Alice);
+            let optionBalanceBefore = await optionToken.balanceOf(Alice);
 
             let optionAddress = optionToken.address;
             let liquidity = ONE_ETHER;
+            let path = [redeemToken.address, weth.address];
             let pairAddress = await uniswapConnector.getUniswapMarketForTokens(
-                redeemToken.address,
-                weth.address
+                path[0],
+                path[1]
             );
             let pair = new ethers.Contract(
                 pairAddress,
@@ -628,10 +664,20 @@ describe("UniswapConnector", () => {
                 true,
                 "err pair not deployed"
             );
-            let amountAMin = 0;
-            let amountBMin = 0;
+
+            let totalSupply = await pair.totalSupply();
+            let amount0 = liquidity
+                .mul(await redeemToken.balanceOf(pairAddress))
+                .div(totalSupply);
+            let amount1 = liquidity
+                .mul(await weth.balanceOf(pairAddress))
+                .div(totalSupply);
+
+            let amountAMin = amount0;
+            let amountBMin = amount1;
             let to = Alice;
             let deadline = Math.floor(Date.now() / 1000) + 60 * 20;
+
             await uniswapConnector.removeShortLiquidityThenCloseOptions(
                 optionAddress,
                 weth.address,
@@ -641,6 +687,32 @@ describe("UniswapConnector", () => {
                 to,
                 deadline
             );
+
+            let underlyingBalanceAfter = await underlyingToken.balanceOf(Alice);
+            let quoteBalanceAfter = await quoteToken.balanceOf(Alice);
+            let redeemBalanceAfter = await redeemToken.balanceOf(Alice);
+            let optionBalanceAfter = await optionToken.balanceOf(Alice);
+
+            // Used underlyings to mint options (Alice)
+            let underlyingChange = underlyingBalanceAfter.sub(
+                underlyingBalanceBefore
+            );
+            // Purchased quoteTokens with our options (Alice)
+            let quoteChange = quoteBalanceAfter.sub(quoteBalanceBefore);
+            // Sold options for quoteTokens to the pair, pair has more options (Pair)
+            let optionChange = optionBalanceAfter.sub(optionBalanceBefore);
+            let redeemChange = redeemBalanceAfter.sub(redeemBalanceBefore);
+
+            assertBNEqual(
+                underlyingChange.toString(),
+                amountAMin.mul(base).div(quote).add(amountBMin)
+            );
+            assertBNEqual(
+                optionChange.toString(),
+                amountAMin.mul(base).div(quote).mul(-1)
+            );
+            assertBNEqual(quoteChange.toString(), "0");
+            assertBNEqual(redeemChange.toString(), "0");
         });
     });
 
@@ -781,29 +853,29 @@ describe("UniswapConnector", () => {
 
         it("gets a flash loan for underlyings, mints options, swaps redeem to underlyings to pay back", async () => {
             // Create a Uniswap V2 Pair and add liquidity.
-            console.log(
-                `Weth balance: ${formatEther(await weth.balanceOf(Alice))}`
+
+            let underlyingBalanceBefore = await underlyingToken.balanceOf(
+                Alice
             );
-            console.log(
-                `Redeem balance: ${formatEther(
-                    await redeemToken.balanceOf(Alice)
-                )}`
-            );
+            let quoteBalanceBefore = await quoteToken.balanceOf(Alice);
+            let redeemBalanceBefore = await redeemToken.balanceOf(Alice);
+            let optionBalanceBefore = await optionToken.balanceOf(Alice);
 
             console.log(
-                `Option balance: ${formatEther(
-                    await optionToken.balanceOf(Alice)
-                )}`
+                `Weth balance: ${formatEther(underlyingBalanceBefore)}`
             );
+            console.log(`Dai balance: ${formatEther(quoteBalanceBefore)}`);
+            console.log(`Redeem balance: ${formatEther(redeemBalanceBefore)}`);
+            console.log(`Option balance: ${formatEther(optionBalanceBefore)}`);
 
             // Get the pair instance to approve it to the uniswapConnector
             let amountOptions = ONE_ETHER;
             let amountRedeems = amountOptions.mul(quote).div(base);
-            let amountOutMin = "0";
             let amounts = await uniswapRouter.getAmountsOut(amountRedeems, [
                 redeemToken.address,
                 weth.address,
             ]);
+            let amountOutMin = amounts[1];
             let remainder = amountOptions
                 .mul(1000)
                 .add(amountOptions.mul(3))
@@ -819,21 +891,35 @@ describe("UniswapConnector", () => {
                 .to.emit(uniswapConnector, "FlashOpened")
                 .withArgs(uniswapConnector.address, amountOptions, remainder);
 
-            console.log(
-                `Weth balance: ${formatEther(await weth.balanceOf(Alice))}`
-            );
+            let underlyingBalanceAfter = await underlyingToken.balanceOf(Alice);
+            let quoteBalanceAfter = await quoteToken.balanceOf(Alice);
+            let redeemBalanceAfter = await redeemToken.balanceOf(Alice);
+            let optionBalanceAfter = await optionToken.balanceOf(Alice);
 
-            console.log(
-                `Redeem balance: ${formatEther(
-                    await redeemToken.balanceOf(Alice)
-                )}`
+            // Used underlyings to mint options (Alice)
+            let underlyingChange = underlyingBalanceAfter.sub(
+                underlyingBalanceBefore
             );
+            // Purchased quoteTokens with our options (Alice)
+            let quoteChange = quoteBalanceAfter.sub(quoteBalanceBefore);
+            // Sold options for quoteTokens to the pair, pair has more options (Pair)
+            let optionChange = optionBalanceAfter.sub(optionBalanceBefore);
+            let redeemChange = redeemBalanceAfter.sub(redeemBalanceBefore);
 
-            console.log(
-                `Option balance: ${formatEther(
-                    await optionToken.balanceOf(Alice)
-                )}`
+            assert.equal(
+                underlyingChange.toString() <=
+                    amountOptions.mul(-1).add(remainder),
+                true,
+                `${formatEther(underlyingChange)} ${formatEther(amountOptions)}`
             );
+            assertBNEqual(optionChange.toString(), amountOptions);
+            assertBNEqual(quoteChange.toString(), "0");
+            assertBNEqual(redeemChange.toString(), "0");
+
+            console.log(`Weth balance: ${formatEther(underlyingBalanceAfter)}`);
+            console.log(`Dai balance: ${formatEther(quoteBalanceAfter)}`);
+            console.log(`Redeem balance: ${formatEther(redeemBalanceAfter)}`);
+            console.log(`Option balance: ${formatEther(optionBalanceAfter)}`);
         });
     });
 });

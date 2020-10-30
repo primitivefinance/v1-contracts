@@ -198,6 +198,10 @@ library UniswapConnectorLib02 {
             msg.sender,
             outputRedeems
         );
+        IERC20(otherTokenAddress).safeTransfer(
+            msg.sender,
+            IERC20(otherTokenAddress).balanceOf(address(this))
+        );
         return true;
     }
 
@@ -264,7 +268,7 @@ library UniswapConnectorLib02 {
     }
 
     ///
-    /// @dev Adds redeemToken liquidity to a redeem<>quote token pair by minting shortOptionTokens with underlyingTokens.
+    /// @dev Adds redeemToken liquidity to a redeem<>otherToken pair by minting shortOptionTokens with underlyingTokens.
     /// @notice Pulls underlying tokens from msg.sender and pushes UNI-V2 liquidity tokens to the "to" address.
     /// underlyingToken -> redeemToken -> UNI-V2.
     /// @param optionAddress The address of the optionToken to get the redeemToken to mint then provide liquidity for.
@@ -287,7 +291,7 @@ library UniswapConnectorLib02 {
         address to,
         uint256 deadline
     ) internal returns (bool) {
-        // Pull quote tokens from msg.sender to add to Uniswap V2 Pair.
+        // Pull otherTokens from msg.sender to add to Uniswap V2 Pair.
         // Warning: calls into msg.sender using `safeTransferFrom`. Msg.sender is not trusted.
         IERC20(otherTokenAddress).safeTransferFrom(
             msg.sender,
@@ -323,6 +327,10 @@ library UniswapConnectorLib02 {
 
         // Send longOptionTokens from minting option operation to msg.sender.
         IERC20(optionAddress).safeTransfer(msg.sender, outputOptions);
+        IERC20(otherTokenAddress).safeTransfer(
+            msg.sender,
+            IERC20(otherTokenAddress).balanceOf(address(this))
+        );
         return true;
     }
 

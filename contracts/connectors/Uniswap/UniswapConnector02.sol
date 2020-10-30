@@ -82,7 +82,7 @@ contract UniswapConnector02 is
         address[] calldata path,
         address to,
         uint256 deadline
-    ) external override returns (bool) {
+    ) external override nonReentrant returns (bool) {
         bool success = UniswapConnectorLib02.mintLongOptionsThenSwapToTokens(
             router,
             optionToken,
@@ -115,7 +115,7 @@ contract UniswapConnector02 is
         address[] calldata path,
         address to,
         uint256 deadline
-    ) external override returns (bool) {
+    ) external override nonReentrant returns (bool) {
         bool success = UniswapConnectorLib02.mintShortOptionsThenSwapToTokens(
             router,
             optionToken,
