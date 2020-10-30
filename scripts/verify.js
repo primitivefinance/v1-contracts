@@ -110,12 +110,29 @@ const verifyTrader = async () => {
  * @dev Verifies the Trader and UniswapTrader contracts.
  */
 const verifyWethConnnector = async () => {
-    let WethConnector = await deployments.get("WethConnector");
+    let WethConnector01 = await deployments.get("WethConnector01");
     try {
         await verifyContract(
             UNISWAP_TRADER,
-            WethConnector.address,
-            WethConnector.args,
+            WethConnector01.address,
+            WethConnector01.args,
+            {}
+        );
+    } catch (err) {
+        console.error(err);
+    }
+};
+
+/**
+ * @dev Verifies the Trader and UniswapTrader contracts.
+ */
+const verifyWethConnnector01 = async () => {
+    let WethConnector01 = await deployments.get("WethConnector01");
+    try {
+        await verifyContract(
+            UNISWAP_TRADER,
+            WethConnector01.address,
+            WethConnector01.args,
             {}
         );
     } catch (err) {
@@ -133,6 +150,23 @@ const verifyUniswapConnector = async () => {
             UNISWAP_TRADER,
             UniswapTrader.address,
             UniswapTrader.args,
+            {}
+        );
+    } catch (err) {
+        console.error(err);
+    }
+};
+
+/**
+ * @dev Verifies the Trader and UniswapTrader contracts.
+ */
+const verifyUniswapConnector02 = async () => {
+    let UniswapConnector02 = await deployments.get("UniswapConnector02");
+    try {
+        await verifyContract(
+            UNISWAP_TRADER,
+            UniswapConnector02.address,
+            UniswapConnector02.args,
             {}
         );
     } catch (err) {
@@ -181,6 +215,9 @@ async function main() {
     await verifyTrader();
     await verifyTemplates();
     await verifyUniswapConnector();
+    await verifyUniswapConnector02();
+    await verifyWethConnnector();
+    await verifyWethConnnector01();
 }
 
 main()
