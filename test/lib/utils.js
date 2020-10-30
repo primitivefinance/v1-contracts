@@ -118,7 +118,13 @@ const getTokenBalances = async (Primitive, address) => {
     return tokenBalances;
 };
 
+const sortTokens = (tokenA, tokenB) => {
+    let tokens = tokenA < tokenB ? [tokenA, tokenB] : [tokenB, tokenA];
+    return tokens;
+};
+
 module.exports = {
+    sortTokens,
     assertBNEqual,
     verifyOptionInvariants,
     getTokenBalances,

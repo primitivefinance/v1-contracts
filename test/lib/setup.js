@@ -12,8 +12,8 @@ const Registry = require("../../artifacts/Registry");
 const Flash = require("../../artifacts/Flash");
 const Weth = require("../../artifacts/WETH9");
 const Trader = require("../../artifacts/Trader");
-const WethConnector = require("../../artifacts/WethConnector");
-const UniswapConnector02 = require("../../artifacts/UniswapConnector02.json");
+const WethConnector = require("../../artifacts/WethConnector01");
+const UniswapConnector = require("../../artifacts/UniswapConnector02.json");
 const OptionTemplateLib = require("../../artifacts/OptionTemplateLib");
 const RedeemTemplateLib = require("../../artifacts/RedeemTemplateLib");
 
@@ -360,7 +360,7 @@ const approveToken = async (token, signer, spender) => {
  * @dev Gets the UniswapConnector instance.
  */
 const newUniswapConnector = async (signer, params) => {
-    const connector = await deployContract(signer, UniswapConnector02, params, {
+    const connector = await deployContract(signer, UniswapConnector, params, {
         gasLimit: 6000000,
     });
     return connector;

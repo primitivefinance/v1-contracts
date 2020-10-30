@@ -143,7 +143,7 @@ library UniswapConnectorLib02 {
     /// @param otherTokenAddress The address of the otherToken in the pair with the optionToken.
     /// @param quantityOptions The quantity of underlyingTokens to use to mint longOptionTokens.
     /// @param quantityOtherTokens The quantity of otherTokens to add with longOptionTokens to the Uniswap V2 Pair.
-    /// @param minOptionTokens The minimum quantity of longOptionTokens expected to provide liquidity with.
+    /// @param minOptionTokens IMPORTANT: MUST BE EQUAL TO QUANTITYOPTIONS. The minimum quantity of longOptionTokens expected to provide liquidity with.
     /// @param minOtherTokens The minimum quantity of otherTokens expected to provide liquidity with.
     /// @param to The address that receives UNI-V2 shares.
     /// @param deadline The timestamp to expire a pending transaction.

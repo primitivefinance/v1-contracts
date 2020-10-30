@@ -20,9 +20,9 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     } else {
         wethAddress = Weth.networks[chain.toString()].address;
     }
-    const ethTrader = await deploy("WethConnector", {
+    const ethTrader = await deploy("WethConnector01", {
         from: deployer,
-        contractName: "WethConnector",
+        contractName: "WethConnector01",
         args: [wethAddress],
     });
     let deployed = [ethTrader];
