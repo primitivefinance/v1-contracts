@@ -15,9 +15,9 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         args: ["ETH", "Ether", parseEther("10000")],
     });
 
-    const usdcToken = await deploy("TestERC20", {
+    const usdcToken = await deploy("USDC", {
         from: deployer,
-        contractName: "TestERC20",
+        contractName: "USDC",
         args: ["USDC", "Stablecoin", parseEther("10000")],
     });
 
@@ -28,4 +28,6 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
                 `Contract deployed at ${deployed[i].address} using ${deployed[i].receipt.gasUsed} gas on chain ${chain}`
             );
     }
+
+    module.exports.tags = ["Test"];
 };

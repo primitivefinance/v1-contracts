@@ -4,8 +4,11 @@ pragma solidity 0.6.2;
 
 // Primitive
 import { IOption } from "../../option/interfaces/IOption.sol";
+import { IWETH } from "./IWETH.sol";
 
-interface IWethConnector {
+interface IWethConnector01 {
+    function weth() external view returns (IWETH);
+
     function safeMintWithETH(IOption optionToken, address receiver)
         external
         payable
@@ -51,4 +54,8 @@ interface IWethConnector {
             uint256,
             uint256
         );
+
+    function getName() external pure returns (string memory);
+
+    function getVersion() external pure returns (uint8);
 }
