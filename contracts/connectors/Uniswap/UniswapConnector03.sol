@@ -43,6 +43,7 @@ contract UniswapConnector03 is
 
     event Initialized(address indexed from); // Emmitted on deployment
     event FlashOpened(address indexed from, uint256 quantity, uint256 premium); // Emmitted on flash opening a long position
+    event FlashClosed(address indexed from, uint256 quantity, uint256 payout);
 
     // ==== Constructor ====
 
@@ -75,7 +76,7 @@ contract UniswapConnector03 is
     /// @param deadline The timestamp for a trade to fail at if not successful.
     /// @return bool Whether the transaction was successful or not.
     ///
-    function mintLongOptionsThenSwapToTokens(
+    /* function mintLongOptionsThenSwapToTokens(
         IOption optionToken,
         uint256 amountIn,
         uint256 amountOutMin,
@@ -93,7 +94,7 @@ contract UniswapConnector03 is
             deadline
         );
         return success;
-    }
+    } */
 
     ///
     /// @dev Mints long + short option tokens, then swaps the shortOptionTokens (redeem) for tokens.
@@ -286,7 +287,17 @@ contract UniswapConnector03 is
         address[] memory path,
         address to
     ) public returns (bool) {
-        require(msg.sender == address(this), "ERR_NOT_SELF");
+        bool success = UniswapConnectorLib02.flashCloseLongOptionsThenSwap(
+            router,
+            pairAddress,
+            optionAddress,
+            flashLoanQuantity,
+            minPayout,
+            path,
+            to
+        );
+        emit FlashClosed(msg.sender, 0, 0);
+        /* require(msg.sender == address(this), "ERR_NOT_SELF");
         require(flashLoanQuantity > 0, "ERR_ZERO");
         // IMPORTANT: Assume this contract has already received `flashLoanQuantity` of redeemTokens.
         // We are flash swapping from an underlying <> shortOptionToken pair,
@@ -319,6 +330,7 @@ contract UniswapConnector03 is
 
         // Need to return tokens from the flash swap by returning underlyingTokens.
         {
+            address pairAddress_ = pairAddress;
             address underlyingToken_ = underlyingToken;
             // Since the borrowed amount is redeemTokens, and we are paying back in underlyingTokens,
             // we need to see how much underlyingTokens must be returned for the borrowed amount.
@@ -378,31 +390,34 @@ contract UniswapConnector03 is
 
             // Pay back the pair in underlyingTokens
             IERC20(underlyingToken_).safeTransfer(
-                pairAddress,
+                pairAddress_,
                 outputUnderlyings
             );
 
             // If loanRemainder is non-zero and non-negative, send underlyingTokens to the pair as payment (premium).
             if (loanRemainder > 0) {
                 // Pull underlyingTokens from the original msg.sender to pay the remainder of the flash swap.
-                require(minPayout < loanRemainder, "ERR_PREMIUM_OVER_MAX");
+                // Revert if the minPayout is less than or equal to the underlyingPayment of 0.
+                // There is 0 underlyingPayment in the case that loanRemainder > 0.
+                // This code branch can be successful by setting `minPayout` to 0.
+                // This means the user is willing to pay to close the position.
+                require(minPayout <= underlyingPayout, "ERR_NEGATIVE_PAYOUT");
                 IERC20(underlyingToken_).safeTransferFrom(
                     to,
-                    pairAddress,
+                    pairAddress_,
                     loanRemainder
                 );
             }
 
             // If underlyingPayout is non-zero and non-negative, send it to the `to` address.
             if (underlyingPayout > 0) {
+                // Revert if minPayout is less than the actual payout.
+                require(underlyingPayout >= minPayout, "ERR_PREMIUM_UNDER_MIN");
                 IERC20(underlyingToken_).safeTransfer(to, underlyingPayout);
             }
 
-            emit FlashOpened(msg.sender, outputOptions, loanRemainder);
-        }
-
-        // Send longOptionTokens (option) to the original msg.sender.
-        IERC20(optionAddress).safeTransfer(to, outputOptions);
+            emit FlashClosed(msg.sender, outputUnderlyings, underlyingPayout);
+        } */
         return true;
     }
 
@@ -462,6 +477,57 @@ contract UniswapConnector03 is
         return true;
     }
 
+    function closeFlashLong(
+        IOption optionToken,
+        uint256 amountRedeems,
+        uint256 minPayout
+    ) external nonReentrant returns (bool) {
+        return
+            UniswapConnectorLib02.closeFlashLong(
+                factory,
+                optionToken,
+                amountRedeems,
+                minPayout
+            );
+        /* address redeemToken = optionToken.redeemToken();
+        address underlyingToken = optionToken.getUnderlyingTokenAddress();
+        address pairAddress = factory.getPair(redeemToken, underlyingToken);
+
+        // Build the path to get the appropriate reserves to borrow from, and then pay back.
+        // We are borrowing from reserve1 then paying it back mostly in reserve0.
+        // Borrowing underlyingTokens, paying back in shortOptionTokens (normal swap). Pay any remainder in underlyingTokens.
+        address[] memory path = new address[](2);
+        path[0] = underlyingToken;
+        path[1] = redeemToken;
+        IUniswapV2Pair pair = IUniswapV2Pair(pairAddress);
+
+        bytes4 selector = bytes4(
+            keccak256(
+                bytes(
+                    "flashCloseLongOptionsThenSwap(address,address,uint256,uint256,address[],address)"
+                )
+            )
+        );
+        bytes memory params = abi.encodeWithSelector(
+            selector, // function to call in this contract
+            pairAddress, // pair contract we are borrowing from
+            optionToken, // option token to mint with flash loaned tokens
+            amountRedeems, // quantity of underlyingTokens from flash loan to use to mint options
+            minPayout, // total price paid (in underlyingTokens) for selling shortOptionTokens
+            path, // redeemToken -> underlyingToken
+            msg.sender // address to pull the remainder loan amount to pay, and send longOptionTokens to.
+        );
+
+        // Receives 0 quoteTokens and `amountRedeems` of underlyingTokens to `this` contract address.
+        // Then executes `flashMintShortOptionsThenSwap`.
+        uint256 amount0Out = pair.token0() == redeemToken ? amountRedeems : 0;
+        uint256 amount1Out = pair.token0() == redeemToken ? 0 : amountRedeems;
+
+        // Borrow the amountRedeems quantity of underlyingTokens and execute the callback function using params.
+        pair.swap(amount0Out, amount1Out, address(this), params);
+        return true; */
+    }
+
     // ==== Liquidity Functions ====
 
     ///
@@ -477,7 +543,7 @@ contract UniswapConnector03 is
     /// @param to The address that receives UNI-V2 shares.
     /// @param deadline The timestamp to expire a pending transaction.
     ///
-    function addLongLiquidityWithUnderlying(
+    /* function addLongLiquidityWithUnderlying(
         address optionAddress,
         address otherTokenAddress,
         uint256 quantityOptions,
@@ -499,7 +565,7 @@ contract UniswapConnector03 is
             deadline
         );
         return success;
-    }
+    } */
 
     ///
     /// @dev Adds redeemToken liquidity to a redeem<>token pair by minting shortOptionTokens with underlyingTokens.

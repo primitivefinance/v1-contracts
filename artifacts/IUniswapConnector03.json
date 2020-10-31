@@ -25,60 +25,6 @@
         },
         {
           "internalType": "uint256",
-          "name": "minOptionTokens",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "minOtherTokens",
-          "type": "uint256"
-        },
-        {
-          "internalType": "address",
-          "name": "to",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "deadline",
-          "type": "uint256"
-        }
-      ],
-      "name": "addLongLiquidityWithUnderlying",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "optionAddress",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "otherTokenAddress",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "quantityOptions",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "quantityOtherTokens",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
           "name": "minShortTokens",
           "type": "uint256"
         },
@@ -194,50 +140,6 @@
         }
       ],
       "stateMutability": "pure",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "contract IOption",
-          "name": "optionToken",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "amountIn",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "amountOutMin",
-          "type": "uint256"
-        },
-        {
-          "internalType": "address[]",
-          "name": "path",
-          "type": "address[]"
-        },
-        {
-          "internalType": "address",
-          "name": "to",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "deadline",
-          "type": "uint256"
-        }
-      ],
-      "name": "mintLongOptionsThenSwapToTokens",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
