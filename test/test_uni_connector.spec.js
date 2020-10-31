@@ -69,8 +69,7 @@ const getReserves = async (signer, factory, tokenA, tokenB) => {
 };
 
 const getAmountsOut = async (signer, factory, amountIn, path) => {
-    let amounts;
-    amounts[0] = amountIn;
+    let amounts = [amountIn];
     for (let i = 0; i < path.length; i++) {
         [reserveIn, reserveOut] = await getReserves(
             signer,
@@ -84,12 +83,90 @@ const getAmountsOut = async (signer, factory, amountIn, path) => {
     return amounts;
 };
 
+const getAmountsOutPure = (amountIn, path, reserveIn, reserveOut) => {
+    let amounts = [amountIn];
+    for (let i = 0; i < path.length; i++) {
+        amounts[i + 1] = getAmountOut(amounts[i], reserveIn, reserveOut);
+    }
+
+    return amounts;
+};
+
 const getAmountOut = (amountIn, reserveIn, reserveOut) => {
     let amountInWithFee = amountIn.mul(997);
     let numerator = amountInWithFee.mul(reserveOut);
     let denominator = reserveIn.mul(1000).add(amountInWithFee);
     let amountOut = numerator.div(denominator);
     return amountOut;
+};
+
+const getAmountsIn = async (signer, factory, amountOut, path) => {
+    let amounts = ["", amountOut];
+    for (let i = path.length - 1; i > 0; i--) {
+        [reserveIn, reserveOut] = await getReserves(
+            signer,
+            factory,
+            path[i - 1],
+            path[i]
+        );
+        amounts[i - 1] = getAmountIn(amounts[i], reserveIn, reserveOut);
+    }
+
+    return amounts;
+};
+
+const getAmountsInPure = (amountOut, path, reserveIn, reserveOut) => {
+    let amounts = ["", amountOut];
+    for (let i = path.length - 1; i > 0; i--) {
+        amounts[i - 1] = getAmountIn(amounts[i], reserveIn, reserveOut);
+    }
+
+    return amounts;
+};
+
+const getAmountIn = (amountOut, reserveIn, reserveOut) => {
+    console.log(amountOut, reserveIn, reserveOut);
+    let numerator = reserveIn.mul(amountOut).mul(1000);
+    let denominator = reserveOut.sub(amountOut).mul(997);
+    let amountIn = numerator.div(denominator).add(1);
+    return amountIn;
+};
+
+const getPremium = (
+    quantityOptions,
+    base,
+    quote,
+    redeemToken,
+    underlyingToken,
+    reserveIn,
+    reserveOut
+) => {
+    // PREMIUM MATH
+    let redeemsMinted = quantityOptions.mul(quote).div(base);
+    let path = [redeemToken.address, underlyingToken.address];
+    let amountsIn = getAmountsInPure(
+        quantityOptions,
+        path,
+        reserveIn,
+        reserveOut
+    );
+    let redeemsRequired = amountsIn[0];
+    let redeemCostRemaining = redeemsRequired.sub(redeemsMinted);
+    // if redeemCost > 0
+    let amountsOut = getAmountsOutPure(
+        redeemCostRemaining,
+        path,
+        reserveIn,
+        reserveOut
+    );
+    let loanRemainder = amountsOut[1]
+        .mul(100101)
+        .add(amountsOut[1])
+        .div(100000);
+
+    let premium = loanRemainder;
+
+    return premium;
 };
 
 describe("UniswapConnector", () => {
@@ -899,24 +976,38 @@ describe("UniswapConnector", () => {
                 weth.address,
             ]);
             let amountOutMin = amounts[1];
-            let remainder = amountOptions
-                .mul(1000)
-                .add(amountOptions.mul(3))
-                .div(1000)
-                .sub(amounts[1]);
+
+            // PREMIUM MATH
+            let redeemsMinted = amountRedeems;
+            let flashLoanQuantity = amountOptions;
+            let path = [redeemToken.address, underlyingToken.address];
+            let amountsIn = await uniswapRouter.getAmountsIn(
+                flashLoanQuantity,
+                path
+            );
+            let redeemsRequired = amountsIn[0];
+            let redeemCostRemaining = redeemsRequired.sub(redeemsMinted);
+            // if redeemCost > 0
+            let amountsOut = await uniswapRouter.getAmountsOut(
+                redeemCostRemaining,
+                path
+            );
+            let loanRemainder = amountsOut[1]
+                .mul(100101)
+                .add(amountsOut[1])
+                .div(100000);
+
+            let premium = loanRemainder;
+
             await expect(
                 uniswapConnector.openFlashLong(
                     optionToken.address,
                     amountOptions,
-                    "4005065997748955"
+                    premium
                 )
             )
                 .to.emit(uniswapConnector, "FlashOpened")
-                .withArgs(
-                    uniswapConnector.address,
-                    amountOptions,
-                    "4005065997748955"
-                );
+                .withArgs(uniswapConnector.address, amountOptions, premium);
 
             let underlyingBalanceAfter = await underlyingToken.balanceOf(Alice);
             let quoteBalanceAfter = await quoteToken.balanceOf(Alice);
@@ -935,7 +1026,7 @@ describe("UniswapConnector", () => {
 
             assert.equal(
                 underlyingChange.toString() <=
-                    amountOptions.mul(-1).add(remainder),
+                    amountOptions.mul(-1).add(premium),
                 true,
                 `${formatEther(underlyingChange)} ${formatEther(amountOptions)}`
             );
@@ -957,14 +1048,55 @@ describe("UniswapConnector", () => {
                 redeemToken.address,
                 weth.address,
             ]);
-            let amountOutMin = amounts[1].add(1); // 1 more than the best swap amount
-            /* await expect(
+            let path = [redeemToken.address, underlyingToken.address];
+
+            // PREMIUM MATH
+            /* let redeemsMinted = amountRedeems;
+            let flashLoanQuantity = amountOptions;
+            let amountsIn = await uniswapRouter.getAmountsIn(
+                flashLoanQuantity,
+                path
+            );
+            let redeemsRequired = amountsIn[0];
+            let redeemCostRemaining = redeemsRequired.sub(redeemsMinted);
+            // if redeemCost > 0
+            let amountsOut = await uniswapRouter.getAmountsOut(
+                redeemCostRemaining,
+                path
+            );
+            let loanRemainder = amountsOut[1]
+                .mul(100101)
+                .add(amountsOut[1])
+                .div(100000);
+
+            let premium = loanRemainder;
+
+            let amountOutMin = premium; // 1 more than the best swap amount */
+
+            let reserves = await getReserves(
+                Admin,
+                uniswapFactory,
+                path[0],
+                path[1]
+            );
+            console.log({ reserves }, reserves[0], reserves[1]);
+            let amountOutMin = getPremium(
+                amountOptions,
+                base,
+                quote,
+                redeemToken,
+                underlyingToken,
+                reserves[0],
+                reserves[1]
+            );
+
+            await expect(
                 uniswapConnector.openFlashLong(
                     optionToken.address,
                     amountOptions,
-                    amountOutMin
+                    amountOutMin.add(1)
                 )
-            ).to.be.revertedWith("ERR_UNISWAPV2_CALL_FAIL"); */
+            ).to.be.revertedWith("ERR_UNISWAPV2_CALL_FAIL");
         });
     });
 
@@ -1083,7 +1215,7 @@ describe("UniswapConnector", () => {
             );
         });
 
-        it("reverts with underflow in the case of negative premiums", async () => {
+        it("returns a loanRemainder amount of 0 in the event FlashOpened", async () => {
             // Get the pair instance to approve it to the uniswapConnector
             let amountOptions = ONE_ETHER;
             let amountRedeems = amountOptions.mul(quote).div(base);
@@ -1092,34 +1224,8 @@ describe("UniswapConnector", () => {
                 weth.address,
             ]);
             let amountOutMin = amounts[1];
-            let remainder = amountOptions
-                .mul(1000)
-                .add(amountOptions.mul(3))
-                .div(1000)
-                .sub(amounts[1]);
+            let remainder = getPremium(amountOptions);
             assert.equal(remainder < 0, true, `${remainder.toString()}`);
-            let amountsIn = await uniswapRouter.getAmountsIn(amountOptions, [
-                redeemToken.address,
-                weth.address,
-            ]);
-            amounts.map((amount) => console.log(formatEther(amount)));
-            /*             
-            console.log(
-                formatEther(
-                    await uniswapRouter.getAmountIn(
-                        amountOptions,
-                        reserve1,
-                        reserve0
-                    )
-                )
-            ); */
-            /* await expect(
-                uniswapConnector.openFlashLong(
-                    optionToken.address,
-                    amountOptions,
-                    amountOutMin
-                )
-            ).to.be.revertedWith("ERR_UNISWAPV2_CALL_FAIL"); */
             await expect(
                 uniswapConnector.openFlashLong(
                     optionToken.address,
