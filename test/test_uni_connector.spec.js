@@ -963,4 +963,126 @@ describe("UniswapConnector", () => {
             ).to.be.revertedWith("ERR_UNISWAPV2_CALL_FAIL");
         });
     });
+
+    describe("negative Premium handling", () => {
+        before(async () => {
+            let signers = await setup.newWallets();
+
+            // Signers
+            Admin = signers[0];
+            User = signers[1];
+
+            // Addresses of Signers
+            Alice = Admin._address;
+            Bob = User._address;
+
+            // Underlying and quote token instances
+            weth = await setup.newWeth(Admin);
+            dai = await setup.newERC20(Admin, "TEST DAI", "DAI", MILLION_ETHER);
+            quoteToken = dai;
+
+            // Administrative contract instances
+            registry = await setup.newRegistry(Admin);
+
+            // Uniswap V2
+            const uniswap = await setup.newUniswap(Admin, Alice, weth);
+            uniswapFactory = uniswap.uniswapFactory;
+            uniswapRouter = uniswap.uniswapRouter;
+
+            // Option parameters
+            underlyingToken = weth;
+            strikeToken = dai;
+            base = parseEther("1");
+            quote = parseEther("100");
+            expiry = "1690868800"; // May 30, 2020, 8PM UTC
+
+            // Option and redeem instances
+            Primitive = await setup.newPrimitive(
+                Admin,
+                registry,
+                underlyingToken,
+                strikeToken,
+                base,
+                quote,
+                expiry
+            );
+
+            optionToken = Primitive.optionToken;
+            redeemToken = Primitive.redeemToken;
+
+            // Trader Instance
+            trader = await setup.newTrader(Admin, weth.address);
+
+            // Uniswap Connector contract
+            uniswapConnector = await setup.newUniswapConnector(Admin, [
+                uniswapRouter.address,
+                uniswapFactory.address,
+                trader.address,
+            ]);
+
+            // Approve all tokens and contracts
+            await batchApproval(
+                [
+                    trader.address,
+                    uniswapConnector.address,
+                    uniswapRouter.address,
+                ],
+                [underlyingToken, strikeToken, optionToken, redeemToken],
+                [Admin]
+            );
+
+            // Create UNISWAP PAIRS
+            // option <> dai: 1:10 ($10 option) 1,000 options and 10,000 dai (1,000 weth)
+            // redeem <> weth: 100:1 ($1 redeem) 100,000 redeems and 1,000 weth
+
+            const totalOptions = parseEther("10");
+            const totalWethForPair = parseEther("10");
+            const totalRedeemForPair = parseEther("9.5");
+
+            // MINT 2,010 WETH
+            await weth.deposit({ from: Alice, value: parseEther("20") });
+
+            // MINT 1,000 OPTIONS
+            await trader.safeMint(optionToken.address, totalOptions, Alice);
+
+            // regular deadline
+            const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
+
+            // Add liquidity to redeem <> weth   pair
+            await uniswapRouter.addLiquidity(
+                redeemToken.address,
+                weth.address,
+                totalRedeemForPair,
+                totalWethForPair,
+                0,
+                0,
+                Alice,
+                deadline
+            );
+        });
+
+        it("reverts with underflow in the case of negative premiums", async () => {
+            // Get the pair instance to approve it to the uniswapConnector
+            let amountOptions = ONE_ETHER;
+            let amountRedeems = amountOptions.mul(quote).div(base);
+            let amounts = await uniswapRouter.getAmountsOut(amountRedeems, [
+                redeemToken.address,
+                weth.address,
+            ]);
+            let amountOutMin = amounts[1];
+            let remainder = amountOptions
+                .mul(1000)
+                .add(amountOptions.mul(3))
+                .div(1000)
+                .sub(amounts[1]);
+            assert.equal(remainder < 0, true, `${remainder.toString()}`);
+            await expect(
+                uniswapConnector.openFlashLong(
+                    optionToken.address,
+                    amountOptions,
+                    amountOutMin
+                )
+            ).to.be.revertedWith("ERR_UNISWAPV2_CALL_FAIL");
+        });
+    });
 });
