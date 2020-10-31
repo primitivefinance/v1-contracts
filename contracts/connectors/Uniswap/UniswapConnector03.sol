@@ -173,49 +173,62 @@ contract UniswapConnector03 is
         // Need to return tokens from the flash swap by returning shortOptionTokens and any remainder of underlyingTokens.
         {
             address underlyingToken_ = underlyingToken;
-            // Gets the amount of underlyingTokens paid (amounts[1]) based on an input quantity of shortOptionTokens.
-            /* uint256[] memory amounts = router.getAmountsOut(
-                outputRedeems,
-                path
-            ); */
-
-            // amountsIn 0 is how many short tokens we need to pay
+            // Since the borrowed amount is underlyingTokens, and we are paying back in redeemTokens,
+            // we need to see how much redeemTokens must be returned for the borrowed amount.
+            // We can find that value by doing the normal swap math, getAmountsIn will give us the amount
+            // of redeemTokens are needed for the output amount of the flash loan.
+            // IMPORTANT: amountsIn 0 is how many short tokens we need to pay back.
+            // This value is most likely greater than the amount of redeemTokens minted.
             uint256[] memory amountsIn = router.getAmountsIn(
                 flashLoanQuantity,
                 path
             );
 
-            console.log(amountsIn[0], amountsIn[1]);
-
-            // The loanRemainder is the underlyingTokens borrowed in the flash swap open.
+            // The loanRemainder will be the amount of underlyingTokens that are needed from the original
+            // transaction caller in order to pay the flash swap.
+            // IMPORTANT: THIS IS EFFECTIVELY THE PREMIUM PAID IN UNDERLYINGTOKENS TO PURCHASE THE OPTIONTOKEN.
             uint256 loanRemainder;
 
-            // Economically, this value should always be 0.
-            // In the case that the `amount paid` is more than the borrowed amount,
+            // Economically, negativePremiumPaymentInRedeems value should always be 0.
+            // In the case that we minted more redeemTokens than are needed to pay back the flash swap,
             // (short -> underlying is a positive trade), there is an effective negative premium.
-            // In that case, this function will send out `negativePremiumAmount` to the original caller.
+            // In that case, this function will send out `negativePremiumAmount` of redeemTokens to the original caller.
+            // This means the user gets to keep the extra redeemTokens for free.
             // Negative premium amount is the opposite difference of the loan remainder: (paid - flash loan amount)
-            //uint256 negativePremiumAmount;
             uint256 negativePremiumPaymentInRedeems;
             {
-                uint256 redeemsRequired = amountsIn[0];
+                uint256 redeemsRequired = amountsIn[0]; // the amountIn of redeemTokens based on the amountOut of flashloanQuantity
+                // If outputRedeems is greater than redeems required, we have a negative premium.
                 uint256 redeemCostRemaining = redeemsRequired > outputRedeems
                     ? redeemsRequired.sub(outputRedeems)
                     : 0;
+                // If there is a negative premium, calculate the quantity extra redeemTokens.
                 negativePremiumPaymentInRedeems = outputRedeems >
                     redeemsRequired
                     ? outputRedeems.sub(redeemsRequired)
                     : 0;
 
                 {
+                    // In most cases, there will be an outstanding cost (assuming we minted less redeemTokens than the
+                    // required amountIn of redeemTokens for the swap).
                     if (redeemCostRemaining > 0) {
+                        // The user won't want to pay back the remaining cost in redeemTokens,
+                        // because they borrowed underlyingTokens to mint them in the first place.
+                        // So instead, we get the quantity of underlyingTokens that could be paid instead.
+                        // We can calculate this using normal swap math.
+                        // getAmountsOut will return the quantity of underlyingTokens that are output,
+                        // based on some input of redeemTokens.
+                        // The input redeemTokens is the remaining redeemToken cost, and the output
+                        // underlyingTokens is the proportional amount of underlyingTokens.
+                        // amountsOut[1] is then the outstanding flash loan value denominated in underlyingTokens.
                         address[] memory path_ = path;
                         uint256[] memory amountsOut = router.getAmountsOut(
                             redeemCostRemaining,
                             path_
                         );
 
-                        // should investigate further, needs to consider a 0.101% fee? Without it, amountsOut[1] is not enough.
+                        // should investigate further, needs to consider a 0.101% fee?
+                        // Without a 0.101% fee, amountsOut[1] is not enough.
                         loanRemainder = amountsOut[1]
                             .mul(100101)
                             .add(amountsOut[1])
@@ -227,6 +240,10 @@ contract UniswapConnector03 is
                             amountsOut[1]
                         );
                     }
+
+                    // In the case that more redeemTokens were minted than need to be sent back as payment,
+                    // calculate the new outputRedeem value to send to the pair
+                    // (don't send all the minted redeemTokens).
                     if (negativePremiumPaymentInRedeems > 0) {
                         outputRedeems = outputRedeems.sub(
                             negativePremiumPaymentInRedeems
@@ -235,18 +252,18 @@ contract UniswapConnector03 is
                 }
             }
 
-            // Pay back the pair in shortOptionTokens
+            // Pay back the pair in redeemTokens (shortOptionTokens)
             console.log("Sending redeem:", outputRedeems);
             IERC20(IOption(optionAddress).redeemToken()).safeTransfer(
                 pairAddress,
                 outputRedeems
             );
 
-            // If loanRemainder is non-zero and non-negative, send it to the pair as re-payment.
+            // If loanRemainder is non-zero and non-negative, send underlyingTokens to the pair as payment (premium).
             if (loanRemainder > 0) {
                 console.log("Sending underlying:", loanRemainder);
                 // Pull underlyingTokens from the original msg.sender to pay the remainder of the flash swap.
-                //require(loanRemainder >= amountOutMin, "ERR_PREMIUM_OVER_MAX");
+                require(loanRemainder >= amountOutMin, "ERR_PREMIUM_OVER_MAX");
                 IERC20(underlyingToken_).safeTransferFrom(
                     to,
                     pairAddress,
@@ -260,7 +277,6 @@ contract UniswapConnector03 is
                     "negative premium",
                     negativePremiumPaymentInRedeems
                 );
-                console.log(IERC20(underlyingToken_).balanceOf(address(this)));
                 IERC20(IOption(optionAddress).redeemToken()).safeTransfer(
                     to,
                     negativePremiumPaymentInRedeems

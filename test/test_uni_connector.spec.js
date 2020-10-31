@@ -908,10 +908,15 @@ describe("UniswapConnector", () => {
                 uniswapConnector.openFlashLong(
                     optionToken.address,
                     amountOptions,
-                    amountOutMin
+                    "4005065997748955"
                 )
-            ).to.emit(uniswapConnector, "FlashOpened");
-            /* .withArgs(uniswapConnector.address, amountOptions, remainder); */
+            )
+                .to.emit(uniswapConnector, "FlashOpened")
+                .withArgs(
+                    uniswapConnector.address,
+                    amountOptions,
+                    "4005065997748955"
+                );
 
             let underlyingBalanceAfter = await underlyingToken.balanceOf(Alice);
             let quoteBalanceAfter = await quoteToken.balanceOf(Alice);
