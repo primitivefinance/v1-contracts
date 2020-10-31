@@ -68,6 +68,30 @@ const getReserves = async (signer, factory, tokenA, tokenB) => {
     return reserves;
 };
 
+const getAmountsOut = async (signer, factory, amountIn, path) => {
+    let amounts;
+    amounts[0] = amountIn;
+    for (let i = 0; i < path.length; i++) {
+        [reserveIn, reserveOut] = await getReserves(
+            signer,
+            factory,
+            path[0],
+            path[1]
+        );
+        amounts[i + 1] = getAmountOut(amounts[i], reserveIn, reserveOut);
+    }
+
+    return amounts;
+};
+
+const getAmountOut = (amountIn, reserveIn, reserveOut) => {
+    let amountInWithFee = amountIn.mul(997);
+    let numerator = amountInWithFee.mul(reserveOut);
+    let denominator = reserveIn.mul(1000).add(amountInWithFee);
+    let amountOut = numerator.div(denominator);
+    return amountOut;
+};
+
 describe("UniswapConnector", () => {
     // ACCOUNTS
     let Admin, User, Alice;
