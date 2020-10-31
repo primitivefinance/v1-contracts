@@ -144,7 +144,7 @@ const verifyWethConnnector01 = async () => {
  * @dev Verifies the Trader and UniswapTrader contracts.
  */
 const verifyUniswapConnector = async () => {
-    let UniswapTrader = await deployments.get("UniswapTrader");
+    let UniswapTrader = await deployments.get("UniswapConnector03");
     try {
         await verifyContract(
             UNISWAP_TRADER,
@@ -215,7 +215,6 @@ async function main() {
     await verifyTrader();
     await verifyTemplates();
     await verifyUniswapConnector();
-    await verifyUniswapConnector02();
     await verifyWethConnnector();
     await verifyWethConnnector01();
 }

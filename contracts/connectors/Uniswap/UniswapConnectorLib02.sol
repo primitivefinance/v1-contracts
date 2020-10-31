@@ -2,7 +2,7 @@ pragma solidity >=0.6.0;
 
 ///
 /// @title   Library for business logic for connecting Uniswap V2 Protocol functions with Primitive V1.
-/// @notice  Primitive V1 UniswapConnectorLib02 - @primitivefi/contracts@v0.4.1
+/// @notice  Primitive V1 UniswapConnectorLib02 - @primitivefi/contracts@v0.4.2
 /// @author  Primitive
 ///
 

@@ -2,7 +2,7 @@ pragma solidity >=0.6.0;
 
 ///
 /// @title   Combines Uniswap V2 Protocol functions with Primitive V1.
-/// @notice  Primitive V1 UniswapConnector02 - @primitivefi/contracts@v0.4.1
+/// @notice  Primitive V1 UniswapConnector03 - @primitivefi/contracts@v0.4.2
 /// @author  Primitive
 ///
 
@@ -14,13 +14,13 @@ import {
     IUniswapV2Pair
 } from "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import {
-    IUniswapConnector02,
+    IUniswapConnector03,
     IUniswapV2Router02,
     IUniswapV2Factory,
     IOption,
     ITrader,
     IERC20
-} from "./IUniswapConnector02.sol";
+} from "./IUniswapConnector03.sol";
 import { UniswapConnectorLib02 } from "./UniswapConnectorLib02.sol";
 // Open Zeppelin
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
@@ -29,8 +29,10 @@ import {
     ReentrancyGuard
 } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract UniswapConnector02 is
-    IUniswapConnector02,
+import "@nomiclabs/buidler/console.sol";
+
+contract UniswapConnector03 is
+    IUniswapConnector03,
     IUniswapV2Callee,
     ReentrancyGuard
 {
@@ -172,42 +174,105 @@ contract UniswapConnector02 is
         {
             address underlyingToken_ = underlyingToken;
             // Gets the amount of underlyingTokens paid (amounts[1]) based on an input quantity of shortOptionTokens.
-            uint256[] memory amounts = router.getAmountsOut(
+            /* uint256[] memory amounts = router.getAmountsOut(
                 outputRedeems,
+                path
+            ); */
+
+            // amountsIn 0 is how many short tokens we need to pay
+            uint256[] memory amountsIn = router.getAmountsIn(
+                flashLoanQuantity,
                 path
             );
 
-            // The remainder is the flash loan amount - amount paid for from shortOptionTokens.
-            uint256 remainder; // underlyingTokens borrowed - underlyingTokens paid back by returning shortOptionTokens.
+            console.log(amountsIn[0], amountsIn[1]);
+
+            // The loanRemainder is the underlyingTokens borrowed in the flash swap open.
+            uint256 loanRemainder;
+
+            // Economically, this value should always be 0.
+            // In the case that the `amount paid` is more than the borrowed amount,
+            // (short -> underlying is a positive trade), there is an effective negative premium.
+            // In that case, this function will send out `negativePremiumAmount` to the original caller.
+            // Negative premium amount is the opposite difference of the loan remainder: (paid - flash loan amount)
+            //uint256 negativePremiumAmount;
+            uint256 negativePremiumPaymentInRedeems;
             {
-                uint256 quantity = flashLoanQuantity; // quantity of underlying tokens borrowed
-                uint256 paid = amounts[1]; // quantity of underlyingTokens paid by shortOptionTokens
-                require(paid >= amountOutMin, "ERR_AMOUNT_TOO_LOW");
-                // consider the swap fee
-                remainder = quantity
-                    .mul(1000)
-                    .add(quantity.mul(3))
-                    .div(1000)
-                    .sub(paid);
+                uint256 redeemsRequired = amountsIn[0];
+                uint256 redeemCostRemaining = redeemsRequired > outputRedeems
+                    ? redeemsRequired.sub(outputRedeems)
+                    : 0;
+                negativePremiumPaymentInRedeems = outputRedeems >
+                    redeemsRequired
+                    ? outputRedeems.sub(redeemsRequired)
+                    : 0;
+
+                {
+                    if (redeemCostRemaining > 0) {
+                        address[] memory path_ = path;
+                        uint256[] memory amountsOut = router.getAmountsOut(
+                            redeemCostRemaining,
+                            path_
+                        );
+
+                        // should investigate further, needs to consider a 0.101% fee? Without it, amountsOut[1] is not enough.
+                        loanRemainder = amountsOut[1]
+                            .mul(100101)
+                            .add(amountsOut[1])
+                            .div(100000);
+
+                        console.log(
+                            redeemCostRemaining,
+                            amountsOut[0],
+                            amountsOut[1]
+                        );
+                    }
+                    if (negativePremiumPaymentInRedeems > 0) {
+                        outputRedeems = outputRedeems.sub(
+                            negativePremiumPaymentInRedeems
+                        );
+                    }
+                }
             }
 
             // Pay back the pair in shortOptionTokens
+            console.log("Sending redeem:", outputRedeems);
             IERC20(IOption(optionAddress).redeemToken()).safeTransfer(
                 pairAddress,
                 outputRedeems
             );
 
-            // Pull underlyingTokens from the original msg.sender to pay the remainder of the flash swap.
-            IERC20(underlyingToken_).safeTransferFrom(
-                to,
-                pairAddress,
-                remainder
-            );
-            emit FlashOpened(msg.sender, outputOptions, remainder);
+            // If loanRemainder is non-zero and non-negative, send it to the pair as re-payment.
+            if (loanRemainder > 0) {
+                console.log("Sending underlying:", loanRemainder);
+                // Pull underlyingTokens from the original msg.sender to pay the remainder of the flash swap.
+                //require(loanRemainder >= amountOutMin, "ERR_PREMIUM_OVER_MAX");
+                IERC20(underlyingToken_).safeTransferFrom(
+                    to,
+                    pairAddress,
+                    loanRemainder
+                );
+            }
+
+            // If negativePremiumAmount is non-zero and non-negative, send it to the `to` address.
+            if (negativePremiumPaymentInRedeems > 0) {
+                console.log(
+                    "negative premium",
+                    negativePremiumPaymentInRedeems
+                );
+                console.log(IERC20(underlyingToken_).balanceOf(address(this)));
+                IERC20(IOption(optionAddress).redeemToken()).safeTransfer(
+                    to,
+                    negativePremiumPaymentInRedeems
+                );
+            }
+
+            emit FlashOpened(msg.sender, outputOptions, loanRemainder);
         }
 
         // Send longOptionTokens (option) to the original msg.sender.
         IERC20(optionAddress).safeTransfer(to, outputOptions);
+        console.log("sent options");
         return true;
     }
 

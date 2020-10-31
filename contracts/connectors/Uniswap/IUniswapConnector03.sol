@@ -9,7 +9,7 @@ import {
 import { ITrader } from "../../option/interfaces/ITrader.sol";
 import { IOption, IERC20 } from "../../option/interfaces/IOption.sol";
 
-interface IUniswapConnector02 {
+interface IUniswapConnector03 {
     // ==== Combo Operations ====
 
     function mintLongOptionsThenSwapToTokens(
