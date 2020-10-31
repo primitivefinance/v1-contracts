@@ -15,8 +15,12 @@ const batchApproval = async (
             // for each owner
             for (let u = 0; u < arrayOfSigners.length; u++) {
                 let signer = arrayOfSigners[u];
-
-                await token.connect(signer).approve(address, MAX_UINT);
+                let allowance = await token
+                    .connect(signer)
+                    .allowance(signer._address, address);
+                if (allowance < MAX_UINT) {
+                    await token.connect(signer).approve(address, MAX_UINT);
+                }
             }
         }
     }
