@@ -20,7 +20,6 @@ const _addLiquidity = async (
     amountAMin,
     amountBMin
 ) => {
-    let amount = [];
     let amountA, amountB;
     let amountBOptimal = await router.quote(
         amountADesired,
@@ -125,7 +124,6 @@ const getAmountsInPure = (amountOut, path, reserveIn, reserveOut) => {
 };
 
 const getAmountIn = (amountOut, reserveIn, reserveOut) => {
-    console.log(amountOut, reserveIn, reserveOut);
     let numerator = reserveIn.mul(amountOut).mul(1000);
     let denominator = reserveOut.sub(amountOut).mul(997);
     let amountIn = numerator.div(denominator).add(1);
@@ -908,18 +906,6 @@ describe("UniswapConnector", () => {
             // regular deadline
             const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
 
-            // Add liquidity to option <> dai pair
-            await uniswapRouter.addLiquidity(
-                optionToken.address,
-                dai.address,
-                totalOptions,
-                daiForOptionsPair,
-                0,
-                0,
-                Alice,
-                deadline
-            );
-
             // Add liquidity to redeem <> weth   pair
             await uniswapRouter.addLiquidity(
                 redeemToken.address,
@@ -931,24 +917,6 @@ describe("UniswapConnector", () => {
                 Alice,
                 deadline
             );
-
-            // Get the pair instance to approve it to the uniswapConnector
-            let pairAddress = await uniswapFactory.getPair(
-                optionToken.address,
-                dai.address
-            );
-            let pair = new ethers.Contract(
-                pairAddress,
-                UniswapV2Pair.abi,
-                Admin
-            );
-            await pair
-                .connect(Admin)
-                .approve(uniswapConnector.address, MILLION_ETHER);
-
-            await pair
-                .connect(User)
-                .approve(uniswapConnector.address, MILLION_ETHER);
         });
 
         it("gets a flash loan for underlyings, mints options, swaps redeem to underlyings to pay back", async () => {
@@ -970,34 +938,22 @@ describe("UniswapConnector", () => {
 
             // Get the pair instance to approve it to the uniswapConnector
             let amountOptions = ONE_ETHER;
-            let amountRedeems = amountOptions.mul(quote).div(base);
-            let amounts = await uniswapRouter.getAmountsOut(amountRedeems, [
-                redeemToken.address,
-                weth.address,
-            ]);
-            let amountOutMin = amounts[1];
-
-            // PREMIUM MATH
-            let redeemsMinted = amountRedeems;
-            let flashLoanQuantity = amountOptions;
             let path = [redeemToken.address, underlyingToken.address];
-            let amountsIn = await uniswapRouter.getAmountsIn(
-                flashLoanQuantity,
-                path
+            let reserves = await getReserves(
+                Admin,
+                uniswapFactory,
+                path[0],
+                path[1]
             );
-            let redeemsRequired = amountsIn[0];
-            let redeemCostRemaining = redeemsRequired.sub(redeemsMinted);
-            // if redeemCost > 0
-            let amountsOut = await uniswapRouter.getAmountsOut(
-                redeemCostRemaining,
-                path
+            let premium = getPremium(
+                amountOptions,
+                base,
+                quote,
+                redeemToken,
+                underlyingToken,
+                reserves[0],
+                reserves[1]
             );
-            let loanRemainder = amountsOut[1]
-                .mul(100101)
-                .add(amountsOut[1])
-                .div(100000);
-
-            let premium = loanRemainder;
 
             await expect(
                 uniswapConnector.openFlashLong(
@@ -1043,43 +999,13 @@ describe("UniswapConnector", () => {
         it("should revert on swapping an amount lower than amountOutMin", async () => {
             // Get the pair instance to approve it to the uniswapConnector
             let amountOptions = ONE_ETHER;
-            let amountRedeems = amountOptions.mul(quote).div(base);
-            let amounts = await uniswapRouter.getAmountsOut(amountRedeems, [
-                redeemToken.address,
-                weth.address,
-            ]);
             let path = [redeemToken.address, underlyingToken.address];
-
-            // PREMIUM MATH
-            /* let redeemsMinted = amountRedeems;
-            let flashLoanQuantity = amountOptions;
-            let amountsIn = await uniswapRouter.getAmountsIn(
-                flashLoanQuantity,
-                path
-            );
-            let redeemsRequired = amountsIn[0];
-            let redeemCostRemaining = redeemsRequired.sub(redeemsMinted);
-            // if redeemCost > 0
-            let amountsOut = await uniswapRouter.getAmountsOut(
-                redeemCostRemaining,
-                path
-            );
-            let loanRemainder = amountsOut[1]
-                .mul(100101)
-                .add(amountsOut[1])
-                .div(100000);
-
-            let premium = loanRemainder;
-
-            let amountOutMin = premium; // 1 more than the best swap amount */
-
             let reserves = await getReserves(
                 Admin,
                 uniswapFactory,
                 path[0],
                 path[1]
             );
-            console.log({ reserves }, reserves[0], reserves[1]);
             let amountOutMin = getPremium(
                 amountOptions,
                 base,
@@ -1169,7 +1095,7 @@ describe("UniswapConnector", () => {
 
             // Create UNISWAP PAIRS
             // option <> dai: 1:10 ($10 option) 1,000 options and 10,000 dai (1,000 weth)
-            // redeem <> weth: 100:1 ($1 redeem) 100,000 redeems and 1,000 weth
+            // redeem <> weth: 0.95:1 ($105 redeem) 9.5 redeems and 10 weth
 
             const totalOptions = parseEther("10");
             const totalWethForPair = parseEther("10");
@@ -1207,25 +1133,27 @@ describe("UniswapConnector", () => {
             reserves = await pair.getReserves();
             reserve0 = reserves._reserve0;
             reserve1 = reserves._reserve1;
-            console.log(
-                `reserve 0`,
-                formatEther(reserve0),
-                `reserve1`,
-                formatEther(reserve1)
-            );
         });
 
-        it("returns a loanRemainder amount of 0 in the event FlashOpened", async () => {
+        it("returns a loanRemainder amount of 0 in the event FlashOpened because negative premium", async () => {
             // Get the pair instance to approve it to the uniswapConnector
             let amountOptions = ONE_ETHER;
-            let amountRedeems = amountOptions.mul(quote).div(base);
-            let amounts = await uniswapRouter.getAmountsOut(amountRedeems, [
-                redeemToken.address,
-                weth.address,
-            ]);
-            let amountOutMin = amounts[1];
-            let remainder = getPremium(amountOptions);
-            assert.equal(remainder < 0, true, `${remainder.toString()}`);
+            let path = [redeemToken.address, underlyingToken.address];
+            let reserves = await getReserves(
+                Admin,
+                uniswapFactory,
+                path[0],
+                path[1]
+            );
+            let amountOutMin = getPremium(
+                amountOptions,
+                base,
+                quote,
+                redeemToken,
+                underlyingToken,
+                reserves[0],
+                reserves[1]
+            );
             await expect(
                 uniswapConnector.openFlashLong(
                     optionToken.address,

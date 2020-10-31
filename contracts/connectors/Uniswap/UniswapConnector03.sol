@@ -29,8 +29,6 @@ import {
     ReentrancyGuard
 } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-import "@nomiclabs/buidler/console.sol";
-
 contract UniswapConnector03 is
     IUniswapConnector03,
     IUniswapV2Callee,
@@ -233,12 +231,6 @@ contract UniswapConnector03 is
                             .mul(100101)
                             .add(amountsOut[1])
                             .div(100000);
-
-                        console.log(
-                            redeemCostRemaining,
-                            amountsOut[0],
-                            amountsOut[1]
-                        );
                     }
 
                     // In the case that more redeemTokens were minted than need to be sent back as payment,
@@ -253,7 +245,6 @@ contract UniswapConnector03 is
             }
 
             // Pay back the pair in redeemTokens (shortOptionTokens)
-            console.log("Sending redeem:", outputRedeems);
             IERC20(IOption(optionAddress).redeemToken()).safeTransfer(
                 pairAddress,
                 outputRedeems
@@ -261,7 +252,6 @@ contract UniswapConnector03 is
 
             // If loanRemainder is non-zero and non-negative, send underlyingTokens to the pair as payment (premium).
             if (loanRemainder > 0) {
-                console.log("Sending underlying:", loanRemainder);
                 // Pull underlyingTokens from the original msg.sender to pay the remainder of the flash swap.
                 require(loanRemainder >= amountOutMin, "ERR_PREMIUM_OVER_MAX");
                 IERC20(underlyingToken_).safeTransferFrom(
@@ -273,10 +263,6 @@ contract UniswapConnector03 is
 
             // If negativePremiumAmount is non-zero and non-negative, send it to the `to` address.
             if (negativePremiumPaymentInRedeems > 0) {
-                console.log(
-                    "negative premium",
-                    negativePremiumPaymentInRedeems
-                );
                 IERC20(IOption(optionAddress).redeemToken()).safeTransfer(
                     to,
                     negativePremiumPaymentInRedeems
@@ -288,7 +274,6 @@ contract UniswapConnector03 is
 
         // Send longOptionTokens (option) to the original msg.sender.
         IERC20(optionAddress).safeTransfer(to, outputOptions);
-        console.log("sent options");
         return true;
     }
 
