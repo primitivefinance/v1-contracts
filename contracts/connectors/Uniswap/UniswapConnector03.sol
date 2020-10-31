@@ -139,7 +139,7 @@ contract UniswapConnector03 is
     /// @notice If the first address in the path is not the shortOptionToken address, the tx will fail.
     /// @param optionAddress The address of the Option contract.
     /// @param flashLoanQuantity The quantity of options to mint using borrowed underlyingTokens.
-    /// @param amountOutMin The minimum quantity of underlyingTokens to receive in exchange for the shortOptionTokens.
+    /// @param maxPremium The maximum quantity of underlyingTokens to pay for the optionTokens.
     /// @param path The token addresses to trade through using their Uniswap V2 pools. Assumes path[0] = shortOptionToken.
     /// @param to The address to send the shortOptionToken proceeds and longOptionTokens to.
     /// @return success bool Whether the transaction was successful or not.
@@ -148,7 +148,7 @@ contract UniswapConnector03 is
         address pairAddress,
         address optionAddress,
         uint256 flashLoanQuantity,
-        uint256 amountOutMin,
+        uint256 maxPremium,
         address[] memory path,
         address to
     ) public returns (bool) {
@@ -253,7 +253,7 @@ contract UniswapConnector03 is
             // If loanRemainder is non-zero and non-negative, send underlyingTokens to the pair as payment (premium).
             if (loanRemainder > 0) {
                 // Pull underlyingTokens from the original msg.sender to pay the remainder of the flash swap.
-                require(loanRemainder >= amountOutMin, "ERR_PREMIUM_OVER_MAX");
+                require(loanRemainder >= maxPremium, "ERR_PREMIUM_OVER_MAX");
                 IERC20(underlyingToken_).safeTransferFrom(
                     to,
                     pairAddress,
@@ -283,12 +283,12 @@ contract UniswapConnector03 is
     /// IMPORTANT: If the ratio between shortOptionTokens and underlyingTokens is 1:1, then only the swap fee (0.30%) has to be paid.
     /// @param optionToken The option address.
     /// @param amountOptions The quantity of longOptionTokens to purchase.
-    /// @param amountOutMin The minimum quantity of underlyingTokens to receive in exchange for the shortOptionTokens.
+    /// @param maxPremium The maximum quantity of underlyingTokens to pay for the optionTokens.
     ///
     function openFlashLong(
         IOption optionToken,
         uint256 amountOptions,
-        uint256 amountOutMin
+        uint256 maxPremium
     ) external override nonReentrant returns (bool) {
         address redeemToken = optionToken.redeemToken();
         address underlyingToken = optionToken.getUnderlyingTokenAddress();
@@ -314,7 +314,7 @@ contract UniswapConnector03 is
             pairAddress, // pair contract we are borrowing from
             optionToken, // option token to mint with flash loaned tokens
             amountOptions, // quantity of underlyingTokens from flash loan to use to mint options
-            amountOutMin, // total price paid (in underlyingTokens) for selling shortOptionTokens
+            maxPremium, // total price paid (in underlyingTokens) for selling shortOptionTokens
             path, // redeemToken -> underlyingToken
             msg.sender // address to pull the remainder loan amount to pay, and send longOptionTokens to.
         );
