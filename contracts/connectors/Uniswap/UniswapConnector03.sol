@@ -96,7 +96,7 @@ contract UniswapConnector03 is
         return success;
     }
 
-    // ==== Flash Open Functions ====
+    // ==== Flash Functions ====
 
     ///
     /// @dev Receives underlyingTokens from a UniswapV2Pair.swap() call from a pair with

@@ -252,20 +252,6 @@ describe("UniswapConnector Flash for Rinkeby", () => {
                 "1000000",
                 "0"
             );
-            /* await uniswapConnector.openFlashLong(
-                optionToken.address,
-                amountOptions,
-                amountOutMin
-            ); */
-            /* await expect(
-                uniswapConnector.openFlashLong(
-                    optionToken.address,
-                    amountOptions,
-                    amountOutMin
-                )
-            )
-                .to.emit(uniswapConnector, "FlashOpened")
-                .withArgs(uniswapConnector.address, amountOptions, remainder); */
 
             console.log(
                 `Weth balance: ${formatEther(await weth.balanceOf(Alice))}`
@@ -295,8 +281,6 @@ describe("UniswapConnector Flash for Rinkeby", () => {
                 amountRedeems,
                 "0"
             );
-
-            /* .withArgs(uniswapConnector.address, amountRedeems, "0"); */
         });
     });
 });

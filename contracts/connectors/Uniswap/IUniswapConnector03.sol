@@ -21,7 +21,7 @@ interface IUniswapConnector03 {
         uint256 deadline
     ) external returns (bool);
 
-    // ==== Flash Open Functions ====
+    // ==== Flash Functions ====
 
     function flashCloseLongOptionsThenSwap(
         address pairAddress,
