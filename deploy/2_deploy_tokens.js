@@ -15,19 +15,24 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         args: ["ETH", "Ether", parseEther("10000")],
     });
 
+    const wethToken = await deploy("WETH9", {
+        from: deployer,
+        contractName: "WETH9",
+        args: [],
+    });
+
     const usdcToken = await deploy("USDC", {
         from: deployer,
         contractName: "USDC",
         args: ["USDC", "Stablecoin", parseEther("10000")],
     });
 
-    let deployed = [ethToken, usdcToken];
+    let deployed = [ethToken, usdcToken, wethToken];
     for (let i = 0; i < deployed.length; i++) {
         if (deployed[i].newlyDeployed)
             log(
                 `Contract deployed at ${deployed[i].address} using ${deployed[i].receipt.gasUsed} gas on chain ${chain}`
             );
     }
-
-    module.exports.tags = ["Test"];
 };
+module.exports.tags = ["Test"];

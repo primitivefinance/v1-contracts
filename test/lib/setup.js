@@ -13,7 +13,7 @@ const Flash = require("../../artifacts/Flash");
 const Weth = require("../../artifacts/WETH9");
 const Trader = require("../../artifacts/Trader");
 const WethConnector = require("../../artifacts/WethConnector01");
-const UniswapConnector = require("../../artifacts/UniswapConnector02.json");
+const UniswapConnector = require("../../artifacts/UniswapConnector03.json");
 const OptionTemplateLib = require("../../artifacts/OptionTemplateLib");
 const RedeemTemplateLib = require("../../artifacts/RedeemTemplateLib");
 

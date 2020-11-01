@@ -9,17 +9,8 @@ import {
 import { ITrader } from "../../option/interfaces/ITrader.sol";
 import { IOption, IERC20 } from "../../option/interfaces/IOption.sol";
 
-interface IUniswapConnector02 {
+interface IUniswapConnector03 {
     // ==== Combo Operations ====
-
-    function mintLongOptionsThenSwapToTokens(
-        IOption optionToken,
-        uint256 amountIn,
-        uint256 amountOutMin,
-        address[] calldata path,
-        address to,
-        uint256 deadline
-    ) external returns (bool);
 
     function mintShortOptionsThenSwapToTokens(
         IOption optionToken,
@@ -30,7 +21,25 @@ interface IUniswapConnector02 {
         uint256 deadline
     ) external returns (bool);
 
-    // ==== Flash Open Functions ====
+    // ==== Flash Functions ====
+
+    function flashCloseLongOptionsThenSwap(
+        address pairAddress,
+        address optionAddress,
+        uint256 flashLoanQuantity,
+        uint256 minPayout,
+        address[] calldata path,
+        address to
+    ) external returns (uint256, uint256);
+
+    function flashMintShortOptionsThenSwap(
+        address pairAddress,
+        address optionAddress,
+        uint256 flashLoanQuantity,
+        uint256 maxPremium,
+        address[] calldata path,
+        address to
+    ) external returns (uint256, uint256);
 
     function openFlashLong(
         IOption optionToken,
@@ -38,18 +47,13 @@ interface IUniswapConnector02 {
         uint256 amountOutMin
     ) external returns (bool);
 
-    // ==== Liquidity Functions ====
-
-    function addLongLiquidityWithUnderlying(
-        address optionAddress,
-        address otherTokenAddress,
-        uint256 quantityOptions,
-        uint256 quantityOtherTokens,
-        uint256 minOptionTokens,
-        uint256 minOtherTokens,
-        address to,
-        uint256 deadline
+    function closeFlashLong(
+        IOption optionToken,
+        uint256 amountRedeems,
+        uint256 minPayout
     ) external returns (bool);
+
+    // ==== Liquidity Functions ====
 
     function addShortLiquidityWithUnderlying(
         address optionAddress,
@@ -61,16 +65,6 @@ interface IUniswapConnector02 {
         address to,
         uint256 deadline
     ) external returns (bool);
-
-    function removeLongLiquidityThenCloseOptions(
-        address optionAddress,
-        address otherTokenAddress,
-        uint256 liquidity,
-        uint256 amountAMin,
-        uint256 amountBMin,
-        address to,
-        uint256 deadline
-    ) external returns (uint256, uint256);
 
     function removeShortLiquidityThenCloseOptions(
         address optionAddress,

@@ -13,9 +13,9 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 
     const trader = await deployments.get("Trader");
 
-    const uniswapConnector = await deploy("UniswapConnector02", {
+    const uniswapConnector = await deploy("UniswapConnector03", {
         from: deployer,
-        contractName: "UniswapConnector02",
+        contractName: "UniswapConnector03",
         args: [UNI_ROUTER02, UNI_FACTORY, trader.address],
     });
 

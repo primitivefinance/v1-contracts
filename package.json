@@ -32,6 +32,7 @@
         "deploy-options:rinkeby": "cross-env buidler run ./scripts/deploy_options.js --network rinkeby",
         "deploy-options:mainnet": "cross-env buidler run ./scripts/deploy_options.js --network live",
         "deploy-pairs:rinkeby": "cross-env buidler run ./scripts/deploy_uniswap_pairs.js --network rinkeby",
+        "deploy-short-pairs:rinkeby": "cross-env buidler run ./scripts/deploy_uniswap_pairs_short.js --network rinkeby",
         "verify:rinkeby": "cross-env buidler run ./scripts/verify.js --network rinkeby",
         "verify:mainnet": "cross-env buidler run ./scripts/verify.js --network live",
         "deploy-testnet": "npm-run-all deploy:rinkeby verify:rinkeby deploy-options:rinkeby deploy-pairs:rinkeby",
@@ -74,9 +75,7 @@
         "solc": "^0.6.8",
         "solidity-coverage": "^0.7.9",
         "solium": "^1.2.5",
-        "web3": "^1.2.7"
-    },
-    "dependencies": {
+        "web3": "^1.2.7",
         "@openzeppelin/contracts": "3.0.1",
         "@uniswap/v2-core": "^1.0.1",
         "@uniswap/v2-periphery": "^1.1.0-beta.0",
@@ -88,6 +87,7 @@
         "prettier-plugin-solidity": "^1.0.0-alpha.54",
         "rimraf": "^3.0.2"
     },
+    "dependencies": {},
     "publishConfig": {
         "access": "public"
     },
