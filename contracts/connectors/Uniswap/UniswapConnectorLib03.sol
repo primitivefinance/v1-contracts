@@ -526,15 +526,30 @@ library UniswapConnectorLib03 {
         // We are flash swapping from an underlying <> shortOptionToken pair, paying back a portion using minted shortOptionTokens
         // and any remainder of underlyingToken.
 
-        address underlyingToken = IOption(optionAddress)
-            .getUnderlyingTokenAddress();
-        require(path[1] == underlyingToken, "ERR_END_PATH_NOT_UNDERLYING");
+        uint256 outputOptions;
+        uint256 outputRedeems;
+        {
+            // scope for underlyingToken, avoids stack too deep errors
 
-        // Mint longOptionTokens using the underlyingTokens received from UniswapV2 flash swap to this contract.
-        // Send underlyingTokens from this contract to the optionToken contract, then call mintOptions.
-        IERC20(underlyingToken).safeTransfer(optionAddress, flashLoanQuantity);
-        (uint256 outputOptions, uint256 outputRedeems) = IOption(optionAddress)
-            .mintOptions(address(this));
+            address underlyingToken = IOption(optionAddress)
+                .getUnderlyingTokenAddress();
+            require(path[1] == underlyingToken, "ERR_END_PATH_NOT_UNDERLYING");
+
+            // Mint longOptionTokens using the underlyingTokens received from UniswapV2 flash swap to this contract.
+            // Send underlyingTokens from this contract to the optionToken contract, then call mintOptions.
+            IERC20(underlyingToken).safeTransfer(
+                optionAddress,
+                flashLoanQuantity
+            );
+            (outputOptions, outputRedeems) = IOption(optionAddress).mintOptions(
+                address(this)
+            );
+        }
+
+        // The loanRemainder will be the amount of underlyingTokens that are needed from the original
+        // transaction caller in order to pay the flash swap.
+        // IMPORTANT: THIS IS EFFECTIVELY THE PREMIUM PAID IN UNDERLYINGTOKENS TO PURCHASE THE OPTIONTOKEN.
+        uint256 loanRemainder;
 
         // Need to return tokens from the flash swap by returning shortOptionTokens and any remainder of underlyingTokens.
         {
@@ -551,11 +566,6 @@ library UniswapConnectorLib03 {
                 flashLoanQuantity,
                 path
             );
-
-            // The loanRemainder will be the amount of underlyingTokens that are needed from the original
-            // transaction caller in order to pay the flash swap.
-            // IMPORTANT: THIS IS EFFECTIVELY THE PREMIUM PAID IN UNDERLYINGTOKENS TO PURCHASE THE OPTIONTOKEN.
-            uint256 loanRemainder;
 
             // Economically, negativePremiumPaymentInRedeems value should always be 0.
             // In the case that we minted more redeemTokens than are needed to pay back the flash swap,
@@ -615,6 +625,9 @@ library UniswapConnectorLib03 {
             }
 
             {
+                // scope for redeemToken, avoids stack too deep errors
+                address underlyingToken = IOption(optionAddress)
+                    .getUnderlyingTokenAddress();
                 address to_ = to;
                 address redeemToken = IOption(optionAddress_).redeemToken();
                 // Pay back the pair in redeemTokens (shortOptionTokens)
@@ -642,11 +655,10 @@ library UniswapConnectorLib03 {
                     );
                 }
             }
-
-            // Send longOptionTokens (option) to the original msg.sender.
-            IERC20(optionAddress_).safeTransfer(to, outputOptions);
-            return (outputOptions, loanRemainder);
         }
+        // Send longOptionTokens (option) to the original msg.sender.
+        IERC20(optionAddress).safeTransfer(to, outputOptions);
+        return (outputOptions, loanRemainder);
     }
 
     /// @dev Sends shortOptionTokens to msg.sender, and pays back the UniswapV2Pair in underlyingTokens.

@@ -32,10 +32,25 @@ interface IUniswapConnector03 {
         address to
     ) external returns (uint256, uint256);
 
+    function flashMintShortOptionsThenSwap(
+        address pairAddress,
+        address optionAddress,
+        uint256 flashLoanQuantity,
+        uint256 maxPremium,
+        address[] calldata path,
+        address to
+    ) external returns (uint256, uint256);
+
     function openFlashLong(
         IOption optionToken,
         uint256 amountOptions,
         uint256 amountOutMin
+    ) external returns (bool);
+
+    function closeFlashLong(
+        IOption optionToken,
+        uint256 amountRedeems,
+        uint256 minPayout
     ) external returns (bool);
 
     // ==== Liquidity Functions ====
