@@ -32,6 +32,7 @@
         "deploy-options:rinkeby": "cross-env buidler run ./scripts/deploy_options.js --network rinkeby",
         "deploy-options:mainnet": "cross-env buidler run ./scripts/deploy_options.js --network live",
         "deploy-pairs:rinkeby": "cross-env buidler run ./scripts/deploy_uniswap_pairs.js --network rinkeby",
+        "deploy-short-pairs:rinkeby": "cross-env buidler run ./scripts/deploy_uniswap_pairs_short.js --network rinkeby",
         "verify:rinkeby": "cross-env buidler run ./scripts/verify.js --network rinkeby",
         "verify:mainnet": "cross-env buidler run ./scripts/verify.js --network live",
         "deploy-testnet": "npm-run-all deploy:rinkeby verify:rinkeby deploy-options:rinkeby deploy-pairs:rinkeby",
