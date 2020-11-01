@@ -1,0 +1,22 @@
+{
+  "name": "@primitive/ethers-base",
+  "version": "0.1.4",
+  "description": "ethers.js base class abstraction",
+  "main": "base.js",
+  "repository": "https://github.com/primitivefinance/primitive-contracts",
+  "author": "Raymond Pulver IV",
+  "license": "MIT",
+  "private": false,
+  "dependencies": {
+    "@ethersproject/abi": "^5.0.1",
+    "@ethersproject/bytes": "^5.0.2",
+    "@ethersproject/constants": "^5.0.1",
+    "@ethersproject/contracts": "^5.0.1",
+    "@ethersproject/providers": "^5.0.4",
+    "@ethersproject/units": "^5.0.1",
+    "axios": "^0.19.2",
+    "lodash": "^4.17.15",
+    "moment": "^2.26.0",
+    "the-global-object": "^1.0.2"
+  }
+}

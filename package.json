@@ -75,9 +75,7 @@
         "solc": "^0.6.8",
         "solidity-coverage": "^0.7.9",
         "solium": "^1.2.5",
-        "web3": "^1.2.7"
-    },
-    "dependencies": {
+        "web3": "^1.2.7",
         "@openzeppelin/contracts": "3.0.1",
         "@uniswap/v2-core": "^1.0.1",
         "@uniswap/v2-periphery": "^1.1.0-beta.0",
@@ -89,6 +87,7 @@
         "prettier-plugin-solidity": "^1.0.0-alpha.54",
         "rimraf": "^3.0.2"
     },
+    "dependencies": {},
     "publishConfig": {
         "access": "public"
     },
