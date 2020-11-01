@@ -20,7 +20,6 @@ const _addLiquidity = async (
     amountAMin,
     amountBMin
 ) => {
-    let amount = [];
     let amountA, amountB;
     let amountBOptimal = await router.quote(
         amountADesired,
@@ -69,8 +68,7 @@ const getReserves = async (signer, factory, tokenA, tokenB) => {
 };
 
 const getAmountsOut = async (signer, factory, amountIn, path) => {
-    let amounts;
-    amounts[0] = amountIn;
+    let amounts = [amountIn];
     for (let i = 0; i < path.length; i++) {
         [reserveIn, reserveOut] = await getReserves(
             signer,
@@ -84,12 +82,89 @@ const getAmountsOut = async (signer, factory, amountIn, path) => {
     return amounts;
 };
 
+const getAmountsOutPure = (amountIn, path, reserveIn, reserveOut) => {
+    let amounts = [amountIn];
+    for (let i = 0; i < path.length; i++) {
+        amounts[i + 1] = getAmountOut(amounts[i], reserveIn, reserveOut);
+    }
+
+    return amounts;
+};
+
 const getAmountOut = (amountIn, reserveIn, reserveOut) => {
     let amountInWithFee = amountIn.mul(997);
     let numerator = amountInWithFee.mul(reserveOut);
     let denominator = reserveIn.mul(1000).add(amountInWithFee);
     let amountOut = numerator.div(denominator);
     return amountOut;
+};
+
+const getAmountsIn = async (signer, factory, amountOut, path) => {
+    let amounts = ["", amountOut];
+    for (let i = path.length - 1; i > 0; i--) {
+        [reserveIn, reserveOut] = await getReserves(
+            signer,
+            factory,
+            path[i - 1],
+            path[i]
+        );
+        amounts[i - 1] = getAmountIn(amounts[i], reserveIn, reserveOut);
+    }
+
+    return amounts;
+};
+
+const getAmountsInPure = (amountOut, path, reserveIn, reserveOut) => {
+    let amounts = ["", amountOut];
+    for (let i = path.length - 1; i > 0; i--) {
+        amounts[i - 1] = getAmountIn(amounts[i], reserveIn, reserveOut);
+    }
+
+    return amounts;
+};
+
+const getAmountIn = (amountOut, reserveIn, reserveOut) => {
+    let numerator = reserveIn.mul(amountOut).mul(1000);
+    let denominator = reserveOut.sub(amountOut).mul(997);
+    let amountIn = numerator.div(denominator).add(1);
+    return amountIn;
+};
+
+const getPremium = (
+    quantityOptions,
+    base,
+    quote,
+    redeemToken,
+    underlyingToken,
+    reserveIn,
+    reserveOut
+) => {
+    // PREMIUM MATH
+    let redeemsMinted = quantityOptions.mul(quote).div(base);
+    let path = [redeemToken.address, underlyingToken.address];
+    let amountsIn = getAmountsInPure(
+        quantityOptions,
+        path,
+        reserveIn,
+        reserveOut
+    );
+    let redeemsRequired = amountsIn[0];
+    let redeemCostRemaining = redeemsRequired.sub(redeemsMinted);
+    // if redeemCost > 0
+    let amountsOut = getAmountsOutPure(
+        redeemCostRemaining,
+        path,
+        reserveIn,
+        reserveOut
+    );
+    let loanRemainder = amountsOut[1]
+        .mul(100101)
+        .add(amountsOut[1])
+        .div(100000);
+
+    let premium = loanRemainder;
+
+    return premium;
 };
 
 describe("UniswapConnector", () => {
@@ -268,66 +343,6 @@ describe("UniswapConnector", () => {
         await batchApproval([uniswapConnector.address], [pair], [Admin, User]);
     });
 
-    describe("mintLongOptionsThenSwapToTokens", () => {
-        it("should mint Primitive V1 Options then swap them on Uniswap V2", async () => {
-            // Get the pair address.
-            let pair = await uniswapFactory.getPair(
-                optionToken.address,
-                dai.address
-            );
-
-            // Get the affected balances before the operation.
-            let underlyingBalanceBefore = await underlyingToken.balanceOf(
-                Alice
-            );
-            let quoteBalanceBefore = await quoteToken.balanceOf(Alice);
-            let optionBalanceBefore = await optionToken.balanceOf(pair);
-
-            let optionTokenAddress = optionToken.address;
-            let amountIn = ONE_ETHER;
-            let path = [optionTokenAddress, quoteToken.address]; // path[0] MUST be the optionToken address.
-            let amounts = await uniswapRouter.getAmountsOut(amountIn, path);
-            let amountOutMin = amounts[path.length - 1];
-            let to = Alice;
-            let deadline = Math.floor(Date.now() / 1000) + 60 * 20;
-
-            // Call the function
-            await uniswapConnector.mintLongOptionsThenSwapToTokens(
-                optionTokenAddress,
-                amountIn,
-                amountOutMin,
-                path,
-                to,
-                deadline
-            );
-
-            let underlyingBalanceAfter = await underlyingToken.balanceOf(Alice);
-            let quoteBalanceAfter = await quoteToken.balanceOf(Alice);
-            let optionBalanceAfter = await optionToken.balanceOf(pair);
-
-            // Used underlyings to mint options (Alice)
-            let underlyingChange = underlyingBalanceAfter
-                .sub(underlyingBalanceBefore)
-                .toString();
-            // Purchased quoteTokens with our options (Alice)
-            let quoteChange = quoteBalanceAfter
-                .sub(quoteBalanceBefore)
-                .toString();
-            // Sold options for quoteTokens to the pair, pair has more options (Pair)
-            let optionChange = optionBalanceAfter
-                .sub(optionBalanceBefore)
-                .toString();
-
-            assertBNEqual(underlyingChange, amountIn.mul(-1));
-            assert.equal(
-                quoteChange >= amountOutMin,
-                true,
-                `quoteDelta ${quoteChange} != amountOutMin ${amountOutMin}`
-            );
-            assertBNEqual(optionChange, amountIn);
-        });
-    });
-
     describe("mintShortOptionsThenSwapToTokens", () => {
         it("should mint Primitive V1 Options then swap shortTokens on Uniswap V2", async () => {
             // Get the pair address.
@@ -390,96 +405,6 @@ describe("UniswapConnector", () => {
             assertBNEqual(
                 await optionToken.balanceOf(uniswapConnector.address),
                 "0"
-            );
-        });
-    });
-
-    describe("addLongLiquidityWithUnderlying", () => {
-        it("use underlyings to mint options, then provide options and quote tokens as liquidity", async () => {
-            let underlyingBalanceBefore = await underlyingToken.balanceOf(
-                Alice
-            );
-            let quoteBalanceBefore = await quoteToken.balanceOf(Alice);
-
-            let optionAddress = optionToken.address;
-            let quantityOptions = ONE_ETHER;
-            let quantityQuoteTokens = quantityOptions.mul(premium);
-            let amountADesired = quantityOptions;
-            let amountBDesired = quantityQuoteTokens;
-            let amountAMin = amountADesired;
-            let amountBMin = 0;
-            let to = Alice;
-            let deadline = Math.floor(Date.now() / 1000) + 60 * 20;
-
-            let [reserveA, reserveB] = await getReserves(
-                Admin,
-                uniswapFactory,
-                optionToken.address,
-                quoteToken.address
-            );
-            reserves = [reserveA, reserveB];
-            let amountBOptimal = await uniswapRouter.quote(
-                amountADesired,
-                reserves[0],
-                reserves[1]
-            );
-
-            let amountAOptimal = await uniswapRouter.quote(
-                amountBDesired,
-                reserves[1],
-                reserves[0]
-            );
-
-            [, amountBMin] = await _addLiquidity(
-                uniswapRouter,
-                reserves,
-                amountADesired,
-                amountBDesired,
-                amountAOptimal,
-                amountBOptimal
-            );
-
-            await uniswapConnector.addLongLiquidityWithUnderlying(
-                optionAddress,
-                quoteToken.address,
-                amountADesired,
-                amountBDesired,
-                amountAMin,
-                amountBMin.mul(95).div(100),
-                to,
-                deadline
-            );
-
-            let underlyingBalanceAfter = await underlyingToken.balanceOf(Alice);
-            let quoteBalanceAfter = await quoteToken.balanceOf(Alice);
-
-            // Used underlyings to mint options (Alice)
-            let underlyingChange = underlyingBalanceAfter.sub(
-                underlyingBalanceBefore
-            );
-
-            // Purchased quoteTokens with our options (Alice)
-            let quoteChange = quoteBalanceAfter.sub(quoteBalanceBefore);
-
-            assertBNEqual(underlyingChange.toString(), amountADesired.mul(-1));
-            assert.equal(
-                quoteChange >= amountBDesired.mul(-1),
-                true,
-                `${formatEther(quoteChange)} !<= ${formatEther(amountBDesired)}`
-            );
-            assert.equal(
-                underlyingChange.mul(-1) <= amountAMin,
-                true,
-                `underlyingDelta ${formatEther(
-                    underlyingChange
-                )} != amountAMin ${formatEther(amountAMin)}`
-            );
-            assert.equal(
-                quoteChange.mul(-1) >= amountBMin,
-                true,
-                `quoteDelta ${formatEther(
-                    quoteChange
-                )} != amountBMin ${formatEther(amountBMin)}`
             );
         });
     });
@@ -566,89 +491,6 @@ describe("UniswapConnector", () => {
                 `quoteDelta ${formatEther(
                     quoteChange
                 )} != amountBMin ${formatEther(amountBMin)}`
-            );
-        });
-    });
-
-    describe("removeLongLiquidityThenCloseOptions", () => {
-        it("burns UNI-V2 lp shares, then closes the withdrawn optionTokens", async () => {
-            let underlyingBalanceBefore = await underlyingToken.balanceOf(
-                Alice
-            );
-            let quoteBalanceBefore = await quoteToken.balanceOf(Alice);
-            let redeemBalanceBefore = await redeemToken.balanceOf(Alice);
-            let optionBalanceBefore = await optionToken.balanceOf(Alice);
-
-            let optionAddress = optionToken.address;
-            let liquidity = ONE_ETHER;
-            let path = [optionToken.address, quoteToken.address];
-            let pairAddress = await uniswapConnector.getUniswapMarketForTokens(
-                path[0],
-                path[1]
-            );
-            let pair = new ethers.Contract(
-                pairAddress,
-                UniswapV2Pair.abi,
-                Admin
-            );
-            await pair
-                .connect(Admin)
-                .approve(uniswapConnector.address, MILLION_ETHER);
-            assert.equal(
-                (await pair.balanceOf(Alice)) >= liquidity,
-                true,
-                "err not enough pair tokens"
-            );
-            assert.equal(
-                pairAddress != constants.ADDRESSES.ZERO_ADDRESS,
-                true,
-                "err pair not deployed"
-            );
-
-            let totalSupply = await pair.totalSupply();
-            let amount0 = liquidity
-                .mul(await optionToken.balanceOf(pairAddress))
-                .div(totalSupply);
-            let amount1 = liquidity
-                .mul(await quoteToken.balanceOf(pairAddress))
-                .div(totalSupply);
-
-            let amountAMin = amount0;
-            let amountBMin = amount1;
-            let to = Alice;
-            let deadline = Math.floor(Date.now() / 1000) + 60 * 20;
-
-            await uniswapConnector.removeLongLiquidityThenCloseOptions(
-                optionAddress,
-                quoteToken.address,
-                liquidity,
-                amountAMin,
-                amountBMin,
-                to,
-                deadline
-            );
-
-            let underlyingBalanceAfter = await underlyingToken.balanceOf(Alice);
-            let quoteBalanceAfter = await quoteToken.balanceOf(Alice);
-            let redeemBalanceAfter = await redeemToken.balanceOf(Alice);
-            let optionBalanceAfter = await optionToken.balanceOf(Alice);
-
-            // Used underlyings to mint options (Alice)
-            let underlyingChange = underlyingBalanceAfter.sub(
-                underlyingBalanceBefore
-            );
-            // Purchased quoteTokens with our options (Alice)
-            let quoteChange = quoteBalanceAfter.sub(quoteBalanceBefore);
-            // Sold options for quoteTokens to the pair, pair has more options (Pair)
-            let optionChange = optionBalanceAfter.sub(optionBalanceBefore);
-            let redeemChange = redeemBalanceAfter.sub(redeemBalanceBefore);
-
-            assertBNEqual(underlyingChange.toString(), amountAMin);
-            assertBNEqual(optionChange.toString(), "0");
-            assertBNEqual(quoteChange.toString(), amountBMin);
-            assertBNEqual(
-                redeemChange.mul(-1).toString(),
-                amountAMin.mul(quote).div(base)
             );
         });
     });
@@ -813,7 +655,7 @@ describe("UniswapConnector", () => {
             const totalOptions = parseEther("1000");
             const daiForOptionsPair = parseEther("100000");
             const totalDai = parseEther("210000");
-            const totalWethForPair = parseEther("1000");
+            const totalWethForPair = parseEther("950");
             const totalRedeemForPair = parseEther("100000");
 
             // MINT 2,010 WETH
@@ -831,18 +673,6 @@ describe("UniswapConnector", () => {
             // regular deadline
             const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
 
-            // Add liquidity to option <> dai pair
-            await uniswapRouter.addLiquidity(
-                optionToken.address,
-                dai.address,
-                totalOptions,
-                daiForOptionsPair,
-                0,
-                0,
-                Alice,
-                deadline
-            );
-
             // Add liquidity to redeem <> weth   pair
             await uniswapRouter.addLiquidity(
                 redeemToken.address,
@@ -854,24 +684,6 @@ describe("UniswapConnector", () => {
                 Alice,
                 deadline
             );
-
-            // Get the pair instance to approve it to the uniswapConnector
-            let pairAddress = await uniswapFactory.getPair(
-                optionToken.address,
-                dai.address
-            );
-            let pair = new ethers.Contract(
-                pairAddress,
-                UniswapV2Pair.abi,
-                Admin
-            );
-            await pair
-                .connect(Admin)
-                .approve(uniswapConnector.address, MILLION_ETHER);
-
-            await pair
-                .connect(User)
-                .approve(uniswapConnector.address, MILLION_ETHER);
         });
 
         it("gets a flash loan for underlyings, mints options, swaps redeem to underlyings to pay back", async () => {
@@ -893,26 +705,32 @@ describe("UniswapConnector", () => {
 
             // Get the pair instance to approve it to the uniswapConnector
             let amountOptions = ONE_ETHER;
-            let amountRedeems = amountOptions.mul(quote).div(base);
-            let amounts = await uniswapRouter.getAmountsOut(amountRedeems, [
-                redeemToken.address,
-                weth.address,
-            ]);
-            let amountOutMin = amounts[1];
-            let remainder = amountOptions
-                .mul(1000)
-                .add(amountOptions.mul(3))
-                .div(1000)
-                .sub(amounts[1]);
+            let path = [redeemToken.address, underlyingToken.address];
+            let reserves = await getReserves(
+                Admin,
+                uniswapFactory,
+                path[0],
+                path[1]
+            );
+            let premium = getPremium(
+                amountOptions,
+                base,
+                quote,
+                redeemToken,
+                underlyingToken,
+                reserves[0],
+                reserves[1]
+            );
+
             await expect(
                 uniswapConnector.openFlashLong(
                     optionToken.address,
                     amountOptions,
-                    amountOutMin
+                    premium
                 )
             )
                 .to.emit(uniswapConnector, "FlashOpened")
-                .withArgs(uniswapConnector.address, amountOptions, remainder);
+                .withArgs(uniswapConnector.address, amountOptions, premium);
 
             let underlyingBalanceAfter = await underlyingToken.balanceOf(Alice);
             let quoteBalanceAfter = await quoteToken.balanceOf(Alice);
@@ -931,7 +749,7 @@ describe("UniswapConnector", () => {
 
             assert.equal(
                 underlyingChange.toString() <=
-                    amountOptions.mul(-1).add(remainder),
+                    amountOptions.mul(-1).add(premium),
                 true,
                 `${formatEther(underlyingChange)} ${formatEther(amountOptions)}`
             );
@@ -948,19 +766,350 @@ describe("UniswapConnector", () => {
         it("should revert on swapping an amount lower than amountOutMin", async () => {
             // Get the pair instance to approve it to the uniswapConnector
             let amountOptions = ONE_ETHER;
-            let amountRedeems = amountOptions.mul(quote).div(base);
-            let amounts = await uniswapRouter.getAmountsOut(amountRedeems, [
+            let path = [redeemToken.address, underlyingToken.address];
+            let reserves = await getReserves(
+                Admin,
+                uniswapFactory,
+                path[0],
+                path[1]
+            );
+            let amountOutMin = getPremium(
+                amountOptions,
+                base,
+                quote,
+                redeemToken,
+                underlyingToken,
+                reserves[0],
+                reserves[1]
+            );
+
+            await expect(
+                uniswapConnector.openFlashLong(
+                    optionToken.address,
+                    amountOptions,
+                    amountOutMin.add(1)
+                )
+            ).to.be.revertedWith("ERR_UNISWAPV2_CALL_FAIL");
+        });
+
+        it("should do a normal flash close", async () => {
+            // Get the pair instance to approve it to the uniswapConnector
+            let amountRedeems = ONE_ETHER;
+            await expect(
+                uniswapConnector.closeFlashLong(
+                    optionToken.address,
+                    amountRedeems,
+                    "1"
+                )
+            ).to.emit(uniswapConnector, "FlashClosed");
+        });
+    });
+
+    describe("closeFlashLong", () => {
+        before(async () => {
+            let signers = await setup.newWallets();
+
+            // Signers
+            Admin = signers[0];
+            User = signers[1];
+
+            // Addresses of Signers
+            Alice = Admin._address;
+            Bob = User._address;
+
+            // Underlying and quote token instances
+            weth = await setup.newWeth(Admin);
+            dai = await setup.newERC20(Admin, "TEST DAI", "DAI", MILLION_ETHER);
+            quoteToken = dai;
+
+            // Administrative contract instances
+            registry = await setup.newRegistry(Admin);
+
+            // Uniswap V2
+            const uniswap = await setup.newUniswap(Admin, Alice, weth);
+            uniswapFactory = uniswap.uniswapFactory;
+            uniswapRouter = uniswap.uniswapRouter;
+
+            // Option parameters
+            underlyingToken = weth;
+            strikeToken = dai;
+            base = parseEther("1");
+            quote = parseEther("100");
+            expiry = "1690868800"; // May 30, 2020, 8PM UTC
+
+            // Option and redeem instances
+            Primitive = await setup.newPrimitive(
+                Admin,
+                registry,
+                underlyingToken,
+                strikeToken,
+                base,
+                quote,
+                expiry
+            );
+
+            optionToken = Primitive.optionToken;
+            redeemToken = Primitive.redeemToken;
+
+            // Trader Instance
+            trader = await setup.newTrader(Admin, weth.address);
+
+            // Uniswap Connector contract
+            uniswapConnector = await setup.newUniswapConnector(Admin, [
+                uniswapRouter.address,
+                uniswapFactory.address,
+                trader.address,
+            ]);
+
+            // Approve all tokens and contracts
+            await batchApproval(
+                [
+                    trader.address,
+                    uniswapConnector.address,
+                    uniswapRouter.address,
+                ],
+                [underlyingToken, strikeToken, optionToken, redeemToken],
+                [Admin]
+            );
+
+            // Create UNISWAP PAIRS
+            // option <> dai: 1:10 ($10 option) 1,000 options and 10,000 dai (1,000 weth)
+            // redeem <> weth: 0.95:1 ($105 redeem) 9.5 redeems and 10 weth
+
+            const totalOptions = parseEther("10");
+            const totalWethForPair = parseEther("10");
+            const totalRedeemForPair = parseEther("9.5");
+
+            // MINT 2,010 WETH
+            await weth.deposit({ from: Alice, value: parseEther("50") });
+
+            // MINT 1,000 OPTIONS
+            await trader.safeMint(optionToken.address, totalOptions, Alice);
+
+            // regular deadline
+            const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
+
+            // Add liquidity to redeem <> weth   pair
+            await uniswapRouter.addLiquidity(
                 redeemToken.address,
                 weth.address,
+                totalRedeemForPair,
+                totalWethForPair,
+                0,
+                0,
+                Alice,
+                deadline
+            );
+
+            let pair = new ethers.Contract(
+                await uniswapFactory.getPair(
+                    underlyingToken.address,
+                    redeemToken.address
+                ),
+                UniswapV2Pair.abi,
+                Admin
+            );
+            reserves = await pair.getReserves();
+            reserve0 = reserves._reserve0;
+            reserve1 = reserves._reserve1;
+        });
+
+        it("should revert on flash close because it would cost the user a negative payout", async () => {
+            // Get the pair instance to approve it to the uniswapConnector
+            let amountRedeems = ONE_ETHER;
+            await expect(
+                uniswapConnector.closeFlashLong(
+                    optionToken.address,
+                    amountRedeems,
+                    "1"
+                )
+            ).to.be.revertedWith("ERR_UNISWAPV2_CALL_FAIL");
+        });
+
+        it("should flash close a long position at the expense of the user", async () => {
+            // Get the pair instance to approve it to the uniswapConnector
+            let underlyingBalanceBefore = await underlyingToken.balanceOf(
+                Alice
+            );
+            let quoteBalanceBefore = await quoteToken.balanceOf(Alice);
+            let redeemBalanceBefore = await redeemToken.balanceOf(Alice);
+            let optionBalanceBefore = await optionToken.balanceOf(Alice);
+
+            let amountRedeems = ONE_ETHER;
+            await expect(
+                uniswapConnector.closeFlashLong(
+                    optionToken.address,
+                    amountRedeems,
+                    "0"
+                )
+            ).to.emit(uniswapConnector, "FlashClosed");
+
+            let underlyingBalanceAfter = await underlyingToken.balanceOf(Alice);
+            let quoteBalanceAfter = await quoteToken.balanceOf(Alice);
+            let redeemBalanceAfter = await redeemToken.balanceOf(Alice);
+            let optionBalanceAfter = await optionToken.balanceOf(Alice);
+
+            // Used underlyings to mint options (Alice)
+            let underlyingChange = underlyingBalanceAfter.sub(
+                underlyingBalanceBefore
+            );
+            // Purchased quoteTokens with our options (Alice)
+            let quoteChange = quoteBalanceAfter.sub(quoteBalanceBefore);
+            // Sold options for quoteTokens to the pair, pair has more options (Pair)
+            let optionChange = optionBalanceAfter.sub(optionBalanceBefore);
+            let redeemChange = redeemBalanceAfter.sub(redeemBalanceBefore);
+
+            assert.equal(
+                underlyingChange.toString() <= "0",
+                true,
+                `${formatEther(underlyingChange)}`
+            );
+            assertBNEqual(
+                optionChange.toString(),
+                amountRedeems.mul(base).div(quote).mul(-1)
+            );
+            assertBNEqual(quoteChange.toString(), "0");
+            assertBNEqual(redeemChange.toString(), "0");
+        });
+    });
+
+    describe("negative Premium handling", () => {
+        before(async () => {
+            let signers = await setup.newWallets();
+
+            // Signers
+            Admin = signers[0];
+            User = signers[1];
+
+            // Addresses of Signers
+            Alice = Admin._address;
+            Bob = User._address;
+
+            // Underlying and quote token instances
+            weth = await setup.newWeth(Admin);
+            dai = await setup.newERC20(Admin, "TEST DAI", "DAI", MILLION_ETHER);
+            quoteToken = dai;
+
+            // Administrative contract instances
+            registry = await setup.newRegistry(Admin);
+
+            // Uniswap V2
+            const uniswap = await setup.newUniswap(Admin, Alice, weth);
+            uniswapFactory = uniswap.uniswapFactory;
+            uniswapRouter = uniswap.uniswapRouter;
+
+            // Option parameters
+            underlyingToken = weth;
+            strikeToken = dai;
+            base = parseEther("1");
+            quote = parseEther("100");
+            expiry = "1690868800"; // May 30, 2020, 8PM UTC
+
+            // Option and redeem instances
+            Primitive = await setup.newPrimitive(
+                Admin,
+                registry,
+                underlyingToken,
+                strikeToken,
+                base,
+                quote,
+                expiry
+            );
+
+            optionToken = Primitive.optionToken;
+            redeemToken = Primitive.redeemToken;
+
+            // Trader Instance
+            trader = await setup.newTrader(Admin, weth.address);
+
+            // Uniswap Connector contract
+            uniswapConnector = await setup.newUniswapConnector(Admin, [
+                uniswapRouter.address,
+                uniswapFactory.address,
+                trader.address,
             ]);
-            let amountOutMin = amounts[1].add(1); // 1 more than the best swap amount
+
+            // Approve all tokens and contracts
+            await batchApproval(
+                [
+                    trader.address,
+                    uniswapConnector.address,
+                    uniswapRouter.address,
+                ],
+                [underlyingToken, strikeToken, optionToken, redeemToken],
+                [Admin]
+            );
+
+            // Create UNISWAP PAIRS
+            // option <> dai: 1:10 ($10 option) 1,000 options and 10,000 dai (1,000 weth)
+            // redeem <> weth: 0.95:1 ($105 redeem) 9.5 redeems and 10 weth
+
+            const totalOptions = parseEther("10");
+            const totalWethForPair = parseEther("10");
+            const totalRedeemForPair = parseEther("9.5");
+
+            // MINT 2,010 WETH
+            await weth.deposit({ from: Alice, value: parseEther("20") });
+
+            // MINT 1,000 OPTIONS
+            await trader.safeMint(optionToken.address, totalOptions, Alice);
+
+            // regular deadline
+            const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
+
+            // Add liquidity to redeem <> weth   pair
+            await uniswapRouter.addLiquidity(
+                redeemToken.address,
+                weth.address,
+                totalRedeemForPair,
+                totalWethForPair,
+                0,
+                0,
+                Alice,
+                deadline
+            );
+
+            let pair = new ethers.Contract(
+                await uniswapFactory.getPair(
+                    underlyingToken.address,
+                    redeemToken.address
+                ),
+                UniswapV2Pair.abi,
+                Admin
+            );
+            reserves = await pair.getReserves();
+            reserve0 = reserves._reserve0;
+            reserve1 = reserves._reserve1;
+        });
+
+        it("returns a loanRemainder amount of 0 in the event FlashOpened because negative premium", async () => {
+            // Get the pair instance to approve it to the uniswapConnector
+            let amountOptions = ONE_ETHER;
+            let path = [redeemToken.address, underlyingToken.address];
+            let reserves = await getReserves(
+                Admin,
+                uniswapFactory,
+                path[0],
+                path[1]
+            );
+            let amountOutMin = getPremium(
+                amountOptions,
+                base,
+                quote,
+                redeemToken,
+                underlyingToken,
+                reserves[0],
+                reserves[1]
+            );
             await expect(
                 uniswapConnector.openFlashLong(
                     optionToken.address,
                     amountOptions,
                     amountOutMin
                 )
-            ).to.be.revertedWith("ERR_UNISWAPV2_CALL_FAIL");
+            )
+                .to.emit(uniswapConnector, "FlashOpened")
+                .withArgs(uniswapConnector.address, amountOptions, "0");
         });
     });
 });

@@ -115,7 +115,7 @@ describe("UniswapConnector Flash for Rinkeby", () => {
         trader = await getInstance("Trader", Admin);
 
         // Uniswap Connector contract
-        uniswapConnector = await getInstance("UniswapConnector02", Admin);
+        uniswapConnector = await getInstance("UniswapConnector03", Admin);
 
         // Approve all tokens and contracts
         await batchApproval(
@@ -252,20 +252,6 @@ describe("UniswapConnector Flash for Rinkeby", () => {
                 "1000000",
                 "0"
             );
-            /* await uniswapConnector.openFlashLong(
-                optionToken.address,
-                amountOptions,
-                amountOutMin
-            ); */
-            /* await expect(
-                uniswapConnector.openFlashLong(
-                    optionToken.address,
-                    amountOptions,
-                    amountOutMin
-                )
-            )
-                .to.emit(uniswapConnector, "FlashOpened")
-                .withArgs(uniswapConnector.address, amountOptions, remainder); */
 
             console.log(
                 `Weth balance: ${formatEther(await weth.balanceOf(Alice))}`
@@ -281,6 +267,19 @@ describe("UniswapConnector Flash for Rinkeby", () => {
                 `Option balance: ${formatEther(
                     await optionToken.balanceOf(Alice)
                 )}`
+            );
+        });
+    });
+
+    describe("closeFlashLong", () => {
+        it("should flash close a long position", async () => {
+            // Get the pair instance to approve it to the uniswapConnector
+            let amountRedeems = ONE_ETHER;
+
+            await uniswapConnector.closeFlashLong(
+                optionToken.address,
+                amountRedeems,
+                "0"
             );
         });
     });
