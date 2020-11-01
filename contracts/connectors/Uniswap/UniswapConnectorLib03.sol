@@ -28,7 +28,7 @@ import { WethConnectorLib01 } from "../WETH/WethConnectorLib01.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
-library UniswapConnectorLib02 {
+library UniswapConnectorLib03 {
     using SafeERC20 for IERC20; // Reverts when `transfer` or `transferFrom` erc20 calls don't return proper data
     using SafeMath for uint256; // Reverts on math underflows/overflows
 
@@ -495,53 +495,8 @@ library UniswapConnectorLib02 {
 
     // ==== Flash Functions ====
 
-    function closeFlashLong(
-        IUniswapV2Factory factory,
-        IOption optionToken,
-        uint256 amountRedeems,
-        uint256 minPayout
-    ) internal returns (bool) {
-        address redeemToken = optionToken.redeemToken();
-        address underlyingToken = optionToken.getUnderlyingTokenAddress();
-        address pairAddress = factory.getPair(redeemToken, underlyingToken);
-
-        // Build the path to get the appropriate reserves to borrow from, and then pay back.
-        // We are borrowing from reserve1 then paying it back mostly in reserve0.
-        // Borrowing underlyingTokens, paying back in shortOptionTokens (normal swap). Pay any remainder in underlyingTokens.
-        address[] memory path = new address[](2);
-        path[0] = underlyingToken;
-        path[1] = redeemToken;
-        IUniswapV2Pair pair = IUniswapV2Pair(pairAddress);
-
-        bytes4 selector = bytes4(
-            keccak256(
-                bytes(
-                    "flashCloseLongOptionsThenSwap(address,address,uint256,uint256,address[],address)"
-                )
-            )
-        );
-        bytes memory params = abi.encodeWithSelector(
-            selector, // function to call in this contract
-            pairAddress, // pair contract we are borrowing from
-            optionToken, // option token to mint with flash loaned tokens
-            amountRedeems, // quantity of underlyingTokens from flash loan to use to mint options
-            minPayout, // total price paid (in underlyingTokens) for selling shortOptionTokens
-            path, // redeemToken -> underlyingToken
-            msg.sender // address to pull the remainder loan amount to pay, and send longOptionTokens to.
-        );
-
-        // Receives 0 quoteTokens and `amountRedeems` of underlyingTokens to `this` contract address.
-        // Then executes `flashMintShortOptionsThenSwap`.
-        uint256 amount0Out = pair.token0() == redeemToken ? amountRedeems : 0;
-        uint256 amount1Out = pair.token0() == redeemToken ? 0 : amountRedeems;
-
-        // Borrow the amountRedeems quantity of underlyingTokens and execute the callback function using params.
-        pair.swap(amount0Out, amount1Out, address(this), params);
-        return true;
-    }
-
     // flash out redeem tokens, close option, then pay back in underlyingTokens.
-    /*function flashCloseLongOptionsThenSwap(
+    function flashCloseLongOptionsThenSwap(
         IUniswapV2Router02 router,
         address pairAddress,
         address optionAddress,
@@ -550,7 +505,7 @@ library UniswapConnectorLib02 {
         address[] memory path,
         address to
     ) internal returns (bool) {
-         require(msg.sender == address(this), "ERR_NOT_SELF");
+        require(msg.sender == address(this), "ERR_NOT_SELF");
         require(flashLoanQuantity > 0, "ERR_ZERO");
         // IMPORTANT: Assume this contract has already received `flashLoanQuantity` of redeemTokens.
         // We are flash swapping from an underlying <> shortOptionToken pair,
@@ -628,14 +583,12 @@ library UniswapConnectorLib02 {
                     // get the remaining cost into the `loanRemainder` variable and also check to see
                     // if a user is willing to pay the negative cost. There is no rational economic incentive for this.
                     if (underlyingCostRemaining > 0) {
-                        console.log("underlying cost remaining");
                         loanRemainder = underlyingCostRemaining;
                     }
 
                     // In the case that the payment is positive, subtract it from the outputUnderlyings.
                     // outputUnderlyings = underlyingsRequired, which is being paid back to the pair.
                     if (underlyingPayout > 0) {
-                        console.log("payout", underlyingPayout);
                         outputUnderlyings = outputUnderlyings.sub(
                             underlyingPayout
                         );
@@ -651,14 +604,12 @@ library UniswapConnectorLib02 {
 
             // If loanRemainder is non-zero and non-negative, send underlyingTokens to the pair as payment (premium).
             if (loanRemainder > 0) {
-                console.log("loanREmainder", loanRemainder);
                 // Pull underlyingTokens from the original msg.sender to pay the remainder of the flash swap.
                 // Revert if the minPayout is less than or equal to the underlyingPayment of 0.
                 // There is 0 underlyingPayment in the case that loanRemainder > 0.
                 // This code branch can be successful by setting `minPayout` to 0.
                 // This means the user is willing to pay to close the position.
                 require(minPayout <= underlyingPayout, "ERR_NEGATIVE_PAYOUT");
-                console.log("costing user");
                 IERC20(underlyingToken_).safeTransferFrom(
                     to,
                     pairAddress_,
@@ -670,16 +621,12 @@ library UniswapConnectorLib02 {
             if (underlyingPayout > 0) {
                 // Revert if minPayout is less than the actual payout.
                 require(underlyingPayout >= minPayout, "ERR_PREMIUM_UNDER_MIN");
-                console.log("payingout");
                 IERC20(underlyingToken_).safeTransfer(to, underlyingPayout);
             }
-
-            //emit FlashClosed(msg.sender, outputUnderlyings, underlyingPayout);
         }
 
-        console.log("success");
         return true;
-    } */
+    }
 
     // ==== Internal Functions ====
 
