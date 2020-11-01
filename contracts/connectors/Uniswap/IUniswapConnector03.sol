@@ -12,15 +12,6 @@ import { IOption, IERC20 } from "../../option/interfaces/IOption.sol";
 interface IUniswapConnector03 {
     // ==== Combo Operations ====
 
-    /*  function mintLongOptionsThenSwapToTokens(
-        IOption optionToken,
-        uint256 amountIn,
-        uint256 amountOutMin,
-        address[] calldata path,
-        address to,
-        uint256 deadline
-    ) external returns (bool); */
-
     function mintShortOptionsThenSwapToTokens(
         IOption optionToken,
         uint256 amountIn,
@@ -40,17 +31,6 @@ interface IUniswapConnector03 {
 
     // ==== Liquidity Functions ====
 
-    /* function addLongLiquidityWithUnderlying(
-        address optionAddress,
-        address otherTokenAddress,
-        uint256 quantityOptions,
-        uint256 quantityOtherTokens,
-        uint256 minOptionTokens,
-        uint256 minOtherTokens,
-        address to,
-        uint256 deadline
-    ) external returns (bool); */
-
     function addShortLiquidityWithUnderlying(
         address optionAddress,
         address otherTokenAddress,
@@ -61,16 +41,6 @@ interface IUniswapConnector03 {
         address to,
         uint256 deadline
     ) external returns (bool);
-
-    function removeLongLiquidityThenCloseOptions(
-        address optionAddress,
-        address otherTokenAddress,
-        uint256 liquidity,
-        uint256 amountAMin,
-        uint256 amountBMin,
-        address to,
-        uint256 deadline
-    ) external returns (uint256, uint256);
 
     function removeShortLiquidityThenCloseOptions(
         address optionAddress,

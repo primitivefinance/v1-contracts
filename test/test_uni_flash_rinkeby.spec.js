@@ -115,7 +115,7 @@ describe("UniswapConnector Flash for Rinkeby", () => {
         trader = await getInstance("Trader", Admin);
 
         // Uniswap Connector contract
-        uniswapConnector = await getInstance("UniswapConnector02", Admin);
+        uniswapConnector = await getInstance("UniswapConnector03", Admin);
 
         // Approve all tokens and contracts
         await batchApproval(
@@ -282,6 +282,21 @@ describe("UniswapConnector Flash for Rinkeby", () => {
                     await optionToken.balanceOf(Alice)
                 )}`
             );
+        });
+    });
+
+    describe("closeFlashLong", () => {
+        it("should flash close a long position", async () => {
+            // Get the pair instance to approve it to the uniswapConnector
+            let amountRedeems = ONE_ETHER;
+
+            await uniswapConnector.closeFlashLong(
+                optionToken.address,
+                amountRedeems,
+                "0"
+            );
+
+            /* .withArgs(uniswapConnector.address, amountRedeems, "0"); */
         });
     });
 });

@@ -541,7 +541,7 @@ library UniswapConnectorLib02 {
     }
 
     // flash out redeem tokens, close option, then pay back in underlyingTokens.
-    function flashCloseLongOptionsThenSwap(
+    /*function flashCloseLongOptionsThenSwap(
         IUniswapV2Router02 router,
         address pairAddress,
         address optionAddress,
@@ -550,7 +550,7 @@ library UniswapConnectorLib02 {
         address[] memory path,
         address to
     ) internal returns (bool) {
-        require(msg.sender == address(this), "ERR_NOT_SELF");
+         require(msg.sender == address(this), "ERR_NOT_SELF");
         require(flashLoanQuantity > 0, "ERR_ZERO");
         // IMPORTANT: Assume this contract has already received `flashLoanQuantity` of redeemTokens.
         // We are flash swapping from an underlying <> shortOptionToken pair,
@@ -628,12 +628,14 @@ library UniswapConnectorLib02 {
                     // get the remaining cost into the `loanRemainder` variable and also check to see
                     // if a user is willing to pay the negative cost. There is no rational economic incentive for this.
                     if (underlyingCostRemaining > 0) {
+                        console.log("underlying cost remaining");
                         loanRemainder = underlyingCostRemaining;
                     }
 
                     // In the case that the payment is positive, subtract it from the outputUnderlyings.
                     // outputUnderlyings = underlyingsRequired, which is being paid back to the pair.
                     if (underlyingPayout > 0) {
+                        console.log("payout", underlyingPayout);
                         outputUnderlyings = outputUnderlyings.sub(
                             underlyingPayout
                         );
@@ -649,12 +651,14 @@ library UniswapConnectorLib02 {
 
             // If loanRemainder is non-zero and non-negative, send underlyingTokens to the pair as payment (premium).
             if (loanRemainder > 0) {
+                console.log("loanREmainder", loanRemainder);
                 // Pull underlyingTokens from the original msg.sender to pay the remainder of the flash swap.
                 // Revert if the minPayout is less than or equal to the underlyingPayment of 0.
                 // There is 0 underlyingPayment in the case that loanRemainder > 0.
                 // This code branch can be successful by setting `minPayout` to 0.
                 // This means the user is willing to pay to close the position.
                 require(minPayout <= underlyingPayout, "ERR_NEGATIVE_PAYOUT");
+                console.log("costing user");
                 IERC20(underlyingToken_).safeTransferFrom(
                     to,
                     pairAddress_,
@@ -666,13 +670,16 @@ library UniswapConnectorLib02 {
             if (underlyingPayout > 0) {
                 // Revert if minPayout is less than the actual payout.
                 require(underlyingPayout >= minPayout, "ERR_PREMIUM_UNDER_MIN");
+                console.log("payingout");
                 IERC20(underlyingToken_).safeTransfer(to, underlyingPayout);
             }
 
             //emit FlashClosed(msg.sender, outputUnderlyings, underlyingPayout);
         }
+
+        console.log("success");
         return true;
-    }
+    } */
 
     // ==== Internal Functions ====
 
