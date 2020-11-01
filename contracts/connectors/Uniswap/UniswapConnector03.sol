@@ -410,11 +410,11 @@ contract UniswapConnector03 is
 
     /// @dev Gets the name of the contract.
     function getName() external override pure returns (string memory) {
-        return "PrimitiveV1UniswapConnector02";
+        return "PrimitiveV1UniswapConnector03";
     }
 
     /// @dev Gets the version of the contract.
     function getVersion() external override pure returns (uint8) {
-        return uint8(2);
+        return uint8(3);
     }
 }
