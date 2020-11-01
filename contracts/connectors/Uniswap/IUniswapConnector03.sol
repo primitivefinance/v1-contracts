@@ -23,6 +23,15 @@ interface IUniswapConnector03 {
 
     // ==== Flash Open Functions ====
 
+    function flashCloseLongOptionsThenSwap(
+        address pairAddress,
+        address optionAddress,
+        uint256 flashLoanQuantity,
+        uint256 minPayout,
+        address[] calldata path,
+        address to
+    ) external returns (uint256, uint256);
+
     function openFlashLong(
         IOption optionToken,
         uint256 amountOptions,

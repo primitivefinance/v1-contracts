@@ -93,6 +93,55 @@
       "type": "function"
     },
     {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "pairAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "optionAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "flashLoanQuantity",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "minPayout",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address[]",
+          "name": "path",
+          "type": "address[]"
+        },
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        }
+      ],
+      "name": "flashCloseLongOptionsThenSwap",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
       "inputs": [],
       "name": "getName",
       "outputs": [
