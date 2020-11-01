@@ -614,31 +614,29 @@ library UniswapConnectorLib03 {
             }
         }
 
-        {
-            // scope for redeemToken and underlyingToken, avoids stack too deep errors
-            address redeemToken = IOption(optionAddress).redeemToken();
-            // Pay back the pair in redeemTokens (shortOptionTokens)
-            IERC20(redeemToken).safeTransfer(pairAddress, outputRedeems);
+        address redeemToken = IOption(optionAddress).redeemToken();
+        // Pay back the pair in redeemTokens (shortOptionTokens)
+        IERC20(redeemToken).safeTransfer(pairAddress, outputRedeems);
 
-            // If loanRemainder is non-zero and non-negative, send underlyingTokens to the pair as payment (premium).
-            if (loanRemainder > 0) {
-                // Pull underlyingTokens from the original msg.sender to pay the remainder of the flash swap.
-                require(loanRemainder >= maxPremium, "ERR_PREMIUM_OVER_MAX");
-                IERC20(underlyingToken).safeTransferFrom(
-                    to,
-                    pairAddress,
-                    loanRemainder
-                );
-            }
-
-            // If negativePremiumAmount is non-zero and non-negative, send it to the `to` address.
-            if (negativePremiumPaymentInRedeems > 0) {
-                IERC20(redeemToken).safeTransfer(
-                    to,
-                    negativePremiumPaymentInRedeems
-                );
-            }
+        // If loanRemainder is non-zero and non-negative, send underlyingTokens to the pair as payment (premium).
+        if (loanRemainder > 0) {
+            // Pull underlyingTokens from the original msg.sender to pay the remainder of the flash swap.
+            require(loanRemainder >= maxPremium, "ERR_PREMIUM_OVER_MAX");
+            IERC20(underlyingToken).safeTransferFrom(
+                to,
+                pairAddress,
+                loanRemainder
+            );
         }
+
+        // If negativePremiumAmount is non-zero and non-negative, send it to the `to` address.
+        if (negativePremiumPaymentInRedeems > 0) {
+            IERC20(redeemToken).safeTransfer(
+                to,
+                negativePremiumPaymentInRedeems
+            );
+        }
+
         // Send longOptionTokens (option) to the original msg.sender.
         IERC20(optionAddress).safeTransfer(to, outputOptions);
         return (outputOptions, loanRemainder);
@@ -693,96 +691,89 @@ library UniswapConnectorLib03 {
             address(this)
         );
 
+        // The loanRemainder will be the amount of underlyingTokens that are needed from the original
+        // transaction caller in order to pay the flash swap.
+        // IMPORTANT: THIS IS EFFECTIVELY THE PREMIUM PAID IN UNDERLYINGTOKENS TO PURCHASE THE OPTIONTOKEN.
+        uint256 loanRemainder;
+
+        // Economically, underlyingPayout value should always be greater than 0, or this trade shouldn't be made.
+        // If an underlyingPayout is greater than 0, it means that the redeemTokens borrowed are worth less than the
+        // underlyingTokens received from closing the redeemToken<>optionTokens.
+        // If the redeemTokens are worth more than the underlyingTokens they are entitled to,
+        // then closing the redeemTokens will cost additional underlyingTokens. In this case,
+        // the transaction should be reverted. Or else, the user is paying extra at the expense of
+        // rebalancing the pool.
+        uint256 underlyingPayout;
+
         // Need to return tokens from the flash swap by returning underlyingTokens.
         {
-            address pairAddress_ = pairAddress;
-            address underlyingToken_ = underlyingToken;
+            // scope for router, avoids stack too deep errors
+            IUniswapV2Router02 router_ = router;
+
             // Since the borrowed amount is redeemTokens, and we are paying back in underlyingTokens,
             // we need to see how much underlyingTokens must be returned for the borrowed amount.
             // We can find that value by doing the normal swap math, getAmountsIn will give us the amount
             // of underlyingTokens are needed for the output amount of the flash loan.
             // IMPORTANT: amountsIn 0 is how many underlyingTokens we need to pay back.
             // This value is most likely greater than the amount of underlyingTokens received from closing.
-            uint256[] memory amountsIn = router.getAmountsIn(
+            uint256[] memory amountsIn = router_.getAmountsIn(
                 flashLoanQuantity,
                 path
             );
 
-            // The loanRemainder will be the amount of underlyingTokens that are needed from the original
-            // transaction caller in order to pay the flash swap.
-            // IMPORTANT: THIS IS EFFECTIVELY THE PREMIUM PAID IN UNDERLYINGTOKENS TO PURCHASE THE OPTIONTOKEN.
-            uint256 loanRemainder;
+            uint256 underlyingsRequired = amountsIn[0]; // the amountIn required of underlyingTokens based on the amountOut of flashloanQuantity
+            // If outputUnderlyings (received from closing) is greater than underlyings required,
+            // there is a positive payout.
+            underlyingPayout = outputUnderlyings > underlyingsRequired
+                ? outputUnderlyings.sub(underlyingsRequired)
+                : 0;
 
-            // Economically, underlyingPayout value should always be greater than 0, or this trade shouldn't be made.
-            // If an underlyingPayout is greater than 0, it means that the redeemTokens borrowed are worth less than the
-            // underlyingTokens received from closing the redeemToken<>optionTokens.
-            // If the redeemTokens are worth more than the underlyingTokens they are entitled to,
-            // then closing the redeemTokens will cost additional underlyingTokens. In this case,
-            // the transaction should be reverted. Or else, the user is paying extra at the expense of
-            // rebalancing the pool.
-            uint256 underlyingPayout;
-            {
-                uint256 underlyingsRequired = amountsIn[0]; // the amountIn required of underlyingTokens based on the amountOut of flashloanQuantity
-                // If outputUnderlyings (received from closing) is greater than underlyings required,
-                // there is a positive payout.
-                underlyingPayout = outputUnderlyings > underlyingsRequired
-                    ? outputUnderlyings.sub(underlyingsRequired)
-                    : 0;
-
-                // If there is a negative payout, calculate the remaining cost of underlyingTokens.
-                uint256 underlyingCostRemaining = underlyingsRequired >
-                    outputUnderlyings
-                    ? underlyingsRequired.sub(outputUnderlyings)
-                    : 0;
-
-                {
-                    // In the case that there is a negative payout (additional underlyingTokens are required),
-                    // get the remaining cost into the `loanRemainder` variable and also check to see
-                    // if a user is willing to pay the negative cost. There is no rational economic incentive for this.
-                    if (underlyingCostRemaining > 0) {
-                        loanRemainder = underlyingCostRemaining;
-                    }
-
-                    // In the case that the payment is positive, subtract it from the outputUnderlyings.
-                    // outputUnderlyings = underlyingsRequired, which is being paid back to the pair.
-                    if (underlyingPayout > 0) {
-                        outputUnderlyings = outputUnderlyings.sub(
-                            underlyingPayout
-                        );
-                    }
-                }
-            }
-
-            // Pay back the pair in underlyingTokens
-            IERC20(underlyingToken_).safeTransfer(
-                pairAddress_,
+            // If there is a negative payout, calculate the remaining cost of underlyingTokens.
+            uint256 underlyingCostRemaining = underlyingsRequired >
                 outputUnderlyings
-            );
+                ? underlyingsRequired.sub(outputUnderlyings)
+                : 0;
 
-            // If loanRemainder is non-zero and non-negative, send underlyingTokens to the pair as payment (premium).
-            if (loanRemainder > 0) {
-                // Pull underlyingTokens from the original msg.sender to pay the remainder of the flash swap.
-                // Revert if the minPayout is less than or equal to the underlyingPayment of 0.
-                // There is 0 underlyingPayment in the case that loanRemainder > 0.
-                // This code branch can be successful by setting `minPayout` to 0.
-                // This means the user is willing to pay to close the position.
-                require(minPayout <= underlyingPayout, "ERR_NEGATIVE_PAYOUT");
-                IERC20(underlyingToken_).safeTransferFrom(
-                    to,
-                    pairAddress_,
-                    loanRemainder
-                );
+            // In the case that there is a negative payout (additional underlyingTokens are required),
+            // get the remaining cost into the `loanRemainder` variable and also check to see
+            // if a user is willing to pay the negative cost. There is no rational economic incentive for this.
+            if (underlyingCostRemaining > 0) {
+                loanRemainder = underlyingCostRemaining;
             }
 
-            // If underlyingPayout is non-zero and non-negative, send it to the `to` address.
+            // In the case that the payment is positive, subtract it from the outputUnderlyings.
+            // outputUnderlyings = underlyingsRequired, which is being paid back to the pair.
             if (underlyingPayout > 0) {
-                // Revert if minPayout is less than the actual payout.
-                require(underlyingPayout >= minPayout, "ERR_PREMIUM_UNDER_MIN");
-                IERC20(underlyingToken_).safeTransfer(to, underlyingPayout);
+                outputUnderlyings = outputUnderlyings.sub(underlyingPayout);
             }
-
-            return (outputUnderlyings, underlyingPayout);
         }
+
+        // Pay back the pair in underlyingTokens
+        IERC20(underlyingToken).safeTransfer(pairAddress, outputUnderlyings);
+
+        // If loanRemainder is non-zero and non-negative, send underlyingTokens to the pair as payment (premium).
+        if (loanRemainder > 0) {
+            // Pull underlyingTokens from the original msg.sender to pay the remainder of the flash swap.
+            // Revert if the minPayout is less than or equal to the underlyingPayment of 0.
+            // There is 0 underlyingPayment in the case that loanRemainder > 0.
+            // This code branch can be successful by setting `minPayout` to 0.
+            // This means the user is willing to pay to close the position.
+            require(minPayout <= underlyingPayout, "ERR_NEGATIVE_PAYOUT");
+            IERC20(underlyingToken).safeTransferFrom(
+                to,
+                pairAddress,
+                loanRemainder
+            );
+        }
+
+        // If underlyingPayout is non-zero and non-negative, send it to the `to` address.
+        if (underlyingPayout > 0) {
+            // Revert if minPayout is less than the actual payout.
+            require(underlyingPayout >= minPayout, "ERR_PREMIUM_UNDER_MIN");
+            IERC20(underlyingToken).safeTransfer(to, underlyingPayout);
+        }
+
+        return (outputUnderlyings, underlyingPayout);
     }
 
     // ==== Internal Functions ====
