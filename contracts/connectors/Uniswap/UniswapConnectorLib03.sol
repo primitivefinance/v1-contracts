@@ -555,66 +555,100 @@ library UniswapConnectorLib03 {
     /// @notice Pulls underlying tokens from msg.sender and pushes UNI-V2 liquidity tokens to the "to" address.
     /// underlyingToken -> redeemToken -> UNI-V2.
     /// @param optionAddress The address of the optionToken to get the redeemToken to mint then provide liquidity for.
-    /// @param otherTokenAddress The address of the otherToken in the pair with the optionToken.
     /// @param quantityOptions The quantity of underlyingTokens to use to mint option + redeem tokens.
-    /// @param quantityOtherTokens The quantity of otherTokens to add with shortOptionTokens to the Uniswap V2 Pair.
-    /// @param minShortTokens The minimum quantity of shortOptionTokens expected to provide liquidity with.
-    /// @param minOtherTokens The minimum quantity of otherTokens expected to provide liquidity with.
+    /// @param amountBMax The quantity of underlyingTokens to add with shortOptionTokens to the Uniswap V2 Pair.
+    /// @param amountBMin The minimum quantity of underlyingTokens expected to provide liquidity with.
     /// @param to The address that receives UNI-V2 shares.
     /// @param deadline The timestamp to expire a pending transaction.
     ///
     function addShortLiquidityWithUnderlying(
         IUniswapV2Router02 router,
         address optionAddress,
-        address otherTokenAddress,
         uint256 quantityOptions,
-        uint256 quantityOtherTokens,
-        uint256 minShortTokens,
-        uint256 minOtherTokens,
+        uint256 amountBMax,
+        uint256 amountBMin,
         address to,
         uint256 deadline
-    ) internal returns (bool) {
-        // Pull otherTokens from msg.sender to add to Uniswap V2 Pair.
-        // Warning: calls into msg.sender using `safeTransferFrom`. Msg.sender is not trusted.
-        IERC20(otherTokenAddress).safeTransferFrom(
-            msg.sender,
-            address(this),
-            quantityOtherTokens
-        );
+    )
+        internal
+        returns (
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        uint256 amountA;
+        uint256 amountB;
+        uint256 liquidity;
+        uint256 outputRedeems;
+        {
+            IOption optionToken = IOption(optionAddress);
+            // Pulls underlyingTokens from msg.sender to this contract.
+            // Pushes underlyingTokens to option contract and mints option + redeem tokens to this contract.
+            // Warning: calls into msg.sender using `safeTransferFrom`. Msg.sender is not trusted.
+            (, outputRedeems) = TraderLib.safeMint(
+                optionToken,
+                quantityOptions,
+                address(this)
+            );
+            // Send longOptionTokens from minting option operation to msg.sender.
+            IERC20(address(optionToken)).safeTransfer(
+                msg.sender,
+                quantityOptions
+            );
+        }
 
-        // Pulls underlyingTokens from msg.sender to this contract.
-        // Pushes underlyingTokens to option contract and mints option + redeem tokens to this contract.
-        // Warning: calls into msg.sender using `safeTransferFrom`. Msg.sender is not trusted.
-        (uint256 outputOptions, uint256 outputRedeems) = TraderLib.safeMint(
-            IOption(optionAddress),
-            quantityOptions,
-            address(this)
-        );
-        address redeemToken = IOption(optionAddress).redeemToken();
+        {
+            IUniswapV2Router02 router_ = router;
+            // Scope for redeem and underlying, avoids stack too deep errors.
+            address redeemToken = IOption(optionAddress).redeemToken(); // gas savings
+            address underlyingToken = IOption(optionAddress)
+                .getUnderlyingTokenAddress();
 
-        // Approves Uniswap V2 Pair to transfer option and quote tokens from this contract.
-        IERC20(redeemToken).approve(address(router), uint256(-1));
-        IERC20(otherTokenAddress).approve(address(router), uint256(-1));
+            uint256 amountBMax_ = amountBMax;
+            uint256 amountBMin_ = amountBMin;
+            address to_ = to;
+            uint256 deadline_ = deadline;
+            // Pull underlyingTokens from msg.sender to add to Uniswap V2 Pair.
+            // Warning: calls into msg.sender using `safeTransferFrom`. Msg.sender is not trusted.
+            IERC20(underlyingToken).safeTransferFrom(
+                msg.sender,
+                address(this),
+                amountBMax_
+            );
+            // Approves Uniswap V2 Pair to transfer option and underlying tokens from this contract.
+            IERC20(redeemToken).approve(address(router_), uint256(-1));
+            IERC20(underlyingToken).approve(address(router_), uint256(-1));
 
-        // Adds liquidity to Uniswap V2 Pair and returns liquidity shares to the "to" address.
-        router.addLiquidity(
-            redeemToken,
-            otherTokenAddress,
-            outputRedeems,
-            quantityOtherTokens,
-            minShortTokens,
-            minOtherTokens,
-            to,
-            deadline
-        );
+            // Adds liquidity to Uniswap V2 Pair and returns liquidity shares to the "to" address.
+            (amountA, amountB, liquidity) = router_.addLiquidity(
+                redeemToken,
+                underlyingToken,
+                outputRedeems,
+                amountBMax_,
+                outputRedeems,
+                amountBMin_,
+                to_,
+                deadline_
+            );
+            assert(amountA == outputRedeems);
+        }
 
-        // Send longOptionTokens from minting option operation to msg.sender.
-        IERC20(optionAddress).safeTransfer(msg.sender, outputOptions);
-        IERC20(otherTokenAddress).safeTransfer(
-            msg.sender,
-            IERC20(otherTokenAddress).balanceOf(address(this))
-        );
-        return true;
+        // Send any remaining underlying tokens back to msg.sender.
+        {
+            IOption optionToken = IOption(optionAddress);
+            uint256 remainder = amountBMax > amountB
+                ? amountBMax.sub(amountB)
+                : 0;
+            if (remainder > 0) {
+                IERC20(optionToken.getUnderlyingTokenAddress()).safeTransfer(
+                    msg.sender,
+                    remainder
+                );
+            }
+        }
+
+        return (amountA, amountB, liquidity);
     }
 
     ///

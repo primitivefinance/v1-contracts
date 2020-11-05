@@ -1,4 +1,5 @@
-pragma solidity >=0.6.0;
+// SPDX-License-Identifier: MIT
+pragma solidity 0.6.2;
 
 ///
 /// @title   Combines Uniswap V2 Protocol functions with Primitive V1.
@@ -282,36 +283,39 @@ contract UniswapConnector03 is
     /// @notice Pulls underlying tokens from msg.sender and pushes UNI-V2 liquidity tokens to the "to" address.
     /// underlyingToken -> redeemToken -> UNI-V2.
     /// @param optionAddress The address of the optionToken to get the redeemToken to mint then provide liquidity for.
-    /// @param otherTokenAddress IMPORTANT: Should be the underlyingToken of option. Address of other reserve asset.
     /// @param quantityOptions The quantity of underlyingTokens to use to mint option + redeem tokens.
-    /// @param quantityOtherTokens The quantity of otherTokens to add with shortOptionTokens to the Uniswap V2 Pair.
-    /// @param minShortTokens The minimum quantity of shortOptionTokens expected to provide liquidity with.
-    /// @param minOtherTokens The minimum quantity of otherTokens expected to provide liquidity with.
+    /// @param amountBMax The minimum quantity of shortOptionTokens expected to provide liquidity with.
+    /// @param amountBMin The minimum quantity of otherTokens expected to provide liquidity with.
     /// @param to The address that receives UNI-V2 shares.
     /// @param deadline The timestamp to expire a pending transaction.
     ///
     function addShortLiquidityWithUnderlying(
         address optionAddress,
-        address otherTokenAddress,
         uint256 quantityOptions,
-        uint256 quantityOtherTokens,
-        uint256 minShortTokens,
-        uint256 minOtherTokens,
+        uint256 amountBMax,
+        uint256 amountBMin,
         address to,
         uint256 deadline
-    ) external override nonReentrant returns (bool) {
-        bool success = UniswapConnectorLib03.addShortLiquidityWithUnderlying(
-            router,
-            optionAddress,
-            otherTokenAddress,
-            quantityOptions,
-            quantityOtherTokens,
-            minShortTokens,
-            minOtherTokens,
-            to,
-            deadline
-        );
-        return success;
+    )
+        external
+        override
+        nonReentrant
+        returns (
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        return
+            UniswapConnectorLib03.addShortLiquidityWithUnderlying(
+                router,
+                optionAddress,
+                quantityOptions,
+                amountBMax,
+                amountBMin,
+                to,
+                deadline
+            );
     }
 
     ///
@@ -337,23 +341,19 @@ contract UniswapConnector03 is
         address to,
         uint256 deadline
     ) external override nonReentrant returns (uint256, uint256) {
-        (
-            uint256 amountOptions,
-            uint256 amountOtherTokens
-        ) = UniswapConnectorLib03.removeShortLiquidityThenCloseOptions(
-            factory,
-            router,
-            trader,
-            optionAddress,
-            otherTokenAddress,
-            liquidity,
-            amountAMin,
-            amountBMin,
-            to,
-            deadline
-        );
-
-        return (amountOptions, amountOtherTokens);
+        return
+            UniswapConnectorLib03.removeShortLiquidityThenCloseOptions(
+                factory,
+                router,
+                trader,
+                optionAddress,
+                otherTokenAddress,
+                liquidity,
+                amountAMin,
+                amountBMin,
+                to,
+                deadline
+            );
     }
 
     // ==== Callback Implementation ====
@@ -410,11 +410,11 @@ contract UniswapConnector03 is
 
     /// @dev Gets the name of the contract.
     function getName() external override pure returns (string memory) {
-        return "PrimitiveV1UniswapConnector02";
+        return "PrimitiveV1UniswapConnector03";
     }
 
     /// @dev Gets the version of the contract.
     function getVersion() external override pure returns (uint8) {
-        return uint8(2);
+        return uint8(3);
     }
 }

@@ -9,28 +9,18 @@
           "type": "address"
         },
         {
-          "internalType": "address",
-          "name": "otherTokenAddress",
-          "type": "address"
-        },
-        {
           "internalType": "uint256",
           "name": "quantityOptions",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "quantityOtherTokens",
+          "name": "amountBMax",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "minShortTokens",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "minOtherTokens",
+          "name": "amountBMin",
           "type": "uint256"
         },
         {
@@ -47,9 +37,19 @@
       "name": "addShortLiquidityWithUnderlying",
       "outputs": [
         {
-          "internalType": "bool",
+          "internalType": "uint256",
           "name": "",
-          "type": "bool"
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
         }
       ],
       "stateMutability": "nonpayable",
