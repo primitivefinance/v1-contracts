@@ -1,4 +1,5 @@
-pragma solidity >=0.6.0;
+// SPDX-License-Identifier: MIT
+pragma solidity 0.6.2;
 
 import {
     IUniswapV2Router02
@@ -57,14 +58,18 @@ interface IUniswapConnector03 {
 
     function addShortLiquidityWithUnderlying(
         address optionAddress,
-        address otherTokenAddress,
         uint256 quantityOptions,
-        uint256 quantityOtherTokens,
-        uint256 minShortTokens,
-        uint256 minOtherTokens,
+        uint256 amountBMax,
+        uint256 amountBMin,
         address to,
         uint256 deadline
-    ) external returns (bool);
+    )
+        external
+        returns (
+            uint256,
+            uint256,
+            uint256
+        );
 
     function removeShortLiquidityThenCloseOptions(
         address optionAddress,

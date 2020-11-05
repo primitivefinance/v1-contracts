@@ -189,7 +189,6 @@ describe("UniswapConnector", () => {
         );
         assertBNEqual(await weth.balanceOf(uniswapConnector.address), "0");
         assertBNEqual(await dai.balanceOf(uniswapConnector.address), "0");
-        console.log("Asserted Invariant");
     };
 
     afterEach(async () => {
@@ -343,7 +342,7 @@ describe("UniswapConnector", () => {
         await batchApproval([uniswapConnector.address], [pair], [Admin, User]);
     });
 
-    describe("mintShortOptionsThenSwapToTokens", () => {
+    describe("mintShortOptionsThenSwapToTokens()", () => {
         it("should mint Primitive V1 Options then swap shortTokens on Uniswap V2", async () => {
             // Get the pair address.
             let pair = await uniswapFactory.getPair(
@@ -409,7 +408,7 @@ describe("UniswapConnector", () => {
         });
     });
 
-    describe("addShortLiquidityWithUnderlying", () => {
+    describe("addShortLiquidityWithUnderlying()", () => {
         it("use underlyings to mint options, then provide short options and underlying tokens as liquidity", async () => {
             let underlyingBalanceBefore = await underlyingToken.balanceOf(
                 Alice
@@ -459,10 +458,8 @@ describe("UniswapConnector", () => {
 
             await uniswapConnector.addShortLiquidityWithUnderlying(
                 optionAddress,
-                underlyingToken.address,
                 amountADesired,
                 amountBDesired,
-                amountAMin,
                 amountBMin,
                 to,
                 deadline
@@ -493,9 +490,57 @@ describe("UniswapConnector", () => {
                 )} != amountBMin ${formatEther(amountBMin)}`
             );
         });
+
+        it("should revert if min ratio is greater than the actual ratio", async () => {
+            // assume the pair has a ratio of redeem : weth of 100 : 1.
+            // If we attempt to provide 100 short tokens, we need to imply a ratio.
+            // If we imply a ratio that is less than 100 : 1, it should revert.
+
+            let optionAddress = optionToken.address;
+            let amountADesired = ONE_ETHER; // amount of options to mint 1:100
+            let amountBDesired = amountADesired.mul(105).div(100); // amount of otherTokens to provide =  1.05:1 redem:weth
+            let amountBMin = amountADesired.mul(102).div(100); // greater than the ratio
+            let to = Alice;
+            let deadline = Math.floor(Date.now() / 1000) + 60 * 20;
+
+            await expect(
+                uniswapConnector.addShortLiquidityWithUnderlying(
+                    optionAddress,
+                    amountADesired,
+                    amountBDesired,
+                    amountBMin,
+                    to,
+                    deadline
+                )
+            ).to.be.revertedWith("UniswapV2Router: INSUFFICIENT_B_AMOUNT");
+        });
+
+        it("should revert if max ratio is greater than the actual ratio", async () => {
+            // assume the pair has a ratio of redeem : weth of 100 : 1.
+            // If we attempt to provide 100 short tokens, we need to imply a ratio.
+            // If we imply a ratio that is less than 100 : 1, it should revert.
+
+            let optionAddress = optionToken.address;
+            let amountADesired = ONE_ETHER; // amount of options to mint 1:100
+            let amountBDesired = amountADesired.mul(99).div(100); // amount of otherTokens to provide =  1.05:1 redem:weth
+            let amountBMin = amountADesired.mul(99).div(100); // greater than the ratio
+            let to = Alice;
+            let deadline = Math.floor(Date.now() / 1000) + 60 * 20;
+
+            await expect(
+                uniswapConnector.addShortLiquidityWithUnderlying(
+                    optionAddress,
+                    amountADesired,
+                    amountBDesired,
+                    amountBMin,
+                    to,
+                    deadline
+                )
+            ).to.be.revertedWith("UniswapV2Router: INSUFFICIENT_A_AMOUNT");
+        });
     });
 
-    describe("removeShortLiquidityThenCloseOptions", () => {
+    describe("removeShortLiquidityThenCloseOptions()", () => {
         it("burns UNI-V2 lp shares, then closes the withdrawn shortTokens", async () => {
             let underlyingBalanceBefore = await underlyingToken.balanceOf(
                 Alice
@@ -581,7 +626,7 @@ describe("UniswapConnector", () => {
         });
     });
 
-    describe("openFlashLong", () => {
+    describe("openFlashLong()", () => {
         before(async () => {
             let signers = await setup.newWallets();
 
@@ -805,7 +850,7 @@ describe("UniswapConnector", () => {
         });
     });
 
-    describe("closeFlashLong", () => {
+    describe("closeFlashLong()", () => {
         before(async () => {
             let signers = await setup.newWallets();
 
@@ -973,7 +1018,7 @@ describe("UniswapConnector", () => {
         });
     });
 
-    describe("negative Premium handling", () => {
+    describe("negative Premium handling()", () => {
         before(async () => {
             let signers = await setup.newWallets();
 
