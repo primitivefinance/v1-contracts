@@ -261,7 +261,7 @@ library UniswapConnectorLib03 {
         // If loanRemainder is non-zero and non-negative, send underlyingTokens to the pair as payment (premium).
         if (loanRemainder > 0) {
             // Pull underlyingTokens from the original msg.sender to pay the remainder of the flash swap.
-            require(loanRemainder >= maxPremium, "ERR_PREMIUM_OVER_MAX");
+            require(maxPremium >= loanRemainder, "ERR_PREMIUM_OVER_MAX");
             IERC20(underlyingToken).safeTransferFrom(
                 to,
                 pairAddress,
