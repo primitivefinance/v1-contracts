@@ -832,7 +832,7 @@ describe("UniswapConnector", () => {
                 uniswapConnector.openFlashLong(
                     optionToken.address,
                     amountOptions,
-                    amountOutMin.add(1)
+                    amountOutMin.sub(1)
                 )
             ).to.be.revertedWith("ERR_UNISWAPV2_CALL_FAIL");
         });
