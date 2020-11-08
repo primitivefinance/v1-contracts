@@ -30,7 +30,7 @@
         "deploy-periphery:rinkeby": "cross-env buidler deploy --network rinkeby --tags Periphery",
         "deploy-core:rinkeby": "cross-env buidler deploy --network rinkeby --tags Core",
         "deploy:mainnet": "cross-env buidler deploy --network live --tags Core Periphery",
-        "deploy-options:rinkeby": "cross-env buidler run ./scripts/deploy_options.js --network rinkeby",
+        "deploy-options:rinkeby": "cross-env buidler run ./scripts/deploy_rinkeby_options.js --network rinkeby",
         "deploy-options:mainnet": "cross-env buidler run ./scripts/deploy_options.js --network live",
         "deploy-pairs:rinkeby": "cross-env buidler run ./scripts/deploy_uniswap_pairs.js --network rinkeby",
         "deploy-short-pairs:rinkeby": "cross-env buidler run ./scripts/deploy_uniswap_pairs_short.js --network rinkeby",
