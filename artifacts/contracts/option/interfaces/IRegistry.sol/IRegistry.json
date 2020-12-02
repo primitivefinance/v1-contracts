@@ -1,0 +1,265 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "IRegistry",
+  "sourceName": "contracts/option/interfaces/IRegistry.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "underlyingToken",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "strikeToken",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "base",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "quote",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "expiry",
+          "type": "uint256"
+        }
+      ],
+      "name": "calculateOptionAddress",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "underlyingToken",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "strikeToken",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "base",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "quote",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "expiry",
+          "type": "uint256"
+        }
+      ],
+      "name": "deployOption",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "underlyingToken",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "strikeToken",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "base",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "quote",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "expiry",
+          "type": "uint256"
+        }
+      ],
+      "name": "getOptionAddress",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "optionAddress",
+          "type": "address"
+        }
+      ],
+      "name": "isVerifiedOption",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "optionFactory",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "pauseDeployments",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "redeemFactory",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "optionFactory_",
+          "type": "address"
+        }
+      ],
+      "name": "setOptionFactory",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "redeemFactory_",
+          "type": "address"
+        }
+      ],
+      "name": "setRedeemFactory",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "unpauseDeployments",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "expiry",
+          "type": "uint256"
+        }
+      ],
+      "name": "unverifyExpiry",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "tokenAddress",
+          "type": "address"
+        }
+      ],
+      "name": "unverifyToken",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "expiry",
+          "type": "uint256"
+        }
+      ],
+      "name": "verifyExpiry",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "tokenAddress",
+          "type": "address"
+        }
+      ],
+      "name": "verifyToken",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}
