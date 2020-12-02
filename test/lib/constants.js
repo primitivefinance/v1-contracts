@@ -84,6 +84,7 @@ const CONTRACT_NAMES = {
     REDEEM: "contracts/option/primitives/Redeem.sol:Redeem",
     UNISWAP_TRADER:
         "contracts/option/extensions/UniswapConnector03.sol:UniswapConnector03",
+    DAI: "contracts/test/tokens/DAI.sol:DAI",
 };
 
 module.exports = {
