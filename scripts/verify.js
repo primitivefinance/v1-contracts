@@ -8,6 +8,7 @@ const {
     OPTION,
     REDEEM,
     UNISWAP_TRADER,
+    DAI,
 } = CONTRACT_NAMES;
 const { OPTION_TEMPLATE_LIB, REDEEM_TEMPLATE_LIB } = LIBRARIES;
 const { getContractAt } = bre.ethers;
@@ -52,6 +53,18 @@ const verifyRegistry = async () => {
     let Registry = await deployments.get("Registry");
     try {
         await verifyContract(REGISTRY, Registry.address, Registry.args, {});
+    } catch (err) {
+        console.error(err);
+    }
+};
+
+/**
+ * @dev Verifies the TestERC20 tokens.
+ */
+const verifyDai = async () => {
+    let Dai = await deployments.get("DAI");
+    try {
+        await verifyContract(DAI, Dai.address, Dai.args, {});
     } catch (err) {
         console.error(err);
     }
@@ -182,6 +195,7 @@ async function main() {
     await verifyTemplates();
     await verifyUniswapConnector();
     await verifyWethConnnector();
+    await verifyDai();
 }
 
 main()

@@ -204,6 +204,18 @@ const deployOption = async (optionParametersObject) => {
 };
 
 async function main() {
+    const chain = await bre.getChainId();
+    // Get the Registry admin.
+    const { deployer } = await getNamedAccounts();
+    const signer = ethers.provider.getSigner(deployer);
+    let DAI_TOKEN;
+    console.log(chain);
+    if (chain === 1 || chain === "1") {
+        DAI_TOKEN = DAI;
+    } else if (chain === 4 || chain === "4") {
+        DAI_TOKEN = (await getInstance("DAI", signer)).address;
+        console.log(DAI_TOKEN);
+    }
     // allOptions = { [eth]: [ [address0, address1, base, quote, expiry], ] }
     let allOptions = {};
 
@@ -222,14 +234,14 @@ async function main() {
         // Calls
         for (let q = 0; q < quotes.length; q++) {
             let quote = quotes[q];
-            let option = [address, DAI, BASE, quote, DECEMBER_30];
+            let option = [address, DAI_TOKEN, BASE, quote, DECEMBER_30];
             array.push(option);
         }
 
         // Puts
         for (let q = 0; q < quotes.length; q++) {
             let quote = quotes[q];
-            let option = [DAI, address, quote, BASE, DECEMBER_30];
+            let option = [DAI_TOKEN, address, quote, BASE, DECEMBER_30];
             array.push(option);
         }
 
