@@ -6,76 +6,64 @@
 ![Twitter Follow](https://img.shields.io/twitter/follow/primitivefi?style=social)
 [![Discord](https://img.shields.io/discord/168831573876015105.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/rzRwJ4K)
 
-Primitive is an options market protocol. Built on Ethereum.
+# Primitive V1 Contract Repository
 
-## Risk
+## Documentation
 
-The protocol and software is in an alpha stage. While security is our core focus in the development process, the complex interactions with the protocol, other protocols, and incentive models could lead to vulnerabilities.
+The database of Primitive protocol contracts and documentation is hosted on notion here: [Primitive Protocol HQ](https://www.notion.so/primitivefi/Primitive-Protocol-HQ-fc081b939bb04e2a90ccaebf36faa78e)
 
-## Overview
+## Contracts
 
-We overview the contracts and their functions as well as how to test them.
+Primitive is a protocol for decentralized option tokens.
 
-- Documentation: [Documentation](https://docs.primitive.finance)
-- Protocol Overview: [Overview](https://docs.google.com/document/d/19neM6bFmTCBdxLygQbDDJubwcLcuMIx8x2Fs-llt9sQ/edit?usp=sharing)
+This repository has the core contracts for the Option primitives.
 
-# Environment
+The live contract addresses are [here](https://www.notion.so/primitivefi/dc3b883ff9d94044b6738701b2826f7a?v=9e56507d430d4f4fb1939242cfb23736).
 
-Our development environment consists of the following:
-
-- Buidler - Development Framework
-- buidler-waffle buidler-ethers plugins for buidler
-- buidler-deploy plugin for getting deployed contract artifacts.
-- buidler-solhint - linter plugin
-- buidler-etherscan - verification plugin
-- Mocha - testing framework
-- Chai, chai-bn, and bn.js - unit testing and our choice of BN library. Ether's BigNumber wraps BN.
-- Solidity Visual Auditor - VS Code
-- Slither - static analyzer
-- Open Zeppelin Contracts - external contracts dependency
-
-# Contracts
-
-## Mainnet
-
-| Status  | Contract | Address                                    | Link                                                                                 |
-| :-----: | :------- | :----------------------------------------- | :----------------------------------------------------------------------------------- |
-| Expired | Option   | 0xced83f96AA38bFe34617ea1F699F9f0022548f61 | [Etherscan](https://etherscan.io/address/0xced83f96aa38bfe34617ea1f699f9f0022548f61) |
-| Expired | Redeem   | 0xB0A4d596939715f203Fa9E907935938FEdEa715F | [Etherscan](https://etherscan.io/address/0xb0a4d596939715f203fa9e907935938fedea715f) |
-| Active  | Trader   | 0xff5C103d76586BB55bb33CE01f3dEc9cEe55617f | [Etherscan](https://etherscan.io/address/0xff5c103d76586bb55bb33ce01f3dec9cee55617f) |
-| Expired | Pool     | 0xf7a7126C6eB9c2cC0dB9F936bA4d0D5685662830 | [Etherscan](https://etherscan.io/address/0xf7a7126C6eB9c2cC0dB9F936bA4d0D5685662830) |
-
-# Documentation
-
-[Documentation](https://docs.primitive.finance)
+We use [Hardhat](https://hardhat.org) as a development environment for compiling, testing, and deploying the contracts.
 
 # Testing
 
-```
-yarn install
-yarn bevm
-yarn test
-```
+### Run Tests
 
-# Tooling
+`yarn test`
 
-Coverage is currently bugged with the latest version of waffle, it will show 0 coverage.
+### Run Coverage
 
-```
-yarn coverage
-```
+`yarn coverage`
 
-Linter
+### Deployments
 
-```
-yarn lint
-yarn lint:fix
-```
+`yarn deploy:mainnet`
 
-# Contributing and Discussion
+`yarn deploy:rinkeby`
 
-Join our community and protocol developers in the Primitive [Discord](https://discord.gg/rzRwJ4K).
+### Verify Deployments
+
+`yarn verify:rinkeby`
+
+`yarn verify:mainnet`
+
+# Reports
+
+## Coverage
+The coverage report is available [here](https://www.notion.so/primitivefi/Coverage-Report-b49c6f99571c4307aa78c9a0c0175ca2).
+
+## Gas
+The gas report is available [here](https://www.notion.so/primitivefi/Gas-Report-9d89c906edec48ec9c4afe6209277f19).
+
+# Contributing
+
+Join the developers and team in the Primitive discord: [Discord](https://discord.gg/JBM6APT)
 
 # Security
 
-If you have security concerns, email us at [security@primitive.finance](mailto:security@primitive.finance). We will have a bug bounty when the contracts are live on mainnet.
+The disclosure of security vulnerabilities helps us ensure the security of our users.
+
+How to report a security vulnerability?
+
+If you believe you’ve found a security vulnerability in one of our contracts or platforms, send it to us by emailing [security@primitive.finance](mailto:security@primitive.finance). Please include the following details with your report:
+
+- A description of the location and potential impact of the vulnerability.
+- A detailed description of the steps required to reproduce the vulnerability.
+
