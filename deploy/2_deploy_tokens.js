@@ -12,7 +12,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     const ethToken = await deploy("TestERC20", {
         from: deployer,
         contractName: "TestERC20",
-        args: ["ETH", "Ether", parseEther("10000")],
+        args: ["ETH", "Ether", parseEther("100000000")],
     });
 
     const wethToken = await deploy("WETH9", {
@@ -24,10 +24,16 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     const usdcToken = await deploy("USDC", {
         from: deployer,
         contractName: "USDC",
-        args: ["USDC", "Stablecoin", parseEther("10000")],
+        args: ["USDC", "Stablecoin", parseEther("10000000")],
     });
 
-    let deployed = [ethToken, usdcToken, wethToken];
+    const daiToken = await deploy("DAI", {
+        from: deployer,
+        contractName: "DAI",
+        args: ["DAI", "DAI Stablecoin", parseEther("100000000")],
+    });
+
+    let deployed = [ethToken, usdcToken, wethToken, daiToken];
     for (let i = 0; i < deployed.length; i++) {
         if (deployed[i].newlyDeployed)
             log(
