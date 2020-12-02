@@ -12,7 +12,7 @@ The database of Primitive protocol contracts and documentation is hosted on noti
 
 ## Contracts
 
-Primitive is a protocol for decentralized option tokens.
+Primitive is a decentralized protocol for options that is focused on security and simplicity. Users and developers will tap into the protocol to offer and underwrite tokenized options on any ERC-20 token. The protocol operates without any centralized control, enabling an immutable set of smart contracts to work in perpetuity on Ethereum.
 
 This repository has the core contracts for the Option primitives.
 
