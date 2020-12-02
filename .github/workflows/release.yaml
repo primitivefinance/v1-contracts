@@ -3,7 +3,7 @@ name: Semantic Realease & NPM Deploy
 on:
   push:
     tags-ignore:
-      - "**"
+      - '**'
     branches:
       - master
 jobs:
@@ -14,9 +14,9 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2-beta
         with:
-          node-version: 12
+          node-version: 14
       - name: Install Dependencies
-        run: yarn install 
+        run: yarn install
       - name: Semantic Release
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
