@@ -41,7 +41,7 @@ Object.assign(module.exports, {
             },
             chainId: 1,
             from: "0xaF31D3C2972F62Eb08F96a1Fe29f579d61b4294D",
-            gasPrice: 40000000000,
+            gasPrice: 30000000000,
         },
         rinkeby: {
             url: rinkeby,
