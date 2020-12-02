@@ -16,7 +16,7 @@ jobs:
         with:
           node-version: 12
       - name: Install Dependencies
-        run: npm install 
+        run: yarn install 
       - name: Semantic Release
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
