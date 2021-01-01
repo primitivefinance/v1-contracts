@@ -1,6 +1,6 @@
 {
   "name": "@primitivefi/contracts",
-  "version": "0.4.1",
+  "version": "0.4.4",
   "description": "Primitive options protocol contracts.",
   "engines": {
     "node": ">=10"

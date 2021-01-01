@@ -6,15 +6,13 @@
 ![Twitter Follow](https://img.shields.io/twitter/follow/primitivefi?style=social)
 [![Discord](https://img.shields.io/discord/168831573876015105.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/rzRwJ4K)
 
-# Primitive V1 Contract Repository
-
-## Documentation
+# Documentation
 
 The database of Primitive protocol contracts and documentation is hosted on notion here: [Primitive Protocol HQ](https://www.notion.so/primitivefi/Primitive-Protocol-HQ-fc081b939bb04e2a90ccaebf36faa78e)
 
 ## Contracts
 
-Primitive is a protocol for decentralized option tokens.
+Primitive is a decentralized protocol for options that is focused on security and simplicity. Users and developers will tap into the protocol to offer and underwrite tokenized options on any ERC-20 token. The protocol operates without any centralized control, enabling an immutable set of smart contracts to work in perpetuity on Ethereum.
 
 This repository has the core contracts for the Option primitives.
 
@@ -47,9 +45,11 @@ We use [Hardhat](https://hardhat.org) as a development environment for compiling
 # Reports
 
 ## Coverage
+
 The coverage report is available [here](https://www.notion.so/primitivefi/Coverage-Report-b49c6f99571c4307aa78c9a0c0175ca2).
 
 ## Gas
+
 The gas report is available [here](https://www.notion.so/primitivefi/Gas-Report-9d89c906edec48ec9c4afe6209277f19).
 
 # Contributing
@@ -66,4 +66,3 @@ If you believe you’ve found a security vulnerability in one of our contracts o
 
 - A description of the location and potential impact of the vulnerability.
 - A detailed description of the steps required to reproduce the vulnerability.
-
