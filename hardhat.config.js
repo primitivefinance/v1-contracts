@@ -25,7 +25,7 @@ const live = process.env.MNEMONIC || mnemonic
 Object.assign(module.exports, {
   networks: {
     hardhat: {
-      blockGasLimit: 10000000
+      blockGasLimit: 10000000,
     },
     local: {
       url: 'http://127.0.0.1:8545',
@@ -39,7 +39,7 @@ Object.assign(module.exports, {
       },
       chainId: 1,
       from: '0xaF31D3C2972F62Eb08F96a1Fe29f579d61b4294D',
-      gasPrice: 30000000000,
+      gasPrice: 50000000000,
     },
     rinkeby: {
       url: rinkeby,

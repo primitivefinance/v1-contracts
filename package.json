@@ -35,6 +35,7 @@
     "deploy-core:mainnet": "cross-env hardhat deploy --network live --tags Core",
     "deploy-options:rinkeby": "cross-env hardhat run ./scripts/deploy_rinkeby_options.js --network rinkeby",
     "deploy-options:mainnet": "cross-env hardhat run ./scripts/deploy_mainnet_options.js --network live",
+    "deploy-pairs:mainnet": "cross-env hardhat run ./scripts/deploy_mainnet_pairs.js --network live",
     "verify:rinkeby": "cross-env hardhat run ./scripts/verify.js --network rinkeby",
     "verify:mainnet": "cross-env hardhat run ./scripts/verify.js --network live"
   },
