@@ -389,6 +389,75 @@ contract Option is IOption, ERC20 {
         return (inRedeems, inOptions, outUnderlyings);
     }
 
+    /**
+     * @dev Warning: This low-level function should be called from a contract which performs important safety checks.
+     * This function should never be called directly by an externally owned account.
+     * A sophsticated smart contract should make the important checks to make sure the correct amount of tokens
+     * are transferred into this contract prior to the function call. If an incorrect amount of tokens are transferred
+     * into this contract, and this function is called, it can result in the loss of funds.
+     * If the option has expired. Burn redeem tokens to withdraw underlying tokens and/or strike tokens
+     * If the option is not expired, burn option and redeem tokens to withdraw underlying tokens and/or strike tokens
+     * In both cases, amount is proportional to share of redeem supply deposited.
+     * @notice inRedeemTokens / strike ratio = outUnderlyingTokens && inOptionTokens >= outUnderlyingTokens.
+     * @param receiver The outUnderlyingTokens are sent to the receiver address.
+     */
+    function closeOptionsNew(address receiver, uint256 outUnderlyings, uint256 outStrikeTokens)
+        external
+        override
+        nonReentrant
+        returns (
+            uint256,
+            uint256
+        )
+    {
+        require(outUnderlyings > 0 || outStrikeTokens > 0, "ERR_ZERO");
+        // Stores addresses and balances locally for gas savings.
+        address underlyingToken = optionParameters.underlyingToken;
+        address strikeToken = optionParameters.strikeToken;
+        address _redeemToken = redeemToken;
+        uint256 underlyingBalance = IERC20(underlyingToken).balanceOf(
+            address(this)
+        );
+        uint256 strikeBalance = IERC20(strikeToken).balanceOf(
+            address(this)
+        );
+        uint256 inRedeems = IERC20(_redeemToken).balanceOf(address(this));
+        uint256 redeemSupply = IERC20(_redeemToken).totalSupply();
+
+        uint256 optionBalance = balanceOf(address(this));
+
+        // If option has not expired, option tokens must be burned in proportion
+        // to the share of redeem token supply in the contract.
+        if(isNotExpired()) {
+          require(optionBalance.mul(redeemSupply) == inRedeems.mul(totalSupply()), "ERR_OPTIONS_INPUT");
+          _burn(address(this), optionBalance);
+        }
+
+        if(outUnderlyings > 0) {
+          require(outUnderlyings.mul(redeemSupply) == inRedeems.mul(underlyingBalance), "ERR_BAL_UNDERLYING");
+          IERC20(underlyingToken).safeTransfer(receiver, outUnderlyings);
+        }
+        if(outStrikeTokens > 0) {
+          require(outStrikeTokens.mul(redeemSupply) == inRedeems.mul(strikeBalance), "ERR_BAL_STRIKE");
+          IERC20(strikeToken).safeTransfer(receiver, outStrikeTokens);
+        }
+
+        // Send underlyingTokens to user.
+        // Burn redeemTokens held in the contract.
+        // User does not receive extra underlyingTokens if there was extra optionTokens in the contract.
+        // User receives outUnderlyings proportional to inRedeems.
+        IRedeem(_redeemToken).burn(address(this), inRedeems);
+
+        // Current balances of underlyingToken and redeemToken.
+        underlyingBalance = IERC20(underlyingToken).balanceOf(address(this));
+        strikeBalance = IERC20(strikeToken).balanceOf(address(this));
+
+        // Update the cached balances.
+        _updateCacheBalances(underlyingBalance, strikeBalance);
+        emit Close(msg.sender, outUnderlyings);
+        return (inRedeems, inOptions);
+    }
+
     /* === VIEW === */
 
     /**
