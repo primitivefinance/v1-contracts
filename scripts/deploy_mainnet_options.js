@@ -130,7 +130,9 @@ const deployOption = async (optionParametersObject) => {
 
 const ADDRESS_FOR_MARKET = {
   eth: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
-  yfi: '0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e',
+  /* 
+  yfi: '0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e', */
+  /* sushi: '0x6B3595068778DD592e39A122f4f5a5cF09C90fE2', */
   /* 
   sushi: '0x6B3595068778DD592e39A122f4f5a5cF09C90fE2',
   comp: '0xc00e94Cb662C3520282E6f5717214004A7f26888',
@@ -156,8 +158,12 @@ const STRIKES_FOR_MARKET = {
 }
 
 const CALL_STRIKES = {
-  eth: ['1600'],
-  yfi: ['50000'],
+  eth: ['5000'],
+  /* 
+  yfi: ['50000'], 
+  sushi: ['30'],
+  */
+
   /* 
   eth: ['500', '600', '720'],
   sushi: ['0.75', '1', '2'],
@@ -170,8 +176,10 @@ const CALL_STRIKES = {
 }
 
 const PUT_STRIKES = {
-  eth: ['800'],
-  yfi: ['25000'],
+  eth: ['480'],
+  /* 
+  yfi: ['25000'], sushi: ['2.5'],*/
+
   /* 
   eth: ['500', '600', '720'],
   sushi: ['0.75', '1', '2'],
@@ -186,10 +194,17 @@ const PUT_STRIKES = {
 // 8am utc
 const JAN_29 = '1611907200'
 const APRIL_30 = '1619769600'
+// 12/30/2020 @ 12:00am (UTC)
+const DECEMBER_30 = '1609286400'
+const JAN_8 = '1610107199'
+const FEB_26 = '1614340799'
+const SEP_24 = '1632470400'
 
 const EXPIRIES = {
-  eth: [JAN_29],
-  yfi: [APRIL_30],
+  eth: [SEP_24],
+  /* 
+  yfi: [APRIL_30], sushi: [SEP_24],*/
+
   /* 
   eth: ['500', '600', '720'],
   sushi: ['0.75', '1', '2'],
@@ -202,11 +217,6 @@ const EXPIRIES = {
 }
 
 const DAI = '0x6B175474E89094C44Da98b954EedeAC495271d0F'
-
-// 12/30/2020 @ 12:00am (UTC)
-const DECEMBER_30 = '1609286400'
-const JAN_8 = '1610107199'
-const FEB_26 = '1614340799'
 
 const BASE = '1'
 
