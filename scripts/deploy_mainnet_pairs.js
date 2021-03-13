@@ -3,6 +3,9 @@ const { checkInitialization } = require('../test/lib/utils')
 const { ADDRESSES } = require('../test/lib/constants')
 const { ZERO_ADDRESS } = ADDRESSES
 const fs = require('fs')
+const UniswapV2Factory = require('@uniswap/v2-core/build/IUniswapV2Factory.json')
+const OptionABI = require('../artifacts/contracts/option/primitives/Option.sol/Option.json')
+const optionsToDeployPairsFor = require('./json/option_mainnet_deployments_1610322182052.json')
 
 /**
  * @dev Checks the optionTemplate and redeemTemplate. If they are address zero, it will call deployTemplate().
@@ -89,50 +92,39 @@ const getOptionSymbol = (underlyingSymbol, optionParametersObject) => {
  * @param optionParametersObject An object with the option parameters that will be deployed.
  * @return Address of the deployed option clone.
  */
-const deployOption = async (optionParametersObject) => {
+const deployPair = async (optionAddress) => {
   // Get the Registry admin.
   const { deployer } = await getNamedAccounts()
   const signer = ethers.provider.getSigner(deployer)
-
-  // Get the contract instances.
-  const registry = await getInstance('Registry', signer)
-  const optionFactory = await getInstance('OptionFactory', signer)
-  const redeemFactory = await getInstance('RedeemFactory', signer)
-
-  // Check to see if Registry is in a ready-to-deploy-clone state.
-  await checkInitialization(registry, optionFactory, redeemFactory)
-  await checkTemplates(optionFactory, redeemFactory)
+  const uniswapFactory = new ethers.Contract('0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f', UniswapV2Factory.abi, signer)
+  const option = new ethers.Contract(optionAddress, OptionABI.abi, signer)
 
   // Get the option parameters from the object.
-  let underlyingToken = optionParametersObject.underlyingToken
-  let strikeToken = optionParametersObject.strikeToken
-  let base = optionParametersObject.base
-  let quote = optionParametersObject.quote
-  let expiry = optionParametersObject.expiry
+  let underlyingToken = await option.getUnderlyingTokenAddress()
+  let redeemToken = await option.redeemToken()
 
   // Check to see if the option exists by trying to get its address. Returns zero address if not deployed.
-  let optionAddress = await registry.getOptionAddress(underlyingToken, strikeToken, base, quote, expiry)
+  let pairAddress = await uniswapFactory.getPair(redeemToken, underlyingToken)
 
   // Deploy the option if it is the zero address.
   let deployCloneTx
-  if (optionAddress == ZERO_ADDRESS) {
+  if (pairAddress == ZERO_ADDRESS) {
     try {
-      deployCloneTx = await registry.deployOption(underlyingToken, strikeToken, base, quote, expiry, { gasLimit: 1000000 })
+      deployCloneTx = await uniswapFactory.createPair(redeemToken, underlyingToken)
+      console.log(`testing complete, deploying for: ${underlyingToken} ${redeemToken}`)
     } catch (err) {
       console.log(err)
     }
     // get deployed option address
-    optionAddress = await registry.getOptionAddress(underlyingToken, strikeToken, base, quote, expiry)
+    pairAddress = await uniswapFactory.getPair(redeemToken, underlyingToken)
   }
 
-  return optionAddress
+  return pairAddress
 }
 
 const ADDRESS_FOR_MARKET = {
   eth: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
-  /* 
-  yfi: '0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e', */
-  /* sushi: '0x6B3595068778DD592e39A122f4f5a5cF09C90fE2', */
+  yfi: '0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e',
   /* 
   sushi: '0x6B3595068778DD592e39A122f4f5a5cF09C90fE2',
   comp: '0xc00e94Cb662C3520282E6f5717214004A7f26888',
@@ -142,83 +134,6 @@ const ADDRESS_FOR_MARKET = {
   snx: '0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F',
   mkr: '0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2', */
 }
-
-const STRIKES_FOR_MARKET = {
-  eth: ['1000'],
-  yfi: ['40000'],
-  /* 
-  eth: ['500', '600', '720'],
-  sushi: ['0.75', '1', '2'],
-  comp: ['125', '150', '250'],
-  uni: ['3', '5', '10'],
-  link: ['15', '20', '40'],
-  aave: ['30', '50', '75'],
-  snx: ['4', '6', '10'],
-  mkr: ['500', '750', '1250'], */
-}
-
-const CALL_STRIKES = {
-  eth: ['5000'],
-  /* 
-  yfi: ['50000'], 
-  sushi: ['30'],
-  */
-
-  /* 
-  eth: ['500', '600', '720'],
-  sushi: ['0.75', '1', '2'],
-  comp: ['125', '150', '250'],
-  uni: ['3', '5', '10'],
-  link: ['15', '20', '40'],
-  aave: ['30', '50', '75'],
-  snx: ['4', '6', '10'],
-  mkr: ['500', '750', '1250'], */
-}
-
-const PUT_STRIKES = {
-  eth: ['480'],
-  /* 
-  yfi: ['25000'], sushi: ['2.5'],*/
-
-  /* 
-  eth: ['500', '600', '720'],
-  sushi: ['0.75', '1', '2'],
-  comp: ['125', '150', '250'],
-  uni: ['3', '5', '10'],
-  link: ['15', '20', '40'],
-  aave: ['30', '50', '75'],
-  snx: ['4', '6', '10'],
-  mkr: ['500', '750', '1250'], */
-}
-
-// 8am utc
-const JAN_29 = '1611907200'
-const APRIL_30 = '1619769600'
-// 12/30/2020 @ 12:00am (UTC)
-const DECEMBER_30 = '1609286400'
-const JAN_8 = '1610107199'
-const FEB_26 = '1614340799'
-const SEP_24 = '1632470400'
-
-const EXPIRIES = {
-  eth: [SEP_24],
-  /* 
-  yfi: [APRIL_30], sushi: [SEP_24],*/
-
-  /* 
-  eth: ['500', '600', '720'],
-  sushi: ['0.75', '1', '2'],
-  comp: ['125', '150', '250'],
-  uni: ['3', '5', '10'],
-  link: ['15', '20', '40'],
-  aave: ['30', '50', '75'],
-  snx: ['4', '6', '10'],
-  mkr: ['500', '750', '1250'], */
-}
-
-const DAI = '0x6B175474E89094C44Da98b954EedeAC495271d0F'
-
-const BASE = '1'
 
 async function main() {
   // allOptions = { [eth]: [ [address0, address1, base, quote, expiry], ] }
@@ -230,34 +145,23 @@ async function main() {
   // for each asset create an array of calls and puts
   for (let k = 0; k < keys.length; k++) {
     let asset = keys[k]
-    let callStrikes = CALL_STRIKES[asset]
-    let putStrikes = PUT_STRIKES[asset]
-    let address = ADDRESS_FOR_MARKET[asset]
-    let expiry = EXPIRIES[asset][0]
-
+    let options = Object.keys(optionsToDeployPairsFor[asset])
     let array = []
 
-    // Calls
-    for (let q = 0; q < callStrikes.length; q++) {
-      let quote = callStrikes[q]
+    // options
+    for (let o = 0; o < options.length; o++) {
+      console.log(optionsToDeployPairsFor[asset], options[o])
+      let optionSymbol = options[o]
+      let option = optionsToDeployPairsFor[asset][optionSymbol]
       // [address0, address1, base, quote, expiry]
-      let option = [address, DAI, BASE, quote, expiry]
-      array.push(option)
-    }
-
-    // Puts
-    for (let q = 0; q < putStrikes.length; q++) {
-      let quote = putStrikes[q]
-      // [address0, address1, base, quote, expiry]
-      let option = [DAI, address, quote, BASE, expiry]
-      array.push(option)
+      let address = option.address
+      array.push(address)
     }
 
     // allOptions[eth] = [ [optionParams], ..., ]
     allOptions[asset] = array
   }
 
-  let allDeployements = {}
   // For each option object, parse its parameters, deploy it, and save it to a json file.
   for (let i = 0; i < Object.keys(allOptions).length; i++) {
     // Asset: e.g. 'eth'
@@ -267,36 +171,13 @@ async function main() {
     let assetOptions = allOptions[asset]
 
     // For each of the options of the asset, deploy it using the parameters
-    let optionJsonObject = {}
     for (let x = 0; x < assetOptions.length; x++) {
-      let option = assetOptions[x]
-      let underlyingToken = option[0]
-      let strikeToken = option[1]
-      let base = option[2]
-      let quote = option[3]
-      let expiry = option[4]
-      let optionParametersObject = getOptionParametersObject(underlyingToken, strikeToken, base, quote, expiry)
-      let underlyingSymbol = asset
+      let optionAddress = assetOptions[x]
 
       // Deploy the option
-      let optionAddress = await deployOption(optionParametersObject)
-      let symbol = await getOptionSymbol(underlyingSymbol, optionParametersObject)
-      Object.assign(optionJsonObject, {
-        [symbol]: {
-          optionParameters: option,
-          address: optionAddress,
-        },
-      })
+      let pairAddress = await deployPair(optionAddress)
     }
-
-    // allDeployments[eth] = { optionsObjects }
-    Object.assign(allDeployements, {
-      [asset]: optionJsonObject,
-    })
   }
-
-  const path = `./scripts/json/option_mainnet_deployments_${+new Date()}.json`
-  writeOptionJson(allDeployements, path)
 }
 
 main()

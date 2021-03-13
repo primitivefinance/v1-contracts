@@ -17,6 +17,7 @@ require('solidity-coverage')
 // == Environment ==
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || crypto.randomBytes(20).toString('base64')
 const rinkeby = process.env.RINKEBY || new ethers.providers.InfuraProvider('rinkeby').connection.url
+const kovan = process.env.KOVAN || new ethers.providers.InfuraProvider('kovan').connection.url
 const mainnet = process.env.MAINNET || new ethers.providers.InfuraProvider('mainnet').connection.url
 const mnemonic = process.env.TEST_MNEMONIC || bip39.generateMnemonic()
 const live = process.env.MNEMONIC || mnemonic
@@ -25,7 +26,7 @@ const live = process.env.MNEMONIC || mnemonic
 Object.assign(module.exports, {
   networks: {
     hardhat: {
-      blockGasLimit: 10000000
+      blockGasLimit: 10000000,
     },
     local: {
       url: 'http://127.0.0.1:8545',
@@ -39,7 +40,7 @@ Object.assign(module.exports, {
       },
       chainId: 1,
       from: '0xaF31D3C2972F62Eb08F96a1Fe29f579d61b4294D',
-      gasPrice: 30000000000,
+      gasPrice: 60000000000,
     },
     rinkeby: {
       url: rinkeby,
@@ -47,6 +48,13 @@ Object.assign(module.exports, {
         mnemonic: mnemonic,
       },
       chainId: 4,
+    },
+    kovan: {
+      url: kovan,
+      accounts: {
+        mnemonic: mnemonic,
+      },
+      chainId: 42,
     },
     coverage: {
       url: 'http://127.0.0.1:8555', // Coverage launches its own ganache-cli client
