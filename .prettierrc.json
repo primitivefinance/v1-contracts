@@ -1,17 +1,19 @@
 {
-    "overrides": [
-        {
-            "files": ["*.sol", "*.js", "*.json"],
-            "options": {
-                "printWidth": 80,
-                "tabWidth": 4,
-                "useTabs": false,
-                "singleQuote": false,
-                "bracketSpacing": true,
-                "explicitTypes": "always",
-                "jsxBracketSameLine": false,
-                "semi": true
-            }
-        }
-    ]
+  "semi": false,
+  "singleQuote": true,
+  "printWidth": 125,
+  "bracketSpacing": true,
+  "overrides": [
+    {
+      "files": "*.sol",
+      "options": {
+        "printWidth": 80,
+        "tabWidth": 4,
+        "useTabs": false,
+        "singleQuote": false,
+        "bracketSpacing": false,
+        "explicitTypes": "always"
+      }
+    }
+  ]
 }

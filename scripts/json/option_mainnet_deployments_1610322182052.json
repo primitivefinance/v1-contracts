@@ -1,0 +1,46 @@
+{
+  "eth": {
+    "ETH2021129C001600": {
+      "optionParameters": [
+        "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+        "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+        "1",
+        "1600",
+        "1611907200"
+      ],
+      "address": "0x423f929BCC887d76E0f77c2E43F228C04ECfc691"
+    },
+    "ETH2021129P000800": {
+      "optionParameters": [
+        "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+        "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+        "800",
+        "1",
+        "1611907200"
+      ],
+      "address": "0x041e6eF2702d90ac287616d3eDb89CB146ee05c9"
+    }
+  },
+  "yfi": {
+    "YFI2021430C050000": {
+      "optionParameters": [
+        "0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e",
+        "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+        "1",
+        "50000",
+        "1619769600"
+      ],
+      "address": "0x233D0Cc90fE650C0987cd151b6aE1AffAC2C34c4"
+    },
+    "YFI2021430P025000": {
+      "optionParameters": [
+        "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+        "0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e",
+        "25000",
+        "1",
+        "1619769600"
+      ],
+      "address": "0xf0E626B7B7787737c256094527D16016feCA4fcC"
+    }
+  }
+}

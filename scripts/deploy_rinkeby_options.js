@@ -129,7 +129,7 @@ const deployTokens = async () => {
 
 const STRIKES_FOR_MARKET = {
     yfi: ["14500", "18500", "28000"],
-    eth: ["340", "400", "440"],
+    eth: ["500", "600", "720"],
     sushi: ["0.75", "1", "2"],
     comp: ["125", "150", "250"],
     uni: ["3", "5", "10"],
@@ -177,6 +177,7 @@ const deployOption = async (optionParametersObject) => {
 
     // Deploy the option if it is the zero address.
     let deployCloneTx;
+    console.log(optionAddress, ZERO_ADDRESS);
     if (optionAddress == ZERO_ADDRESS) {
         try {
             deployCloneTx = await registry.deployOption(
@@ -204,6 +205,16 @@ const deployOption = async (optionParametersObject) => {
 };
 
 async function main() {
+    const chain = await bre.getChainId();
+    // Get the Registry admin.
+    const { deployer } = await getNamedAccounts();
+    const signer = ethers.provider.getSigner(deployer);
+    let DAI_TOKEN;
+    if (chain === 1 || chain === "1") {
+        DAI_TOKEN = DAI;
+    } else if (chain === 4 || chain === "4") {
+        DAI_TOKEN = (await getInstance("DAI", signer)).address;
+    }
     // allOptions = { [eth]: [ [address0, address1, base, quote, expiry], ] }
     let allOptions = {};
 
@@ -222,14 +233,14 @@ async function main() {
         // Calls
         for (let q = 0; q < quotes.length; q++) {
             let quote = quotes[q];
-            let option = [address, DAI, BASE, quote, DECEMBER_30];
+            let option = [address, DAI_TOKEN, BASE, quote, DECEMBER_30];
             array.push(option);
         }
 
         // Puts
         for (let q = 0; q < quotes.length; q++) {
             let quote = quotes[q];
-            let option = [DAI, address, quote, BASE, DECEMBER_30];
+            let option = [DAI_TOKEN, address, quote, BASE, DECEMBER_30];
             array.push(option);
         }
 

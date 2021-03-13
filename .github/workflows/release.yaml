@@ -1,0 +1,24 @@
+name: Semantic Realease & NPM Deploy
+
+on:
+  push:
+    tags-ignore:
+      - '**'
+    branches:
+      - master
+jobs:
+  deploy:
+    if: contains(github.event.head_commit.message, 'skip ci') == false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2-beta
+        with:
+          node-version: 14
+      - name: Install Dependencies
+        run: yarn install
+      - name: Semantic Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npx semantic-release

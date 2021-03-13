@@ -2,7 +2,7 @@
 
 The testing files are in the appropriate contract modules they cover.
 
-## Steps to testing using the buidler EVM
+## Steps to testing using the hardhat EVM
 
 #### Install dependencies
 
@@ -10,17 +10,11 @@ The testing files are in the appropriate contract modules they cover.
 yarn install
 ```
 
-#### Start the Buidler EVM (or ganache-cli)
-
-```
-yarn bevm
-```
-
 #### Run the tests
 
 ```
 yarn test
-yarn test:local (if running ganache-cli and not buidler evm)
+yarn test:local (if running ganache-cli)
 ```
 
 ## Tooling
