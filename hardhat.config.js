@@ -17,6 +17,7 @@ require('solidity-coverage')
 // == Environment ==
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || crypto.randomBytes(20).toString('base64')
 const rinkeby = process.env.RINKEBY || new ethers.providers.InfuraProvider('rinkeby').connection.url
+const kovan = process.env.KOVAN || new ethers.providers.InfuraProvider('kovan').connection.url
 const mainnet = process.env.MAINNET || new ethers.providers.InfuraProvider('mainnet').connection.url
 const mnemonic = process.env.TEST_MNEMONIC || bip39.generateMnemonic()
 const live = process.env.MNEMONIC || mnemonic
@@ -47,6 +48,13 @@ Object.assign(module.exports, {
         mnemonic: mnemonic,
       },
       chainId: 4,
+    },
+    kovan: {
+      url: kovan,
+      accounts: {
+        mnemonic: mnemonic,
+      },
+      chainId: 42,
     },
     coverage: {
       url: 'http://127.0.0.1:8555', // Coverage launches its own ganache-cli client

@@ -1,8 +1,8 @@
-const bre = require('@nomiclabs/buidler')
-const {CONTRACT_NAMES, LIBRARIES} = require('../test/lib/constants')
-const {REGISTRY, TRADER, OPTION_FACTORY, REDEEM_FACTORY, OPTION, REDEEM, UNISWAP_TRADER, DAI} = CONTRACT_NAMES
-const {OPTION_TEMPLATE_LIB, REDEEM_TEMPLATE_LIB} = LIBRARIES
-const {getContractAt} = bre.ethers
+const hre = require('hardhat')
+const { CONTRACT_NAMES, LIBRARIES } = require('../test/lib/constants')
+const { REGISTRY, TRADER, OPTION_FACTORY, REDEEM_FACTORY, OPTION, REDEEM, UNISWAP_TRADER, DAI } = CONTRACT_NAMES
+const { OPTION_TEMPLATE_LIB, REDEEM_TEMPLATE_LIB } = LIBRARIES
+const { getContractAt } = hre.ethers
 
 /**
  * @dev Checks the optionTemplate and redeemTemplate. If they are address zero, it will call deployTemplate().
@@ -18,7 +18,7 @@ const checkTemplates = async (optionFactory, redeemFactory) => {
   if (redeemTemplate.toString() == ethers.constants.AddressZero.toString()) {
     await redeemFactory.deployRedeemTemplate()
   }
-  return {optionTemplate, redeemTemplate}
+  return { optionTemplate, redeemTemplate }
 }
 
 /**
@@ -66,7 +66,7 @@ const verifyDai = async () => {
  */
 const verifyFactories = async () => {
   let OptionFactory = await deployments.get('OptionFactory')
-  console.log(await bre.getChainId(), OptionFactory.address)
+  console.log(await hre.getChainId(), OptionFactory.address)
   let OptionTemplateLib = await deployments.get('OptionTemplateLib')
   try {
     await verifyContract(OPTION_FACTORY, OptionFactory.address, OptionFactory.args, {
@@ -110,7 +110,7 @@ const verifyTemplates = async () => {
   const optionFactory = await getContractAt(OptionFactory.abi, OptionFactory.address)
   const redeemFactory = await getContractAt(RedeemFactory.abi, RedeemFactory.address)
   // warning: deploys templates which costs gas.
-  const {optionTemplate, redeemTemplate} = await checkTemplates(optionFactory, redeemFactory)
+  const { optionTemplate, redeemTemplate } = await checkTemplates(optionFactory, redeemFactory)
   try {
     await verifyContract(OPTION, optionTemplate, [], {})
   } catch (err) {
@@ -131,7 +131,7 @@ async function main() {
   await verifyRegistry()
   await verifyTrader()
   await verifyTemplates()
-  await verifyDai()
+  //await verifyDai()
 }
 
 main()
